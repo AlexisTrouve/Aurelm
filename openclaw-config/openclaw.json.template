@@ -1,0 +1,61 @@
+{
+  "$schema": "https://openclawai.com/schemas/config.json",
+  "name": "Aurelm GM Assistant",
+  "version": "0.1.0",
+
+  "models": {
+    "primary": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "apiKeyEnv": "ANTHROPIC_API_KEY"
+    },
+    "fallback": {
+      "provider": "ollama",
+      "model": "llama3.1:20b",
+      "baseUrl": "http://localhost:11434"
+    }
+  },
+
+  "routing": {
+    "strategy": "complexity",
+    "rules": [
+      {
+        "condition": "tool_count <= 1 AND estimated_tokens < 500",
+        "model": "fallback",
+        "reason": "Simple data retrieval — use local model"
+      },
+      {
+        "condition": "default",
+        "model": "primary",
+        "reason": "Complex reasoning — use Claude"
+      }
+    ]
+  },
+
+  "mcpServers": {
+    "aurelm": {
+      "command": "node",
+      "args": ["C:/Users/alexi/Documents/projects/Aurelm/mcp-server/dist/index.js"],
+      "env": {
+        "AURELM_DB_PATH": "C:/Users/alexi/Documents/projects/Aurelm/aurelm.db"
+      }
+    }
+  },
+
+  "skills": [
+    {
+      "name": "aurelm-gm",
+      "path": "./skills/aurelm-gm/SKILL.md"
+    }
+  ],
+
+  "discord": {
+    "botTokenEnv": "DISCORD_BOT_TOKEN",
+    "channels": {
+      "CHANNEL_ID_CIV_1": "Civilisation de la Confluence",
+      "CHANNEL_ID_CIV_2": "Civilisation 2",
+      "CHANNEL_ID_CIV_3": "Civilisation 3",
+      "CHANNEL_ID_GLOBAL": "Annonces globales"
+    }
+  }
+}

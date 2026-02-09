@@ -1,0 +1,52 @@
+site_name: Aurelm Wiki
+site_description: Auto-generated game wiki for civilization RPG
+site_url: http://localhost:8000
+
+theme:
+  name: material
+  language: fr
+  palette:
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Mode clair
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Mode sombre
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+
+plugins:
+  - search:
+      lang: fr
+
+nav:
+  - Accueil: index.md
+  - Civilisations:
+    - civilizations/index.md
+  - Global:
+    - Timeline: global/timeline.md
+    - Entités: global/entities.md
+  - Meta:
+    - Pipeline: meta/pipeline.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true

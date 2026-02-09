@@ -1,0 +1,26 @@
+name: aurelm_gui
+description: Aurelm — Game Master dashboard for civilization RPGs
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.0.0
+  riverpod_annotation: ^3.0.0
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  riverpod_generator: ^3.0.0
+  build_runner: ^2.4.0
+
+flutter:
+  uses-material-design: true

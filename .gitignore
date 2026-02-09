@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+*.so
+
+# Dart / Flutter
+gui/.dart_tool/
+gui/.packages
+gui/build/
+gui/.flutter-plugins
+gui/.flutter-plugins-dependencies
+gui/*.iml
+gui/.metadata
+gui/pubspec.lock
+
+# Node / TypeScript
+node_modules/
+mcp-server/dist/
+mcp-server/*.js
+mcp-server/*.d.ts
+mcp-server/*.js.map
+*.tsbuildinfo
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# MkDocs
+wiki/site/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+desktop.ini
+ehthumbs.db
+
+# Ollama models (too large)
+models/
+
+# Logs
+*.log
+logs/
