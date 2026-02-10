@@ -1,52 +1,52 @@
 site_name: Aurelm Wiki
 site_description: Auto-generated game wiki for civilization RPG
 site_url: http://localhost:8000
-
 theme:
   name: material
   language: fr
   palette:
-    - scheme: slate
-      primary: deep purple
-      accent: amber
-      toggle:
-        icon: material/brightness-4
-        name: Mode clair
-    - scheme: default
-      primary: deep purple
-      accent: amber
-      toggle:
-        icon: material/brightness-7
-        name: Mode sombre
+  - scheme: slate
+    primary: deep purple
+    accent: amber
+    toggle:
+      icon: material/brightness-4
+      name: Mode clair
+  - scheme: default
+    primary: deep purple
+    accent: amber
+    toggle:
+      icon: material/brightness-7
+      name: Mode sombre
   features:
-    - navigation.instant
-    - navigation.tabs
-    - navigation.sections
-    - navigation.expand
-    - search.suggest
-    - search.highlight
-    - content.tabs.link
-
+  - navigation.instant
+  - navigation.tabs
+  - navigation.sections
+  - navigation.expand
+  - search.suggest
+  - search.highlight
+  - content.tabs.link
 plugins:
-  - search:
-      lang: fr
-
+- search:
+    lang: fr
 nav:
-  - Accueil: index.md
-  - Civilisations:
-    - civilizations/index.md
-  - Global:
-    - Timeline: global/timeline.md
-    - Entités: global/entities.md
-  - Meta:
-    - Pipeline: meta/pipeline.md
-
+- Accueil: index.md
+- Civilisations:
+  - Index: civilizations/index.md
+  - Civilisation de la Confluence:
+    - Apercu: civilizations/civilisation-de-la-confluence/index.md
+    - Tours: civilizations/civilisation-de-la-confluence/turns.md
+    - Entites: civilizations/civilisation-de-la-confluence/entities.md
+- Global:
+  - Timeline: global/timeline.md
+  - Entites: global/entities.md
+- Meta:
+  - Pipeline: meta/pipeline.md
 markdown_extensions:
-  - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
-  - tables
-  - toc:
-      permalink: true
+- admonition
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.tabbed:
+    alternate_style: true
+- tables
+- toc:
+    permalink: true

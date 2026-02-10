@@ -1,3 +1,5 @@
 # Civilisations
 
-*Les pages de civilisation seront générées automatiquement par le pipeline.*
+| Civilisation | Joueur | Tours | Entites |
+|---|---|---|---|
+| [Civilisation de la Confluence](civilisation-de-la-confluence/index.md) | Rubanc | 14 | 199 |
