@@ -30,7 +30,7 @@ class GraphNodeWidget extends StatelessWidget {
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 border: Border.all(color: color, width: 2),
               ),
               alignment: Alignment.center,

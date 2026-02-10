@@ -36,7 +36,7 @@ class EntityFilterBar extends ConsumerWidget {
                     child: FilterChip(
                       label: Text(type),
                       selected: filters.entityType == type,
-                      selectedColor: AppColors.entityColor(type).withOpacity(0.2),
+                      selectedColor: AppColors.entityColor(type).withValues(alpha: 0.2),
                       onSelected: (_) {
                         ref.read(entityFilterProvider.notifier).setEntityType(
                             filters.entityType == type ? null : type);

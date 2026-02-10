@@ -26,7 +26,7 @@ class TimelineTurnCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: typeColor.withOpacity(0.15),
+                color: typeColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
@@ -79,7 +79,7 @@ class TimelineTurnCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: typeColor.withOpacity(0.15),
+                          color: typeColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -103,7 +103,7 @@ class TimelineTurnCard extends StatelessWidget {
                                 horizontal: 4, vertical: 1),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                  color: stColor.withOpacity(0.4)),
+                                  color: stColor.withValues(alpha: 0.4)),
                               borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(

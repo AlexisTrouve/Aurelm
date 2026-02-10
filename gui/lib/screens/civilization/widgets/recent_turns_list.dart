@@ -39,7 +39,7 @@ class RecentTurnsList extends ConsumerWidget {
                   AppColors.turnTypeColors[t.turn.turnType] ?? Colors.grey;
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: typeColor.withOpacity(0.2),
+                  backgroundColor: typeColor.withValues(alpha: 0.2),
                   child: Text(
                     '${t.turn.turnNumber}',
                     style: TextStyle(

@@ -114,9 +114,11 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
     }
 
     final algorithm = FruchtermanReingoldAlgorithm(
-      iterations: 100,
-      attractionRate: 0.5,
-      repulsionRate: 1.0,
+      FruchtermanReingoldConfiguration(
+        iterations: 100,
+        attractionRate: 0.5,
+        repulsionRate: 1.0,
+      ),
     );
 
     final nodeDataMap = {for (final n in graphData.nodes) n.id: n};

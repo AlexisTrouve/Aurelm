@@ -64,7 +64,7 @@ class TimelineFilterBar extends ConsumerWidget {
                     child: FilterChip(
                       label: Text(type.replaceAll('_', ' ')),
                       selected: filters.turnType == type,
-                      selectedColor: color.withOpacity(0.2),
+                      selectedColor: color.withValues(alpha: 0.2),
                       onSelected: (_) {
                         ref.read(timelineFilterProvider.notifier).setTurnType(
                             filters.turnType == type ? null : type);
