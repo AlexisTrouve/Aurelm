@@ -40,16 +40,16 @@ Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop R
 Flutter Desktop GUI (Dashboard)
         │
         ├── Discord Sync (read-only bot)
-        ├── ML Pipeline (spaCy + GPT-OSS 20B via Ollama)
+        ├── ML Pipeline (spaCy + llama3.1:8b via Ollama)
         ├── Wiki Generator (MkDocs Material)
         ├── SQLite Database
-        └── OpenClaw Agent (Claude API primary, GPT-OSS 20B fallback)
+        └── OpenClaw Agent (Claude API primary, llama3.1:8b fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
 ### Directory Layout
 
-- **gui/**: Flutter Desktop (Dart, Riverpod 3.0) — GM dashboard. **Flutter not installed on dev machine** — contains pubspec.yaml placeholder only. Run `flutter create .` when Flutter is available.
+- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 65 source files, 6 tests. **Flutter not installed on dev machine** — CI builds via GitHub Actions. Run `flutter create --platforms=windows .` in gui/ when Flutter is available locally.
 - **pipeline/**: Python ML pipeline — ingestion, NER, chunking, summarization
 - **wiki/**: MkDocs Material — auto-generated game wiki
 - **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
@@ -61,13 +61,17 @@ Flutter Desktop GUI (Dashboard)
 
 ### Done
 - [x] **Step 1**: Repo scaffolding — structure, all stubs, schema, configs, first commit pushed to GitHub
+- [x] **Step 2**: ML Pipeline — markdown loader (Format A + B), EntityRuler NER with game patterns, enhanced classifier, extractive summarizer fallback, pipeline orchestrator. 59 tests passing, end-to-end validated on civjdr data (37 messages, 14 turns, 199 entities extracted).
+
+- [x] **Step 3**: Wiki generator — auto-generates 8+ MkDocs Material pages (per-civ overview/turns/entities, global timeline, entity index, pipeline stats) with noise filtering, admonitions for choices/OOC, and dynamic nav update.
+
+- [x] **Step 4**: MCP Server — 9 tools (listCivs, getCivState, searchLore, sanityCheck, timeline, compareCivs, getEntityDetail, getTurnDetail, searchTurnContent). Read-only SQLite via AURELM_DB_PATH, fuzzy civ name matching, structured Markdown output for LLM consumption, sanityCheck with keyword extraction + entity inventory. 24 integration tests passing.
+
+- [x] **Step 5**: OpenClaw specialization — SOUL.md persona, domain-knowledge.md pre-seeded context, SKILL.md with all 9 tools documented (decision trees, error recovery, 9 examples), openclaw.json.template with correct model routing (llama3.1:8b fallback, tool-based routing), SETUP.md deployment checklist.
+
+- [x] **Step 6**: Flutter GUI — 65 Dart source files across 6 layers (data/models/providers/screens/widgets/core). Drift ORM mapping all DB tables, 5 DAOs with reactive streams, Riverpod providers, GoRouter with NavigationRail shell. Screens: dashboard (civ cards, pipeline status, quick search), civ detail (entity breakdown chart, top entities, recent turns), entity browser (search/filter/list + detail with aliases/relations/mentions), timeline (chronological turns with filters), graph (force-directed with graphview, per-civ filter, legend). Settings: DB path picker, theme toggle. 6 unit/widget tests, 2 GitHub Actions workflows (Windows EXE build + test). CI adapted from Haomirai pattern.
 
 ### Next Steps
-- [ ] **Step 2**: ML Pipeline — real Discord ingestion + NER + chunking (use civjdr Background/ files as test data)
-- [ ] **Step 3**: Wiki generator — auto-produce MkDocs pages from structured DB data
-- [ ] **Step 4**: MCP Server — implement real tool logic (currently stubs return placeholder text)
-- [ ] **Step 5**: OpenClaw integration — skill wiring, model routing (Claude API + Ollama fallback)
-- [ ] **Step 6**: Flutter GUI — dashboard, entity browser, timeline view, agent chat
 - [ ] **Step 7**: End-to-end integration — Discord bot live, pipeline auto-runs, wiki auto-refreshes
 
 ## Environment Notes (Dev Machine)
@@ -90,7 +94,7 @@ Flutter Desktop GUI (Dashboard)
 - **Python 3.11+** for ML pipeline (spaCy, Ollama client)
 - **Dart/Flutter** for GUI
 - **SQLite** as single database (no ORM — raw SQL with prepared statements)
-- **Ollama** for local LLM inference (GPT-OSS 20B)
+- **Ollama** for local LLM inference (llama3.1:8b — fits 8GB VRAM)
 - **Claude API** as primary agent backend, local LLM as fallback
 
 ## Coding Conventions
@@ -138,6 +142,6 @@ Flutter Desktop GUI (Dashboard)
 ## Testing
 
 - `cd mcp-server && npm test` — MCP server tests
-- `cd pipeline && pytest` — Pipeline tests (2 test files already exist: test_chunker, test_classifier)
-- `cd gui && flutter test` — GUI tests (when Flutter available)
+- `cd pipeline && pytest` — Pipeline tests (5 test files: test_chunker, test_classifier, test_loader, test_ner, test_runner)
+- `cd gui && flutter test` — GUI tests (6 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing

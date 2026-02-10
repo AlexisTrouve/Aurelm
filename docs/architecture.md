@@ -31,16 +31,20 @@ Discord Channels (one per civilization + global)
                            └── /meta/entities
         │
         ▼
-  MCP Server (TypeScript)
-  ├── getCivState    — Current state of a civilization
-  ├── searchLore     — Full-text + semantic search across lore
-  ├── sanityCheck    — Verify consistency of a statement
-  ├── timeline       — Events for a civilization or globally
-  └── compareCivs    — Side-by-side analysis of civilizations
+  MCP Server (TypeScript, 9 tools)
+  ├── listCivs         — List all civilizations with stats
+  ├── getCivState      — Current state of a civilization
+  ├── searchLore       — Full-text search across entities and lore
+  ├── sanityCheck      — Verify consistency of a statement
+  ├── timeline         — Events for a civilization or globally
+  ├── compareCivs      — Side-by-side analysis of civilizations
+  ├── getEntityDetail  — Deep dive on an entity (mentions, relations)
+  ├── getTurnDetail    — Full turn content with segments and entities
+  └── searchTurnContent — Full-text search on turn segment content
         │
         ▼
   OpenClaw Agent
-  (Claude API primary, GPT-OSS 20B fallback)
+  (Claude API primary, llama3.1:8b via Ollama fallback)
   └── Natural language interface for the GM
 ```
 
@@ -59,9 +63,9 @@ Sequential processing stages, each reading from and writing to SQLite:
 
 1. **Ingestion** (`ingestion.py`): Fetches new messages from DB, normalizes formatting
 2. **Chunker** (`chunker.py`): Detects turn boundaries (GM posts that start new turns vs continuations)
-3. **NER** (`ner.py`): Custom spaCy model for fantasy NER — extracts people, places, technologies, institutions
-4. **Classifier** (`classifier.py`): Classifies message segments — narrative, choice, consequence, OOC
-5. **Summarizer** (`summarizer.py`): Uses Ollama to generate turn summaries and entity updates
+3. **NER** (`ner.py`): spaCy EntityRuler + NER — extracts persons, places, technologies, institutions, resources, creatures, events
+4. **Classifier** (`classifier.py`): Classifies message segments — narrative, choice, consequence, ooc, description
+5. **Summarizer** (`summarizer.py`): Uses Ollama (llama3.1:8b) to generate turn summaries, with extractive fallback
 6. **Exporter** (`exporter.py`): Writes structured data back to DB in canonical format
 
 ### Wiki Generator
@@ -73,15 +77,16 @@ Sequential processing stages, each reading from and writing to SQLite:
 ### MCP Server
 
 - **Tech**: TypeScript, Model Context Protocol
-- **Exposed tools**: 5 tools for querying game state, lore, consistency
-- **Data source**: SQLite DB + wiki markdown files
+- **Exposed tools**: 9 tools for querying game state, lore, consistency, entity details, turn content
+- **Data source**: SQLite DB (read-only, via AURELM_DB_PATH env var)
 - **Stateless**: Each tool call is independent
 
 ### OpenClaw Agent
 
 - **Primary**: Claude API (claude-sonnet-4-5-20250929) — best reasoning for complex queries
-- **Fallback**: GPT-OSS 20B via Ollama — offline mode, simpler queries
-- **Skill**: Custom `aurelm-gm` skill with GM-specific prompt engineering
+- **Fallback**: llama3.1:8b via Ollama — offline mode, simpler queries
+- **Skill**: Custom `aurelm-gm` skill with full tool documentation, decision trees, and domain knowledge
+- **Persona**: SOUL.md defines the agent's identity, rules, and boundaries
 - **MCP**: Connects to local MCP server for structured data access
 
 ### Database

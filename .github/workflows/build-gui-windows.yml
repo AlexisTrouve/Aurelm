@@ -1,0 +1,81 @@
+name: Build GUI Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+      - '.github/workflows/build-gui-windows.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: gui
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+
+    - name: Install build dependencies (CMake, Ninja)
+      run: |
+        choco install cmake ninja -y
+        cmake --version
+        ninja --version
+
+    - name: Create Windows Platform Files
+      run: |
+        Write-Host "Creating Windows platform files..."
+        flutter create --platforms=windows .
+        Write-Host "Windows platform files created"
+
+    - name: Enable Windows Desktop
+      run: flutter config --enable-windows-desktop
+
+    - name: Get Dependencies
+      run: flutter pub get
+
+    - name: Generate Code (Drift)
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    - name: Check Flutter Doctor
+      run: flutter doctor -v
+
+    - name: Build Windows Release
+      run: |
+        Write-Host "=== Starting Windows build ==="
+        flutter build windows --release -v 2>&1 | Tee-Object -FilePath build_output.log
+        $exitCode = $LASTEXITCODE
+        Write-Host "Build exit code: $exitCode"
+        exit $exitCode
+
+    - name: List build output
+      if: always()
+      run: |
+        if (Test-Path "build\windows\x64\runner\Release\") {
+          Write-Host "Build successful! Files:"
+          Get-ChildItem "build\windows\x64\runner\Release\" -Recurse
+        } else {
+          Write-Host "Build directory not found. Checking build:"
+          Get-ChildItem "build\" -Recurse -Depth 2
+        }
+
+    - name: Upload EXE
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: aurelm-gui-windows
+        path: gui/build/windows/x64/runner/Release/

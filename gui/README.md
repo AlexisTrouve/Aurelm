@@ -1,35 +1,46 @@
 # Aurelm GUI — Flutter Desktop
 
-## Setup
+## Overview
 
-Flutter is required to build and run the GUI. It's not currently installed on this machine.
-
-### Install Flutter
-
-1. Download Flutter SDK from https://flutter.dev/docs/get-started/install/windows
-2. Add Flutter to PATH
-3. Run `flutter doctor` to verify setup
-4. Enable Windows desktop support: `flutter config --enable-windows-desktop`
-
-### Create the project
-
-From this directory:
-
-```bash
-flutter create --org com.aurelm --project-name aurelm_gui .
-```
-
-This will generate the full Flutter project structure in place, preserving existing files.
-
-### Run
-
-```bash
-flutter pub get
-flutter run -d windows
-```
+Desktop dashboard for the Game Master. Browse civilizations, entities, timeline, and an interactive entity relationship graph.
 
 ## Architecture
 
-- **State management**: Riverpod 3.0
+- **State management**: Riverpod 2.6 (StreamProvider for reactive DB, StateNotifier for filters)
+- **Database**: Drift ORM (read-only, pipeline owns writes)
+- **Navigation**: GoRouter + NavigationRail (desktop-first)
+- **Graph**: graphview (force-directed, Fruchterman-Reingold)
+- **Charts**: fl_chart (bar chart for entity breakdown)
 - **Platform**: Windows Desktop (primary)
-- **Features**: Dashboard, entity browser, timeline, agent chat, settings
+
+## Screens
+
+| Screen | Route | Description |
+|--------|-------|-------------|
+| Dashboard | `/` | Civ grid, pipeline status, quick search |
+| Civ Detail | `/civs/:id` | Stats, entity chart, top entities, recent turns |
+| Entity Browser | `/entities` | Search, filter by type/civ, sorted by mentions |
+| Entity Detail | `/entities/:id` | Aliases, relations, mention timeline |
+| Timeline | `/timeline` | Chronological turns, per-civ/global filter |
+| Graph | `/graph` | Force-directed entity graph, per-civ filter |
+| Settings | `/settings` | DB path, theme toggle, about |
+
+## Setup (Local)
+
+1. Install Flutter SDK 3.24+
+2. `flutter create --platforms=windows .`
+3. `flutter pub get`
+4. `dart run build_runner build --delete-conflicting-outputs`
+5. `flutter run -d windows`
+
+## Setup (CI)
+
+GitHub Actions builds the Windows EXE automatically on push to `gui/**`. See `.github/workflows/build-gui-windows.yml`.
+
+## Testing
+
+```bash
+flutter test
+```
+
+6 tests: widget tests (EntityTypeBadge, StatCard, EmptyState) + model tests (FilterState, GraphData, AppConstants).

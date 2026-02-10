@@ -1,0 +1,43 @@
+name: Test GUI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+      - '.github/workflows/test-gui.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: gui
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+        cache: true
+
+    - name: Get Dependencies
+      run: flutter pub get
+
+    - name: Generate Code (Drift)
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    - name: Analyze
+      run: flutter analyze
+
+    - name: Run Tests
+      run: flutter test

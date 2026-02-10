@@ -57,8 +57,8 @@ Thumbs.db
 desktop.ini
 ehthumbs.db
 
-# Ollama models (too large)
-models/
+# Ollama models (too large) — only root-level models/ dir
+/models/
 
 # Logs
 *.log
