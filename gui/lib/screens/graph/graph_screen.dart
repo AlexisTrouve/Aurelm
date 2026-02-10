@@ -1,10 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:graphview/GraphView.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../models/graph_data.dart';
 import '../../providers/graph_provider.dart';
 import '../../providers/database_provider.dart';

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../models/turn_with_entities.dart';
-import '../../../providers/turn_provider.dart';
 import '../../../providers/database_provider.dart';
 
 class RecentTurnsList extends ConsumerWidget {
