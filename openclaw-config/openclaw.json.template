@@ -1,34 +1,67 @@
 {
   "$schema": "https://openclawai.com/schemas/config.json",
   "name": "Aurelm GM Assistant",
-  "version": "0.1.0",
+  "version": "0.2.0",
 
   "models": {
     "primary": {
       "provider": "anthropic",
       "model": "claude-sonnet-4-5-20250929",
-      "apiKeyEnv": "ANTHROPIC_API_KEY"
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "proxy": "http://127.0.0.1:7897"
     },
     "fallback": {
       "provider": "ollama",
-      "model": "llama3.1:20b",
+      "model": "llama3.1:8b",
       "baseUrl": "http://localhost:11434"
     }
   },
 
   "routing": {
-    "strategy": "complexity",
+    "strategy": "tool-based",
     "rules": [
       {
-        "condition": "tool_count <= 1 AND estimated_tokens < 500",
+        "condition": "tool == 'listCivs'",
         "model": "fallback",
-        "reason": "Simple data retrieval — use local model"
+        "reason": "Simple data retrieval, no reasoning needed"
+      },
+      {
+        "condition": "tool == 'getCivState' AND no_followup",
+        "model": "fallback",
+        "reason": "Single civ snapshot, straightforward presentation"
+      },
+      {
+        "condition": "tool == 'timeline' AND no_followup",
+        "model": "fallback",
+        "reason": "Chronological listing, no synthesis needed"
+      },
+      {
+        "condition": "tool == 'sanityCheck'",
+        "model": "primary",
+        "reason": "Consistency reasoning requires strong inference"
+      },
+      {
+        "condition": "tool == 'compareCivs'",
+        "model": "primary",
+        "reason": "Cross-civ analysis requires synthesis"
+      },
+      {
+        "condition": "tool_count >= 2",
+        "model": "primary",
+        "reason": "Multi-tool chains require reasoning to combine results"
       },
       {
         "condition": "default",
         "model": "primary",
-        "reason": "Complex reasoning — use Claude"
+        "reason": "Default to Claude for safety"
       }
+    ]
+  },
+
+  "context": {
+    "soul": "./SOUL.md",
+    "preload": [
+      "./skills/aurelm-gm/domain-knowledge.md"
     ]
   },
 
@@ -52,10 +85,26 @@
   "discord": {
     "botTokenEnv": "DISCORD_BOT_TOKEN",
     "channels": {
-      "CHANNEL_ID_CIV_1": "Civilisation de la Confluence",
-      "CHANNEL_ID_CIV_2": "Civilisation 2",
-      "CHANNEL_ID_CIV_3": "Civilisation 3",
-      "CHANNEL_ID_GLOBAL": "Annonces globales"
+      "CHANNEL_ID_CONFLUENCE": {
+        "civName": "Civilisation de la Confluence",
+        "player": "Rubanc",
+        "description": "River valley civ, living clay tech, five-caste oligarchy"
+      },
+      "CHANNEL_ID_CDS": {
+        "civName": "Cheveux de Sang",
+        "player": "TBD",
+        "description": "Foreign sea-faring civilization"
+      },
+      "CHANNEL_ID_NANZA": {
+        "civName": "Nanzagouets",
+        "player": "TBD",
+        "description": "Foreign civilization (Tlazhuaneca)"
+      },
+      "CHANNEL_ID_GLOBAL": {
+        "civName": null,
+        "player": null,
+        "description": "Global announcements and cross-civ events"
+      }
     }
   }
 }
