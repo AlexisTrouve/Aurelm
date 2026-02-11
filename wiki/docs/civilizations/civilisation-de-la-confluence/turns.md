@@ -2,22 +2,20 @@
 
 ## Tour 1
 
-> La narration commence par les mots du Maitre de la Confluence, qui s'exprime dans un langage poétique et métaphorique. Il semble être en train de se rendre compte d'une défaite personnelle et décide de partager ses pouvoirs avec le monde, pour qu'il puisse s'épanouir par lui-même. La narration continue avec une description de la genèse du monde, où les premières plantes émergent de la neige et où 
+> La narration commence par une référence à Geiita, qui a combattu en vain mais a finalement accepté sa défaite. Il décide de partager ses pouvoirs avec les autres et espère que l'un d'eux trouvera un jour le moyen de triompher là où il a échoué. La civilisation de la Confluence est alors née dans un monde glacé et immobile, recouvert de neige jusqu'à l'horizon. Les premiers humains ont émergé, tapi
 
 **Evenements cles** :
 
-- La défaite du Maitre de la Confluence
-- Le partage de ses pouvoirs avec le monde
-- L'émergence des premières plantes
-- L'apparition de l'homme
-- Découverte de la chasse, de la pêche et de la cueillette par les hommes
+- Geiita a combattu en vain mais a accepté sa défaite
+- Les premiers humains ont émergé dans un monde glacé et immobile
+- Les premiers humains ont appris à survivre en trouvant de la nourriture et en développant des compétences
 
 **Choix effectues** :
 
-- Montrer la rivière en suivant sa courbe pour montrer ses différentes facettes
-- Montrez le plus beau lieu de la rivière
+- montrer comment suivre la rivière
+- choisir un lieu de beauté (cascade, guet succédé de rapides ou île)
 
-**Entites** : `Origines`
+**Entites** : aucune
 
 ### Maitre du Jeu
 
@@ -56,22 +54,25 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ## Tour 2
 
-> Le peuple de la Confluence a traversé de nombreux défis pour atteindre leur nouveau foyer, où deux rivières cristallines se rencontrent dans une vallée large. Malgré les difficultés, ils ont réussi à se réinstaller et à repousser leur population, mais la vie reste précaire et la mort est toujours présente. Les habitants de la Confluence commencent à se poser des questions sur l'avenir après la mor
+> Après avoir promis aux générations futures un lieu de sécurité et de prospérité, le Maitre du Jeu guide ses suivants à travers les difficultés d'une longue marche vers une confluence de deux rivières cristallines. Là-bas, ils s'installent en bord de rivière et commencent à se nourrir en chassant des petits animaux, attrapant des poissons et récoltant des fruits et des baies. Malgré les moments dif
 
 **Evenements cles** :
 
-- La migration de la civilisation vers le havre
-- L'arrivée au lieu de la Confluence
-- Le retour à la vie normale dans la vallée
-- Les difficultés pour trouver de la nourriture
-- Les interrogations sur l'avenir après la mort
+- Arrivée à la confluence de deux rivières
+- Installation en bord de rivière
+- Chasse et pêche pour se nourrir
+- Récolte de fruits et de baies
+- Découverte de moments difficiles sans mort
 
 **Choix effectues** :
 
-- montrer des techniques de perfectionnement de la chasse
-- explication sur le cycle de vie
-- explication sur les offrandes aux défunts
-- explication sur la sagesse transmise par les nuages
+- montrer des techniques de perfectionnement pour l'art de la chasse
+- préserver les prises vivantes ou mortes
+- faire des expéditions de chasse pendant les périodes favorables
+- expliquer l'esprit s'élevant vers le ciel et offrant sa sagesse aux nouveaux nés
+- offrir des preuves de sagesses en respect aux défunts
+- voir les nuages comme des obstacles à la transmission de la sagesse
+- se souvenir de ceux nés sous mauvais auspices
 
 **Entites** : `La confluence`
 
@@ -96,20 +97,20 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ## Tour 3
 
-> Les saisons passent et les rituels funéraires évoluent pour rendre hommage aux ancêtres. Les anciens sont désormais considérés comme une source de sagesse et la tribu se tourne vers eux pour obtenir conseil. Le personnage principal, qui a joué un rôle important dans l'organisation de la tribu, voit ses descendants grandir et lui donner plus d'autorité. Il doit maintenant prendre une décision impor
+> La tribu a adopté de nouveaux rites funéraires, où les défunts sont emmenés aux sommets pour être déposés, croyant que les oiseaux récupèrent leurs restes. Les familles gardent des mémentos en souvenir de leurs ancêtres, qui leur apportent sagesse mais également un sentiment de responsabilité. L'adoration des anciens augmente, et ceux qui sont nés 'sans ciel' cherchent à se racheter par la piété f
 
 **Evenements cles** :
 
-- Développement des rituels funéraires
-- Émergence de la sagesse des anciens
-- Croissance et prospérité de la tribu
-- Augmentation de l'autorité du personnage principal
+- Les nouveaux rites funéraires sont adoptés
+- La croyance en l'intermédiation des oiseaux se développe
+- L'adoration des anciens augmente
 
 **Choix effectues** :
 
-- décider de forger une nouvelle structure
-- convoquer les esprits éclairés et les âmes sages
-- faire du cercle des sages un gardien du savoir et interprète des cieux
+- décider de forger une nouvelle structure pour la tribu
+- convoquer les esprits les plus éclairés et les âmes les plus sages
+- façonner un cercle des sages, gardiens du savoir et interprètes des cieux
+- s'effacer vers le sommet du territoire de la tribu
 
 **Entites** : `Sans ciel`, `Cercle des sages`, `La confluence`
 
@@ -131,22 +132,22 @@ Je décide de forger une nouvelle structure pour la tribu. Je convoque les espri
 
 ## Tour 4
 
-> Le Maitre du Jeu rassemble le cercle des sages, un groupe d'individus considérés comme les plus intelligents et les plus sages de la tribu, pour les guider vers une coutume de dialogue respectueux. Il leur enseigne la voix des cieux, permettant aux membres du cercle de trouver des présages dans la nature pour guider leurs décisions. Après avoir façonné la pensée et l'opinion des membres du cercle,
+> Le Maitre du Jeu rassemble et forme un groupe de personnes considérées comme les plus intelligentes et sages, qu'il appelle le 'cercle des sages'. Il leur enseigne à trouver des présages dans la nature pour guider leurs décisions. Lorsqu'il estime qu'ils sont prêts, il annonce son départ et les incite à prendre leurs propres décisions. Cependant, il reste en communion avec les ancêtres et continue
 
 **Evenements cles** :
 
-- Le Maitre du Jeu forme le cercle des sages
-- Il enseigne la voix des cieux au cercle des sages
-- Il prend son départ, laissant les nouvelles générations prendre en charge la tribu
-- Un problème émerge lors d'une dispute entre deux hommes pour l'amour d'une femme
+- Le Maitre du Jeu forme un cercle des sages
+- Il enseigne la voix des cieux aux membres du cercle
+- Son départ est annoncé, mais il reste en communion avec les ancêtres
+- La tribu est en crise due à une querelle entre deux hommes
 
 **Choix effectues** :
 
 - instaurer des rituels de fertilité
-- mettre en avant les rôles des mères
-- créer un tribunal spécial pour gérer les affaires de morale
+- mettre en avant le rôle des mères
+- créer un tribunal spécial pour les affaires de morale
 
-**Entites** : `Oracle`, `Cercle des sages`
+**Entites** : `Cercle des sages`
 
 ### Maitre du Jeu
 
@@ -167,20 +168,18 @@ Je guide la tribu vers une nouvelle structure culturelle et institutionnel. Un h
 
 ## Tour 5
 
-> La tribu de la Confluence est en pleine expansion. Les anciens transmettent leurs paroles aux nouvelles générations, qui doivent faire fructifier cette terre sacrée. La concurrence entre les hommes pour s'accaparer les femmes devient féroce, et les sans-ciel sont progressivement exclus de la société. Les familles se renforcent, et la cohésion entre ses membres devient vitale. Les marginaux, qui fa
+> Dans le contexte de la Civilisation de la Confluence, la tribu est guidée par l'obligation de croître dans un éden sacré. Cependant, cela conduit à une concurrence féroce entre les hommes pour acquérir des femmes, excluant peu à peu les sans-ciel et renforçant le lien spirituel et familial. Les mariages sont considérés comme des liens sacrés qui ne peuvent pas être rompus facilement, avec des cons
 
 **Evenements cles** :
 
-- La tribu de la Confluence croît dans cette terre fertile
-- Les liens familiaux se renforcent
-- La concurrence entre les hommes pour s'accaparer les femmes devient féroce
-- Les sans-ciel sont progressivement exclus de la société
-- Les familles sont obligées de travailler ensemble
+- La concurrence entre les hommes pour s'accaparer les femmes se fait féroce
+- Les sans-ciel sont exclus de la tribu
+- La propriété des femmes par les hommes devient une norme
 
 **Choix effectues** :
 
-- Les unions entre enfants du ciel clair et enfants des nuages ne peuvent être
-- Les sans-ciels doivent s'unir entre eux pour prospérer sur les eaux
+- Les sans-ciel bâtissent leurs demeures comme les oiseaux
+- Les sans-ciel construisent des villages aux confluents reliés par des passerelles
 
 **Entites** : `Sans ciel`
 
@@ -203,20 +202,23 @@ Les esprits m'ont montré notre erreur : nous ne pouvons faire coexister sur la 
 
 ## Tour 6
 
-> La Confluence est un endroit idéal pour les habitants, deux puissantes rivières offrent sécurité et une terre fertile. Les villageois ont développé des outils et techniques de polissage qui nécessitent l'utilisation de roches striées. Ils vivent en symbiose avec des animaux qui vivaient dans la vallée avant leur arrivée, dont ils ont réussi à domestiquer quelques-uns. L'alimentation est riche en l
+> La tribu a fondé le village à la confluence de deux fleuves, où elle a développé une relation symbiotique avec les animaux qui vivaient dans la Vallée. Les villageois ont réussi à domestiquer certains d'entre eux et les utilisent pour leur assistance dans la chasse, la cueillette et la pêche. Leur régime alimentaire est devenu plus riche en légumes sauvages, gibiers, poissons gras et herbes parfum
 
 **Evenements cles** :
 
-- Les villageois développent des outils et techniques de polissage
-- Ils réussissent à domestiquer quelques animaux qui vivaient dans la vallée avant leur arrivée
-- L'alimentation devient riche en produits de la rivière
+- Arrivée de la tribu à la Confluence
+- Domestication d'animaux
+- Évolution du régime alimentaire
 
 **Choix effectues** :
 
 - Observer les Regards-Libres
-- Penser à l'utilisation des Regards-Libres pour repérer les troupeaux
+- Remarquer leurs capacités d'apprentissage
+- Reconnaître l'intelligence des oiseaux
+- Considérer les possibilités offertes par leur coopération avec les humains
+- Penser aux avantages potentiels de cette coexistence
 
-**Entites** : `Regards-Libres`, `Sans ciel`, `Oracle`, `Gingembre sauvage`, `La Vallée`, `La confluence`, `Morsure-des-Ancêtres`, `Vallée`, `Vallée des camps temporaires`, `Les Larmes du Ciel`
+**Entites** : `Regards-Libres`, `Sans ciel`, `Gingembre sauvage`, `La Vallée`, `La confluence`, `Morsure-des-Ancêtres`, `Vallée des camps temporaires`, `Les Larmes du Ciel`
 
 ### Maitre du Jeu
 
@@ -241,21 +243,23 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 ## Tour 7
 
-> La présence des Regards-Libres a inspiré les artisans à reproduire leurs formes dans leurs productions. Les villageois ont adopté certaines de leurs qualités, telles que leur patience et curiosité, tout en appréciant également leur chant. Les dresseurs de Regards-Libres, appelés Ailes-Grises, sont devenus des membres importants de la tribu en guidant les groupes de chasseurs et de pêcheurs vers le
+> La présence régulière des groupes de Regards-Libres inspire les artisans à créer des représentations de l'animal, qui devient un symbole pour le village. Les Ailes-Grises, chargés de guider les chasseurs et les pêcheurs, prennent une place centrale dans la tribu. Ils sont également associés aux rites funéraires et à l'ancrage avec les ancêtres. Leur statut élevé entraîne un changement dans la stru
 
 **Evenements cles** :
 
-- Les Regards-Libres deviennent un phénomène courant
-- Les artisans reproduisent les formes des Regards-Libres dans leurs productions
-- Les Ailes-Grises prennent une place importante dans la tribu
-- Le cercle des sages est influencé par les Ailes-Grises
+- Les Regards-Libres deviennent une vision courante
+- Apparition des Ailes-Grises
+- Changement de statut social de la tribu
 
 **Choix effectues** :
 
-- Rendre les rhombes en pierre des instruments sacrés
-- Choisir les enfants du ciel clair pour devenir des Shamans
-- Former Les Voix de l'Aurore, dirigées par les Ailes-Grises
-- Créer les Enfants du Courant et les Gardiens de la Confluence
+- Les rhombes en pierre deviennent les instruments sacrés.
+- La recherche des meilleurs matériaux à travers la vallée devient un art, certaines pierres aux éclats brillants se révélant particulièrement résonnantes
+- Les Ailes-Grises deviennent des Shamans.
+- Leur lien avec les Regards-Libres devient un signe de leur capacité à voir au-delà du monde visible.
+- Des Cliques émergent dans notre société, transformant la structure du conseil : Les Voix de l'Aurore dirigés par les Ailes-Grises,
+- Les Enfants du Courant: forts de leurs villages prospères,
+- Les Gardiens de la Confluence : enrichis par l'échange entre les peuples,
 
 **Entites** : `Ailes-Grises`, `Enfants du Courant`, `Regards-Libres`, `Voix de l'Aurore`, `Tribunal des mœurs`, `La confluence`, `Rhombes`
 
@@ -287,21 +291,19 @@ Les rhombes en pierre deviennent les instruments sacrés. Les artisans découvre
 
 ## Tour 8
 
-> La civilisation de la Confluence est actuellement plongée dans une période de changement et de croissance. Les membres de la tribu sont conscients que les idées et les expériences acquises au fil des ans doivent être transmises aux générations futures, mais ils ne s'accordent pas sur la meilleure façon de le faire. Cela conduit à l'émergence de différentes institutions concurrentes, chacune voulan
+> Les membres de la tribu cherchent à transmettre leurs connaissances et expériences de manière durable. Certaines personnes utilisent les gravures, d'autres les histoires orales, tandis que d'autres peuvent choisir une autre méthode. Cela conduit à un conflit entre les différentes institutions qui se disputent la juridiction sur les enfants du courant. Le cercle des sages, les voix de l'Aurore et l
 
 **Evenements cles** :
 
-- Les gravures couvrent les rochers et les flancs des montagnes
 - Les processions rituelles se multiplient
-- Le cercle des sages et le Tribunal de moeurs entrent en conflit
-- Les Gardiens de la confluence prétendent être indépendants de toutes les décisions des villageois
+- Le conflit entre les institutions commence à éclater
+- Les regards libres sont intégrés dans la tribu
 
 **Choix effectues** :
 
-- Les artisans créent des objets uniques qui deviennent plus que de simples outils - ils sont les gardiens de notre mémoire.
-- Ces artefacts deviennent des témoins vivants, transmis de main en main, chaque génération y ajoutant sa marque et son histoire.
-- Les ancêtres m'ont révélé que le pouvoir lui-même prend différentes formes.
-- La sagesse des Ailes-Grises guide nos âmes, la force des chasseurs protège nos corps, l'habileté des pêcheurs nourrit nos ventres, l'art des artisans enrichit nos vies, et les échanges unissent nos peuples.
+- Les artisans créent des objets uniques qui deviennent plus que de simples outils
+- Ces objets de pouvoir prennent diverses formes : les Ailes-Grises gravent leurs visions sur leurs rhombes, les chasseurs marquent leurs prises sur leurs armes...
+- Les Regards-Libres ont tendance à se lier avec ceux qui incarnent la dualité du ciel
 
 **Entites** : `Ailes-Grises`, `Enfants du Courant`, `Regards-Libres`, `Voix de l'Aurore`, `Cercle des sages`, `La confluence`, `Tribunal de moeurs`, `Rhombes`
 
@@ -332,23 +334,22 @@ C'est à travers les artefacts que le savoir trouve sa voie. Les artisans créen
 
 ## Tour 9
 
-> La narration dépeint une société où la nature est constante et changeante, mais où les artefacts créés par les artisans jouent un rôle crucial dans la transmission des connaissances et de l'histoire. Les artisans sont respectés pour leur capacité à donner vie aux objets, qui deviennent alors des artefacts emplissant les logis et symbolisant la continuité. Cependant, cette société est également mar
+> Dans la Civilisation de la Confluence, la nature est constante et changeante, mais c'est l'artisan qui peut transformer celle-ci. Les artisans créent des objets qui deviennent des artefacts en les insufflant de leur vie, ce qui permet à ces objets d'avoir 100 vies ou plus. Ces artefacts sont symboles de continuité et sont souvent utilisés dans des autels aux ancêtres pour attirer leur regard. Les 
 
 **Evenements cles** :
 
-- Les artisans créent des artefacts emplissant les logis
-- L'importance des artisans se développe au sein de la société
-- Les peuples de la vallée sont divisés entre artisans sans ciel et artisans avec ciel clair
-- Un changement se produit parmi les artisans à ciels libres
-- Les individus cherchent leur place dans cette société
+- Les artefacts emplissent les logis
+- Création de nouveaux objets
+- Développement d'arts propres à chaque peuple
+- Mutation chez les ciels libres
+- Exploration de nouvelles frontières
 
 **Choix effectues** :
 
-- s'enfoncer dans la montagne
-- établissement de deux types de lieux sacrés (Cercles de Vigile et Antres des Échos)
-- désignation des Porteurs de Flamme
+- établir deux types de lieux sacrés
+- désigner les Porteurs de Flamme
 
-**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Regards-Libres`, `Voix de l'Aurore`, `Sans ciel`, `Rituel du Regard Partagé`, `La confluence`, `Antres`, `Cercles de Vigile`, `Les Cercles de Vigile`, `Porteurs de Flamme`, `Leg des ancêtres`
+**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Regards-Libres`, `Voix de l'Aurore`, `Sans ciel`, `Rituel du Regard Partagé`, `La confluence`, `Les Cercles de Vigile`, `Porteurs de Flamme`, `Leg des ancêtres`
 
 ### Maitre du Jeu
 
@@ -380,21 +381,20 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 
 ## Tour 10
 
-> Le Maître du Jeu poursuit sa visite annuelle parmi son peuple, cette fois en explorant les Antres sous terre. Il arrive dans une nouvelle colonie appelée Gorge Profonde, où il observe le travail des enfants des échos qui façonnent la roche pour créer des artefacts et des habitations. L'explorateur est impressionné par les changements qu'il observe, mais commence à se demander si son anonymat l'aid
+> Le Maitre du Jeu continue à explorer la vallée de la Confluence, rencontrant les différentes tribus et collectivités qui y résident. Il se rend notamment dans la Gorge Profonde, une colonie souterraine où il observe le travail des façonneurs de pierre qui créent des œuvres d'art complexes en utilisant l'argile vive et d'autres substances spécifiques à cette région.
 
 **Evenements cles** :
 
-- Le Maître du Jeu explore une nouvelle colonie sous terre
-- Il découvre de nouveaux artefacts créés par les enfants des échos
-- Les façonneurs de pierre refusent que leur corps soit enlevé après la mort
+- Le Maitre du Jeu explore la Gorge Profonde
+- Il rencontre les façonneurs de pierre qui travaillent sur des sculptures en argile vive
+- Il découvre les propriétés médicinales de lait de pierre et les utilisations de la roche braise
 
 **Choix effectues** :
 
-- percevoir mon rôle comme celui d'un équilibre
-- ma volonté d'unir plutôt que de diviser
-- inspirer plutôt que de contraindre
+- Perception du rôle du joueur
+- Description des Passes-bien et leur importance pour l'échange dans la vallée
 
-**Entites** : `Ailes-Grises`, `Passes-bien`, `Enfants des échos`, `Gorge Profonde`, `La confluence`, `L'Antre`, `Antres`, `Lait de pierre`, `Rhombes`
+**Entites** : `Ailes-Grises`, `Passes-bien`, `Enfants des échos`, `Gorge Profonde`, `La confluence`, `Lait de pierre`, `Rhombes`
 
 ### Maitre du Jeu
 
@@ -431,24 +431,22 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 
 ## Tour 11
 
-> Le Maitre du Jeu observe que les enfants des échos travaillent ensembles pour construire des antres, tandis que les passe-biens facilitent le commerce d'échange d'argile vive. Les travailleurs sans-ciels se préparent à construire de nouveaux bâtiments, notamment un temple, une maison des castes et un hall des passages.
+> Les enfants des échos travaillent conjointement pour aménager de nouvelles antres, tandis que les passes-bien négocient avec eux en échange d'argile vive. La civilisation dépend de cette matière première qui est utilisée dans toutes les couches de la société, depuis les ailes grises jusqu'aux humbles sans-ciels. Les chantiers sont nombreux et les réserves sont plus importantes que coutumes en rais
 
 **Evenements cles** :
 
-- Construction des antres
-- Commerce d'argile vive via les passe-biens
-- Construit du premier bâtiment : Temple majestueux, Maison des castes, Hall des passages
+- Les enfants des échos travaillent conjointement pour aménager de nouvelles antres
+- Les passes-bien négocient avec les enfants des échos en échange d'argile vive
+- La construction d'un temple majestueux, d'une maison des castes et d'un hall des passages
 
 **Choix effectues** :
 
 - Loi du Sang et de la Bête
-- Faucons Chasseurs
-- Proclamateurs
-- Confluence des Échanges
-- Maison des Découvertes
-- Assemblée des Chefs et l'Arbitre des Esprits
+- Créer les Faucons Chasseurs
+- Nommer des Proclamateurs
+- Définir le rôle de l'Arbitre des Esprits
 
-**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Faucons Chasseurs`, `Passes-bien`, `Regards-Libres`, `Voix de l'Aurore`, `Ciels-clairs`, `Enfants des échos`, `Sans ciel`, `Arbitre des Esprits`, `Assemblée des Chefs`, `Maison des Découvertes`, `Oracle`, `Cercle des sages`, `Tribunal des mœurs`, `La confluence`, `Proclamateurs`, `L'Antre`, `Antres`, `Lois du Sang`, `Argile vivante`, `La Bête`, `Rhombes`
+**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Faucons Chasseurs`, `Passes-bien`, `Regards-Libres`, `Voix de l'Aurore`, `Ciels-clairs`, `Enfants des échos`, `Sans ciel`, `Arbitre des Esprits`, `Assemblée des Chefs`, `Maison des Découvertes`, `Cercle des sages`, `Tribunal des mœurs`, `La confluence`, `Lois du Sang`, `Argile vivante`, `La Bête`, `Rhombes`
 
 ### Maitre du Jeu
 
@@ -480,14 +478,15 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 
 ## Tour 12
 
-> Le cadavre d'un ciel-clair a été trouvé, victime d'une lame de couteau qui semble avoir été utilisée par un sans-ciel. La femme accusatrice affirme que l'accusé est responsable, mais il n'y a pas de preuves formelles pour soutenir cette affirmation. Le Tribunal des mœurs doit maintenant statuer sur la question et décider du sort de l'accusé.
+> La narration commence avec l'arrivée imprévue d'un cadavre dans le village de la Confluence. Le héros est un médiateur et doit enquêter pour comprendre ce qui s'est passé. Il découvre que le couteau utilisé pour commettre le meurtre pourrait appartenir aux enfants du courant, une caste qui joue un rôle important dans la société. L'incident provoque une controverse et le Tribunal des mœurs doit int
 
 **Evenements cles** :
 
-- Un meurtre a eu lieu dans le village de la Confluence
-- Le cadavre d'un ciel-clair a été trouvé
-- La femme accusatrice accuse un sans-ciel de l'avoir tué
-- Il n'y a pas de preuves formelles pour soutenir cette affirmation
+- Un cadavre est découvert à la Confluence
+- Le héros enquête sur les circonstances du meurtre
+- L'accusé est identifié comme un sans-ciel
+- Le couteau utilisé pour le meurtre apparaît avoir été utilisé par les enfants du courant
+- Le Tribunal des mœurs doit intervenir
 
 **Choix effectues** :
 
@@ -532,20 +531,20 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 
 ## Tour 13
 
-> Le groupe de Rithelgo est en train d'explorer les galeries souterraines de Gouffre Humide, guidé par le Maitre du Jeu. Ils ont pour objectif de retrouver un autre groupe de personnes disparues. Au cours de leur exploration, ils découvrent des fresques anciennes sur les murs qui semblent représenter des bêtes et des hommes, mais dont le sens est inconnu. Ils rencontrent également des artefacts aban
+> Après avoir reçu les instructions du Maître du Jeu, le groupe se déplace dans la galerie de Gouffre Humide, une ancienne structure souterraine. Ils sont impressionnés par la beauté et la complexité des fresques anciennes qui recouvrent les murs, mais ils semblent être incompris et étrangers à leur contexte. Lorsque le groupe arrive dans la galerie, il découvre également de nombreux artefacts aband
 
 **Evenements cles** :
 
-- Le groupe découvre des fresques anciennes
-- Ils rencontrent des artefacts abandonnés
-- Des centaines de squelettes sont découverts sans violence apparente
-- Un appel à l'aide est entendu et le groupe décide d'intervenir pour sauver les disparus
+- Découverte des fresques anciennes dans la galerie
+- Trouvaille d'artefacts abandonnés
+- Appel à l'aide du groupe en difficulté
+- Arrivée sur les lieux du premier groupe et découverte des squelettes alignés
 
 **Choix effectues** :
 
 - Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée
-- Sauvetage à la corde
-- Maîtrise des Profondeurs (Option libre)
+- Sauvetage à la corde et Maîtrise des Profondeurs (Option libre)
+- Évacuation immédiate des équipes 1 et 2
 
 **Entites** : `Ailes-Grises`, `Enfants des échos`, `Gouffre Humide`, `Maîtrise des Profondeurs`
 
@@ -575,21 +574,24 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 
 ## Tour 14
 
-> Les Ailes-Grises de la Confluence se succèdent dans les halls sacrés de Gouffre Humide pour méditer et comprendre les mystères qui y sont cachés. La Grande Fresque, une œuvre d'art inestimable, leur est révélée, inspirant durablement l'iconographie des tiens. Cependant, la découverte de la Fresque soulève des questions sur son origine et sa signification, provoquant un débat qui s'étend dans le te
+> Le peuple de la Confluence, influencé par les mystères de la Grande Fresque, se tourne vers son avenir en cherchant à comprendre le passé. Les Ailes-Grises méditent dans les halls sacrés, tandis que les Enfants des Échos étudient les techniques utilisées pour créer cette œuvre d'art. La peinture révèle d'autres images dissimulées sous celles qui sont visibles, suscitant la curiosité et l'inquiétud
 
 **Evenements cles** :
 
-- La Confluence découvre Gouffre Humide
-- Les Ailes-Grises méditent et cherchent à comprendre les mystères de la Grande Fresque
-- Des explorateurs tentent d'accéder aux couches inférieures de la Fresque
-- Rubanc, l'Arbitre des Esprits, prend des mesures pour protéger la fresque et encourager son étude
+- L'apparition de la Grande Fresque dans le centre de Gouffre Humide
+- La découverte de couches dissimulées sous les images apparentes
+- Le début de l'exploration des couloirs et galeries du gouffre
+- Les difficultés rencontrées pour accéder aux couches inférieures
+- L'énoncé de règles pour la gestion et l'accès à la Grande Fresque
 
 **Choix effectues** :
 
 - Quand un plan se déroule sans accroc
-- de l'audace, encore de l'audace, toujours de l'audace
+- Évaluation de l'initiative du Sans-ciel
+- C'est vrai ça
+- Une grande forêt
 
-**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Faucons Chasseurs`, `Passes-bien`, `Regards-Libres`, `Voix de l'Aurore`, `Ciels-clairs`, `Enfants des échos`, `Sans ciel`, `Cheveux de Sang`, `Nanzagouet`, `Pouleheimos`, `Pupupasu`, `Siliaska`, `Tlazhuaneca`, `Rituel du Regard Partagé`, `Arbitre des Esprits`, `Autels des Pionniers`, `Gardiens du Hall`, `Maison des Découvertes`, `Premier Artefact`, `Salle du Conseil`, `Cercle des sages`, `Gouffre Humide`, `Hall des Serments`, `La confluence`, `Nantons`, `Antres`, `Feux allumés sur les tours`, `Foyer du savoir`, `Glyphes du Gouffre`, `Grande Fresque`, `Grande Prospection`, `L'Autre`, `La Fresque`, `Le Sel`, `Les Larmes du Ciel`, `Posture militaire`, `Premiers Ancêtres`, `Argile vivante`, `Chroniques de la Fresque`, `Colliers de glyphes`, `La Fresque des Âges`
+**Entites** : `Ailes-Grises`, `Enfants du Courant`, `Faucons Chasseurs`, `Passes-bien`, `Regards-Libres`, `Voix de l'Aurore`, `Ciels-clairs`, `Enfants des échos`, `Sans ciel`, `Cheveux de Sang`, `Nanzagouet`, `Pouleheimos`, `Pupupasu`, `Siliaska`, `Tlazhuaneca`, `Rituel du Regard Partagé`, `Arbitre des Esprits`, `Autels des Pionniers`, `Gardiens du Hall`, `Maison des Découvertes`, `Premier Artefact`, `Salle du Conseil`, `Cercle des sages`, `Gouffre Humide`, `Hall des Serments`, `La confluence`, `Foyer du savoir`, `Glyphes du Gouffre`, `Grande Fresque`, `Grande Prospection`, `Les Larmes du Ciel`, `Premiers Ancêtres`, `Argile vivante`, `Chroniques de la Fresque`, `Colliers de glyphes`, `La Fresque des Âges`
 
 ### Maitre du Jeu
 

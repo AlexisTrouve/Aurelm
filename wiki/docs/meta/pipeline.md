@@ -7,11 +7,11 @@
 | Messages bruts | 37 |
 | Tours de jeu | 14 |
 | Segments | 270 |
-| Entites uniques | 187 |
-| Mentions d'entites | 320 |
+| Entites uniques | 55 |
+| Mentions d'entites | 162 |
 
 ## Historique des runs
 
 | Run | Statut | Debut | Fin | Messages | Tours | Entites |
 |---|---|---|---|---|---|---|
-| 1 | OK | 2026-02-10 23:25:30 | 2026-02-11T07:33:06.990063 | 37 | 14 | 320 |
+| 1 | OK | 2026-02-11 10:22:46 | 2026-02-11T18:30:08.833746 | 37 | 14 | 162 |

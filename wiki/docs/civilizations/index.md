@@ -2,4 +2,4 @@
 
 | Civilisation | Joueur | Tours | Entites |
 |---|---|---|---|
-| [Civilisation de la Confluence](civilisation-de-la-confluence/index.md) | Rubanc | 14 | 187 |
+| [Civilisation de la Confluence](civilisation-de-la-confluence/index.md) | Rubanc | 14 | 55 |
