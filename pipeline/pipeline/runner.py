@@ -19,6 +19,8 @@ from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
 from .ner import EntityExtractor
 from .summarizer import summarize_turn, AuthorContent
+from .entity_profiler import build_entity_profiles
+from .alias_resolver import resolve_aliases
 
 
 # Known GM author names --messages from these authors are GM posts
@@ -49,22 +51,22 @@ def run_pipeline(
     }
 
     # Step 1: Init DB
-    print("[1/7] Initializing database...")
+    print("[1/9] Initializing database...")
     init_db(db_path)
     run_migrations(db_path)
 
     # Step 2: Register civilization
-    print(f"[2/7] Registering civilization: {civ_name}")
+    print(f"[2/9] Registering civilization: {civ_name}")
     civ_id = register_civilization(db_path, civ_name, player_name=player_name)
 
     # Step 3: Load markdown files
-    print(f"[3/7] Loading markdown files from {data_dir}...")
+    print(f"[3/9] Loading markdown files from {data_dir}...")
     msg_count = load_directory(data_dir, db_path, channel_id=CHANNEL_ID)
     stats["messages_loaded"] = msg_count
     print(f"       -> {msg_count} messages in database")
 
     # Step 4: Fetch unprocessed messages
-    print("[4/7] Fetching unprocessed messages...")
+    print("[4/9] Fetching unprocessed messages...")
     messages = fetch_unprocessed_messages(db_path, CHANNEL_ID)
     print(f"       ->{len(messages)} unprocessed messages")
 
@@ -73,13 +75,13 @@ def run_pipeline(
         return stats
 
     # Step 5: Detect turn boundaries
-    print("[5/7] Detecting turn boundaries...")
+    print("[5/9] Detecting turn boundaries...")
     gm_author_id = _find_gm_author_id(messages)
     chunks = detect_turn_boundaries(messages, gm_author_id)
     print(f"       ->{len(chunks)} turns detected")
 
     # Step 6: Process each turn
-    print("[6/7] Processing turns (classify -> NER -> summarize)...")
+    print("[6/9] Processing turns (classify -> NER -> summarize)...")
     extractor = _init_ner()
 
     conn = get_connection(db_path)
@@ -160,9 +162,24 @@ def run_pipeline(
     finally:
         conn.close()
 
-    # Step 7: Wiki generation (optional)
+    # Step 7: Entity profiling (LLM-based)
+    if use_llm:
+        print("[7/9] Building entity profiles (1 LLM call per entity)...")
+        profiles = build_entity_profiles(db_path, use_llm=True)
+        stats["entities_profiled"] = len([p for p in profiles if p.description])
+
+        # Step 8: Alias resolution
+        print("[8/9] Resolving entity aliases...")
+        alias_stats = resolve_aliases(db_path, profiles, use_llm=True)
+        stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
+        stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
+    else:
+        print("[7/9] Skipping entity profiling (--no-llm)")
+        print("[8/9] Skipping alias resolution (--no-llm)")
+
+    # Step 9: Wiki generation (optional)
     if wiki_dir:
-        print("[7/8] Generating wiki...")
+        print("[9/9] Generating wiki...")
         try:
             from wiki.generate import generate_wiki
             wiki_out = str(Path(wiki_dir) / "docs")
@@ -185,7 +202,7 @@ def run_pipeline(
             else:
                 print("       WARNING: wiki/generate.py not found -- skipping wiki generation")
     else:
-        print("[7/7] Skipping wiki generation (use --wiki-dir to enable)")
+        print("[9/9] Skipping wiki generation (use --wiki-dir to enable)")
 
     # Final summary
     print("[DONE] Pipeline complete!")
@@ -245,16 +262,37 @@ def _is_better_display_name(new_name: str, stored_name: str) -> bool:
 
 
 def _normalize_for_dedup(name: str) -> str:
-    """Normalize entity name for dedup: lowercase + strip French plural markers.
+    """Normalize entity name for dedup.
 
-    'Faucons Chasseurs' -> 'faucon chasseur'
-    'Autels des Pionniers' -> 'autel des pionnier'
-    'Ciels-clairs' -> 'ciel clair'
+    Steps: strip accents, lowercase, remove leading articles,
+    normalize des->de, strip French plural markers.
+
+    'Les Cercles de Vigile' -> 'cercle de vigile'
+    'Faucons Chasseurs'     -> 'faucon chasseur'
+    'tribunal des mœurs'    -> 'tribunal de moeur'
+    'La Vallée'             -> 'vallee'
+    'l'Antre des Échos'     -> 'antre de echo'
     """
     import re as _re
-    words = _re.findall(r"[\w']+", name.lower())
+    import unicodedata as _ud
+
+    # Strip accents
+    nfkd = _ud.normalize("NFKD", name)
+    text = "".join(c for c in nfkd if not _ud.combining(c))
+
+    # Lowercase + split on non-word chars
+    words = _re.findall(r"[\w']+", text.lower())
+
+    # Strip leading French articles
+    articles = {"le", "la", "les", "l", "un", "une", "des", "du"}
+    while words and words[0] in articles:
+        words.pop(0)
+
+    # Normalize: des -> de (so "tribunal des X" = "tribunal de X")
     normalized = []
     for w in words:
+        if w == "des":
+            w = "de"
         # Strip trailing 's' for words > 3 chars (not 'ss' like 'bras')
         if len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
             w = w[:-1]
@@ -361,6 +399,12 @@ def _print_stats(stats: dict) -> None:
     print(f"  Turns created:       {stats['turns_created']}")
     print(f"  Segments created:    {stats['segments_created']}")
     print(f"  Entity mentions:     {stats['entities_extracted']}")
+    if "entities_profiled" in stats:
+        print(f"  Entities profiled:   {stats['entities_profiled']}")
+    if "alias_candidates" in stats:
+        print(f"  Alias candidates:    {stats['alias_candidates']}")
+    if "aliases_confirmed" in stats:
+        print(f"  Aliases confirmed:   {stats['aliases_confirmed']}")
     print("=" * 40)
 
 

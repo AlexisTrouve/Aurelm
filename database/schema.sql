@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS entity_entities (
     entity_type TEXT NOT NULL,  -- person, place, technology, institution, resource, creature, event
     civ_id INTEGER REFERENCES civ_civilizations(id),  -- NULL for global/cross-civ entities
     description TEXT,
+    history TEXT,           -- JSON array of chronological events
     first_seen_turn INTEGER REFERENCES turn_turns(id),
     last_seen_turn INTEGER REFERENCES turn_turns(id),
     is_active INTEGER NOT NULL DEFAULT 1,

@@ -1,7 +1,13 @@
-"""Named Entity Recognition — extracts game entities from turn text using spaCy."""
+"""Named Entity Recognition — extracts game entities from turn text using spaCy.
+
+Includes noise filtering to reject entities from soundtrack metadata, choice labels,
+narrative fragments, and common French words that spaCy misidentifies.
+"""
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass
 
 import spacy
@@ -119,6 +125,164 @@ GAME_ENTITY_PATTERNS = [
 ALIAS_MAP: dict[str, str] = {}
 
 
+# ============================================================
+# NOISE FILTERING
+# ============================================================
+
+# Known noise entity names from spaCy general model
+# Stored WITHOUT accents — comparison uses _strip_accents() for robustness
+_NOISE_NAMES = {
+    # Soundtrack / YouTube artists
+    "geiita", "bartosz pokrywka", "carolina romero", "rithelgo",
+    "bartosz pokrywka - topic", "youtube", "jimmys g", "deadfire",
+    # Generic French words misidentified as entities
+    "blanc", "hier", "rare", "but", "observer", "transporter",
+    "organisation", "formes", "halls", "hall", "cercle", "antre",
+    "biens", "autre", "autres", "chef du", "gardiens de",
+    "mienne", "toutes", "message", "si",
+    "village", "methode", "couche", "premiers", "esprits",
+    "lances", "sculptures", "tribunal", "shamans",
+    "amelioration", "conseil", "acquisitions",
+    "posseder", "ramassez",
+    "faucon", "cercles", "echos", "equipes", "cliques",
+    "rubanc", "sanciel", "sanciels",  # player name, ambiguous short form
+    # Common false-positive persons/adjectives
+    "ravitaille", "touche", "planche", "libre", "lootbox", "farouche",
+    "montes", "proclamateurs", "nantons", "nanton",
+    # Misc fragments and generic words
+    "origines", "couche", "feux", "foyer", "porteurs",
+    "premier", "premiers", "sel", "antres",
+    "faconneurs", "echanges", "medier",
+    "l'autre", "le sel", "la fresque",
+    "oracle",  # too generic without context
+    "l'antre",  # too generic (vs "antre des Echos" which is specific)
+    "posture militaire",  # game mechanic descriptor, not entity
+    "vallee",  # too generic on its own
+}
+
+# Substrings in entity names that signal noise
+_NOISE_SUBSTRINGS = {
+    "Choix", "Option", "option libre",
+    "Pillar", "Soundtrack", "DETECTIVE", "Topic",
+    "Tu es ", "Tu t'", "Et maintenant", "Puis tu",
+    "Everybody wants", "The end of", "The Adventure",
+    "L'air est froid", "Tu t'entoures", "Tu t'avance",
+}
+
+# Regex for structural noise patterns
+_NOISE_PATTERN = re.compile(
+    r"^("
+    r"https?://|www\.|youtube|spotify"
+    r"|.{1,2}$"           # 1-2 char strings
+    r"|.*\n.*"            # multiline
+    r"|.*[{}\[\]<>].*"   # markdown/code artifacts
+    r"|__(.*?)__"         # underline markers
+    r"|\*\*(.*?)\*\*$"   # bold-only strings
+    r"|\d+$"             # pure numbers
+    r")",
+    re.IGNORECASE,
+)
+
+# Truncated entities ending with a preposition
+_RE_TRAILING_PREP = re.compile(r"\b(de|du|des|de la|de l')\s*$", re.IGNORECASE)
+
+# Sentence-like fragments containing conjugated verbs
+_RE_VERB_FRAGMENT = re.compile(r"\b(est|sont|fut|sera|etait|était)\b", re.IGNORECASE)
+
+# Starts with determinants that signal NER noise (not proper names)
+_RE_DET_START = re.compile(r"^(Que|Ces|Cet|Cette|Un |Une |Des )\s?")
+
+# Starts with common article then nothing useful
+_RE_ARTICLE_ONLY = re.compile(r"^(Le|La|Les|Un|Une|Des|Du|De)\s*$", re.IGNORECASE)
+
+
+def _strip_accents(text: str) -> str:
+    """Remove diacritics for accent-insensitive matching."""
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _is_noise_entity(name: str) -> bool:
+    """Check if an entity name is noise rather than a real game entity.
+
+    Catches: soundtrack metadata, choice labels, narrative fragments,
+    generic French words, markdown artifacts, truncated extractions.
+    """
+    # Accent-insensitive match on known noise names (all stored lowercase)
+    if _strip_accents(name).lower() in _NOISE_NAMES:
+        return True
+
+    # Structural patterns
+    if _NOISE_PATTERN.match(name):
+        return True
+
+    # Markdown bold artifacts
+    if "**" in name:
+        return True
+
+    # Multiline = broken extraction
+    if "\n" in name:
+        return True
+
+    # Noise substrings
+    if any(noise in name for noise in _NOISE_SUBSTRINGS):
+        return True
+
+    # Too long = almost certainly noise (real entity names are short)
+    if len(name) > 50:
+        return True
+
+    # Double underscore artifacts
+    if "__" in name:
+        return True
+
+    # Parenthesis artifacts (e.g. "Capture)")
+    if name.endswith(")") or name.startswith("("):
+        return True
+
+    # No alphabetic characters
+    if not any(c.isalpha() for c in name):
+        return True
+
+    # Article-only strings
+    if _RE_ARTICLE_ONLY.match(name):
+        return True
+
+    # Truncated entities ending with preposition
+    if _RE_TRAILING_PREP.search(name):
+        return True
+
+    # Sentence fragments with conjugated verbs
+    if _RE_VERB_FRAGMENT.search(name):
+        return True
+
+    # Starts with noise determinants
+    if _RE_DET_START.match(name):
+        return True
+
+    # English text (indicates soundtrack/YouTube metadata)
+    english_words = {"the", "of", "and", "is", "in", "to", "for", "with", "wants", "write", "near", "begins"}
+    words_lower = {w.lower() for w in name.split()}
+    if len(words_lower & english_words) >= 2:
+        return True
+
+    # Contains colon = likely a label or truncated heading
+    if ":" in name:
+        return True
+
+    # Contains "cette/ce/cet" = sentence fragment, not proper name
+    if re.search(r"\b(cette|cet)\b", name, re.IGNORECASE):
+        return True
+
+    # Descriptive phrases: past participle + preposition pattern
+    # e.g. "Feux allumes sur les tours", "Dents fichees dans la roche"
+    name_no_accents = _strip_accents(name).lower()
+    if re.search(r"\b\w+e[es]?\s+(sur|dans|sous|vers|entre|parmi|contre)\b", name_no_accents):
+        return True
+
+    return False
+
+
 class EntityExtractor:
     def __init__(self, model_name: str = "fr_core_news_lg"):
         self.nlp = spacy.load(model_name)
@@ -132,7 +296,7 @@ class EntityExtractor:
         ruler.add_patterns(GAME_ENTITY_PATTERNS)  # type: ignore[union-attr]
 
     def extract(self, text: str) -> list[ExtractedEntity]:
-        """Extract named entities from text."""
+        """Extract named entities from text, filtering out noise."""
         doc = self.nlp(text)
         entities: list[ExtractedEntity] = []
         seen: set[str] = set()
@@ -143,15 +307,20 @@ class EntityExtractor:
             if label in ("cardinal", "date", "ordinal", "percent"):
                 continue
 
-            context_start = max(0, ent.start_char - 50)
-            context_end = min(len(text), ent.end_char + 50)
-
             # Deduplicate: use canonical name if available
             canonical = self._canonicalize(ent.text)
+
+            # Filter noise before anything else
+            if _is_noise_entity(canonical):
+                continue
+
             dedup_key = f"{canonical}|{label}"
             if dedup_key in seen:
                 continue
             seen.add(dedup_key)
+
+            context_start = max(0, ent.start_char - 50)
+            context_end = min(len(text), ent.end_char + 50)
 
             entities.append(
                 ExtractedEntity(
