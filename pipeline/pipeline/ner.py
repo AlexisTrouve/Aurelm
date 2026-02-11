@@ -114,42 +114,9 @@ GAME_ENTITY_PATTERNS = [
 ]
 
 # Short forms that should map to canonical names
-ALIAS_MAP: dict[str, str] = {
-    "faucons": "Faucons Chasseurs",
-    "faucon": "Faucons Chasseurs",
-    "regards-libres": "Regards-Libres",
-    "regard-libre": "Regards-Libres",
-    "passes-bien": "Passes-bien",
-    "passe-bien": "Passes-bien",
-    "ailes grises": "Ailes Grises",
-    "aile-grise": "Ailes Grises",
-    "ailes-grises": "Ailes Grises",
-    "sans-ciel": "Sans-ciels",
-    "sans-ciels": "Sans-ciels",
-    "sans ciel": "Sans-ciels",
-    "sans ciels": "Sans-ciels",
-    "ciels-clairs": "Ciels-clairs",
-    "ciel-clair": "Ciels-clairs",
-    "enfants du courant": "Enfants du Courant",
-    "enfants des échos": "Enfants des Échos",
-    "nanzagouet": "Nanzagouets",
-    "nanzagouets": "Nanzagouets",
-    "cheveux de sang": "Cheveux de Sang",
-    "cheveux-de-sang": "Cheveux de Sang",
-    "pupupasu": "Pupupasu",
-    "gouffre humide": "Gouffre Humide",
-    "la confluence": "La Confluence",
-    "confluence": "La Confluence",
-    "argile vivante": "Argile Vivante",
-    "rhombes": "Rhombes",
-    "grande fresque": "Grande Fresque",
-    "cercle des sages": "Cercle des Sages",
-    "tribunal des mœurs": "Tribunal des Mœurs",
-    "tribunal des moeurs": "Tribunal des Mœurs",
-    "assemblée des chefs": "Assemblée des Chefs",
-    "maison des découvertes": "Maison des Découvertes",
-    "arbitre des esprits": "Arbitre des Esprits",
-}
+# Alias map: kept minimal. Case + plurals are handled programmatically
+# in runner.py _normalize_for_dedup(). Only truly semantic aliases here.
+ALIAS_MAP: dict[str, str] = {}
 
 
 class EntityExtractor:

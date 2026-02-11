@@ -2,12 +2,12 @@
 
 import pytest
 
-from pipeline.ner import EntityExtractor, ALIAS_MAP
+from pipeline.ner import EntityExtractor
 
 
 @pytest.fixture(scope="module")
 def extractor():
-    """Shared extractor instance — spaCy model loading is expensive."""
+    """Shared extractor instance -- spaCy model loading is expensive."""
     try:
         return EntityExtractor()
     except OSError:
@@ -19,63 +19,63 @@ class TestEntityRulerPatterns:
 
     def test_detects_caste_faucons_chasseurs(self, extractor):
         entities = extractor.extract("Les Faucons Chasseurs partent en mission.")
-        names = [e.text for e in entities]
-        assert "Faucons Chasseurs" in names
+        names = [e.text.lower() for e in entities]
+        assert "faucons chasseurs" in names
 
     def test_detects_caste_enfants_des_echos(self, extractor):
         entities = extractor.extract("Les Enfants des Échos creusent de nouvelles galeries.")
-        names = [e.text for e in entities]
-        assert "Enfants des Échos" in names
+        names = [e.text.lower() for e in entities]
+        assert "enfants des échos" in names
 
     def test_detects_place_gouffre_humide(self, extractor):
         entities = extractor.extract("Le voyage vers Gouffre Humide est long.")
-        names = [e.text for e in entities]
-        assert "Gouffre Humide" in names
+        names = [e.text.lower() for e in entities]
+        assert "gouffre humide" in names
 
     def test_detects_place_la_confluence(self, extractor):
         entities = extractor.extract("Ils retournent à la Confluence.")
-        names = [e.text for e in entities]
-        assert "La Confluence" in names
+        names = [e.text.lower() for e in entities]
+        assert "la confluence" in names
 
     def test_detects_civilization_nanzagouets(self, extractor):
         entities = extractor.extract("Les Nanzagouets sont un peuple de la mer.")
-        names = [e.text for e in entities]
-        assert "Nanzagouets" in names
+        names = [e.text.lower() for e in entities]
+        assert "nanzagouets" in names
 
     def test_detects_tech_argile_vivante(self, extractor):
         entities = extractor.extract("L'Argile Vivante durcit au contact de l'air.")
-        names = [e.text for e in entities]
-        assert "Argile Vivante" in names
+        names = [e.text.lower() for e in entities]
+        assert "argile vivante" in names
 
     def test_detects_institution_cercle_des_sages(self, extractor):
         entities = extractor.extract("Le Cercle des Sages se réunit.")
-        names = [e.text for e in entities]
-        assert "Cercle des Sages" in names
+        names = [e.text.lower() for e in entities]
+        assert "cercle des sages" in names
 
     def test_detects_institution_tribunal_des_moeurs(self, extractor):
         entities = extractor.extract("Le Tribunal des Mœurs doit statuer.")
-        names = [e.text for e in entities]
-        assert "Tribunal des Mœurs" in names
+        names = [e.text.lower() for e in entities]
+        assert "tribunal des mœurs" in names
 
     def test_detects_institution_assemblee_des_chefs(self, extractor):
         entities = extractor.extract("L'Assemblée des Chefs est informée.")
-        names = [e.text for e in entities]
-        assert "Assemblée des Chefs" in names
+        names = [e.text.lower() for e in entities]
+        assert "assemblée des chefs" in names
 
     def test_detects_caste_sans_ciel(self, extractor):
         entities = extractor.extract("Un Sans-ciel arrivé comme envoyé de la confluence.")
-        names = [e.text for e in entities]
-        assert "Sans-ciels" in names  # canonicalized
+        names = [e.text.lower() for e in entities]
+        assert "sans-ciel" in names
 
     def test_detects_tech_rhombes(self, extractor):
         entities = extractor.extract("Ils communiquent avec des rhombes.")
-        names = [e.text for e in entities]
-        assert "Rhombes" in names
+        names = [e.text.lower() for e in entities]
+        assert "rhombes" in names
 
     def test_detects_civ_cheveux_de_sang(self, extractor):
         entities = extractor.extract("L'observation des cheveux de sang se fait plus régulière.")
-        names = [e.text for e in entities]
-        assert "Cheveux de Sang" in names
+        names = [e.text.lower() for e in entities]
+        assert "cheveux de sang" in names
 
 
 class TestDeduplication:
@@ -88,20 +88,28 @@ class TestDeduplication:
         assert len(nanz) == 1
 
 
-class TestCanonicalization:
-    """Test alias resolution."""
+class TestNormalization:
+    """Test programmatic normalization (case + plural dedup)."""
 
-    def test_alias_map_completeness(self):
-        # Ensure key aliases exist
-        assert ALIAS_MAP["faucons"] == "Faucons Chasseurs"
-        assert ALIAS_MAP["gouffre humide"] == "Gouffre Humide"
-        assert ALIAS_MAP["nanzagouet"] == "Nanzagouets"
-        assert ALIAS_MAP["la confluence"] == "La Confluence"
+    def test_normalize_strips_plural_s(self):
+        from pipeline.runner import _normalize_for_dedup
+        assert _normalize_for_dedup("Faucons Chasseurs") == "faucon chasseur"
 
-    def test_canonicalize_method(self, extractor):
-        assert extractor._canonicalize("faucons") == "Faucons Chasseurs"
-        assert extractor._canonicalize("Gouffre Humide") == "Gouffre Humide"
-        assert extractor._canonicalize("Unknown Entity") == "Unknown Entity"
+    def test_normalize_singular_matches_plural(self):
+        from pipeline.runner import _normalize_for_dedup
+        assert _normalize_for_dedup("Faucon Chasseur") == _normalize_for_dedup("Faucons Chasseurs")
+
+    def test_normalize_case_insensitive(self):
+        from pipeline.runner import _normalize_for_dedup
+        assert _normalize_for_dedup("faucons chasseurs") == _normalize_for_dedup("Faucons Chasseurs")
+
+    def test_normalize_hyphenated(self):
+        from pipeline.runner import _normalize_for_dedup
+        assert _normalize_for_dedup("Ciels-clairs") == _normalize_for_dedup("Ciel-clair")
+
+    def test_normalize_autel_pluriel(self):
+        from pipeline.runner import _normalize_for_dedup
+        assert _normalize_for_dedup("Autels des Pionniers") == _normalize_for_dedup("Autel des Pionniers")
 
 
 class TestEntityLabels:
@@ -109,12 +117,12 @@ class TestEntityLabels:
 
     def test_caste_label(self, extractor):
         entities = extractor.extract("Les Faucons Chasseurs partent.")
-        faucons = [e for e in entities if e.text == "Faucons Chasseurs"]
+        faucons = [e for e in entities if "faucons chasseurs" in e.text.lower()]
         assert faucons and faucons[0].label == "caste"
 
     def test_place_label(self, extractor):
         entities = extractor.extract("Ils arrivent à Gouffre Humide.")
-        gh = [e for e in entities if e.text == "Gouffre Humide"]
+        gh = [e for e in entities if "gouffre humide" in e.text.lower()]
         assert gh and gh[0].label == "place"
 
     def test_civilization_label(self, extractor):
@@ -124,5 +132,5 @@ class TestEntityLabels:
 
     def test_tech_label(self, extractor):
         entities = extractor.extract("L'Argile Vivante est une merveille.")
-        av = [e for e in entities if e.text == "Argile Vivante"]
+        av = [e for e in entities if "argile vivante" in e.text.lower()]
         assert av and av[0].label == "technology"

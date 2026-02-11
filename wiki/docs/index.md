@@ -8,8 +8,8 @@ Bienvenue sur le wiki du monde d'Aurelm, genere automatiquement a partir des tou
 |---|---|
 | Civilisations | **1** |
 | Tours de jeu | **14** |
-| Entites uniques | **199** |
-| Mentions d'entites | **288** |
+| Entites uniques | **187** |
+| Mentions d'entites | **320** |
 
 ## Civilisations
 
@@ -24,4 +24,4 @@ Bienvenue sur le wiki du monde d'Aurelm, genere automatiquement a partir des tou
 
 ---
 
-*Derniere mise a jour : 10/02/2026 10:41*
+*Derniere mise a jour : 11/02/2026 07:34*

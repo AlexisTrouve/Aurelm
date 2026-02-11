@@ -7,6 +7,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sqlite3
 from datetime import datetime
@@ -60,6 +61,13 @@ NOISE_NAMES = {
     "Biens", "Autre", "Autres", "Chef du", "Gardiens de",
     "Jimmys G", "Deadfire", "MIENNE", "TOUTES", "Message",
     "Ravitaillé", "Touché", "Planche", "Libre", "Lootbox", "Farouche",
+    # Common French words that spaCy misidentifies as entities
+    "Village", "Méthode", "Couche", "Premiers", "Échanges", "Esprits",
+    "Lances", "Sculptures", "Tribunal", "Shamans", "Façonneurs",
+    "Amélioration", "Conseil", "Acquisitions", "Montés",
+    "Posséder", "Ramassez", "médier",
+    "Faucon", "Cercles", "Échos", "Équipes", "Cliques",
+    "Rubanc", "Sanciel",  # player name, ambiguous short form
 }
 
 # Noise patterns in entity names that indicate NER mis-extraction
@@ -85,6 +93,38 @@ def is_noise_entity(name: str) -> bool:
         return True
     # Very long entity names are almost certainly NER noise
     if len(name) > 50:
+        return True
+    # Names with __ are NER artifacts (e.g. "Autre__")
+    if "__" in name:
+        return True
+    # Names ending/starting with ) or ( are parsing artifacts (e.g. "Capture)")
+    if name.endswith(")") or name.startswith("("):
+        return True
+    # Names that are just punctuation or whitespace fragments
+    if not any(c.isalpha() for c in name):
+        return True
+    # Names starting with common French articles alone (e.g. "Le ", "La ", "Les ")
+    # that are too short to be real entities
+    if re.match(r"^(Le|La|Les|Un|Une|Des|Du|De)\s*$", name, re.IGNORECASE):
+        return True
+    # Markdown bold anywhere in the name
+    if "**" in name:
+        return True
+    # Truncated entities ending with a preposition (e.g. "Chef de la", "Les Gardiens de")
+    if re.search(r"\b(de|du|des|de la|de l')\s*$", name, re.IGNORECASE):
+        return True
+    # Entity names that look like sentence fragments (contain verb-like patterns)
+    if re.search(r"\b(est|sont|fut|sera|était)\b", name, re.IGNORECASE):
+        return True
+    # Names starting with indefinite articles/determinants = NER noise
+    # (but NOT "Le/La/Les" which are common in proper names like "La Confluence")
+    if re.match(r"^(Que|Ces|Cet|Cette|Un|Une|Des)\s", name):
+        return True
+    # Names containing colon (truncated headers like "Deuxième Révélation : La")
+    if ":" in name:
+        return True
+    # Names starting with "Chef de" (truncated titles)
+    if re.match(r"^Chef de\b", name):
         return True
     return False
 
@@ -218,22 +258,32 @@ def generate_civ_index(conn: sqlite3.Connection, civ_id: int, civ_name: str, pla
 
 
 def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
-    """Generate turn-by-turn history for a civilization."""
+    """Generate turn-by-turn history for a civilization.
+
+    Renders each turn with:
+    1. Summary block (detailed + key events + choices)
+    2. Raw messages grouped by author (GM vs player), cleaned
+    """
     turns = conn.execute(
         "SELECT * FROM turn_turns WHERE civ_id = ? ORDER BY turn_number",
         (civ_id,),
     ).fetchall()
 
+    # Detect GM author(s) by frequency -- GM posts more than players
+    gm_authors = _detect_gm_authors(conn)
+
     lines = [f"# {civ_name} -- Historique des tours", ""]
 
     for turn in turns:
         turn_id = turn["id"]
-        summary = _clean_summary(turn["summary"] or "Pas de resume disponible.")
 
-        segments = conn.execute(
-            "SELECT segment_type, content FROM turn_segments WHERE turn_id = ? ORDER BY segment_order",
-            (turn_id,),
-        ).fetchall()
+        # Use detailed_summary if available, fall back to short summary
+        detailed = _clean_summary(turn["detailed_summary"] or "") if turn["detailed_summary"] else ""
+        short = _clean_summary(turn["summary"] or "")
+        display_summary = detailed or short or "Pas de resume disponible."
+
+        key_events = _parse_json_list(turn["key_events"])
+        choices_made = _parse_json_list(turn["choices_made"])
 
         entities = conn.execute(
             """SELECT DISTINCT e.canonical_name, e.entity_type
@@ -243,7 +293,7 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
         ).fetchall()
 
         entity_tags = ", ".join(
-            f"`{e['canonical_name']}`"
+            f"`{_capitalize_entity(e['canonical_name'])}`"
             for e in entities
             if not is_noise_entity(e["canonical_name"])
         )
@@ -251,39 +301,43 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
         lines.extend([
             f"## Tour {turn['turn_number']}",
             "",
-            f"> {summary[:300]}",
+            f"> {display_summary[:400]}",
             "",
+        ])
+
+        if key_events:
+            lines.append("**Evenements cles** :")
+            lines.append("")
+            for evt in key_events:
+                lines.append(f"- {evt}")
+            lines.append("")
+
+        if choices_made:
+            lines.append("**Choix effectues** :")
+            lines.append("")
+            for choice in choices_made:
+                lines.append(f"- {choice}")
+            lines.append("")
+
+        lines.extend([
             f"**Entites** : {entity_tags if entity_tags else 'aucune'}",
             "",
         ])
 
-        for seg in segments:
-            seg_type = seg["segment_type"]
-            content = seg["content"].strip()
-            if not content:
-                continue
-
-            if seg_type == "choice":
-                lines.append('??? question "Choix"')
+        # Render raw messages grouped by author (GM / Player)
+        raw_ids = _parse_json_list(turn["raw_message_ids"])
+        if raw_ids:
+            message_groups = _group_messages_by_author(conn, raw_ids, gm_authors)
+            for group in message_groups:
+                role_label = "Maitre du Jeu" if group["is_gm"] else group["author"]
+                lines.append(f"### {role_label}")
                 lines.append("")
-                for sline in content.splitlines():
-                    lines.append(f"    {sline}")
-                lines.append("")
-            elif seg_type == "ooc":
-                lines.append('!!! note "Hors-jeu"')
-                lines.append("")
-                for sline in content.splitlines():
-                    lines.append(f"    {sline}")
-                lines.append("")
-            elif seg_type == "consequence":
-                lines.append('!!! success "Consequence"')
-                lines.append("")
-                for sline in content.splitlines():
-                    lines.append(f"    {sline}")
-                lines.append("")
-            else:
-                lines.append(content)
-                lines.append("")
+                content = _clean_segment_content(group["content"])
+                if content:
+                    # Downgrade ### headers in content to #### to avoid collision with author headers
+                    content = re.sub(r"^### ", "#### ", content, flags=re.MULTILINE)
+                    lines.append(content)
+                    lines.append("")
 
         lines.extend(["---", ""])
 
@@ -323,7 +377,7 @@ def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) 
         for e in filtered:
             first = _turn_link(e["first_seen_turn"], conn) if e["first_seen_turn"] else "-"
             last = _turn_link(e["last_seen_turn"], conn) if e["last_seen_turn"] else "-"
-            lines.append(f"| {e['canonical_name']} | {e['mention_count']} | {first} | {last} |")
+            lines.append(f"| {_capitalize_entity(e['canonical_name'])} | {e['mention_count']} | {first} | {last} |")
         lines.append("")
 
     return "\n".join(lines)
@@ -388,7 +442,7 @@ def generate_global_entities(conn: sqlite3.Connection) -> str:
         ])
         for e in filtered:
             civ = e["civ_name"] or "Global"
-            lines.append(f"| {e['canonical_name']} | {civ} | {e['mention_count']} |")
+            lines.append(f"| {_capitalize_entity(e['canonical_name'])} | {civ} | {e['mention_count']} |")
         lines.append("")
 
     return "\n".join(lines)
@@ -476,6 +530,128 @@ def _clean_summary(summary: str) -> str:
     result = " ".join(l.strip() for l in cleaned if l.strip())
     result = re.sub(r"^\*\*[^*]+\*\*\s*", "", result)
     return result.strip()
+
+
+# Patterns for segment content cleaning
+_RE_YOUTUBE_URL = re.compile(r"https?://(?:www\.)?(?:youtube\.com|youtu\.be)/\S+")
+_RE_YOUTUBE_META = re.compile(
+    r"^\d+\s+.*(?:OST|Soundtrack|Remix|Topic|YouTube).*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+_RE_MODIFIE = re.compile(r"\s*\(modifi[eé]\)")
+_RE_TIMESTAMP_LINE = re.compile(r"^\s*\[\s*\d{2}:\d{2}\s*\]\s*$", re.MULTILINE)
+_RE_TIMESTAMP_INLINE = re.compile(r"\[\s*\d{2}:\d{2}\s*\]\s*")
+
+
+def _clean_segment_content(content: str) -> str:
+    """Clean segment content for wiki display.
+
+    Removes YouTube URLs/metadata, (modifie) markers, timestamps, and duplicate paragraphs.
+    """
+    text = _RE_YOUTUBE_URL.sub("", content)
+    text = _RE_YOUTUBE_META.sub("", text)
+    text = _RE_MODIFIE.sub("", text)
+    text = _RE_TIMESTAMP_LINE.sub("", text)
+    text = _RE_TIMESTAMP_INLINE.sub("", text)
+
+    # Deduplicate paragraphs
+    paragraphs = text.split("\n\n")
+    seen: set[str] = set()
+    unique = []
+    for para in paragraphs:
+        normalized = para.strip()
+        if not normalized:
+            continue
+        key = re.sub(r"\s+", " ", normalized).strip()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(normalized)
+    text = "\n\n".join(unique)
+
+    # Clean residual noise lines
+    lines = text.splitlines()
+    cleaned = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped in (",", "", "YouTube", "youtube"):
+            continue
+        if len(stripped) < 3 and not stripped.endswith("."):
+            continue
+        cleaned.append(line)
+
+    return "\n".join(cleaned).strip()
+
+
+def _parse_json_list(json_str: str | None) -> list[str]:
+    """Safely parse a JSON string expected to be a list of strings."""
+    if not json_str:
+        return []
+    try:
+        data = json.loads(json_str)
+        if isinstance(data, list):
+            return [str(item) for item in data if item]
+        return []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+def _capitalize_entity(name: str) -> str:
+    """Capitalize first letter of entity name for display."""
+    if not name:
+        return name
+    return name[0].upper() + name[1:]
+
+
+def _clean_author_name(name: str) -> str:
+    """Normalize author names -- strip trailing ) from parsing artifacts."""
+    return name.rstrip(")")
+
+
+def _detect_gm_authors(conn: sqlite3.Connection) -> set[str]:
+    """Detect GM authors by message frequency -- GM posts the most."""
+    rows = conn.execute(
+        "SELECT author_name, count(*) as c FROM turn_raw_messages GROUP BY author_name ORDER BY c DESC"
+    ).fetchall()
+    if not rows:
+        return set()
+    # The most frequent author is the GM; also include variants with trailing )
+    gm_name = _clean_author_name(rows[0]["author_name"])
+    return {r["author_name"] for r in rows if _clean_author_name(r["author_name"]) == gm_name}
+
+
+def _group_messages_by_author(
+    conn: sqlite3.Connection,
+    raw_ids: list[str],
+    gm_authors: set[str],
+) -> list[dict]:
+    """Group consecutive raw messages by author role (GM vs player).
+
+    Returns list of dicts: {author, is_gm, content}
+    """
+    groups: list[dict] = []
+    for msg_id in raw_ids:
+        row = conn.execute(
+            "SELECT author_name, content FROM turn_raw_messages WHERE id = ?",
+            (int(msg_id),),
+        ).fetchone()
+        if not row:
+            continue
+
+        author = _clean_author_name(row["author_name"])
+        is_gm = row["author_name"] in gm_authors
+
+        # Merge with previous group if same role
+        if groups and groups[-1]["is_gm"] == is_gm:
+            groups[-1]["content"] += "\n\n" + row["content"]
+        else:
+            groups.append({
+                "author": author,
+                "is_gm": is_gm,
+                "content": row["content"],
+            })
+
+    return groups
 
 
 def _turn_link(turn_id: int | None, conn: sqlite3.Connection) -> str:

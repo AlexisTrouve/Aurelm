@@ -12,13 +12,13 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from .db import get_connection, init_db, register_civilization
+from .db import get_connection, init_db, register_civilization, run_migrations
 from .loader import load_directory
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
 from .ner import EntityExtractor
-from .summarizer import summarize_turn
+from .summarizer import summarize_turn, AuthorContent
 
 
 # Known GM author names --messages from these authors are GM posts
@@ -39,6 +39,8 @@ def run_pipeline(
 
     Returns a stats dict with counts of processed items.
     """
+    _entity_cache.clear()
+
     stats = {
         "messages_loaded": 0,
         "turns_created": 0,
@@ -49,6 +51,7 @@ def run_pipeline(
     # Step 1: Init DB
     print("[1/7] Initializing database...")
     init_db(db_path)
+    run_migrations(db_path)
 
     # Step 2: Register civilization
     print(f"[2/7] Registering civilization: {civ_name}")
@@ -120,11 +123,26 @@ def run_pipeline(
                     )
                     stats["entities_extracted"] += 1
 
-            # Summarize
-            summary = summarize_turn(turn_text, use_llm=use_llm)
+            # Summarize -- multi-call: 1 LLM call per author
+            author_contents = _split_by_author(chunk.messages, gm_author_id)
+            summary = summarize_turn(
+                turn_text, use_llm=use_llm,
+                civ_name=civ_name, player_name=player_name,
+                author_contents=author_contents if use_llm else None,
+            )
             conn.execute(
-                "UPDATE turn_turns SET summary = ?, processed_at = ? WHERE id = ?",
-                (summary.short_summary, datetime.now().isoformat(), turn_id),
+                """UPDATE turn_turns
+                   SET summary = ?, detailed_summary = ?,
+                       key_events = ?, choices_made = ?, processed_at = ?
+                   WHERE id = ?""",
+                (
+                    summary.short_summary,
+                    summary.detailed_summary,
+                    json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
+                    json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
+                    datetime.now().isoformat(),
+                    turn_id,
+                ),
             )
 
             turn_number += 1
@@ -184,6 +202,23 @@ def _init_ner() -> EntityExtractor | None:
         return None
 
 
+def _split_by_author(messages: list, gm_author_id: str) -> list[AuthorContent]:
+    """Group consecutive messages by author role (GM vs player) for multi-call LLM."""
+    groups: list[AuthorContent] = []
+    for msg in messages:
+        is_gm = msg.author_id == gm_author_id
+        # Merge with previous group if same role
+        if groups and groups[-1].is_gm == is_gm:
+            groups[-1].content += "\n\n" + msg.content
+        else:
+            groups.append(AuthorContent(
+                author=msg.author_name,
+                is_gm=is_gm,
+                content=msg.content,
+            ))
+    return groups
+
+
 def _find_gm_author_id(messages: list) -> str:
     """Find the GM's author_id from known GM author names."""
     for msg in messages:
@@ -202,27 +237,87 @@ def _get_next_turn_number(conn, civ_id: int) -> int:
     return row[0]
 
 
-def _upsert_entity(conn, name: str, entity_type: str, civ_id: int, turn_id: int) -> int:
-    """Insert or update an entity, returning its id."""
-    row = conn.execute(
-        "SELECT id FROM entity_entities WHERE canonical_name = ? AND civ_id = ?",
-        (name, civ_id),
-    ).fetchone()
+def _is_better_display_name(new_name: str, stored_name: str) -> bool:
+    """Check if new_name is a better display form (e.g. Title Case vs lowercase)."""
+    new_uppers = sum(1 for c in new_name if c.isupper())
+    stored_uppers = sum(1 for c in stored_name if c.isupper())
+    return new_uppers > stored_uppers
 
-    if row:
-        entity_id = row[0]
+
+def _normalize_for_dedup(name: str) -> str:
+    """Normalize entity name for dedup: lowercase + strip French plural markers.
+
+    'Faucons Chasseurs' -> 'faucon chasseur'
+    'Autels des Pionniers' -> 'autel des pionnier'
+    'Ciels-clairs' -> 'ciel clair'
+    """
+    import re as _re
+    words = _re.findall(r"[\w']+", name.lower())
+    normalized = []
+    for w in words:
+        # Strip trailing 's' for words > 3 chars (not 'ss' like 'bras')
+        if len(w) > 3 and w.endswith("s") and not w.endswith("ss"):
+            w = w[:-1]
+        normalized.append(w)
+    return " ".join(normalized)
+
+
+# Cache: normalized_name -> (entity_id, canonical_name) per pipeline run
+_entity_cache: dict[str, tuple[int, str]] = {}
+
+
+def _upsert_entity(conn, name: str, entity_type: str, civ_id: int, turn_id: int) -> int:
+    """Insert or update an entity, returning its id.
+
+    Uses normalized name (lowercase + depluralized) for dedup.
+    First-seen form is kept as canonical_name for display.
+    """
+    norm = _normalize_for_dedup(name)
+    cache_key = f"{norm}|{civ_id}"
+
+    # Check in-memory cache first (fast path)
+    if cache_key in _entity_cache:
+        entity_id = _entity_cache[cache_key][0]
         conn.execute(
             "UPDATE entity_entities SET last_seen_turn = ?, updated_at = ? WHERE id = ?",
             (turn_id, datetime.now().isoformat(), entity_id),
         )
         return entity_id
 
+    # Check DB: scan existing entities for this civ, match by normalized form
+    rows = conn.execute(
+        "SELECT id, canonical_name FROM entity_entities WHERE civ_id = ?",
+        (civ_id,),
+    ).fetchall()
+
+    for row in rows:
+        if _normalize_for_dedup(row[1]) == norm:
+            entity_id = row[0]
+            stored_name = row[1]
+            # Prefer Title Case: if new name has uppercase and stored doesn't, update display
+            if _is_better_display_name(name, stored_name):
+                conn.execute(
+                    "UPDATE entity_entities SET canonical_name = ?, last_seen_turn = ?, updated_at = ? WHERE id = ?",
+                    (name, turn_id, datetime.now().isoformat(), entity_id),
+                )
+                _entity_cache[cache_key] = (entity_id, name)
+            else:
+                conn.execute(
+                    "UPDATE entity_entities SET last_seen_turn = ?, updated_at = ? WHERE id = ?",
+                    (turn_id, datetime.now().isoformat(), entity_id),
+                )
+                _entity_cache[cache_key] = (entity_id, stored_name)
+            return entity_id
+
+    # No match -- insert new entity
     cursor = conn.execute(
         """INSERT INTO entity_entities (canonical_name, entity_type, civ_id, first_seen_turn, last_seen_turn)
            VALUES (?, ?, ?, ?, ?)""",
         (name, entity_type, civ_id, turn_id, turn_id),
     )
-    return cursor.lastrowid  # type: ignore[return-value]
+    entity_id = cursor.lastrowid  # type: ignore[return-value]
+    _entity_cache[cache_key] = (entity_id, name)
+    return entity_id
 
 
 def _start_pipeline_run(conn) -> int:

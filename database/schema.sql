@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS turn_turns (
     turn_number INTEGER NOT NULL,
     title TEXT,
     summary TEXT,
+    detailed_summary TEXT,
+    key_events TEXT,        -- JSON array of strings
+    choices_made TEXT,       -- JSON array of strings
     raw_message_ids TEXT NOT NULL,  -- JSON array of turn_raw_messages.id
     turn_type TEXT NOT NULL DEFAULT 'standard',  -- standard, event, first_contact, crisis
     game_date_start TEXT,  -- In-game date/era

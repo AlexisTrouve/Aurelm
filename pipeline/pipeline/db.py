@@ -28,6 +28,49 @@ def init_db(db_path: str, schema_path: Path | None = None) -> None:
         conn.close()
 
 
+def run_migrations(db_path: str) -> None:
+    """Apply pending migrations to an existing database.
+
+    Safe to call on fresh DBs (skips already-applied columns) and on existing DBs.
+    """
+    migrations_dir = SCHEMA_PATH.parent / "migrations"
+    if not migrations_dir.exists():
+        return
+    conn = get_connection(db_path)
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS _migrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                filename TEXT NOT NULL UNIQUE,
+                applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.commit()
+        applied = {row["filename"] for row in conn.execute("SELECT filename FROM _migrations").fetchall()}
+
+        for sql_file in sorted(migrations_dir.glob("*.sql")):
+            if sql_file.name == "001_initial.sql":
+                continue
+            if sql_file.name in applied:
+                continue
+            sql = sql_file.read_text(encoding="utf-8")
+            # Run each statement individually to handle "duplicate column" gracefully
+            for statement in sql.split(";"):
+                statement = statement.strip()
+                if not statement or statement.startswith("--"):
+                    continue
+                try:
+                    conn.execute(statement)
+                except sqlite3.OperationalError as e:
+                    if "duplicate column" in str(e):
+                        continue  # Column already exists (fresh DB from updated schema)
+                    raise
+            conn.execute("INSERT INTO _migrations (filename) VALUES (?)", (sql_file.name,))
+            conn.commit()
+    finally:
+        conn.close()
+
+
 def register_civilization(
     db_path: str,
     name: str,

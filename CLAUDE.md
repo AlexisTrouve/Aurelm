@@ -80,7 +80,8 @@ Flutter Desktop GUI (Dashboard)
 - **Node.js**: v25.2.1 (mcp-server ready)
 - **Python**: 3.12 (pipeline ready)
 - **Flutter**: NOT installed — gui/ is placeholder only
-- **Ollama**: Not yet configured
+- **Ollama**: v0.15.6 installed, `llama3.1:8b` pulled (dev model)
+- **Arthur's machine**: RTX 5070 Ti 16GB VRAM — doit installer `ollama pull qwen3:14b` (12GB VRAM, 100% GPU, excellent French)
 - **Proxy required** for external HTTPS: `http://127.0.0.1:7897`
 - **Git push**: `git -c http.proxy=http://127.0.0.1:7897 push`
 - **GitHub API calls**: Use Python `urllib` with proxy (no `gh` CLI, no `wget`)
