@@ -49,7 +49,8 @@ Flutter Desktop GUI (Dashboard)
 
 ### Directory Layout
 
-- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 65 source files, 6 tests. **Flutter not installed on dev machine** — CI builds via GitHub Actions. Run `flutter create --platforms=windows .` in gui/ when Flutter is available locally.
+- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 68 source files, 6 tests. **Flutter not installed on dev machine** — CI builds via GitHub Actions. Run `flutter create --platforms=windows .` in gui/ when Flutter is available locally.
+- **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 9 tools ported from MCP server, aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API. 32 tests passing.
 - **pipeline/**: Python ML pipeline — ingestion, NER, chunking, summarization
 - **wiki/**: MkDocs Material — auto-generated game wiki
 - **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
@@ -71,8 +72,10 @@ Flutter Desktop GUI (Dashboard)
 
 - [x] **Step 6**: Flutter GUI — 65 Dart source files across 6 layers (data/models/providers/screens/widgets/core). Drift ORM mapping all DB tables, 5 DAOs with reactive streams, Riverpod providers, GoRouter with NavigationRail shell. Screens: dashboard (civ cards, pipeline status, quick search), civ detail (entity breakdown chart, top entities, recent turns), entity browser (search/filter/list + detail with aliases/relations/mentions), timeline (chronological turns with filters), graph (force-directed with graphview, per-civ filter, legend). Settings: DB path picker, theme toggle. 6 unit/widget tests, 2 GitHub Actions workflows (Windows EXE build + test). CI adapted from Haomirai pattern.
 
+- [x] **Step 7**: End-to-end integration — Python bot package (discord.py + aiohttp + Anthropic SDK), 9 tools ported from TS to Python, HTTP API (/health, /status, /sync), Discord gateway (mentions/DMs -> Claude agent with tool use), fetcher (channel history -> DB), pipeline `run_pipeline_for_channels()` for multi-civ sync. Flutter: BotService (subprocess lifecycle), SyncService (HTTP client), bot_provider (health polling, sync state), updated PipelineStatusCard with bot status + sync button. Config via `aurelm_config.json` + env vars. 32 bot tests + 62 pipeline tests + 48 MCP tests all passing.
+
 ### Next Steps
-- [ ] **Step 7**: End-to-end integration — Discord bot live, pipeline auto-runs, wiki auto-refreshes
+- [ ] **Step 8**: Deployment — packaging, Arthur's machine setup, Discord bot invite
 
 ## Environment Notes (Dev Machine)
 
@@ -142,7 +145,8 @@ Flutter Desktop GUI (Dashboard)
 
 ## Testing
 
-- `cd mcp-server && npm test` — MCP server tests
-- `cd pipeline && pytest` — Pipeline tests (5 test files: test_chunker, test_classifier, test_loader, test_ner, test_runner)
+- `cd mcp-server && npm test` — MCP server tests (48 tests via vitest)
+- `cd pipeline && pytest` — Pipeline tests (62 tests: test_chunker, test_classifier, test_loader, test_ner, test_runner)
+- `python -m pytest bot/tests/` — Bot tests (32 tests: tools, config, dispatch)
 - `cd gui && flutter test` — GUI tests (6 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing

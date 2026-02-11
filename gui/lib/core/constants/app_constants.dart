@@ -33,4 +33,10 @@ class AppConstants {
   static const int topEntitiesLimit = 10;
 
   static const String envDbPathKey = 'AURELM_DB_PATH';
+
+  // Bot HTTP API
+  static const int botDefaultPort = 8473;
+  static const String botHealthEndpoint = '/health';
+  static const String botStatusEndpoint = '/status';
+  static const String botSyncEndpoint = '/sync';
 }

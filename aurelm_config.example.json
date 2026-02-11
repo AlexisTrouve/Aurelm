@@ -1,0 +1,12 @@
+{
+  "bot_port": 8473,
+  "proxy": "http://127.0.0.1:7897",
+  "wiki_dir": "wiki",
+  "gm_authors": ["Arthur Ignatus"],
+  "channels": {
+    "CHANNEL_ID_HERE": {
+      "civ_name": "Civilisation de la Confluence",
+      "player": "Rubanc"
+    }
+  }
+}

@@ -408,6 +408,152 @@ def _print_stats(stats: dict) -> None:
     print("=" * 40)
 
 
+def run_pipeline_for_channels(
+    db_path: str,
+    use_llm: bool = False,
+    wiki_dir: str | None = None,
+    gm_authors: set[str] | None = None,
+) -> dict:
+    """Run pipeline for all civs with a discord_channel_id set in DB.
+
+    Called by the bot's /sync endpoint. Processes unprocessed messages
+    per channel/civ, then optionally rebuilds wiki.
+
+    Returns aggregated stats across all civs.
+    """
+    if gm_authors:
+        global GM_AUTHORS
+        GM_AUTHORS = gm_authors
+
+    init_db(db_path)
+    run_migrations(db_path)
+
+    conn = get_connection(db_path)
+    civs = conn.execute(
+        "SELECT id, name, player_name, discord_channel_id FROM civ_civilizations WHERE discord_channel_id IS NOT NULL"
+    ).fetchall()
+    conn.close()
+
+    if not civs:
+        print("No civilizations with discord_channel_id configured.")
+        return {"civs_processed": 0}
+
+    aggregated: dict = {
+        "civs_processed": 0,
+        "total_turns_created": 0,
+        "total_entities_extracted": 0,
+        "per_civ": {},
+    }
+
+    extractor = _init_ner()
+
+    for civ_id, civ_name, player_name, channel_id in civs:
+        print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
+
+        messages = fetch_unprocessed_messages(db_path, channel_id)
+        if not messages:
+            print(f"  No new messages for {civ_name}")
+            aggregated["per_civ"][civ_name] = {"turns_created": 0, "entities_extracted": 0}
+            continue
+
+        gm_author_id = _find_gm_author_id(messages)
+        chunks = detect_turn_boundaries(messages, gm_author_id)
+        print(f"  {len(messages)} messages -> {len(chunks)} turns")
+
+        civ_stats = {"turns_created": 0, "entities_extracted": 0, "segments_created": 0}
+        conn = get_connection(db_path)
+        run_id = _start_pipeline_run(conn)
+
+        try:
+            turn_number = _get_next_turn_number(conn, civ_id)
+
+            for chunk in chunks:
+                turn_text = "\n\n".join(m.content for m in chunk.messages)
+                raw_ids = json.dumps([m.id for m in chunk.messages])
+
+                cursor = conn.execute(
+                    """INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type)
+                       VALUES (?, ?, ?, ?)""",
+                    (civ_id, turn_number, raw_ids, chunk.turn_type),
+                )
+                turn_id = cursor.lastrowid
+                civ_stats["turns_created"] += 1
+
+                segments = classify_segments(turn_text)
+                for seg_order, seg in enumerate(segments):
+                    conn.execute(
+                        """INSERT INTO turn_segments (turn_id, segment_order, segment_type, content)
+                           VALUES (?, ?, ?, ?)""",
+                        (turn_id, seg_order, seg.segment_type.value, seg.text),
+                    )
+                    civ_stats["segments_created"] += 1
+
+                if extractor:
+                    entities = extractor.extract(turn_text)
+                    for ent in entities:
+                        entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
+                        conn.execute(
+                            """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
+                               VALUES (?, ?, ?, ?)""",
+                            (entity_id, turn_id, ent.text, ent.context),
+                        )
+                        civ_stats["entities_extracted"] += 1
+
+                author_contents = _split_by_author(chunk.messages, gm_author_id)
+                summary = summarize_turn(
+                    turn_text, use_llm=use_llm,
+                    civ_name=civ_name, player_name=player_name,
+                    author_contents=author_contents if use_llm else None,
+                )
+                conn.execute(
+                    """UPDATE turn_turns
+                       SET summary = ?, detailed_summary = ?,
+                           key_events = ?, choices_made = ?, processed_at = ?
+                       WHERE id = ?""",
+                    (
+                        summary.short_summary,
+                        summary.detailed_summary,
+                        json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
+                        json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
+                        datetime.now().isoformat(),
+                        turn_id,
+                    ),
+                )
+                turn_number += 1
+
+            conn.commit()
+            _complete_pipeline_run(conn, run_id, {
+                "messages_loaded": len(messages),
+                "turns_created": civ_stats["turns_created"],
+                "entities_extracted": civ_stats["entities_extracted"],
+            })
+        except Exception as e:
+            conn.rollback()
+            _fail_pipeline_run(conn, run_id, str(e))
+            raise
+        finally:
+            conn.close()
+
+        aggregated["civs_processed"] += 1
+        aggregated["total_turns_created"] += civ_stats["turns_created"]
+        aggregated["total_entities_extracted"] += civ_stats["entities_extracted"]
+        aggregated["per_civ"][civ_name] = civ_stats
+
+    # Wiki generation
+    if wiki_dir and aggregated["total_turns_created"] > 0:
+        print("\n--- Generating wiki ---")
+        try:
+            from wiki.generate import generate_wiki
+            wiki_out = str(Path(wiki_dir) / "docs")
+            wiki_stats = generate_wiki(db_path, wiki_out)
+            aggregated["wiki_pages"] = wiki_stats["pages_generated"]
+        except Exception as exc:
+            print(f"  Wiki generation failed: {exc}")
+            aggregated["wiki_error"] = str(exc)
+
+    return aggregated
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Aurelm ML Pipeline")
     parser.add_argument("--data-dir", required=True, help="Path to markdown files directory")
