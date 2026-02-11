@@ -6,6 +6,7 @@ interface EntityRow {
   canonical_name: string;
   entity_type: string;
   description: string | null;
+  history: string | null;
   civ_name: string | null;
   mention_count: number;
 }
@@ -26,17 +27,17 @@ export function searchLore(
   civId: number | null,
   entityType: string | undefined
 ): string {
-  // Search entities by canonical name, description, AND aliases
+  // Search entities by canonical name, description, aliases, AND history
   let sql = `
-    SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.description,
+    SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.description, e.history,
            c.name AS civ_name,
            (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mention_count
     FROM entity_entities e
     LEFT JOIN civ_civilizations c ON e.civ_id = c.id
     LEFT JOIN entity_aliases a ON a.entity_id = e.id
-    WHERE (e.canonical_name LIKE ? OR e.description LIKE ? OR a.alias LIKE ?)
+    WHERE (e.canonical_name LIKE ? OR e.description LIKE ? OR a.alias LIKE ? OR e.history LIKE ?)
   `;
-  const params: unknown[] = [`%${query}%`, `%${query}%`, `%${query}%`];
+  const params: unknown[] = [`%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`];
 
   if (civId !== null) {
     sql += " AND e.civ_id = ?";
@@ -67,6 +68,19 @@ export function searchLore(
     if (e.civ_name) lines.push(`**Civilization:** ${e.civ_name}`);
     lines.push(`**Mentions:** ${e.mention_count}`);
     if (e.description) lines.push(`**Description:** ${e.description}`);
+
+    // History timeline
+    if (e.history) {
+      try {
+        const events = JSON.parse(e.history) as string[];
+        if (events.length > 0) {
+          lines.push("", "**Chronologie:**");
+          for (const event of events) {
+            lines.push(`- ${event}`);
+          }
+        }
+      } catch { /* skip invalid JSON */ }
+    }
 
     // Aliases
     const aliases = db.prepare(

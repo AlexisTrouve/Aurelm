@@ -57,6 +57,7 @@ function seedDb(db: Database.Database) {
       entity_type TEXT NOT NULL,
       civ_id INTEGER REFERENCES civ_civilizations(id),
       description TEXT,
+      history TEXT,
       first_seen_turn INTEGER REFERENCES turn_turns(id),
       last_seen_turn INTEGER REFERENCES turn_turns(id),
       is_active INTEGER NOT NULL DEFAULT 1,

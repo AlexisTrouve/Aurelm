@@ -345,7 +345,11 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
 
 
 def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
-    """Generate entity index for a civilization."""
+    """Generate entity encyclopedia for a civilization.
+
+    Each entity gets a subsection with LLM-generated description, chronology,
+    and alias information when available.
+    """
     types = conn.execute(
         "SELECT DISTINCT entity_type FROM entity_entities WHERE civ_id = ? ORDER BY entity_type",
         (civ_id,),
@@ -356,7 +360,8 @@ def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) 
     for t in types:
         etype = t["entity_type"]
         entities = conn.execute(
-            """SELECT e.canonical_name, e.entity_type, e.first_seen_turn, e.last_seen_turn,
+            """SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
+                      e.first_seen_turn, e.last_seen_turn,
                       (SELECT count(*) FROM entity_mentions m WHERE m.entity_id = e.id) as mention_count
                FROM entity_entities e
                WHERE e.civ_id = ? AND e.entity_type = ?
@@ -368,17 +373,43 @@ def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) 
         if not filtered:
             continue
 
-        lines.extend([
-            f"## {_entity_type_label(etype)}",
-            "",
-            "| Nom | Mentions | Premiere apparition | Derniere apparition |",
-            "|---|---|---|---|",
-        ])
+        lines.extend([f"## {_entity_type_label(etype)}", ""])
+
         for e in filtered:
+            name = _capitalize_entity(e["canonical_name"])
             first = _turn_link(e["first_seen_turn"], conn) if e["first_seen_turn"] else "-"
             last = _turn_link(e["last_seen_turn"], conn) if e["last_seen_turn"] else "-"
-            lines.append(f"| {_capitalize_entity(e['canonical_name'])} | {e['mention_count']} | {first} | {last} |")
-        lines.append("")
+
+            # Header with metadata
+            lines.append(f"### {name}")
+            meta_parts = [f"{e['mention_count']} mentions", f"{first} - {last}"]
+
+            # Aliases
+            aliases = conn.execute(
+                "SELECT alias FROM entity_aliases WHERE entity_id = ?", (e["id"],)
+            ).fetchall()
+            if aliases:
+                alias_names = ", ".join(_capitalize_entity(a["alias"]) for a in aliases)
+                meta_parts.append(f"aussi connu sous : {alias_names}")
+
+            lines.append(f"*{' | '.join(meta_parts)}*")
+            lines.append("")
+
+            # Description from LLM profiler
+            if e["description"]:
+                lines.append(e["description"])
+                lines.append("")
+
+            # Chronology from LLM profiler
+            history = _parse_json_list(e["history"])
+            if history:
+                lines.append("**Chronologie :**")
+                lines.append("")
+                for event in history:
+                    lines.append(f"- {event}")
+                lines.append("")
+
+            lines.extend(["---", ""])
 
     return "\n".join(lines)
 
@@ -411,7 +442,10 @@ def generate_global_timeline(conn: sqlite3.Connection) -> str:
 
 
 def generate_global_entities(conn: sqlite3.Connection) -> str:
-    """Generate global entity index across all civilizations."""
+    """Generate global entity index across all civilizations.
+
+    Shows each entity with description and aliases when available.
+    """
     types = conn.execute(
         "SELECT DISTINCT entity_type FROM entity_entities ORDER BY entity_type"
     ).fetchall()
@@ -421,7 +455,8 @@ def generate_global_entities(conn: sqlite3.Connection) -> str:
     for t in types:
         etype = t["entity_type"]
         entities = conn.execute(
-            """SELECT e.canonical_name, e.entity_type, c.name as civ_name,
+            """SELECT e.id, e.canonical_name, e.entity_type, e.description,
+                      c.name as civ_name,
                       (SELECT count(*) FROM entity_mentions m WHERE m.entity_id = e.id) as mention_count
                FROM entity_entities e
                LEFT JOIN civ_civilizations c ON e.civ_id = c.id
@@ -434,16 +469,31 @@ def generate_global_entities(conn: sqlite3.Connection) -> str:
         if not filtered:
             continue
 
-        lines.extend([
-            f"## {_entity_type_label(etype)}",
-            "",
-            "| Nom | Civilisation | Mentions |",
-            "|---|---|---|",
-        ])
+        lines.extend([f"## {_entity_type_label(etype)}", ""])
+
         for e in filtered:
+            name = _capitalize_entity(e["canonical_name"])
             civ = e["civ_name"] or "Global"
-            lines.append(f"| {_capitalize_entity(e['canonical_name'])} | {civ} | {e['mention_count']} |")
-        lines.append("")
+
+            # Aliases
+            aliases = conn.execute(
+                "SELECT alias FROM entity_aliases WHERE entity_id = ?", (e["id"],)
+            ).fetchall()
+            alias_str = ""
+            if aliases:
+                alias_names = ", ".join(_capitalize_entity(a["alias"]) for a in aliases)
+                alias_str = f" | *alias : {alias_names}*"
+
+            lines.append(f"**{name}** ({civ}, {e['mention_count']} mentions){alias_str}")
+
+            if e["description"]:
+                # Show first 200 chars of description
+                desc = e["description"]
+                if len(desc) > 200:
+                    desc = desc[:197] + "..."
+                lines.append(f": {desc}")
+
+            lines.append("")
 
     return "\n".join(lines)
 

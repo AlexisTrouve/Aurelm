@@ -6,6 +6,7 @@ interface EntityRow {
   canonical_name: string;
   entity_type: string;
   description: string | null;
+  history: string | null;
   civ_name: string | null;
   is_active: number;
   first_turn: number | null;
@@ -35,7 +36,7 @@ export function getEntityDetail(
 ): string {
   // Find entity by canonical name or alias, optionally scoped to civ
   let entitySql = `
-    SELECT e.id, e.canonical_name, e.entity_type, e.description,
+    SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
            c.name AS civ_name, e.is_active,
            ft.turn_number AS first_turn, lt.turn_number AS last_turn
     FROM entity_entities e
@@ -71,6 +72,21 @@ export function getEntityDetail(
     if (e.first_turn !== null) lines.push(`**First seen:** Turn ${e.first_turn}`);
     if (e.last_turn !== null) lines.push(`**Last seen:** Turn ${e.last_turn}`);
     if (e.description) lines.push(`**Description:** ${e.description}`);
+
+    // History timeline from LLM profiler
+    if (e.history) {
+      try {
+        const events = JSON.parse(e.history) as string[];
+        if (events.length > 0) {
+          lines.push("", "## Chronologie", "");
+          for (const event of events) {
+            lines.push(`- ${event}`);
+          }
+        }
+      } catch {
+        // Invalid JSON — skip history
+      }
+    }
 
     // Aliases
     const aliases = db.prepare(

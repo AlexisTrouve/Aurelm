@@ -6,6 +6,7 @@ interface MatchedEntity {
   canonical_name: string;
   entity_type: string;
   description: string | null;
+  history: string[];
   civ_name: string | null;
   aliases: string[];
   mention_count: number;
@@ -90,14 +91,14 @@ export function sanityCheck(
   // Fetch details for each matched entity
   for (const entityId of matchedEntityIds) {
     const entity = db.prepare(`
-      SELECT e.id, e.canonical_name, e.entity_type, e.description,
+      SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
              c.name AS civ_name
       FROM entity_entities e
       LEFT JOIN civ_civilizations c ON e.civ_id = c.id
       WHERE e.id = ?
     `).get(entityId) as {
       id: number; canonical_name: string; entity_type: string;
-      description: string | null; civ_name: string | null;
+      description: string | null; history: string | null; civ_name: string | null;
     } | undefined;
 
     if (!entity) continue;
@@ -119,11 +120,21 @@ export function sanityCheck(
       LIMIT 5
     `).all(entityId) as Array<{ turn_number: number; context: string | null }>;
 
+    // Parse history JSON
+    let historyEvents: string[] = [];
+    if (entity.history) {
+      try {
+        const parsed = JSON.parse(entity.history);
+        if (Array.isArray(parsed)) historyEvents = parsed;
+      } catch { /* skip invalid JSON */ }
+    }
+
     matchedEntities.push({
       id: entity.id,
       canonical_name: entity.canonical_name,
       entity_type: entity.entity_type,
       description: entity.description,
+      history: historyEvents,
       civ_name: entity.civ_name,
       aliases: aliases.map((a) => a.alias),
       mention_count: mentionCount,
@@ -205,6 +216,13 @@ export function sanityCheck(
       if (e.description) lines.push(`**Description:** ${e.description}`);
       if (e.aliases.length > 0) lines.push(`**Aliases:** ${e.aliases.join(", ")}`);
       lines.push(`**Mentions:** ${e.mention_count}`);
+
+      if (e.history.length > 0) {
+        lines.push("", "**Established history:**");
+        for (const event of e.history) {
+          lines.push(`- ${event}`);
+        }
+      }
 
       if (e.recent_mentions.length > 0) {
         lines.push("", "**Recent references:**");
