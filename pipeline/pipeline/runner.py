@@ -12,7 +12,14 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from .db import get_connection, init_db, register_civilization, run_migrations
+from .db import (
+    get_connection,
+    init_db,
+    register_civilization,
+    run_migrations,
+    mark_turn_processed,
+    update_progress,
+)
 from .loader import load_directory
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
@@ -36,6 +43,7 @@ def run_pipeline(
     player_name: str | None = None,
     use_llm: bool = True,
     wiki_dir: str | None = None,
+    track_progress: bool = False,
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
 
@@ -89,6 +97,7 @@ def run_pipeline(
 
     try:
         turn_number = _get_next_turn_number(conn, civ_id)
+        total_turns = len(chunks)
 
         for i, chunk in enumerate(chunks):
             turn_text = "\n\n".join(m.content for m in chunk.messages)
@@ -147,10 +156,27 @@ def run_pipeline(
                 ),
             )
 
+            # Mark turn as processed
+            mark_turn_processed(conn, turn_id, run_id)
+
+            # Update progress tracking
+            if track_progress:
+                update_progress(
+                    conn, run_id, "pipeline", civ_id, civ_name,
+                    i + 1, total_turns, "turn", "running"
+                )
+
             turn_number += 1
 
             if (i + 1) % 5 == 0 or i == len(chunks) - 1:
                 print(f"       ->Processed {i + 1}/{len(chunks)} turns")
+
+        # Mark pipeline phase as completed
+        if track_progress and total_turns > 0:
+            update_progress(
+                conn, run_id, "pipeline", civ_id, civ_name,
+                total_turns, total_turns, "turn", "completed"
+            )
 
         conn.commit()
         _complete_pipeline_run(conn, run_id, stats)
@@ -165,7 +191,13 @@ def run_pipeline(
     # Step 7: Entity profiling (LLM-based)
     if use_llm:
         print("[7/9] Building entity profiles (1 LLM call per entity)...")
-        profiles = build_entity_profiles(db_path, use_llm=True)
+        profiles = build_entity_profiles(
+            db_path,
+            use_llm=True,
+            incremental=True,
+            run_id=run_id,
+            track_progress=track_progress,
+        )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
         # Step 8: Alias resolution
@@ -180,12 +212,43 @@ def run_pipeline(
     # Step 9: Wiki generation (optional)
     if wiki_dir:
         print("[9/9] Generating wiki...")
+
+        # Progress callback for wiki generation
+        def wiki_progress(current, total, unit_type):
+            if track_progress:
+                conn_progress = get_connection(db_path)
+                try:
+                    update_progress(
+                        conn_progress, run_id, "wiki", None, None,
+                        current, total, unit_type, "running"
+                    )
+                    conn_progress.commit()
+                finally:
+                    conn_progress.close()
+
         try:
             from wiki.generate import generate_wiki
             wiki_out = str(Path(wiki_dir) / "docs")
-            wiki_stats = generate_wiki(db_path, wiki_out)
+            wiki_stats = generate_wiki(
+                db_path, wiki_out,
+                progress_callback=wiki_progress if track_progress else None,
+                run_id=run_id,
+            )
             stats["wiki_pages"] = wiki_stats["pages_generated"]
             print(f"       -> {wiki_stats['pages_generated']} pages generated")
+
+            # Mark wiki phase as completed
+            if track_progress:
+                conn_progress = get_connection(db_path)
+                try:
+                    total = stats["wiki_pages"]
+                    update_progress(
+                        conn_progress, run_id, "wiki", None, None,
+                        total, total, "page", "completed"
+                    )
+                    conn_progress.commit()
+                finally:
+                    conn_progress.close()
         except ImportError:
             # wiki module may not be importable from pipeline context
             # try direct import by path
@@ -196,9 +259,26 @@ def run_pipeline(
                 mod = importlib.util.module_from_spec(spec)  # type: ignore
                 spec.loader.exec_module(mod)  # type: ignore
                 wiki_out = str(Path(wiki_dir) / "docs")
-                wiki_stats = mod.generate_wiki(db_path, wiki_out)
+                wiki_stats = mod.generate_wiki(
+                    db_path, wiki_out,
+                    progress_callback=wiki_progress if track_progress else None,
+                    run_id=run_id,
+                )
                 stats["wiki_pages"] = wiki_stats["pages_generated"]
                 print(f"       -> {wiki_stats['pages_generated']} pages generated")
+
+                # Mark wiki phase as completed
+                if track_progress:
+                    conn_progress = get_connection(db_path)
+                    try:
+                        total = stats["wiki_pages"]
+                        update_progress(
+                            conn_progress, run_id, "wiki", None, None,
+                            total, total, "page", "completed"
+                        )
+                        conn_progress.commit()
+                    finally:
+                        conn_progress.close()
             else:
                 print("       WARNING: wiki/generate.py not found -- skipping wiki generation")
     else:
@@ -413,6 +493,7 @@ def run_pipeline_for_channels(
     use_llm: bool = False,
     wiki_dir: str | None = None,
     gm_authors: set[str] | None = None,
+    track_progress: bool = True,
 ) -> dict:
     """Run pipeline for all civs with a discord_channel_id set in DB.
 
@@ -466,8 +547,9 @@ def run_pipeline_for_channels(
 
         try:
             turn_number = _get_next_turn_number(conn, civ_id)
+            total_turns = len(chunks)
 
-            for chunk in chunks:
+            for i, chunk in enumerate(chunks):
                 turn_text = "\n\n".join(m.content for m in chunk.messages)
                 raw_ids = json.dumps([m.id for m in chunk.messages])
 
@@ -519,7 +601,25 @@ def run_pipeline_for_channels(
                         turn_id,
                     ),
                 )
+
+                # Mark turn as processed
+                mark_turn_processed(conn, turn_id, run_id)
+
+                # Update progress tracking
+                if track_progress:
+                    update_progress(
+                        conn, run_id, "pipeline", civ_id, civ_name,
+                        i + 1, total_turns, "turn", "running"
+                    )
+
                 turn_number += 1
+
+            # Mark pipeline phase as completed for this civ
+            if track_progress and total_turns > 0:
+                update_progress(
+                    conn, run_id, "pipeline", civ_id, civ_name,
+                    total_turns, total_turns, "turn", "completed"
+                )
 
             conn.commit()
             _complete_pipeline_run(conn, run_id, {
@@ -562,6 +662,7 @@ def main() -> None:
     parser.add_argument("--player", default=None, help="Player name")
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
+    parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
     args = parser.parse_args()
 
     run_pipeline(
@@ -571,6 +672,7 @@ def main() -> None:
         player_name=args.player,
         use_llm=not args.no_llm,
         wiki_dir=args.wiki_dir,
+        track_progress=args.track_progress,
     )
 
 

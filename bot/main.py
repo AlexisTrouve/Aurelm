@@ -42,6 +42,7 @@ async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
                 use_llm=False,
                 wiki_dir=config.wiki_dir,
                 gm_authors=set(config.gm_authors),
+                track_progress=True,
             )
         except ImportError:
             log.warning("Pipeline module not available, skipping")

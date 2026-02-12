@@ -23,6 +23,7 @@ class BotServer:
         self._app = web.Application()
         self._app.router.add_get("/health", self._health)
         self._app.router.add_get("/status", self._status)
+        self._app.router.add_get("/progress", self._progress)
         self._app.router.add_post("/sync", self._sync)
         self._runner: web.AppRunner | None = None
 
@@ -65,6 +66,11 @@ class BotServer:
             "last_sync_result": self._last_sync_result,
             "last_pipeline_run": pipeline_info,
         })
+
+    async def _progress(self, _request: web.Request) -> web.Response:
+        """Return current pipeline progress for UI polling."""
+        progress_info = self._get_current_progress()
+        return web.json_response(progress_info)
 
     async def _sync(self, _request: web.Request) -> web.Response:
         if self._sync_running:
@@ -116,3 +122,61 @@ class BotServer:
             }
         except Exception:
             return None
+
+    def _get_current_progress(self) -> dict:
+        """Retrieve current pipeline progress from DB.
+
+        Returns:
+            - If a pipeline run is in progress: {'status': 'running', 'run_id': ..., 'phases': [...]}
+            - If no active run: {'status': 'idle'}
+        """
+        try:
+            conn = sqlite3.connect(self.config.db_path)
+            conn.row_factory = sqlite3.Row
+
+            # Get the latest running pipeline run
+            run_row = conn.execute(
+                "SELECT id, started_at FROM pipeline_runs WHERE status = 'running' ORDER BY id DESC LIMIT 1"
+            ).fetchone()
+
+            if not run_row:
+                conn.close()
+                return {"status": "idle"}
+
+            run_id = run_row["id"]
+            started_at = run_row["started_at"]
+
+            # Get progress entries for this run
+            progress_rows = conn.execute(
+                """SELECT phase, civ_id, civ_name, total_units, current_unit, unit_type, status, updated_at
+                   FROM pipeline_progress
+                   WHERE pipeline_run_id = ?
+                   ORDER BY updated_at DESC""",
+                (run_id,),
+            ).fetchall()
+
+            conn.close()
+
+            phases = []
+            for row in progress_rows:
+                phases.append({
+                    "phase": row["phase"],
+                    "civ_id": row["civ_id"],
+                    "civ_name": row["civ_name"],
+                    "total_units": row["total_units"],
+                    "current_unit": row["current_unit"],
+                    "unit_type": row["unit_type"],
+                    "status": row["status"],
+                    "updated_at": row["updated_at"],
+                })
+
+            return {
+                "status": "running",
+                "run_id": run_id,
+                "started_at": started_at,
+                "phases": phases,
+            }
+
+        except Exception as exc:
+            log.exception("Failed to get progress")
+            return {"status": "error", "error": str(exc)}

@@ -344,74 +344,354 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
     return "\n".join(lines)
 
 
-def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
-    """Generate entity encyclopedia for a civilization.
+def _build_fused_entities(conn: sqlite3.Connection, civ_id: int) -> list[dict]:
+    """Detect and merge duplicate entities within a civilization.
 
-    Each entity gets a subsection with LLM-generated description, chronology,
-    and alias information when available.
+    Builds a graph of "same entity" relationships by checking:
+    - Entity A has an alias matching Entity B's canonical_name (or vice versa)
+    - Entity A's canonical_name appears as a substring of Entity B's (case-insensitive)
+
+    Returns a list of fused entity dicts with merged stats.
     """
-    types = conn.execute(
-        "SELECT DISTINCT entity_type FROM entity_entities WHERE civ_id = ? ORDER BY entity_type",
+    entities = conn.execute(
+        """SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
+                  e.first_seen_turn, e.last_seen_turn,
+                  (SELECT count(*) FROM entity_mentions m WHERE m.entity_id = e.id) as mention_count
+           FROM entity_entities e
+           WHERE e.civ_id = ?
+           ORDER BY e.canonical_name""",
         (civ_id,),
     ).fetchall()
 
-    lines = [f"# {civ_name} -- Entites", ""]
+    # Build alias lookup: entity_id -> set of alias strings (lowered)
+    alias_lookup: dict[int, set[str]] = {}
+    for e in entities:
+        eid = e["id"]
+        aliases = conn.execute(
+            "SELECT alias FROM entity_aliases WHERE entity_id = ?", (eid,)
+        ).fetchall()
+        alias_lookup[eid] = {a["alias"].lower().strip() for a in aliases}
 
-    for t in types:
-        etype = t["entity_type"]
-        entities = conn.execute(
-            """SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
-                      e.first_seen_turn, e.last_seen_turn,
-                      (SELECT count(*) FROM entity_mentions m WHERE m.entity_id = e.id) as mention_count
-               FROM entity_entities e
-               WHERE e.civ_id = ? AND e.entity_type = ?
-               ORDER BY e.canonical_name""",
-            (civ_id, etype),
+    # Build name lookup: lowered canonical_name -> entity row
+    name_to_entity: dict[str, list] = {}
+    for e in entities:
+        key = e["canonical_name"].lower().strip()
+        name_to_entity.setdefault(key, []).append(e)
+
+    # Union-Find for grouping
+    parent: dict[int, int] = {e["id"]: e["id"] for e in entities}
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    # Merge entities where alias matches another entity's canonical name
+    for e in entities:
+        eid = e["id"]
+        e_name_lower = e["canonical_name"].lower().strip()
+        # Check if any other entity's canonical_name matches one of our aliases
+        for alias in alias_lookup.get(eid, set()):
+            if alias in name_to_entity:
+                for other in name_to_entity[alias]:
+                    if other["id"] != eid and other["entity_type"] == e["entity_type"]:
+                        union(eid, other["id"])
+        # Check if our canonical name matches another entity's alias
+        for other in entities:
+            if other["id"] == eid or other["entity_type"] != e["entity_type"]:
+                continue
+            if e_name_lower in alias_lookup.get(other["id"], set()):
+                union(eid, other["id"])
+
+    # Known fusion pairs (domain knowledge for this game)
+    _KNOWN_FUSIONS = {
+        "pupupasu": "cheveux de sang",
+        "gingembre sauvage": "morsure-des-ancetres",
+        "morsure-des-ancetres": "gingembre sauvage",
+    }
+    for e in entities:
+        e_lower = e["canonical_name"].lower().strip()
+        # Normalize accented chars for matching
+        e_normalized = slugify(e["canonical_name"])
+        for src, tgt in _KNOWN_FUSIONS.items():
+            src_slug = slugify(src)
+            tgt_slug = slugify(tgt)
+            if e_normalized == src_slug:
+                for other in entities:
+                    if slugify(other["canonical_name"]) == tgt_slug:
+                        union(e["id"], other["id"])
+
+    # Group entities by root
+    groups: dict[int, list] = {}
+    for e in entities:
+        root = find(e["id"])
+        groups.setdefault(root, []).append(e)
+
+    # Build fused entity list
+    fused: list[dict] = []
+    for group in groups.values():
+        # Filter noise from the group
+        clean = [e for e in group if not is_noise_entity(e["canonical_name"])]
+        if not clean:
+            continue
+
+        # Pick the primary: highest mention count, then longest name
+        primary = max(clean, key=lambda e: (e["mention_count"], len(e["canonical_name"])))
+
+        # Merge stats
+        total_mentions = sum(e["mention_count"] for e in clean)
+        first_turn_ids = [e["first_seen_turn"] for e in clean if e["first_seen_turn"]]
+        last_turn_ids = [e["last_seen_turn"] for e in clean if e["last_seen_turn"]]
+        all_histories: list[str] = []
+        for e in clean:
+            all_histories.extend(_parse_json_list(e["history"]))
+        # Deduplicate history entries
+        seen_history: set[str] = set()
+        unique_history: list[str] = []
+        for h in all_histories:
+            if h not in seen_history:
+                seen_history.add(h)
+                unique_history.append(h)
+
+        # Pick longest description
+        descriptions = [e["description"] for e in clean if e["description"]]
+        best_desc = max(descriptions, key=len) if descriptions else None
+
+        # Collect all names as aliases (excluding the primary name)
+        all_names = set()
+        for e in clean:
+            all_names.add(e["canonical_name"])
+            for alias in alias_lookup.get(e["id"], set()):
+                all_names.add(alias)
+        # Also add display-cased versions
+        alias_set = {n for n in all_names if n.lower().strip() != primary["canonical_name"].lower().strip()}
+
+        # Collect all entity IDs in the group (for mention queries)
+        all_ids = [e["id"] for e in clean]
+
+        fused.append({
+            "id": primary["id"],
+            "all_ids": all_ids,
+            "canonical_name": primary["canonical_name"],
+            "entity_type": primary["entity_type"],
+            "description": best_desc,
+            "history": unique_history,
+            "mention_count": total_mentions,
+            "first_seen_turn": min(first_turn_ids) if first_turn_ids else None,
+            "last_seen_turn": max(last_turn_ids) if last_turn_ids else None,
+            "aliases": sorted(alias_set),
+        })
+
+    return fused
+
+
+def _build_id_to_primary(fused_list: list[dict]) -> dict[int, str]:
+    """Build a reverse map: entity_id -> primary canonical_name for all fused groups."""
+    mapping: dict[int, str] = {}
+    for fe in fused_list:
+        for eid in fe["all_ids"]:
+            mapping[eid] = fe["canonical_name"]
+    return mapping
+
+
+def generate_entity_page(
+    conn: sqlite3.Connection,
+    entity: dict,
+    civ_name: str,
+    civ_slug: str,
+    id_to_primary: dict[int, str] | None = None,
+) -> str:
+    """Generate a full markdown page for a single entity."""
+    name = _capitalize_entity(entity["canonical_name"])
+    etype_label = _entity_type_label(entity["entity_type"])
+    first = _turn_link(entity["first_seen_turn"], conn) if entity["first_seen_turn"] else "-"
+    last = _turn_link(entity["last_seen_turn"], conn) if entity["last_seen_turn"] else "-"
+
+    lines = [
+        f"# {name}",
+        "",
+        f"*{etype_label}* -- {civ_name}",
+        "",
+        "| | |",
+        "|---|---|",
+        f"| Mentions | **{entity['mention_count']}** |",
+        f"| Premiere apparition | {first} |",
+        f"| Derniere apparition | {last} |",
+    ]
+
+    if entity["aliases"]:
+        alias_display = ", ".join(_capitalize_entity(a) for a in entity["aliases"])
+        lines.append(f"| Alias | {alias_display} |")
+
+    lines.append("")
+
+    # Description
+    if entity["description"]:
+        lines.extend(["## Description", "", entity["description"], ""])
+
+    # Per-turn summaries (from LLM profiler) as main chronology
+    if entity["history"]:
+        lines.extend(["## Chronologie", ""])
+        for event in entity["history"]:
+            # History entries are now "Tour X: summary..." format
+            lines.append(f"**{event}**" if event.startswith("Tour") else f"- {event}")
+            lines.append("")
+
+    # Raw source passages (collapsible, for reference)
+    all_ids = entity["all_ids"]
+    placeholders = ",".join("?" * len(all_ids))
+    mentions = conn.execute(
+        f"""SELECT m.mention_text, m.context, t.turn_number
+            FROM entity_mentions m
+            JOIN turn_turns t ON m.turn_id = t.id
+            WHERE m.entity_id IN ({placeholders})
+            ORDER BY t.turn_number, m.id""",
+        all_ids,
+    ).fetchall()
+
+    if mentions:
+        lines.extend([
+            "??? note \"Sources -- Passages originaux\"",
+            "",
+        ])
+        _segment_cache: dict[int, list[str]] = {}
+        current_turn = None
+        seen_contexts: set[str] = set()
+        for m in mentions:
+            if m["turn_number"] != current_turn:
+                current_turn = m["turn_number"]
+                lines.append(f"    **Tour {current_turn}**")
+                lines.append("")
+            ctx = _find_rich_context(
+                conn, m["mention_text"], m["turn_number"],
+                m["context"], _segment_cache,
+            )
+            if ctx:
+                ctx_key = ctx[:100]
+                if ctx_key in seen_contexts:
+                    continue
+                seen_contexts.add(ctx_key)
+                # Indent for admonition content
+                for ctx_line in f"> {ctx}".splitlines():
+                    lines.append(f"    {ctx_line}")
+                lines.append("")
+
+    # Related entities (co-occurring in same turns)
+    turn_ids = conn.execute(
+        f"""SELECT DISTINCT m.turn_id
+            FROM entity_mentions m
+            WHERE m.entity_id IN ({placeholders})""",
+        all_ids,
+    ).fetchall()
+
+    if turn_ids:
+        turn_id_list = [t["turn_id"] for t in turn_ids]
+        turn_placeholders = ",".join("?" * len(turn_id_list))
+        related = conn.execute(
+            f"""SELECT e.id, e.canonical_name, e.entity_type, count(*) as co_count
+                FROM entity_mentions m
+                JOIN entity_entities e ON m.entity_id = e.id
+                WHERE m.turn_id IN ({turn_placeholders})
+                  AND m.entity_id NOT IN ({placeholders})
+                GROUP BY e.id
+                ORDER BY co_count DESC
+                LIMIT 20""",
+            turn_id_list + all_ids,
         ).fetchall()
 
-        filtered = [e for e in entities if not is_noise_entity(e["canonical_name"])]
-        if not filtered:
+        # Resolve through fusion map and aggregate co-occurrence counts
+        seen_primary: dict[str, dict] = {}
+        for r in related:
+            if is_noise_entity(r["canonical_name"]):
+                continue
+            # Resolve to primary name via fusion map
+            primary_name = (id_to_primary or {}).get(r["id"], r["canonical_name"])
+            if is_noise_entity(primary_name):
+                continue
+            if primary_name in seen_primary:
+                seen_primary[primary_name]["co_count"] += r["co_count"]
+            else:
+                seen_primary[primary_name] = {
+                    "canonical_name": primary_name,
+                    "entity_type": r["entity_type"],
+                    "co_count": r["co_count"],
+                }
+
+        related_sorted = sorted(seen_primary.values(), key=lambda x: x["co_count"], reverse=True)[:15]
+        if related_sorted:
+            lines.extend(["## Entites liees", ""])
+            for r in related_sorted:
+                rname = _capitalize_entity(r["canonical_name"])
+                rslug = slugify(r["canonical_name"])
+                lines.append(
+                    f"- [{rname}]({rslug}.md) "
+                    f"({_entity_type_label(r['entity_type'])}, "
+                    f"{r['co_count']} co-occurrences)"
+                )
+            lines.append("")
+
+    return "\n".join(lines)
+
+
+def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> tuple[str, list[dict]]:
+    """Generate clickable entity index for a civilization.
+
+    Returns (index_page_content, list_of_fused_entity_dicts) so the caller
+    can write individual entity pages.
+    """
+    civ_slug = slugify(civ_name)
+    fused = _build_fused_entities(conn, civ_id)
+
+    # Group by type
+    by_type: dict[str, list[dict]] = {}
+    for e in fused:
+        by_type.setdefault(e["entity_type"], []).append(e)
+
+    lines = [f"# {civ_name} -- Entites", ""]
+
+    type_order = ["person", "place", "technology", "institution", "civilization",
+                  "caste", "resource", "creature", "event"]
+    sorted_types = sorted(by_type.keys(), key=lambda t: type_order.index(t) if t in type_order else 99)
+
+    for etype in sorted_types:
+        entities = sorted(by_type[etype], key=lambda e: e["canonical_name"].lower())
+        if not entities:
             continue
 
         lines.extend([f"## {_entity_type_label(etype)}", ""])
 
-        for e in filtered:
+        for e in entities:
             name = _capitalize_entity(e["canonical_name"])
-            first = _turn_link(e["first_seen_turn"], conn) if e["first_seen_turn"] else "-"
-            last = _turn_link(e["last_seen_turn"], conn) if e["last_seen_turn"] else "-"
+            eslug = slugify(e["canonical_name"])
+            first = _turn_link(e["first_seen_turn"], conn) if e["first_seen_turn"] else ""
+            last = _turn_link(e["last_seen_turn"], conn) if e["last_seen_turn"] else ""
 
-            # Header with metadata
-            lines.append(f"### {name}")
-            meta_parts = [f"{e['mention_count']} mentions", f"{first} - {last}"]
+            # Build entry line
+            turn_info = ""
+            if first and last and first != last:
+                turn_info = f", {first} - {last}"
+            elif first:
+                turn_info = f", {first}"
 
-            # Aliases
-            aliases = conn.execute(
-                "SELECT alias FROM entity_aliases WHERE entity_id = ?", (e["id"],)
-            ).fetchall()
-            if aliases:
-                alias_names = ", ".join(_capitalize_entity(a["alias"]) for a in aliases)
-                meta_parts.append(f"aussi connu sous : {alias_names}")
+            alias_info = ""
+            if e["aliases"]:
+                alias_display = ", ".join(_capitalize_entity(a) for a in e["aliases"][:3])
+                alias_info = f" | *alias: {alias_display}*"
 
-            lines.append(f"*{' | '.join(meta_parts)}*")
-            lines.append("")
+            lines.append(
+                f"- [**{name}**](entities/{eslug}.md) "
+                f"-- {e['mention_count']} mentions{turn_info}{alias_info}"
+            )
 
-            # Description from LLM profiler
-            if e["description"]:
-                lines.append(e["description"])
-                lines.append("")
+        lines.append("")
 
-            # Chronology from LLM profiler
-            history = _parse_json_list(e["history"])
-            if history:
-                lines.append("**Chronologie :**")
-                lines.append("")
-                for event in history:
-                    lines.append(f"- {event}")
-                lines.append("")
-
-            lines.extend(["---", ""])
-
-    return "\n".join(lines)
+    return "\n".join(lines), fused
 
 
 def generate_global_timeline(conn: sqlite3.Connection) -> str:
@@ -441,57 +721,92 @@ def generate_global_timeline(conn: sqlite3.Connection) -> str:
     return "\n".join(lines)
 
 
-def generate_global_entities(conn: sqlite3.Connection) -> str:
+def generate_global_entities(conn: sqlite3.Connection, all_fused: dict[int, list[dict]] | None = None) -> str:
     """Generate global entity index across all civilizations.
 
-    Shows each entity with description and aliases when available.
+    Links each entity to its dedicated page. Uses fused entities if provided.
     """
-    types = conn.execute(
-        "SELECT DISTINCT entity_type FROM entity_entities ORDER BY entity_type"
-    ).fetchall()
-
-    lines = ["# Index des Entites", ""]
-
-    for t in types:
-        etype = t["entity_type"]
-        entities = conn.execute(
+    # Build a flat list of all fused entities across civs
+    global_entities: list[dict] = []
+    if all_fused:
+        for civ_id, fused_list in all_fused.items():
+            civ_row = conn.execute(
+                "SELECT name FROM civ_civilizations WHERE id = ?", (civ_id,)
+            ).fetchone()
+            civ_name = civ_row["name"] if civ_row else "Global"
+            civ_slug = slugify(civ_name)
+            for e in fused_list:
+                global_entities.append({**e, "civ_name": civ_name, "civ_slug": civ_slug})
+    else:
+        # Fallback: query directly (no fusion)
+        rows = conn.execute(
             """SELECT e.id, e.canonical_name, e.entity_type, e.description,
                       c.name as civ_name,
                       (SELECT count(*) FROM entity_mentions m WHERE m.entity_id = e.id) as mention_count
                FROM entity_entities e
                LEFT JOIN civ_civilizations c ON e.civ_id = c.id
-               WHERE e.entity_type = ?
-               ORDER BY e.canonical_name""",
-            (etype,),
+               ORDER BY e.canonical_name"""
         ).fetchall()
+        for e in rows:
+            if is_noise_entity(e["canonical_name"]):
+                continue
+            global_entities.append({
+                "canonical_name": e["canonical_name"],
+                "entity_type": e["entity_type"],
+                "mention_count": e["mention_count"],
+                "description": e["description"],
+                "civ_name": e["civ_name"] or "Global",
+                "civ_slug": slugify(e["civ_name"]) if e["civ_name"] else "",
+                "aliases": [],
+            })
 
-        filtered = [e for e in entities if not is_noise_entity(e["canonical_name"])]
-        if not filtered:
+    # Group by type
+    by_type: dict[str, list[dict]] = {}
+    for e in global_entities:
+        by_type.setdefault(e["entity_type"], []).append(e)
+
+    lines = ["# Index des Entites", ""]
+
+    type_order = ["person", "place", "technology", "institution", "civilization",
+                  "caste", "resource", "creature", "event"]
+    sorted_types = sorted(by_type.keys(), key=lambda t: type_order.index(t) if t in type_order else 99)
+
+    for etype in sorted_types:
+        entities = sorted(by_type[etype], key=lambda e: e["canonical_name"].lower())
+        if not entities:
             continue
 
         lines.extend([f"## {_entity_type_label(etype)}", ""])
 
-        for e in filtered:
+        for e in entities:
             name = _capitalize_entity(e["canonical_name"])
-            civ = e["civ_name"] or "Global"
+            civ = e["civ_name"]
+            civ_slug = e["civ_slug"]
+            eslug = slugify(e["canonical_name"])
 
-            # Aliases
-            aliases = conn.execute(
-                "SELECT alias FROM entity_aliases WHERE entity_id = ?", (e["id"],)
-            ).fetchall()
+            # Build turn range
+            first = _turn_link(e.get("first_seen_turn"), conn) if e.get("first_seen_turn") else ""
+            last = _turn_link(e.get("last_seen_turn"), conn) if e.get("last_seen_turn") else ""
+            turn_info = ""
+            if first and last and first != last:
+                turn_info = f", {first} - {last}"
+            elif first:
+                turn_info = f", {first}"
+
             alias_str = ""
-            if aliases:
-                alias_names = ", ".join(_capitalize_entity(a["alias"]) for a in aliases)
-                alias_str = f" | *alias : {alias_names}*"
+            if e.get("aliases"):
+                alias_names = ", ".join(_capitalize_entity(a) for a in e["aliases"][:3])
+                alias_str = f" | *alias: {alias_names}*"
 
-            lines.append(f"**{name}** ({civ}, {e['mention_count']} mentions){alias_str}")
-
-            if e["description"]:
-                # Show first 200 chars of description
-                desc = e["description"]
-                if len(desc) > 200:
-                    desc = desc[:197] + "..."
-                lines.append(f": {desc}")
+            if civ_slug:
+                link = f"../civilizations/{civ_slug}/entities/{eslug}.md"
+                lines.append(
+                    f"- [**{name}**]({link}) -- {civ}, {e['mention_count']} mentions{turn_info}{alias_str}"
+                )
+            else:
+                lines.append(
+                    f"- **{name}** -- {civ}, {e['mention_count']} mentions{turn_info}{alias_str}"
+                )
 
             lines.append("")
 
@@ -704,6 +1019,54 @@ def _group_messages_by_author(
     return groups
 
 
+def _find_rich_context(
+    conn: sqlite3.Connection,
+    mention_text: str,
+    turn_number: int,
+    fallback_context: str | None,
+    cache: dict[int, list[str]],
+    window: int = 800,
+) -> str:
+    """Find a rich context excerpt for a mention by searching turn segments.
+
+    Looks for mention_text in the turn's segments and returns a window of text
+    around it. Falls back to the stored context field if no segment match.
+    """
+    if turn_number not in cache:
+        segments = conn.execute(
+            """SELECT s.content FROM turn_segments s
+               JOIN turn_turns t ON s.turn_id = t.id
+               WHERE t.turn_number = ?
+               ORDER BY s.segment_order""",
+            (turn_number,),
+        ).fetchall()
+        cache[turn_number] = [s["content"] for s in segments]
+
+    # Search for mention in segments (case-insensitive)
+    mention_lower = mention_text.lower()
+    for seg_content in cache[turn_number]:
+        pos = seg_content.lower().find(mention_lower)
+        if pos != -1:
+            # Extract window around the mention
+            half = window // 2
+            start = max(0, pos - half)
+            end = min(len(seg_content), pos + len(mention_text) + half)
+            excerpt = seg_content[start:end].strip()
+            excerpt = _clean_segment_content(excerpt)
+            if not excerpt:
+                continue
+            prefix = "..." if start > 0 else ""
+            suffix = "..." if end < len(seg_content) else ""
+            return f"{prefix}{excerpt}{suffix}"
+
+    # Fallback to stored context
+    if fallback_context:
+        ctx = _clean_segment_content(fallback_context.strip())
+        if ctx:
+            return f"...{ctx}..."
+    return ""
+
+
 def _turn_link(turn_id: int | None, conn: sqlite3.Connection) -> str:
     """Create a turn reference string."""
     if not turn_id:
@@ -716,38 +1079,112 @@ def _turn_link(turn_id: int | None, conn: sqlite3.Connection) -> str:
 
 # -- Main generation -----------------------------------------------------------
 
-def generate_wiki(db_path: str, output_dir: str) -> dict:
-    """Generate all wiki pages from the database. Returns stats."""
+def generate_wiki(
+    db_path: str,
+    output_dir: str,
+    progress_callback=None,
+    run_id: int | None = None,
+) -> dict:
+    """Generate all wiki pages from the database. Returns stats.
+
+    Args:
+        db_path: Path to SQLite database
+        output_dir: Output directory for markdown files
+        progress_callback: Optional callback(current, total, unit_type) for progress tracking
+        run_id: Optional pipeline run ID for DB progress tracking
+    """
     out = Path(output_dir)
     conn = get_connection(db_path)
-    stats = {"pages_generated": 0}
+    stats = {"pages_generated": 0, "entity_pages": 0}
+
+    # Estimate total pages for progress tracking
+    civ_count = conn.execute("SELECT count(*) FROM civ_civilizations").fetchone()[0]
+    # Rough estimate: 5 base pages + 3 per civ + entity pages
+    # We'll refine as we go
+    estimated_base_pages = 5 + (3 * civ_count)
+    total_pages = estimated_base_pages  # Will be updated with actual entity count
+    current_page = 0
 
     try:
         _write_page(out / "index.md", generate_index(conn))
         stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
 
         _write_page(out / "civilizations" / "index.md", generate_civilizations_index(conn))
         stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
+
+        # Collect fused entities per civ for global index
+        all_fused: dict[int, list[dict]] = {}
 
         civs = conn.execute("SELECT * FROM civ_civilizations ORDER BY name").fetchall()
+
+        # Update total_pages estimate with actual entity count
+        entity_count = conn.execute("SELECT count(*) FROM entity_entities WHERE is_active = 1").fetchone()[0]
+        total_pages = estimated_base_pages + entity_count
+
         for civ in civs:
             civ_slug = slugify(civ["name"])
             civ_dir = out / "civilizations" / civ_slug
 
             _write_page(civ_dir / "index.md",
                         generate_civ_index(conn, civ["id"], civ["name"], civ["player_name"]))
+            stats["pages_generated"] += 1
+            current_page += 1
+            if progress_callback:
+                progress_callback(current_page, total_pages, "page")
+
             _write_page(civ_dir / "turns.md",
                         generate_civ_turns(conn, civ["id"], civ["name"]))
-            _write_page(civ_dir / "entities.md",
-                        generate_civ_entities(conn, civ["id"], civ["name"]))
-            stats["pages_generated"] += 3
+            stats["pages_generated"] += 1
+            current_page += 1
+            if progress_callback:
+                progress_callback(current_page, total_pages, "page")
+
+            # generate_civ_entities now returns (page_content, fused_list)
+            entities_content, fused_list = generate_civ_entities(conn, civ["id"], civ["name"])
+            _write_page(civ_dir / "entities.md", entities_content)
+            all_fused[civ["id"]] = fused_list
+            stats["pages_generated"] += 1
+            current_page += 1
+            if progress_callback:
+                progress_callback(current_page, total_pages, "page")
+
+            # Write individual entity pages
+            entity_dir = civ_dir / "entities"
+            id_to_primary = _build_id_to_primary(fused_list)
+            for entity in fused_list:
+                eslug = slugify(entity["canonical_name"])
+                page_content = generate_entity_page(
+                    conn, entity, civ["name"], civ_slug, id_to_primary
+                )
+                _write_page(entity_dir / f"{eslug}.md", page_content)
+                stats["entity_pages"] += 1
+                current_page += 1
+                if progress_callback:
+                    progress_callback(current_page, total_pages, "page")
 
         _write_page(out / "global" / "timeline.md", generate_global_timeline(conn))
-        _write_page(out / "global" / "entities.md", generate_global_entities(conn))
-        stats["pages_generated"] += 2
+        stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
+
+        _write_page(out / "global" / "entities.md", generate_global_entities(conn, all_fused))
+        stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
 
         _write_page(out / "meta" / "pipeline.md", generate_pipeline_stats(conn))
         stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
 
         nav = _build_nav(civs)
         stats["nav_entries"] = nav
@@ -819,7 +1256,7 @@ def main() -> None:
 
     print(f"Generating wiki from {args.db} -> {args.out}")
     stats = generate_wiki(args.db, args.out)
-    print(f"Generated {stats['pages_generated']} pages")
+    print(f"Generated {stats['pages_generated']} pages + {stats.get('entity_pages', 0)} entity pages")
 
     if args.wiki_dir and stats.get("nav_entries"):
         try:

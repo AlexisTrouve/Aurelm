@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 import ollama
 
-from .db import get_connection
+from .db import get_connection, update_progress
 
 
 @dataclass
@@ -36,45 +36,136 @@ class EntityProfile:
 
 DEFAULT_MODEL = "llama3.1:8b"
 NUM_CTX = 8192
+RICH_CONTEXT_WINDOW = 800
 
 PROFILE_PROMPT = """Tu es un archiviste expert pour un JDR de civilisation.
 
-Voici toutes les mentions de l'entité "{name}" (type: {entity_type}) dans la partie.
+Voici les passages complets mentionnant l'entité "{name}" (type: {entity_type}) dans la partie :
 
 {mentions}
 
 Produis :
-1. Une description factuelle de cette entité (2-4 phrases, basée UNIQUEMENT sur les extraits ci-dessus)
-2. Une chronologie (liste d'événements clés impliquant cette entité, dans l'ordre des tours)
-3. Les autres noms ou appellations utilisés pour désigner cette MÊME entité dans les extraits (alias, surnoms, traductions, variantes orthographiques)
+1. **description** : Description factuelle de cette entité (3-6 phrases). Qui/quoi est-ce ? Quel rôle joue-t-elle ? Quelles sont ses caractéristiques notables ?
+2. **turn_summaries** : Pour CHAQUE tour où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité dans ce tour. Format : {{"Tour X": "résumé..."}}
+3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
 
 Règles :
 - Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
-- Si une seule mention, fais une description courte basée sur le contexte disponible
-- La chronologie doit mentionner le numéro de tour
+- Sois précis et factuel, cite les détails importants (noms, lieux, événements)
+- Pour turn_summaries : résume le CONTEXTE et le RÔLE de l'entité, pas juste "elle est mentionnée"
 - Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
 
-Réponds UNIQUEMENT en JSON : {{"description": "...", "history": ["Tour X: ...", ...], "aliases": ["..."]}}"""
+Réponds UNIQUEMENT en JSON :
+{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."]}}"""
+
+
+def _find_rich_context_for_mention(
+    conn,
+    mention_text: str,
+    turn_number: int,
+    fallback_context: str | None,
+    segment_cache: dict[int, list[str]],
+) -> str:
+    """Find a rich context excerpt for a mention by searching turn segments."""
+    if turn_number not in segment_cache:
+        segments = conn.execute(
+            """SELECT s.content FROM turn_segments s
+               JOIN turn_turns t ON s.turn_id = t.id
+               WHERE t.turn_number = ?
+               ORDER BY s.segment_order""",
+            (turn_number,),
+        ).fetchall()
+        segment_cache[turn_number] = [s["content"] for s in segments]
+
+    mention_lower = mention_text.lower()
+    for seg_content in segment_cache[turn_number]:
+        pos = seg_content.lower().find(mention_lower)
+        if pos != -1:
+            half = RICH_CONTEXT_WINDOW // 2
+            start = max(0, pos - half)
+            end = min(len(seg_content), pos + len(mention_text) + half)
+            return seg_content[start:end].strip()
+
+    return (fallback_context or "").strip()
+
+
+def _get_existing_turn_summaries(history_json: str | None) -> dict[int, str]:
+    """Parse existing history JSON to extract turn number -> summary mapping."""
+    if not history_json:
+        return {}
+
+    try:
+        history = json.loads(history_json)
+    except json.JSONDecodeError:
+        return {}
+
+    turn_map = {}
+    for entry in history:
+        if not isinstance(entry, str):
+            continue
+        # Format: "Tour X: résumé"
+        match = re.match(r"Tour (\d+):\s*(.*)", entry)
+        if match:
+            turn_num = int(match.group(1))
+            summary = match.group(2)
+            turn_map[turn_num] = summary
+
+    return turn_map
+
+
+def _merge_turn_summaries(existing: dict[int, str], new: dict[int, str]) -> list[str]:
+    """Merge existing and new turn summaries, sorted by turn number."""
+    merged = {**existing, **new}  # new overwrites existing if duplicate
+    return [f"Tour {k}: {v}" for k, v in sorted(merged.items())]
 
 
 def build_entity_profiles(
     db_path: str,
     model: str = DEFAULT_MODEL,
     use_llm: bool = True,
+    incremental: bool = True,
+    run_id: int | None = None,
+    track_progress: bool = False,
 ) -> list[EntityProfile]:
     """Build rich profiles for all active entities in the database.
 
-    Makes 1 LLM call per entity. Returns profiles and stores
-    description + history in entity_entities.
+    Makes 1 LLM call per entity with full segment context. Returns profiles
+    and stores description + turn_summaries in entity_entities.
+
+    Args:
+        db_path: Path to database
+        model: Ollama model name
+        use_llm: Whether to use LLM (if False, skip profiling)
+        incremental: If True, only process entities with new mentions in recently processed turns
+        run_id: Pipeline run ID for progress tracking
+        track_progress: Whether to track progress in pipeline_progress table
     """
     conn = get_connection(db_path)
 
-    entities = conn.execute("""
-        SELECT e.id, e.canonical_name, e.entity_type, e.civ_id
-        FROM entity_entities e
-        WHERE e.is_active = 1
-        ORDER BY e.id
-    """).fetchall()
+    if incremental:
+        # Get entities that have mentions in newly processed turns (last pipeline run)
+        # We'll consider turns processed in the current or most recent pipeline run
+        entities = conn.execute("""
+            SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.civ_id, e.history, e.description
+            FROM entity_entities e
+            JOIN entity_mentions m ON e.id = m.entity_id
+            JOIN turn_turns t ON m.turn_id = t.id
+            JOIN pipeline_turn_status pts ON t.id = pts.turn_id
+            WHERE e.is_active = 1
+            AND (pts.pipeline_run_id = ? OR pts.processed_at > datetime('now', '-1 hour'))
+            ORDER BY e.id
+        """, (run_id or 0,)).fetchall()
+    else:
+        # Full reprocess: all entities
+        entities = conn.execute("""
+            SELECT e.id, e.canonical_name, e.entity_type, e.civ_id, e.history, e.description
+            FROM entity_entities e
+            WHERE e.is_active = 1
+            ORDER BY e.id
+        """).fetchall()
+
+    # Shared segment cache across all entities
+    segment_cache: dict[int, list[str]] = {}
 
     profiles: list[EntityProfile] = []
     total = len(entities)
@@ -84,15 +175,29 @@ def build_entity_profiles(
         name = row["canonical_name"]
         entity_type = row["entity_type"]
         civ_id = row["civ_id"]
+        existing_history = row.get("history")
+        existing_description = row.get("description")
 
-        # Aggregate all mentions with context, ordered by turn
-        mentions = conn.execute("""
-            SELECT m.mention_text, m.context, t.turn_number
-            FROM entity_mentions m
-            JOIN turn_turns t ON m.turn_id = t.id
-            WHERE m.entity_id = ?
-            ORDER BY t.turn_number
-        """, (entity_id,)).fetchall()
+        # In incremental mode, get only mentions from newly processed turns
+        # In full mode, get all mentions
+        if incremental and run_id:
+            mentions = conn.execute("""
+                SELECT m.mention_text, m.context, t.turn_number
+                FROM entity_mentions m
+                JOIN turn_turns t ON m.turn_id = t.id
+                JOIN pipeline_turn_status pts ON t.id = pts.turn_id
+                WHERE m.entity_id = ?
+                AND (pts.pipeline_run_id = ? OR pts.processed_at > datetime('now', '-1 hour'))
+                ORDER BY t.turn_number
+            """, (entity_id, run_id)).fetchall()
+        else:
+            mentions = conn.execute("""
+                SELECT m.mention_text, m.context, t.turn_number
+                FROM entity_mentions m
+                JOIN turn_turns t ON m.turn_id = t.id
+                WHERE m.entity_id = ?
+                ORDER BY t.turn_number
+            """, (entity_id,)).fetchall()
 
         mention_contexts = [m["context"] for m in mentions if m["context"]]
 
@@ -106,18 +211,36 @@ def build_entity_profiles(
         )
 
         if use_llm and mentions:
-            # Format mentions for prompt -- deduplicate identical contexts
-            seen_ctx: set[str] = set()
-            mention_lines = []
+            # Build rich contexts from segments, grouped by turn, deduplicated
+            by_turn: dict[int, list[str]] = {}
             for m in mentions:
-                ctx = m["context"]
-                if not ctx or ctx in seen_ctx:
+                turn_num = m["turn_number"]
+                rich_ctx = _find_rich_context_for_mention(
+                    conn, m["mention_text"], turn_num,
+                    m["context"], segment_cache,
+                )
+                if not rich_ctx:
                     continue
-                seen_ctx.add(ctx)
-                mention_lines.append(f"Tour {m['turn_number']}: \"...{ctx}...\"")
+                by_turn.setdefault(turn_num, []).append(rich_ctx)
+
+            # Deduplicate and format per turn
+            mention_lines = []
+            for turn_num in sorted(by_turn.keys()):
+                seen: set[str] = set()
+                for ctx in by_turn[turn_num]:
+                    # Deduplicate by first 100 chars
+                    key = ctx[:100].lower()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    mention_lines.append(f"--- Tour {turn_num} ---\n{ctx}")
 
             if mention_lines:
-                mentions_text = "\n".join(mention_lines)
+                mentions_text = "\n\n".join(mention_lines)
+                # Trim if too long for context window
+                if len(mentions_text) > 6000:
+                    mentions_text = mentions_text[:6000] + "\n[...tronqué...]"
+
                 prompt = PROFILE_PROMPT.format(
                     name=name,
                     entity_type=entity_type,
@@ -127,38 +250,98 @@ def build_entity_profiles(
                 try:
                     data = _call_ollama(model, prompt)
                     profile.description = data.get("description", "")
-                    profile.history = data.get("history", [])
+
+                    # Convert turn_summaries dict to sorted list
+                    turn_summaries = data.get("turn_summaries", {})
+                    if isinstance(turn_summaries, dict):
+                        profile.history = [
+                            f"{k}: {v}" for k, v in sorted(
+                                turn_summaries.items(),
+                                key=lambda x: _extract_turn_number(x[0]),
+                            )
+                        ]
+                    elif isinstance(turn_summaries, list):
+                        profile.history = turn_summaries
+                    else:
+                        # Fallback to old format
+                        profile.history = data.get("history", [])
+
                     raw_aliases = data.get("aliases", [])
-                    # Clean aliases: remove self-references and empties
                     profile.aliases_suggested = [
                         a.strip() for a in raw_aliases
-                        if a.strip() and a.strip().lower() != name.lower()
+                        if isinstance(a, str) and a.strip() and a.strip().lower() != name.lower()
                     ]
                 except Exception as e:
                     print(f"       WARNING: LLM failed for '{name}': {e}")
 
         profiles.append(profile)
 
-        # Store in DB
-        if profile.description:
-            history_json = json.dumps(profile.history, ensure_ascii=False) if profile.history else None
+        # Store in DB - merge with existing if incremental
+        if profile.description or profile.history:
+            if incremental and existing_history:
+                # Merge new turn summaries with existing ones
+                existing_turns = _get_existing_turn_summaries(existing_history)
+
+                # Parse new summaries from profile.history
+                new_turns = {}
+                for entry in profile.history:
+                    match = re.match(r"Tour (\d+):\s*(.*)", entry)
+                    if match:
+                        turn_num = int(match.group(1))
+                        summary = match.group(2)
+                        new_turns[turn_num] = summary
+
+                # Merge
+                merged_history = _merge_turn_summaries(existing_turns, new_turns)
+                history_json = json.dumps(merged_history, ensure_ascii=False) if merged_history else existing_history
+
+                # Keep existing description if we didn't generate a new one
+                final_description = profile.description if profile.description else existing_description
+            else:
+                # Full mode: replace everything
+                history_json = json.dumps(profile.history, ensure_ascii=False) if profile.history else None
+                final_description = profile.description
+
             conn.execute(
                 """UPDATE entity_entities
                    SET description = ?, history = ?, updated_at = datetime('now')
                    WHERE id = ?""",
-                (profile.description, history_json, entity_id),
+                (final_description, history_json, entity_id),
             )
 
+        # Commit every 10 entities to avoid losing progress on crash
         if (i + 1) % 10 == 0 or i == total - 1:
-            print(f"       -> Profiled {i + 1}/{total} entities")
+            conn.commit()
+            print(f"       -> Profiled {i + 1}/{total} entities (committed)")
 
-    conn.commit()
+            # Update progress tracking
+            if track_progress and run_id:
+                update_progress(
+                    conn, run_id, "profiler", civ_id, None,
+                    i + 1, total, "entity", "running"
+                )
+
+    # Mark profiler phase as completed
+    if track_progress and run_id and total > 0:
+        # Get a civ_id for progress tracking (use first entity's civ_id)
+        first_civ_id = entities[0]["civ_id"] if entities else None
+        update_progress(
+            conn, run_id, "profiler", first_civ_id, None,
+            total, total, "entity", "completed"
+        )
+
     conn.close()
 
     described = sum(1 for p in profiles if p.description)
     print(f"       -> {described}/{total} entities got LLM descriptions")
 
     return profiles
+
+
+def _extract_turn_number(key: str) -> int:
+    """Extract turn number from a key like 'Tour 14'."""
+    match = re.search(r'\d+', key)
+    return int(match.group()) if match else 0
 
 
 def _call_ollama(model: str, prompt: str) -> dict:

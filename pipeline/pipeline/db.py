@@ -105,3 +105,92 @@ def get_civilization_id(db_path: str, name: str) -> int | None:
         return row["id"] if row else None
     finally:
         conn.close()
+
+
+# ============================================================
+# Incremental Pipeline Tracking
+# ============================================================
+
+
+def get_unprocessed_turns(conn: sqlite3.Connection, civ_id: int | None = None) -> list[sqlite3.Row]:
+    """Get all turns that haven't been processed yet.
+
+    A turn is considered unprocessed if it doesn't have an entry in pipeline_turn_status.
+
+    Args:
+        conn: Database connection
+        civ_id: Optional civilization ID to filter by
+
+    Returns:
+        List of turn rows (turn_turns table)
+    """
+    if civ_id is not None:
+        query = """
+            SELECT t.* FROM turn_turns t
+            LEFT JOIN pipeline_turn_status pts ON t.id = pts.turn_id
+            WHERE t.civ_id = ? AND pts.turn_id IS NULL
+            ORDER BY t.turn_number
+        """
+        return conn.execute(query, (civ_id,)).fetchall()
+    else:
+        query = """
+            SELECT t.* FROM turn_turns t
+            LEFT JOIN pipeline_turn_status pts ON t.id = pts.turn_id
+            WHERE pts.turn_id IS NULL
+            ORDER BY t.civ_id, t.turn_number
+        """
+        return conn.execute(query).fetchall()
+
+
+def mark_turn_processed(conn: sqlite3.Connection, turn_id: int, run_id: int) -> None:
+    """Mark a turn as processed.
+
+    Args:
+        conn: Database connection
+        turn_id: Turn ID to mark as processed
+        run_id: Pipeline run ID that processed this turn
+    """
+    conn.execute(
+        "INSERT OR REPLACE INTO pipeline_turn_status (turn_id, pipeline_run_id) VALUES (?, ?)",
+        (turn_id, run_id),
+    )
+
+
+def mark_all_turns_unprocessed(conn: sqlite3.Connection) -> None:
+    """Clear all turn processing status, forcing a full reprocess."""
+    conn.execute("DELETE FROM pipeline_turn_status")
+    conn.commit()
+
+
+def update_progress(
+    conn: sqlite3.Connection,
+    run_id: int,
+    phase: str,
+    civ_id: int | None,
+    civ_name: str | None,
+    current: int,
+    total: int,
+    unit_type: str,
+    status: str = "running",
+) -> None:
+    """Update pipeline progress for Flutter UI polling.
+
+    Args:
+        conn: Database connection
+        run_id: Pipeline run ID
+        phase: Phase name ('pipeline', 'profiler', 'wiki')
+        civ_id: Civilization ID (None for wiki phase)
+        civ_name: Civilization name (None for wiki phase)
+        current: Current unit number (0-indexed or 1-indexed depending on caller)
+        total: Total units to process
+        unit_type: Unit type ('turn', 'entity', 'page')
+        status: Status ('running', 'completed', 'failed')
+    """
+    from datetime import datetime
+
+    conn.execute(
+        """INSERT OR REPLACE INTO pipeline_progress
+           (pipeline_run_id, phase, civ_id, civ_name, total_units, current_unit, unit_type, status, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (run_id, phase, civ_id, civ_name, total, current, unit_type, status, datetime.now().isoformat()),
+    )
