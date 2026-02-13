@@ -13,6 +13,9 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+# Import turn page generators (Phase 2)
+from turn_page_generator import generate_turn_index, generate_turn_page
+
 
 def get_connection(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path)
@@ -129,6 +132,992 @@ def is_noise_entity(name: str) -> bool:
     return False
 
 
+# -- Analysis functions --------------------------------------------------------
+
+def get_cooccurrences(conn: sqlite3.Connection, civ_id: int | None = None, min_turns: int = 2) -> list[tuple]:
+    """Retourne les co-occurrences d'entités (entités mentionnées ensemble dans les mêmes tours).
+
+    Args:
+        conn: Database connection
+        civ_id: Optional civilization ID to filter by
+        min_turns: Minimum number of turns entities must co-occur (default 2)
+
+    Returns:
+        List of tuples: (entity1_name, entity1_type, entity2_name, entity2_type, nb_tours)
+    """
+    # Build query with optional civ filter
+    civ_filter = ""
+    params: list = []
+    if civ_id is not None:
+        civ_filter = "AND e1.civ_id = ?"
+        params.append(civ_id)
+
+    query = f"""
+        SELECT
+            e1.canonical_name as entity1_name,
+            e1.entity_type as entity1_type,
+            e2.canonical_name as entity2_name,
+            e2.entity_type as entity2_type,
+            COUNT(DISTINCT m1.turn_id) as nb_turns
+        FROM entity_mentions m1
+        JOIN entity_mentions m2 ON m1.turn_id = m2.turn_id AND m1.entity_id < m2.entity_id
+        JOIN entity_entities e1 ON m1.entity_id = e1.id
+        JOIN entity_entities e2 ON m2.entity_id = e2.id
+        WHERE 1=1 {civ_filter}
+        GROUP BY e1.id, e2.id
+        HAVING COUNT(DISTINCT m1.turn_id) >= ?
+        ORDER BY nb_turns DESC, e1.canonical_name, e2.canonical_name
+    """
+    params.append(min_turns)
+
+    rows = conn.execute(query, params).fetchall()
+    return [(r["entity1_name"], r["entity1_type"], r["entity2_name"], r["entity2_type"], r["nb_turns"])
+            for r in rows]
+
+
+def get_entity_timeline(conn: sqlite3.Connection, entity_id: int) -> dict[int, int]:
+    """Timeline des mentions d'une entité (par numéro de tour).
+
+    Args:
+        conn: Database connection
+        entity_id: Entity ID
+
+    Returns:
+        Dictionary mapping turn_number -> nb_mentions
+    """
+    rows = conn.execute(
+        """SELECT t.turn_number, COUNT(*) as nb_mentions
+           FROM entity_mentions m
+           JOIN turn_turns t ON m.turn_id = t.id
+           WHERE m.entity_id = ?
+           GROUP BY t.turn_number
+           ORDER BY t.turn_number""",
+        (entity_id,)
+    ).fetchall()
+
+    return {r["turn_number"]: r["nb_mentions"] for r in rows}
+
+
+def get_tech_tree(conn: sqlite3.Connection, civ_id: int) -> list[tuple[int, list[str]]]:
+    """Arbre technologique chronologique pour une civilisation.
+
+    Args:
+        conn: Database connection
+        civ_id: Civilization ID
+
+    Returns:
+        List of tuples: (turn_number, [technologies])
+    """
+    rows = conn.execute(
+        """SELECT turn_number, technologies
+           FROM turn_turns
+           WHERE civ_id = ? AND technologies IS NOT NULL AND technologies != '[]'
+           ORDER BY turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    result = []
+    for r in rows:
+        techs = _parse_json_list(r["technologies"])
+        if techs:
+            result.append((r["turn_number"], techs))
+
+    return result
+
+
+def get_turn_detailed_stats(conn: sqlite3.Connection, turn_id: int) -> dict:
+    """Stats détaillées d'un tour.
+
+    Args:
+        conn: Database connection
+        turn_id: Turn ID
+
+    Returns:
+        Dictionary with detailed stats:
+        - segments_by_type: {type: count}
+        - entities_count: int
+        - new_entities: [entity_names]
+        - mentions_count: int
+        - has_media: bool
+        - tech_count: int
+        - resource_count: int
+    """
+    # Segments by type
+    seg_rows = conn.execute(
+        """SELECT segment_type, COUNT(*) as count
+           FROM turn_segments
+           WHERE turn_id = ?
+           GROUP BY segment_type""",
+        (turn_id,)
+    ).fetchall()
+    segments_by_type = {r["segment_type"]: r["count"] for r in seg_rows}
+
+    # Entity stats
+    entities_count = conn.execute(
+        "SELECT COUNT(DISTINCT entity_id) FROM entity_mentions WHERE turn_id = ?",
+        (turn_id,)
+    ).fetchone()[0]
+
+    # New entities (first_seen_turn = this turn)
+    new_entity_rows = conn.execute(
+        """SELECT e.canonical_name
+           FROM entity_entities e
+           WHERE e.first_seen_turn = ?
+           ORDER BY e.canonical_name""",
+        (turn_id,)
+    ).fetchall()
+    new_entities = [r["canonical_name"] for r in new_entity_rows if not is_noise_entity(r["canonical_name"])]
+
+    # Mentions count
+    mentions_count = conn.execute(
+        "SELECT COUNT(*) FROM entity_mentions WHERE turn_id = ?",
+        (turn_id,)
+    ).fetchone()[0]
+
+    # Media links
+    turn_row = conn.execute(
+        "SELECT media_links, technologies, resources FROM turn_turns WHERE id = ?",
+        (turn_id,)
+    ).fetchone()
+
+    has_media = False
+    tech_count = 0
+    resource_count = 0
+
+    if turn_row:
+        media = _parse_json_data(turn_row["media_links"])
+        has_media = len(media) > 0
+
+        techs = _parse_json_list(turn_row["technologies"])
+        tech_count = len(techs)
+
+        resources = _parse_json_list(turn_row["resources"])
+        resource_count = len(resources)
+
+    return {
+        "segments_by_type": segments_by_type,
+        "entities_count": entities_count,
+        "new_entities": new_entities,
+        "mentions_count": mentions_count,
+        "has_media": has_media,
+        "tech_count": tech_count,
+        "resource_count": resource_count,
+    }
+
+
+def get_entity_context_samples(conn: sqlite3.Connection, entity_id: int, limit: int = 5) -> list[tuple[int, str, str]]:
+    """Extraits de mentions avec contexte pour une entité.
+
+    Args:
+        conn: Database connection
+        entity_id: Entity ID
+        limit: Maximum number of samples to return
+
+    Returns:
+        List of tuples: (turn_number, mention_text, context)
+    """
+    rows = conn.execute(
+        """SELECT m.mention_text, m.context, t.turn_number
+           FROM entity_mentions m
+           JOIN turn_turns t ON m.turn_id = t.id
+           WHERE m.entity_id = ?
+           ORDER BY t.turn_number
+           LIMIT ?""",
+        (entity_id, limit)
+    ).fetchall()
+
+    return [(r["turn_number"], r["mention_text"], r["context"] or "") for r in rows]
+
+
+def get_activity_by_month(conn: sqlite3.Connection, civ_id: int | None = None) -> list[tuple[str, int]]:
+    """Activité mensuelle (nombre de tours par mois).
+
+    Args:
+        conn: Database connection
+        civ_id: Optional civilization ID to filter by
+
+    Returns:
+        List of tuples: (year_month, turn_count)
+        year_month format: "YYYY-MM"
+    """
+    civ_filter = ""
+    params: list = []
+
+    if civ_id is not None:
+        civ_filter = "WHERE t.civ_id = ?"
+        params.append(civ_id)
+
+    # Extract year-month from Discord timestamp in raw messages
+    query = f"""
+        SELECT
+            strftime('%Y-%m', m.timestamp) as year_month,
+            COUNT(DISTINCT t.id) as turn_count
+        FROM turn_turns t
+        JOIN json_each(t.raw_message_ids) AS msg_id
+        JOIN turn_raw_messages m ON CAST(msg_id.value AS INTEGER) = m.id
+        {civ_filter}
+        GROUP BY year_month
+        ORDER BY year_month
+    """
+
+    rows = conn.execute(query, params).fetchall()
+    return [(r["year_month"] or "Unknown", r["turn_count"]) for r in rows]
+
+
+def get_turn_messages_grouped(conn: sqlite3.Connection, turn_id: int) -> list[dict]:
+    """Messages Discord groupés par auteur (GM vs Player).
+
+    Args:
+        conn: Database connection
+        turn_id: Turn ID
+
+    Returns:
+        List of dicts with keys: author, is_gm, timestamp, content
+    """
+    # Get raw message IDs
+    turn_row = conn.execute(
+        "SELECT raw_message_ids FROM turn_turns WHERE id = ?",
+        (turn_id,)
+    ).fetchone()
+
+    if not turn_row or not turn_row["raw_message_ids"]:
+        return []
+
+    raw_ids = _parse_json_list(turn_row["raw_message_ids"])
+    if not raw_ids:
+        return []
+
+    # Detect GM authors
+    gm_authors = _detect_gm_authors(conn)
+
+    # Fetch messages
+    result = []
+    for msg_id_str in raw_ids:
+        msg_row = conn.execute(
+            "SELECT author_name, timestamp, content FROM turn_raw_messages WHERE id = ?",
+            (int(msg_id_str),)
+        ).fetchone()
+
+        if not msg_row:
+            continue
+
+        author = _clean_author_name(msg_row["author_name"])
+        is_gm = msg_row["author_name"] in gm_authors
+
+        result.append({
+            "author": author,
+            "is_gm": is_gm,
+            "timestamp": msg_row["timestamp"] or "",
+            "content": msg_row["content"] or "",
+        })
+
+    return result
+
+
+# -- Knowledge base generators (Phase 5) ---------------------------------------
+
+def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate technology knowledge base page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/technologies.md with:
+    - Timeline chronologique (by turn)
+    - Technologies par catégorie (inferred from keywords)
+    """
+    civ_slug = slugify(civ_name)
+    tech_tree = get_tech_tree(conn, civ_id)
+
+    if not tech_tree:
+        return  # No technologies to display
+
+    # Categorization keywords
+    categories = {
+        "Outils de chasse": ["gourdin", "pieux", "arc", "flèche", "lance", "harpon", "chasseur"],
+        "Outils de pêche": ["filet", "ligne", "hameçon", "pêche", "nasse", "poisson"],
+        "Agriculture": ["semence", "irrigation", "culture", "plantation", "récolte", "agriculture", "champ"],
+        "Artisanat": ["tissage", "poterie", "vannerie", "tannage", "artisan", "métier"],
+        "Construction": ["cabane", "palissade", "maison", "construction", "bâtiment", "architecture"],
+    }
+
+    # Build category mapping
+    tech_by_category: dict[str, list[tuple[str, int]]] = {cat: [] for cat in categories}
+    tech_by_category["Autre"] = []
+
+    lines = [
+        f"# Arbre Technologique",
+        "",
+        "## Timeline chronologique",
+        "",
+    ]
+
+    # Chronological section
+    for turn_num, techs in tech_tree:
+        tech_list = ", ".join(techs)
+        lines.append(f"**Tour {turn_num}** → {tech_list}")
+
+        # Categorize each tech
+        for tech in techs:
+            tech_lower = tech.lower()
+            categorized = False
+            for cat, keywords in categories.items():
+                if any(kw in tech_lower for kw in keywords):
+                    tech_by_category[cat].append((tech, turn_num))
+                    categorized = True
+                    break
+            if not categorized:
+                tech_by_category["Autre"].append((tech, turn_num))
+
+    lines.append("")
+    lines.append("## Par catégorie")
+    lines.append("")
+
+    # Category sections with emojis
+    category_emojis = {
+        "Outils de chasse": "🛠️",
+        "Outils de pêche": "🎣",
+        "Agriculture": "🌾",
+        "Artisanat": "🎨",
+        "Construction": "🏗️",
+        "Autre": "📦",
+    }
+
+    for cat, emoji in category_emojis.items():
+        if tech_by_category[cat]:
+            lines.append(f"### {emoji} {cat}")
+            lines.append("")
+            for tech, turn_num in tech_by_category[cat]:
+                lines.append(f"- {tech} (Tour {turn_num})")
+            lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "technologies.md", content)
+
+
+def generate_resources_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate resources knowledge base page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/resources.md with:
+    - Resources by turn
+    - Resources by category (inferred from keywords)
+    """
+    civ_slug = slugify(civ_name)
+
+    # Query resources from turn_turns
+    rows = conn.execute(
+        """SELECT turn_number, resources
+           FROM turn_turns
+           WHERE civ_id = ? AND resources IS NOT NULL AND resources != '[]'
+           ORDER BY turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    if not rows:
+        return  # No resources to display
+
+    # Categorization keywords
+    categories = {
+        "Nourriture": ["viande", "poisson", "fruit", "légume", "céréale", "nourriture", "gibier", "baie"],
+        "Matériaux": ["bois", "pierre", "argile", "os", "silex", "bambou", "roseau"],
+        "Minéraux": ["cuivre", "bronze", "fer", "or", "argent", "métal", "minerai"],
+    }
+
+    resource_by_category: dict[str, list[tuple[str, int]]] = {cat: [] for cat in categories}
+    resource_by_category["Autre"] = []
+
+    lines = [
+        f"# Index des Ressources",
+        "",
+        "## Par tour",
+        "",
+    ]
+
+    # Chronological section
+    resources_by_turn = []
+    for row in rows:
+        resources = _parse_json_list(row["resources"])
+        if not resources:
+            continue
+
+        # Deduplicate
+        resources = sorted(set(resources))
+        resources_by_turn.append((row["turn_number"], resources))
+
+        resource_list = ", ".join(resources)
+        lines.append(f"**Tour {row['turn_number']}** : {resource_list}")
+
+        # Categorize
+        for res in resources:
+            res_lower = res.lower()
+            categorized = False
+            for cat, keywords in categories.items():
+                if any(kw in res_lower for kw in keywords):
+                    resource_by_category[cat].append((res, row["turn_number"]))
+                    categorized = True
+                    break
+            if not categorized:
+                resource_by_category["Autre"].append((res, row["turn_number"]))
+
+    lines.append("")
+    lines.append("## Par catégorie")
+    lines.append("")
+
+    # Category sections
+    category_emojis = {
+        "Nourriture": "🍖",
+        "Matériaux": "🪨",
+        "Minéraux": "⚒️",
+        "Autre": "📦",
+    }
+
+    for cat, emoji in category_emojis.items():
+        if resource_by_category[cat]:
+            lines.append(f"### {emoji} {cat}")
+            lines.append("")
+            # Deduplicate resources in category
+            seen = set()
+            for res, turn_num in resource_by_category[cat]:
+                if res.lower() not in seen:
+                    seen.add(res.lower())
+                    lines.append(f"- {res} (Tour {turn_num})")
+            lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "resources.md", content)
+
+
+def generate_beliefs_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate beliefs knowledge base page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/beliefs.md with:
+    - Evolution (chronological by turn)
+    - Rituels développés (detected by keywords)
+    - Concepts spirituels (other beliefs)
+    """
+    civ_slug = slugify(civ_name)
+
+    # Query beliefs from turn_turns
+    rows = conn.execute(
+        """SELECT turn_number, beliefs
+           FROM turn_turns
+           WHERE civ_id = ? AND beliefs IS NOT NULL AND beliefs != '[]'
+           ORDER BY turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    if not rows:
+        return  # No beliefs to display
+
+    lines = [
+        f"# Système de Croyances",
+        "",
+        "## Évolution",
+        "",
+    ]
+
+    ritual_keywords = {"rituel", "cérémonie", "offrande", "sacrifice", "célébration", "fête"}
+    rituals = []
+    concepts = []
+
+    # Chronological section
+    for row in rows:
+        beliefs = _parse_json_list(row["beliefs"])
+        if not beliefs:
+            continue
+
+        # Deduplicate
+        beliefs = sorted(set(beliefs))
+
+        lines.append(f"**Tour {row['turn_number']}**")
+        for belief in beliefs:
+            lines.append(f"- {belief}")
+
+            # Categorize
+            belief_lower = belief.lower()
+            if any(kw in belief_lower for kw in ritual_keywords):
+                rituals.append((belief, row["turn_number"]))
+            else:
+                concepts.append((belief, row["turn_number"]))
+        lines.append("")
+
+    # Rituels section
+    if rituals:
+        lines.append("## Rituels développés")
+        lines.append("")
+        seen = set()
+        for ritual, turn_num in rituals:
+            if ritual.lower() not in seen:
+                seen.add(ritual.lower())
+                lines.append(f"- {ritual} (Tour {turn_num})")
+        lines.append("")
+
+    # Concepts section
+    if concepts:
+        lines.append("## Concepts spirituels")
+        lines.append("")
+        seen = set()
+        for concept, turn_num in concepts:
+            if concept.lower() not in seen:
+                seen.add(concept.lower())
+                lines.append(f"- {concept} (Tour {turn_num})")
+        lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "beliefs.md", content)
+
+
+def generate_geography_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate geography knowledge base page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/geography.md with:
+    - Lieux par ordre de découverte
+    - Carte textuelle (ASCII tree based on detected hierarchy)
+    """
+    civ_slug = slugify(civ_name)
+
+    # Query geography from turn_turns
+    rows = conn.execute(
+        """SELECT turn_number, geography
+           FROM turn_turns
+           WHERE civ_id = ? AND geography IS NOT NULL AND geography != '[]'
+           ORDER BY turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    if not rows:
+        return  # No geography to display
+
+    lines = [
+        f"# Géographie",
+        "",
+        "## Lieux par ordre de découverte",
+        "",
+    ]
+
+    all_places = []
+
+    # Chronological section
+    for row in rows:
+        places = _parse_json_list(row["geography"])
+        if not places:
+            continue
+
+        # Deduplicate
+        places = sorted(set(places))
+
+        place_list = ", ".join(places)
+        lines.append(f"**Tour {row['turn_number']}** : {place_list}")
+
+        for place in places:
+            all_places.append(place)
+
+    lines.append("")
+
+    # Build ASCII tree based on detected hierarchy
+    if all_places:
+        lines.append("## Carte textuelle")
+        lines.append("")
+        lines.append("```")
+
+        # Simple heuristic: detect hierarchical keywords
+        hierarchy_patterns = {
+            "vallée": 0,
+            "région": 0,
+            "rivière": 1,
+            "fleuve": 1,
+            "village": 2,
+            "campement": 3,
+            "crête": 1,
+            "montagne": 1,
+            "forêt": 1,
+        }
+
+        # Categorize places by hierarchy level
+        by_level: dict[int, list[str]] = {0: [], 1: [], 2: [], 3: []}
+
+        # Deduplicate all_places
+        unique_places = []
+        seen = set()
+        for place in all_places:
+            if place.lower() not in seen:
+                seen.add(place.lower())
+                unique_places.append(place)
+
+        for place in unique_places:
+            place_lower = place.lower()
+            level = 3  # Default to deepest level
+            for keyword, lvl in hierarchy_patterns.items():
+                if keyword in place_lower:
+                    level = lvl
+                    break
+            by_level[level].append(place)
+
+        # Generate tree
+        if by_level[0]:
+            # Main locations at root
+            for i, place in enumerate(by_level[0]):
+                is_last_root = (i == len(by_level[0]) - 1)
+                lines.append(place)
+
+                # Sub-locations
+                if by_level[1]:
+                    for j, sub in enumerate(by_level[1]):
+                        is_last_sub = (j == len(by_level[1]) - 1) and not by_level[2]
+                        prefix = "└─" if is_last_sub else "├─"
+                        lines.append(f"{prefix} {sub}")
+
+                # Villages/settlements
+                if by_level[2]:
+                    prefix = "└─" if not by_level[3] else "├─"
+                    lines.append(f"{prefix} Villages")
+                    for k, village in enumerate(by_level[2]):
+                        is_last_village = (k == len(by_level[2]) - 1) and not by_level[3]
+                        v_prefix = "   └─" if is_last_village else "   ├─"
+                        lines.append(f"{v_prefix} {village}")
+
+                # Campements
+                if by_level[3]:
+                    for m, camp in enumerate(by_level[3]):
+                        is_last_camp = (m == len(by_level[3]) - 1)
+                        c_prefix = "      └─" if is_last_camp else "      ├─"
+                        lines.append(f"{c_prefix} {camp}")
+        else:
+            # No main location, list everything flat
+            for place in unique_places[:10]:  # Limit to 10
+                lines.append(f"- {place}")
+
+        lines.append("```")
+        lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "geography.md", content)
+
+
+# -- Analytics pages (Phase 6) -------------------------------------------------
+
+def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate analytics page for a civilization.
+
+    Creates civilizations/{civ_slug}/analytics.md with:
+    - Evolution des entites decouvertes (bar chart by turn)
+    - Densite narrative par tour (segments count bar chart)
+    - Top 20 entites (mentions with bars)
+    - Tours cles (turns with >5 new entities or >10 segments)
+    """
+    civ_slug = slugify(civ_name)
+
+    lines = [
+        f"# Analytics — {civ_name}",
+        "",
+    ]
+
+    # 1. Evolution des entites decouvertes
+    new_entities_by_turn = conn.execute(
+        """SELECT t.turn_number, COUNT(DISTINCT e.id) as new_count
+           FROM entity_entities e
+           JOIN turn_turns t ON e.first_seen_turn = t.id
+           WHERE e.civ_id = ?
+           GROUP BY t.turn_number
+           ORDER BY t.turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    if new_entities_by_turn:
+        lines.extend([
+            "## 📈 Évolution des entités découvertes",
+            "",
+            "```",
+        ])
+
+        # Filter noise and recalculate
+        clean_new_entities = []
+        for row in new_entities_by_turn:
+            turn_num = row["turn_number"]
+            # Count clean entities for this turn
+            entities = conn.execute(
+                """SELECT e.canonical_name
+                   FROM entity_entities e
+                   JOIN turn_turns t ON e.first_seen_turn = t.id
+                   WHERE e.civ_id = ? AND t.turn_number = ?""",
+                (civ_id, turn_num)
+            ).fetchall()
+            clean_count = sum(1 for e in entities if not is_noise_entity(e["canonical_name"]))
+            if clean_count > 0:
+                clean_new_entities.append((turn_num, clean_count))
+
+        if clean_new_entities:
+            max_new = max(count for _, count in clean_new_entities)
+            peak_turn = max(clean_new_entities, key=lambda x: x[1])[0]
+
+            for turn_num, count in clean_new_entities:
+                bar_length = int((count / max_new) * 20) if max_new > 0 else 0
+                bar = "█" * bar_length if bar_length > 0 else ""
+                peak_marker = "  ← Pic" if turn_num == peak_turn and count == max_new else ""
+                lines.append(f"Tour {turn_num:2d}: {bar:<20s}{peak_marker}")
+
+        lines.extend(["```", ""])
+
+    # 2. Densite narrative par tour (segment count)
+    segments_by_turn = conn.execute(
+        """SELECT t.turn_number, COUNT(s.id) as segment_count
+           FROM turn_turns t
+           LEFT JOIN turn_segments s ON s.turn_id = t.id
+           WHERE t.civ_id = ?
+           GROUP BY t.turn_number
+           ORDER BY t.turn_number""",
+        (civ_id,)
+    ).fetchall()
+
+    if segments_by_turn:
+        lines.extend([
+            "## 📊 Densité narrative par tour",
+            "",
+            "```",
+        ])
+
+        max_segments = max(row["segment_count"] for row in segments_by_turn) if segments_by_turn else 1
+        peak_seg_turn = max(segments_by_turn, key=lambda x: x["segment_count"])["turn_number"] if segments_by_turn else 0
+
+        for row in segments_by_turn:
+            turn_num = row["turn_number"]
+            count = row["segment_count"]
+            bar_length = int((count / max_segments) * 20) if max_segments > 0 else 0
+            bar = "█" * bar_length if bar_length > 0 else ""
+            peak_marker = "  ← Pic" if turn_num == peak_seg_turn else ""
+            lines.append(f"Tour {turn_num:2d}: {bar:<20s} ({count} segments){peak_marker}")
+
+        lines.extend(["```", ""])
+
+    # 3. Top 20 entites
+    top_entities = conn.execute(
+        """SELECT e.canonical_name, e.entity_type,
+                  COUNT(m.id) as mention_count
+           FROM entity_entities e
+           JOIN entity_mentions m ON m.entity_id = e.id
+           WHERE e.civ_id = ?
+           GROUP BY e.id
+           ORDER BY mention_count DESC
+           LIMIT 30""",
+        (civ_id,)
+    ).fetchall()
+
+    if top_entities:
+        lines.extend([
+            "## 🏆 Top 20 entités",
+            "",
+        ])
+
+        # Filter noise and take first 20 clean entities
+        clean_entities = [e for e in top_entities if not is_noise_entity(e["canonical_name"])][:20]
+
+        if clean_entities:
+            max_mentions = clean_entities[0]["mention_count"]
+            for i, entity in enumerate(clean_entities, 1):
+                name = _capitalize_entity(entity["canonical_name"])
+                etype_label = _entity_type_label(entity["entity_type"])
+                bar_length = int((entity["mention_count"] / max_mentions) * 20) if max_mentions > 0 else 0
+                bar = "█" * bar_length if bar_length > 0 else ""
+                lines.append(f"{i}. **{name}** ({etype_label}) {bar:<20s} {entity['mention_count']} mentions")
+        lines.append("")
+
+    # 4. Tours cles (>5 new entities or >10 segments)
+    key_turns = []
+
+    # Check for turns with >5 new entities
+    for turn_num, new_count in clean_new_entities if 'clean_new_entities' in locals() else []:
+        if new_count > 5:
+            key_turns.append((turn_num, f"Explosion de {new_count} nouvelles entités"))
+
+    # Check for turns with >10 segments
+    for row in segments_by_turn:
+        if row["segment_count"] > 10:
+            # Avoid duplicates
+            if not any(t[0] == row["turn_number"] for t in key_turns):
+                key_turns.append((row["turn_number"], f"Densité narrative élevée ({row['segment_count']} segments)"))
+            else:
+                # Update existing entry
+                for i, (t, desc) in enumerate(key_turns):
+                    if t == row["turn_number"]:
+                        key_turns[i] = (t, f"Explosion de nouvelles entités + densité narrative ({row['segment_count']} segments)")
+
+    if key_turns:
+        lines.extend([
+            "## 🎯 Tours clés",
+            "",
+        ])
+        key_turns.sort(key=lambda x: x[0])
+        for turn_num, description in key_turns:
+            lines.append(f"- **Tour {turn_num}** : {description}")
+        lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug
+    _write_page(out_path / "analytics.md", content)
+
+
+def generate_entity_network_page(conn: sqlite3.Connection, output_dir: str) -> None:
+    """Generate global entity network page.
+
+    Creates global/entity-network.md with:
+    - Hub central (entity with most mentions)
+    - ASCII tree of top 5 co-occurrences with the hub
+    - Clusters par type (top 3 co-occurrences per entity type)
+    """
+    lines = [
+        "# Réseau d'Entités",
+        "",
+    ]
+
+    # Find hub central (entity with most mentions)
+    hub_row = conn.execute(
+        """SELECT e.canonical_name, e.entity_type,
+                  COUNT(m.id) as mention_count
+           FROM entity_entities e
+           JOIN entity_mentions m ON m.entity_id = e.id
+           GROUP BY e.id
+           ORDER BY mention_count DESC
+           LIMIT 20"""
+    ).fetchall()
+
+    # Filter noise to find the real hub
+    clean_hubs = [h for h in hub_row if not is_noise_entity(h["canonical_name"])]
+
+    if not clean_hubs:
+        # No clean entities found
+        content = "\n".join(lines + ["Aucune entité disponible."])
+        _write_page(Path(output_dir) / "global" / "entity-network.md", content)
+        return
+
+    hub = clean_hubs[0]
+    hub_name = hub["canonical_name"]
+    hub_type = hub["entity_type"]
+    hub_mentions = hub["mention_count"]
+
+    lines.extend([
+        f"## Hub central : {_capitalize_entity(hub_name)} ({hub_mentions} mentions)",
+        "",
+        "```",
+    ])
+
+    # Get co-occurrences for the hub
+    # Find entity ID for the hub
+    hub_id = conn.execute(
+        "SELECT id FROM entity_entities WHERE canonical_name = ? LIMIT 1",
+        (hub_name,)
+    ).fetchone()
+
+    if hub_id:
+        hub_id = hub_id["id"]
+
+        # Get turns where hub appears
+        hub_turns = conn.execute(
+            """SELECT DISTINCT turn_id
+               FROM entity_mentions
+               WHERE entity_id = ?""",
+            (hub_id,)
+        ).fetchall()
+
+        if hub_turns:
+            turn_ids = [t["turn_id"] for t in hub_turns]
+            turn_placeholders = ",".join("?" * len(turn_ids))
+
+            # Get co-occurring entities
+            cooccurring = conn.execute(
+                f"""SELECT e.canonical_name, e.entity_type,
+                           COUNT(DISTINCT m.turn_id) as turns_together
+                    FROM entity_mentions m
+                    JOIN entity_entities e ON m.entity_id = e.id
+                    WHERE m.turn_id IN ({turn_placeholders})
+                      AND m.entity_id != ?
+                    GROUP BY e.id
+                    HAVING turns_together >= 2
+                    ORDER BY turns_together DESC
+                    LIMIT 20""",
+                turn_ids + [hub_id]
+            ).fetchall()
+
+            # Filter noise and take top 5
+            clean_cooccurrences = [c for c in cooccurring if not is_noise_entity(c["canonical_name"])][:5]
+
+            # Display ASCII tree
+            hub_display = f"{_capitalize_entity(hub_name)} ({_entity_type_label(hub_type).lower()})"
+            lines.append(hub_display)
+
+            for i, co in enumerate(clean_cooccurrences):
+                is_last = (i == len(clean_cooccurrences) - 1)
+                prefix = "└─" if is_last else "├─"
+                co_name = _capitalize_entity(co["canonical_name"])
+                co_type = _entity_type_label(co["entity_type"]).lower()
+                turns = co["turns_together"]
+                lines.append(f"{prefix} {co_name} ({co_type}) — {turns} tours ensemble")
+
+    lines.extend(["```", ""])
+
+    # Clusters par type (global co-occurrences grouped by entity type)
+    lines.extend([
+        "## Clusters par type",
+        "",
+    ])
+
+    # Get all co-occurrences with min_turns=2
+    all_cooccurrences = get_cooccurrences(conn, civ_id=None, min_turns=2)
+
+    # Filter noise
+    clean_cooccurrences_all = [
+        (e1, e1_type, e2, e2_type, nb)
+        for e1, e1_type, e2, e2_type, nb in all_cooccurrences
+        if not is_noise_entity(e1) and not is_noise_entity(e2)
+    ]
+
+    # Group by entity type
+    by_type: dict[str, list[tuple]] = {}
+    for e1, e1_type, e2, e2_type, nb in clean_cooccurrences_all:
+        # Add to both types
+        by_type.setdefault(e1_type, []).append((e1, e2, nb))
+        if e2_type != e1_type:
+            by_type.setdefault(e2_type, []).append((e2, e1, nb))
+
+    # Sort types by frequency
+    type_order = ["caste", "place", "person", "technology", "institution", "civilization", "resource", "creature", "event"]
+    sorted_types = sorted(by_type.keys(), key=lambda t: type_order.index(t) if t in type_order else 99)
+
+    for etype in sorted_types[:5]:  # Top 5 types
+        pairs = by_type[etype]
+        # Deduplicate pairs (e1, e2) and (e2, e1)
+        seen = set()
+        unique_pairs = []
+        for e1, e2, nb in pairs:
+            pair_key = tuple(sorted([e1.lower(), e2.lower()]))
+            if pair_key not in seen:
+                seen.add(pair_key)
+                unique_pairs.append((e1, e2, nb))
+
+        # Sort by nb_turns and take top 3
+        unique_pairs.sort(key=lambda x: x[2], reverse=True)
+        top_pairs = unique_pairs[:3]
+
+        if top_pairs:
+            lines.append(f"### {_entity_type_label(etype)}")
+            lines.append("")
+            for e1, e2, nb in top_pairs:
+                e1_cap = _capitalize_entity(e1)
+                e2_cap = _capitalize_entity(e2)
+                lines.append(f"- {e1_cap} ↔ {e2_cap} ({nb} tours)")
+            lines.append("")
+
+    # Write page
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "global"
+    _write_page(out_path / "entity-network.md", content)
+
+
 # -- Page generators -----------------------------------------------------------
 
 def generate_index(conn: sqlite3.Connection) -> str:
@@ -178,6 +1167,164 @@ def generate_index(conn: sqlite3.Connection) -> str:
         f"*Derniere mise a jour : {now}*",
         "",
     ]
+    return "\n".join(lines)
+
+
+def generate_enriched_index(conn: sqlite3.Connection) -> str:
+    """Generate enriched wiki dashboard with stats, activity graph, top entities, and recent turns.
+
+    This is the Phase 3 implementation from REFACTOR_PLAN.md with:
+    - Global stats table
+    - ASCII activity graph by month
+    - Top 10 entities with ASCII bars
+    - Recent 5 turns with preview and Discord date
+    - Quick navigation links
+    """
+    # Global stats
+    turn_count = conn.execute("SELECT count(*) FROM turn_turns").fetchone()[0]
+    entity_count = conn.execute("SELECT count(*) FROM entity_entities").fetchone()[0]
+    mention_count = conn.execute("SELECT count(*) FROM entity_mentions").fetchone()[0]
+
+    # Count technologies and resources from JSON fields
+    tech_count = 0
+    resource_count = 0
+    turns_with_data = conn.execute(
+        "SELECT technologies, resources FROM turn_turns WHERE technologies IS NOT NULL OR resources IS NOT NULL"
+    ).fetchall()
+    for row in turns_with_data:
+        if row["technologies"]:
+            tech_count += len(_parse_json_list(row["technologies"]))
+        if row["resources"]:
+            resource_count += len(_parse_json_list(row["resources"]))
+
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    lines = [
+        "# Wiki Aurelm",
+        "",
+        "Bienvenue sur le wiki automatise du monde d'Aurelm. Ce wiki est genere a partir des tours de jeu Discord.",
+        "",
+        "## Statistiques globales",
+        "",
+        "| Tours | Entites | Mentions | Technologies | Ressources |",
+        "|-------|---------|----------|--------------|------------|",
+        f"| **{turn_count}** | **{entity_count}** | **{mention_count}** | **{tech_count}** | **{resource_count}** |",
+        "",
+    ]
+
+    # Activity by month using get_activity_by_month()
+    activity = get_activity_by_month(conn, civ_id=None)
+
+    if activity:
+        lines.extend([
+            "## Activite par mois",
+            "",
+            "```",
+        ])
+        max_turns = max(count for _, count in activity) if activity else 1
+        for year_month, count in activity:
+            if year_month:
+                # Format month as "Sept 2024"
+                try:
+                    year, month = year_month.split("-")
+                    month_names = ["", "Jan", "Fev", "Mars", "Avr", "Mai", "Juin",
+                                   "Juil", "Aout", "Sept", "Oct", "Nov", "Dec"]
+                    month_label = f"{month_names[int(month)]} {year}"
+                except (ValueError, IndexError):
+                    month_label = year_month
+            else:
+                month_label = "(non date)"
+
+            # Scale bars to max 20 chars
+            bar_length = int((count / max_turns) * 20)
+            bar = "█" * bar_length if bar_length > 0 else ""
+            lines.append(f"{month_label:12s} {bar:<20s} {count} tours")
+        lines.extend(["```", ""])
+
+    # Top 10 entities by mentions
+    top_entities = conn.execute(
+        """SELECT e.canonical_name, e.entity_type,
+                  COUNT(m.id) as mention_count
+           FROM entity_entities e
+           JOIN entity_mentions m ON m.entity_id = e.id
+           GROUP BY e.id
+           ORDER BY mention_count DESC
+           LIMIT 15"""
+    ).fetchall()
+
+    if top_entities:
+        lines.extend([
+            "## Top 10 Entites (par mentions)",
+            "",
+        ])
+        # Filter noise and take first 10 clean entities
+        clean_entities = [e for e in top_entities if not is_noise_entity(e["canonical_name"])][:10]
+
+        if clean_entities:
+            max_mentions = clean_entities[0]["mention_count"]
+            for i, entity in enumerate(clean_entities, 1):
+                name = _capitalize_entity(entity["canonical_name"])
+                etype = entity["entity_type"]
+                # Scale bars to max 20 chars
+                bar_length = int((entity["mention_count"] / max_mentions) * 20)
+                bar = "█" * bar_length if bar_length > 0 else ""
+                lines.append(f"{i}. **{name}** ({etype}) {bar:<20s} {entity['mention_count']} mentions")
+        lines.append("")
+
+    # Recent 5 turns with preview and Discord date
+    recent_turns = conn.execute(
+        """SELECT t.id, t.turn_number, t.summary, c.name as civ_name,
+                  MIN(m.timestamp) as discord_date
+           FROM turn_turns t
+           JOIN civ_civilizations c ON t.civ_id = c.id
+           LEFT JOIN json_each(t.raw_message_ids) AS msg_id
+           LEFT JOIN turn_raw_messages m ON CAST(msg_id.value AS INTEGER) = m.id
+           GROUP BY t.id
+           ORDER BY t.turn_number DESC
+           LIMIT 5"""
+    ).fetchall()
+
+    if recent_turns:
+        lines.extend([
+            "## Derniers tours",
+            "",
+        ])
+        for turn in recent_turns:
+            civ_slug = slugify(turn["civ_name"])
+            turn_link = f"civilizations/{civ_slug}/turns.md#tour-{turn['turn_number']}"
+
+            # Format date
+            date_str = ""
+            if turn["discord_date"]:
+                try:
+                    # Parse ISO timestamp
+                    dt = datetime.fromisoformat(turn["discord_date"].replace("Z", "+00:00"))
+                    date_str = dt.strftime("%d/%m/%Y")
+                except (ValueError, AttributeError):
+                    date_str = str(turn["discord_date"])[:10]
+
+            summary_preview = _clean_summary(turn["summary"] or "")[:100]
+            if date_str:
+                lines.append(f"- **[Tour {turn['turn_number']}]({turn_link})** — *{date_str}* — {summary_preview}...")
+            else:
+                lines.append(f"- **[Tour {turn['turn_number']}]({turn_link})** — {summary_preview}...")
+        lines.append("")
+
+    # Navigation rapide
+    lines.extend([
+        "## Navigation rapide",
+        "",
+        "- **[Civilisations](civilizations/index.md)** — Vue d'ensemble des civilisations",
+        "- **[Timeline globale](global/timeline.md)** — Chronologie complete",
+        "- **[Index des entites](global/entities.md)** — Toutes les entites par type",
+        "- **[Pipeline](meta/pipeline.md)** — Statistiques du pipeline ML",
+        "",
+        "---",
+        "",
+        f"*Derniere mise a jour : {now}*",
+        "",
+    ])
+
     return "\n".join(lines)
 
 
@@ -285,6 +1432,32 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
         key_events = _parse_json_list(turn["key_events"])
         choices_made = _parse_json_list(turn["choices_made"])
 
+        # Parse structured facts (handle missing columns gracefully)
+        try:
+            media_links = _parse_json_data(turn["media_links"]) if turn["media_links"] else []
+        except (KeyError, IndexError):
+            media_links = []
+        try:
+            technologies = _parse_json_list(turn["technologies"]) if turn["technologies"] else []
+        except (KeyError, IndexError):
+            technologies = []
+        try:
+            resources = _parse_json_list(turn["resources"]) if turn["resources"] else []
+        except (KeyError, IndexError):
+            resources = []
+        try:
+            beliefs = _parse_json_list(turn["beliefs"]) if turn["beliefs"] else []
+        except (KeyError, IndexError):
+            beliefs = []
+        try:
+            geography = _parse_json_list(turn["geography"]) if turn["geography"] else []
+        except (KeyError, IndexError):
+            geography = []
+        try:
+            choices_proposed = _parse_json_list(turn["choices_proposed"]) if turn["choices_proposed"] else []
+        except (KeyError, IndexError):
+            choices_proposed = []
+
         entities = conn.execute(
             """SELECT DISTINCT e.canonical_name, e.entity_type
                FROM entity_mentions m JOIN entity_entities e ON m.entity_id = e.id
@@ -305,6 +1478,14 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
             "",
         ])
 
+        # Media links (YouTube embeds)
+        if media_links:
+            for link in media_links:
+                if isinstance(link, dict) and link.get("type") == "youtube":
+                    video_id = link.get("video_id", "")
+                    lines.append(f"🎵 **Ambiance** : [YouTube](https://www.youtube.com/watch?v={video_id})")
+                    lines.append("")
+
         if key_events:
             lines.append("**Evenements cles** :")
             lines.append("")
@@ -312,12 +1493,49 @@ def generate_civ_turns(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> 
                 lines.append(f"- {evt}")
             lines.append("")
 
-        if choices_made:
-            lines.append("**Choix effectues** :")
+        # Structured facts sections
+        if geography:
+            lines.append("🗺️ **Geographie decouverte** :")
             lines.append("")
-            for choice in choices_made:
-                lines.append(f"- {choice}")
+            for geo in geography[:10]:  # Limit to 10 items
+                lines.append(f"- {geo}")
             lines.append("")
+
+        if technologies:
+            lines.append("🔧 **Technologies/Savoirs** :")
+            lines.append("")
+            for tech in technologies[:10]:
+                lines.append(f"- {tech}")
+            lines.append("")
+
+        if resources:
+            lines.append("🌾 **Ressources** :")
+            lines.append("")
+            for res in resources[:10]:
+                lines.append(f"- {res}")
+            lines.append("")
+
+        if beliefs:
+            lines.append("✨ **Croyances/Systemes sociaux** :")
+            lines.append("")
+            for belief in beliefs[:10]:
+                lines.append(f"- {belief}")
+            lines.append("")
+
+        # Choices section (proposed vs made)
+        if choices_proposed or choices_made:
+            lines.append("⚖️ **Choix** :")
+            lines.append("")
+            if choices_proposed:
+                lines.append("*Options proposees* :")
+                for choice in choices_proposed:
+                    lines.append(f"- {choice}")
+                lines.append("")
+            if choices_made:
+                lines.append("*Decision* :")
+                for choice in choices_made:
+                    lines.append(f"- ✓ {choice}")
+                lines.append("")
 
         lines.extend([
             f"**Entites** : {entity_tags if entity_tags else 'aucune'}",
@@ -518,18 +1736,124 @@ def generate_entity_page(
         "",
         f"*{etype_label}* -- {civ_name}",
         "",
-        "| | |",
-        "|---|---|",
-        f"| Mentions | **{entity['mention_count']}** |",
-        f"| Premiere apparition | {first} |",
-        f"| Derniere apparition | {last} |",
     ]
 
-    if entity["aliases"]:
-        alias_display = ", ".join(_capitalize_entity(a) for a in entity["aliases"])
-        lines.append(f"| Alias | {alias_display} |")
+    # --- PHASE 4 ADDITION: Section "Vue d'ensemble" avec stats détaillées ---
+    # Get entity timeline for stats calculation
+    entity_timeline = get_entity_timeline(conn, entity["id"])
 
-    lines.append("")
+    if entity_timeline:
+        first_turn_num = min(entity_timeline.keys())
+        last_turn_num = max(entity_timeline.keys())
+        duration = last_turn_num - first_turn_num + 1
+        peak_turn = max(entity_timeline.items(), key=lambda x: x[1])[0]
+        peak_mentions = entity_timeline[peak_turn]
+        avg_mentions = entity["mention_count"] / len(entity_timeline)
+
+        lines.extend([
+            "## 📊 Vue d'ensemble",
+            "",
+            "| | |",
+            "|---|---|",
+            f"| **Mentions totales** | {entity['mention_count']} |",
+            f"| **Tours actifs** | {first_turn_num}-{last_turn_num} ({duration} tours) |",
+            f"| **Pic d'activite** | Tour {peak_turn} ({peak_mentions} mentions) |",
+            f"| **Moyenne** | {avg_mentions:.1f} mentions/tour |",
+            "",
+        ])
+    else:
+        # Fallback to basic table
+        lines.extend([
+            "| | |",
+            "|---|---|",
+            f"| Mentions | **{entity['mention_count']}** |",
+            f"| Premiere apparition | {first} |",
+            f"| Derniere apparition | {last} |",
+        ])
+        if entity["aliases"]:
+            alias_display = ", ".join(_capitalize_entity(a) for a in entity["aliases"])
+            lines.append(f"| Alias | {alias_display} |")
+        lines.append("")
+
+    # --- PHASE 4 ADDITION: Section "Graphe d'activité" ---
+    if entity_timeline:
+        lines.extend([
+            "## 📈 Graphe d'activite",
+            "",
+            "```",
+        ])
+        max_mentions_chart = max(entity_timeline.values())
+        for turn_num in sorted(entity_timeline.keys()):
+            mentions = entity_timeline[turn_num]
+            # Scale bars to max 20 chars
+            bar_length = int((mentions / max_mentions_chart) * 20) if max_mentions_chart > 0 else 0
+            bar = "█" * bar_length if bar_length > 0 else ""
+            peak_marker = "  ← Pic" if turn_num == peak_turn else ""
+            lines.append(f"Tour {turn_num:2d}  {bar:<20s}{peak_marker}")
+        lines.extend(["```", ""])
+
+    # --- PHASE 4 ADDITION: Section "Réseau relationnel" avec co-occurrences ---
+    # Get co-occurrences for this entity's turns
+    all_ids = entity["all_ids"]
+    placeholders = ",".join("?" * len(all_ids))
+    turn_ids = conn.execute(
+        f"""SELECT DISTINCT m.turn_id
+            FROM entity_mentions m
+            WHERE m.entity_id IN ({placeholders})""",
+        all_ids,
+    ).fetchall()
+
+    if turn_ids:
+        turn_id_list = [t["turn_id"] for t in turn_ids]
+        turn_placeholders = ",".join("?" * len(turn_id_list))
+
+        # Get co-occurring entities
+        cooccurring = conn.execute(
+            f"""SELECT e.id, e.canonical_name, e.entity_type,
+                       COUNT(DISTINCT m.turn_id) as turns_together
+                FROM entity_mentions m
+                JOIN entity_entities e ON m.entity_id = e.id
+                WHERE m.turn_id IN ({turn_placeholders})
+                  AND m.entity_id NOT IN ({placeholders})
+                GROUP BY e.id
+                HAVING turns_together >= 2
+                ORDER BY turns_together DESC
+                LIMIT 10""",
+            turn_id_list + all_ids,
+        ).fetchall()
+
+        # Filter noise and resolve to primary names
+        clean_cooccurrences = []
+        seen_primary = set()
+        for co in cooccurring:
+            if is_noise_entity(co["canonical_name"]):
+                continue
+            primary_name = (id_to_primary or {}).get(co["id"], co["canonical_name"])
+            if is_noise_entity(primary_name) or primary_name in seen_primary:
+                continue
+            seen_primary.add(primary_name)
+            clean_cooccurrences.append({
+                "name": primary_name,
+                "type": co["entity_type"],
+                "turns_together": co["turns_together"],
+            })
+
+        if clean_cooccurrences:
+            lines.extend([
+                "## 🔗 Reseau relationnel",
+                "",
+                "**Entites souvent mentionnees ensemble :**",
+                "",
+            ])
+            for co in clean_cooccurrences[:5]:
+                co_name = _capitalize_entity(co["name"])
+                co_slug = slugify(co["name"])
+                co_type_label = _entity_type_label(co["type"])
+                lines.append(
+                    f"- 🔵 **[{co_name}]({co_slug}.md)** ({co_type_label}) — "
+                    f"{co['turns_together']} tours"
+                )
+            lines.append("")
 
     # Description
     if entity["description"]:
@@ -543,9 +1867,26 @@ def generate_entity_page(
             lines.append(f"**{event}**" if event.startswith("Tour") else f"- {event}")
             lines.append("")
 
+    # --- PHASE 4 ADDITION: Section "Mentions avec contexte" ---
+    context_samples = get_entity_context_samples(conn, entity["id"], limit=5)
+    if context_samples:
+        lines.extend([
+            "## 💬 Mentions avec contexte",
+            "",
+        ])
+        for turn_num, mention_text, context in context_samples:
+            # Clean context for display
+            clean_ctx = _clean_segment_content(context) if context else mention_text
+            lines.extend([
+                f"**Tour {turn_num}**",
+                f"> \"{mention_text}\"",
+                ">",
+                f"> Contexte : {clean_ctx[:200]}...",
+                "",
+            ])
+
     # Raw source passages (collapsible, for reference)
-    all_ids = entity["all_ids"]
-    placeholders = ",".join("?" * len(all_ids))
+    # Note: all_ids and placeholders already defined above for co-occurrences
     mentions = conn.execute(
         f"""SELECT m.mention_text, m.context, t.turn_number
             FROM entity_mentions m
@@ -582,60 +1923,8 @@ def generate_entity_page(
                     lines.append(f"    {ctx_line}")
                 lines.append("")
 
-    # Related entities (co-occurring in same turns)
-    turn_ids = conn.execute(
-        f"""SELECT DISTINCT m.turn_id
-            FROM entity_mentions m
-            WHERE m.entity_id IN ({placeholders})""",
-        all_ids,
-    ).fetchall()
-
-    if turn_ids:
-        turn_id_list = [t["turn_id"] for t in turn_ids]
-        turn_placeholders = ",".join("?" * len(turn_id_list))
-        related = conn.execute(
-            f"""SELECT e.id, e.canonical_name, e.entity_type, count(*) as co_count
-                FROM entity_mentions m
-                JOIN entity_entities e ON m.entity_id = e.id
-                WHERE m.turn_id IN ({turn_placeholders})
-                  AND m.entity_id NOT IN ({placeholders})
-                GROUP BY e.id
-                ORDER BY co_count DESC
-                LIMIT 20""",
-            turn_id_list + all_ids,
-        ).fetchall()
-
-        # Resolve through fusion map and aggregate co-occurrence counts
-        seen_primary: dict[str, dict] = {}
-        for r in related:
-            if is_noise_entity(r["canonical_name"]):
-                continue
-            # Resolve to primary name via fusion map
-            primary_name = (id_to_primary or {}).get(r["id"], r["canonical_name"])
-            if is_noise_entity(primary_name):
-                continue
-            if primary_name in seen_primary:
-                seen_primary[primary_name]["co_count"] += r["co_count"]
-            else:
-                seen_primary[primary_name] = {
-                    "canonical_name": primary_name,
-                    "entity_type": r["entity_type"],
-                    "co_count": r["co_count"],
-                }
-
-        related_sorted = sorted(seen_primary.values(), key=lambda x: x["co_count"], reverse=True)[:15]
-        if related_sorted:
-            lines.extend(["## Entites liees", ""])
-            for r in related_sorted:
-                rname = _capitalize_entity(r["canonical_name"])
-                rslug = slugify(r["canonical_name"])
-                lines.append(
-                    f"- [{rname}]({rslug}.md) "
-                    f"({_entity_type_label(r['entity_type'])}, "
-                    f"{r['co_count']} co-occurrences)"
-                )
-            lines.append("")
-
+    # Related entities (co-occurring in same turns) - now in "Réseau relationnel" section above
+    # This section is moved and enhanced earlier, so we remove the duplicate
     return "\n".join(lines)
 
 
@@ -961,6 +2250,19 @@ def _parse_json_list(json_str: str | None) -> list[str]:
         return []
 
 
+def _parse_json_data(json_str: str | None):
+    """Safely parse a JSON string, preserving types (dicts, strings, etc)."""
+    if not json_str:
+        return []
+    try:
+        data = json.loads(json_str)
+        if isinstance(data, list):
+            return data
+        return []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
 def _capitalize_entity(name: str) -> str:
     """Capitalize first letter of entity name for display."""
     if not name:
@@ -1106,7 +2408,8 @@ def generate_wiki(
     current_page = 0
 
     try:
-        _write_page(out / "index.md", generate_index(conn))
+        # Phase 3: Use enriched index
+        _write_page(out / "index.md", generate_enriched_index(conn))
         stats["pages_generated"] += 1
         current_page += 1
         if progress_callback:
@@ -1145,6 +2448,22 @@ def generate_wiki(
             if progress_callback:
                 progress_callback(current_page, total_pages, "page")
 
+            # Phase 2: Generate individual turn pages
+            _write_page(civ_dir / "turns" / "index.md",
+                        generate_turn_index(conn, civ["id"], civ["name"]))
+            stats["pages_generated"] += 1
+
+            # Generate individual turn pages
+            turns = conn.execute(
+                "SELECT * FROM turn_turns WHERE civ_id = ? ORDER BY turn_number",
+                (civ["id"],)
+            ).fetchall()
+            for turn in turns:
+                turn_page = generate_turn_page(conn, turn["id"], civ["name"], civ["player_name"])
+                turn_slug = f"turn-{turn['turn_number']:02d}.md"
+                _write_page(civ_dir / "turns" / turn_slug, turn_page)
+                stats["pages_generated"] += 1
+
             # generate_civ_entities now returns (page_content, fused_list)
             entities_content, fused_list = generate_civ_entities(conn, civ["id"], civ["name"])
             _write_page(civ_dir / "entities.md", entities_content)
@@ -1168,6 +2487,17 @@ def generate_wiki(
                 if progress_callback:
                     progress_callback(current_page, total_pages, "page")
 
+            # Phase 5: Generate knowledge base pages
+            generate_tech_page(conn, civ["id"], civ["name"], output_dir)
+            generate_resources_page(conn, civ["id"], civ["name"], output_dir)
+            generate_beliefs_page(conn, civ["id"], civ["name"], output_dir)
+            generate_geography_page(conn, civ["id"], civ["name"], output_dir)
+            stats["pages_generated"] += 4
+
+            # Phase 6: Generate analytics page
+            generate_analytics_page(conn, civ["id"], civ["name"], output_dir)
+            stats["pages_generated"] += 1
+
         _write_page(out / "global" / "timeline.md", generate_global_timeline(conn))
         stats["pages_generated"] += 1
         current_page += 1
@@ -1175,6 +2505,13 @@ def generate_wiki(
             progress_callback(current_page, total_pages, "page")
 
         _write_page(out / "global" / "entities.md", generate_global_entities(conn, all_fused))
+        stats["pages_generated"] += 1
+        current_page += 1
+        if progress_callback:
+            progress_callback(current_page, total_pages, "page")
+
+        # Phase 6: Generate entity network page
+        generate_entity_network_page(conn, output_dir)
         stats["pages_generated"] += 1
         current_page += 1
         if progress_callback:

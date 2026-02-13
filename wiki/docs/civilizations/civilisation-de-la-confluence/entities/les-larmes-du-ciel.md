@@ -1,0 +1,64 @@
+# Les Larmes du Ciel
+
+*Technologies* -- Civilisation de la Confluence
+
+## 📊 Vue d'ensemble
+
+| | |
+|---|---|
+| **Mentions totales** | 2 |
+| **Tours actifs** | 6-14 (9 tours) |
+| **Pic d'activite** | Tour 6 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
+
+## 📈 Graphe d'activite
+
+```
+Tour  6  ████████████████████  ← Pic
+Tour 14  ████████████████████
+```
+
+## 🔗 Reseau relationnel
+
+**Entites souvent mentionnees ensemble :**
+
+- 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 2 tours
+- 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 2 tours
+- 🔵 **[La confluence](la-confluence.md)** (Lieux) — 2 tours
+
+## Description
+
+Les Larmes du Ciel est un plat traditionnel de la civilisation, préparé avec la racine de 'Morsure-des-Ancêtres' (Gingembre sauvage), du poisson fumé et du gibier. Sa préparation nécessite du savoir-faire et la cuisson lente fait perler la graisse à la surface, rappelant la pluie. Ce plat raconte l'histoire de la civilisation en associant les éléments naturels et les traditions.
+
+## Chronologie
+
+**Tour 6: La racine 'Morsure-des-Ancêtres' est décrite comme un ingrédient recherché dans le préparation du plat traditionnel. Le poisson fumé, le gibier et la racine pilée sont disposés en couches dans des récipients en pierre pour la cuisson lente.**
+
+**Tour 14: Le plat 'Les Larmes du Ciel' est mentionné comme un élément de l'accueil préparé par la civilisation pour les délégués Ailes Grises, symbolisant le dialogue possible et non la soumission.**
+
+## 💬 Mentions avec contexte
+
+**Tour 6**
+> "Les Larmes du Ciel"
+>
+> Contexte : ngrédient recherché. Elle est devenue la base de "Les Larmes du Ciel", notre plat traditionnel. Sa préparation demande...
+
+**Tour 14**
+> "Les Larmes du Ciel"
+>
+> Contexte : e la langue nanzagouet
+- Accueil préparé: festin (Les Larmes du Ciel), artefact en argile vivante
+- Message clair: dia...
+
+??? note "Sources -- Passages originaux"
+
+    **Tour 6**
+
+    > ...lexes. Ces oiseaux ne font pas que reproduire - ils adaptent leur comportement selon les situations. Cette intelligence, au-delà de leur rôle d'éclaireur, laisse entrevoir d'autres possibilités Dans les zones humides de la vallée pousse la "Morsure-des-Ancêtres" (Gingembre sauvage), une racine au goût mordant dont la chaleur et l'arôme en font un ingrédient recherché. Elle est devenue la base de "Les Larmes du Ciel", notre plat traditionnel. Sa préparation demande du savoir-faire : le poisson fumé et le gibier sont marinés avec la racine pilée, puis disposés en couches dans des récipients en pierre avec des herbes et des baies. La cuisson lente fait perler la graisse à la surface, comme de la pluie. Ce plat raconte notre histoire : la racine rappelle la force des ancêtres, le poisson nos rivières, le gibier...
+
+    **Tour 14**
+
+    > **Posture diplomatique:**
+    - Ailes Grises en délégation, maîtrise de la langue nanzagouet
+    - Accueil préparé: festin (Les Larmes du Ciel), artefact en argile vivante
+    - Message clair: dialogue possible, soumission impossible

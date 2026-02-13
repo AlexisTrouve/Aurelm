@@ -1,0 +1,44 @@
+# Cheveux de Sang
+
+*Civilisations* -- Civilisation de la Confluence
+
+## 📊 Vue d'ensemble
+
+| | |
+|---|---|
+| **Mentions totales** | 4 |
+| **Tours actifs** | 14-14 (1 tours) |
+| **Pic d'activite** | Tour 14 (3 mentions) |
+| **Moyenne** | 4.0 mentions/tour |
+
+## 📈 Graphe d'activite
+
+```
+Tour 14  ████████████████████  ← Pic
+```
+
+## 💬 Mentions avec contexte
+
+**Tour 14**
+> "Cheveux de Sang"
+>
+> Contexte : e couche... Certains des nôtres les nomment déjà "Cheveux de Sang". **Nous voici face à l'Autre - celui que nous ne...
+
+**Tour 14**
+> "cheveux de sang"
+>
+> Contexte : regard au-delà de l'horizon.**
+L'observation des cheveux de sang se fait plus régulière et à l'aide de regard-libr...
+
+**Tour 14**
+> "Cheveux-de-Sang"
+>
+> Contexte : , les anciens murmurent déjà : *"Pupupasu"* - les Cheveux-de-Sang. Un nom qui dit ce que nos yeux ont vu en premier...
+
+??? note "Sources -- Passages originaux"
+
+    **Tour 14**
+
+    > Ces étrangers aux cheveux rouges comme un soleil qui se couche... Certains des nôtres les nomment déjà "Cheveux de Sang". **Nous voici face à l'Autre - celui que nous ne comprenons pas, celui qui ne partage ni nos ancêtres, ni notre langue, ni nos intentions.** Les Premiers Ancêtres nous ont laissé leur avertissement gravé dans la pierre. L'ignorance face à l'inconnu peut nous détruire.
+
+    > Et dans notre propre langue, les anciens murmurent déjà : *"Pupupasu"* - les Cheveux-de-Sang. Un nom qui dit ce que nos yeux ont vu en premier : ces chevelures rouge sang, comme le soleil qui meurt à l'horizon.

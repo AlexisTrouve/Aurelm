@@ -1,178 +1,119 @@
 # Index des Entites
 
-## Castes
-
-**Ailes-Grises** (Civilisation de la Confluence, 14 mentions)
-: Les Ailes-Grises sont une caste qui devient avec le temps des shaman, elles gravent leurs visions sur leurs rhombes et entretiennent des feux perpétuels. Elles semblent jouer un rôle important dans...
-
-**Enfants du Courant** (Civilisation de la Confluence, 7 mentions)
-: Les Enfants du Courant sont une caste forte et prospère, avec leurs propres villages et un passé qui a connu des moments de discorde.
-
-**Faucons Chasseurs** (Civilisation de la Confluence, 6 mentions)
-: La caste des Faucons Chasseurs est composée de chasseurs et traqueurs qui agissent sous l'ordre direct de La Confluence. Ils sont chargés de la défense et de la justice dans le village.
-
-**Passes-bien** (Civilisation de la Confluence, 6 mentions)
-: La caste des Passes-bien est une entité importante qui joue un rôle dans l'échange et la distribution de biens. Ils sont associés à des porteurs, les glyphes réutilisables qu'ils distribuent, et pa...
-
-**Regards-Libres** (Civilisation de la Confluence, 8 mentions)
-: Les Regards-Libres sont une caste qui vit avec la tribu, et leurs dresseurs deviennent des membres importants. Ils ont tendance à se lier avec les gens qui vivent dans la vallée ou sur les hauteurs...
-
-**Voix de l'Aurore** (Civilisation de la Confluence, 6 mentions)
-: La Voix de l'Aurore est une caste qui défend la structure du conseil et valide les décisions du Tribunal. Ils dirigent les Ailes-Grises et ont un monopole sur l'accès à certains lieux.
-
-**Ciels-clairs** (Civilisation de la Confluence, 4 mentions)
-: Les ciels-clairs sont une caste qui semble occuper un rôle important dans la société, notamment en tant que gardiens de l'ordre et possesseurs d'une forme de pouvoir spirituel. Ils ont aussi la rép...
-
-**Enfants des échos** (Civilisation de la Confluence, 7 mentions)
-: Les enfants des échos sont une caste qui utilise des pierres spéciales pour se garder au chaud et ont des changements physiques liés à leur proximité avec les fleurs.
-
-**Sans ciel** (Civilisation de la Confluence, 9 mentions)
-: La caste des sans ciel est composée de personnes nées sous les nuages, souvent considérées comme abandonnées par le sort. Ils sont associés à la rivière et échangent avec d'autres groupes.
-
-## Civilisations
-
-**Cheveux de Sang** (Civilisation de la Confluence, 3 mentions) | *alias : Pupupasu*
-: Les Cheveux de Sang sont une entité mystérieuse mentionnée comme étant à l'origine du phénomène qui intrigue les personnages. Les anciens semblent déjà connaître ce nom, et ils utilisent également ...
-
-**Nanzagouet** (Civilisation de la Confluence, 2 mentions)
-: La civilisation de Nanzagouet se trouve sur une péninsule, vivant dans des conditions difficiles dues aux vents.
-
-**Pouleheimos** (Civilisation de la Confluence, 1 mentions)
-: Les Pouleheimos sont un peuple robustes de marchands cosmopolites qui vivent sur des villages flottants.
-
-**Pupupasu** (Civilisation de la Confluence, 1 mentions)
-: Pupupasu est une ancienne entité décrite comme "les Cheveux-de-Sang". Le nom de Pupupasu est mentionné comme murmuré par les anciens.
-
-**Siliaska** (Civilisation de la Confluence, 1 mentions)
-: L'entité 'Siliaska' est une civilisation qui se définit par le fait de porter le regard libre. Cette entité est mentionnée dans le contexte d'un choix ou d'une décision, sans plus de détails.
-
-**Tlazhuaneca** (Civilisation de la Confluence, 1 mentions)
-: Les Tlazhuaneca sont un peuple étrange, aux yeux d'or et à la peau d'une couleur non spécifiée.
-
-## Evenements
-
-**Rituel du Regard Partagé** (Civilisation de la Confluence, 2 mentions)
-: Le Rituel du Regard Partagé est un événement où le contact visuel scelle des accords entre les participants, et il semble être associé à la renégociation de services ou de serments.
-
-**Maladie des Antres** (Civilisation de la Confluence, 1 mentions)
-: La maladie des Antres est une affection qui affecte les habitants des profondeurs, entraînant des difficultés à respirer ou des infections pulmonaires.
-
-## Institutions
-
-**Arbitre des Esprits** (Civilisation de la Confluence, 3 mentions)
-: L'Arbitre des Esprits semble être un institution qui possède le titre de « Les Trois Révélations » et a une voix reconnue, puisque mentionnée comme étant la source d'une « peinture de la voix ». Il...
-
-**Assemblée des Chefs** (Civilisation de la Confluence, 2 mentions)
-: L'Assemblée des Chefs est un organe qui guide et prend des décisions, notamment concernant la mission à poursuivre.
-
-**Autels des Pionniers** (Civilisation de la Confluence, 3 mentions)
-: L'Autel des Pionniers est une stèle d'argile vivante qui commémore les pionniers ayant disparu, érigée dans la Tour 14.
-
-**Gardiens du Hall** (Civilisation de la Confluence, 1 mentions)
-: L'entité 'Gardiens du Hall' est composée de quatre individus qui doivent annuellement rendre compte à La Confluence.
-
-**Maison des Découvertes** (Civilisation de la Confluence, 4 mentions)
-: La Maison des Découvertes est une institution chargée d'étudier et de comprendre divers aspects, notamment les techniques, les pigments et la maîtrise des arts. Elle semble posséder plusieurs ailes...
-
-**Premier Artefact** (Civilisation de la Confluence, 1 mentions)
-: Une collection d'objets historiques qui devrait être immortalisée par des gravures.
-
-**Salle du Conseil** (Civilisation de la Confluence, 1 mentions)
-: La Salle du Conseil est une institution située au niveau 14 d'un tour, abritant des armes et des réserves, ainsi qu'un Autel des Pionniers.
-
-**Cercle des sages** (Civilisation de la Confluence, 5 mentions)
-: L'entité 'Cercle des Sages' est une institution chargée de garder et d'interpréter le savoir, avec laquelle on façonne un ensemble et qui tente de faire valoir sa juridiction.
-
-**Tribunal des mœurs** (Civilisation de la Confluence, 3 mentions)
-: L'entité est un tribunal chargé de statuer sur des questions morales et éthiques, il semble jouer un rôle important dans la société.
-
 ## Lieux
 
-**Gingembre sauvage** (Civilisation de la Confluence, 1 mentions) | *alias : Morsure-des-Ancêtres*
-: Gingembre sauvage, racine mordante située dans la vallée de la Morsure-des-Ancêtres.
+- [**Antre des échos**](../civilizations/civilisation-de-la-confluence/entities/antre-des-echos.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
 
-**Gorge Profonde** (Civilisation de la Confluence, 2 mentions)
-: La Gorge Profonde est une colonie nouvelle, située dans la région où des ailes grises peuvent s'installer.
+- [**Gorge Profonde**](../civilizations/civilisation-de-la-confluence/entities/gorge-profonde.md) -- Civilisation de la Confluence, 2 mentions, Tour 10
 
-**Gouffre Humide** (Civilisation de la Confluence, 5 mentions)
-: Gouffre Humide est une antre des échos matures, située à la confluence d'un endroit non spécifié. Il présente des halls sacrés et peut être considéré comme un lieu mystique.
+- [**Gouffre Humide**](../civilizations/civilisation-de-la-confluence/entities/gouffre-humide.md) -- Civilisation de la Confluence, 5 mentions, Tour 12 - Tour 14
 
-**Hall des Serments** (Civilisation de la Confluence, 1 mentions)
-: Un lieu où l'on peut servir et maîtriser les Glyphes du Gouffre.
+- [**Hall des Serments**](../civilizations/civilisation-de-la-confluence/entities/hall-des-serments.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**La Vallée** (Civilisation de la Confluence, 1 mentions)
-: La Vallée est une région qui a offert ses largesses à la tribu, probablement en raison de relations ou échanges favorables.
+- [**La confluence**](../civilizations/civilisation-de-la-confluence/entities/la-confluence.md) -- Civilisation de la Confluence, 19 mentions, Tour 2 - Tour 14
 
-**La confluence** (Civilisation de la Confluence, 19 mentions)
-: La confluence est un lieu géographique situé entre deux rivières cristallines, dans une vallée montagneuse.
+- [**La Vallée**](../civilizations/civilisation-de-la-confluence/entities/la-vallee.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
 
-**Morsure-des-Ancêtres** (Civilisation de la Confluence, 1 mentions)
-: La Morsure-des-Ancêtres est une zone humide de la vallée où pousse le Gingembre sauvage, connu pour son goût mordant.
+- [**Morsure-des-Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/morsure-des-ancetres.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: Gingembre sauvage*
 
-**Vallée des camps temporaires** (Civilisation de la Confluence, 1 mentions)
-: La Vallée des camps temporaires est une zone où se déplace un individu pour la chasse et la cueillette.
-
-**Antre des échos** (Civilisation de la Confluence, 1 mentions)
-: Une antre des échos située après la confluence et avant Gouffre Humide, qui est maintenant mature.
+- [**Vallée des camps temporaires**](../civilizations/civilisation-de-la-confluence/entities/vallee-des-camps-temporaires.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
 
 ## Technologies
 
-**Foyer du savoir** (Civilisation de la Confluence, 1 mentions)
-: Un endroit situé aux profondeurs de Gouffre Humide, où il semble y avoir une nécessité de consigner l'information.
+- [**Argile vivante**](../civilizations/civilisation-de-la-confluence/entities/argile-vivante.md) -- Civilisation de la Confluence, 2 mentions, Tour 11 - Tour 14
 
-**Glyphes du Gouffre** (Civilisation de la Confluence, 1 mentions)
-: L'entité « Glyphes du Gouffre » est une technologie mentionnée comme utile à maîtriser dans le Hall des Serments.
+- [**Chroniques de la Fresque**](../civilizations/civilisation-de-la-confluence/entities/chroniques-de-la-fresque.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Grande Fresque** (Civilisation de la Confluence, 1 mentions)
-: L'entité 'Grande Fresque' est une référence à un monument ou une œuvre artistique qui a influencé les événements du jeu, selon la mention de Tour 14.
+- [**Colliers de glyphes**](../civilizations/civilisation-de-la-confluence/entities/colliers-de-glyphes.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Grande Prospection** (Civilisation de la Confluence, 1 mentions)
-: La Grande Prospection est une technologie liée au sujet libre de 'La Terre Sous Nos Pas'. Il semble qu'il s'agit d'un projet ou d'une initiative qui a donné lieu à un fichier complet, intitulé 'rep...
+- [**Foyer du savoir**](../civilizations/civilisation-de-la-confluence/entities/foyer-du-savoir.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**L'Appel de l'Abysse** (Civilisation de la Confluence, 1 mentions)
-: Technologie appelée 'L'Appel de l'Abysse', qui est associée à une exploitation impitoyable.
+- [**Glyphes du Gouffre**](../civilizations/civilisation-de-la-confluence/entities/glyphes-du-gouffre.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Les Cercles de Vigile** (Civilisation de la Confluence, 2 mentions)
-: Les Cercles de Vigile sont des établissements situés sur des promontoires à mi-hauteur, créés pour fournir de la chaleur.
+- [**Grande Fresque**](../civilizations/civilisation-de-la-confluence/entities/grande-fresque.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Les Larmes du Ciel** (Civilisation de la Confluence, 2 mentions)
-: Une spécialité culinaire traditionnelle appelée « Les Larmes du Ciel », qui nécessite un ingrédient recherché pour sa préparation.
+- [**Grande Prospection**](../civilizations/civilisation-de-la-confluence/entities/grande-prospection.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Lois du Sang** (Civilisation de la Confluence, 1 mentions)
-: Les Lois du Sang sont une technologie révélée à un groupe de personnes, elles impliquent l'application des Lois de la Bête.
+- [**L'Appel de l'Abysse**](../civilizations/civilisation-de-la-confluence/entities/l-appel-de-l-abysse.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
 
-**Maîtrise des Profondeurs** (Civilisation de la Confluence, 1 mentions)
-: Maîtrise des Profondeurs est une technologie mentionnée comme option libre dans le contexte d'une découverte qui dépasse les capacités de la vaste foule.
+- [**La Bête**](../civilizations/civilisation-de-la-confluence/entities/la-bete.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
 
-**Porteurs de Flamme** (Civilisation de la Confluence, 1 mentions)
-: Les Porteurs de Flamme sont des individus chargés de voyager de feu en feu à travers les villages, établis et sacrés.
+- [**La Fresque des Âges**](../civilizations/civilisation-de-la-confluence/entities/la-fresque-des-ages.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Premiers Ancêtres** (Civilisation de la Confluence, 1 mentions)
-: Il s'agit d'une entité technologique qui a existé à une époque ancienne, associée à des créatures mythiques.
+- [**Lait de pierre**](../civilizations/civilisation-de-la-confluence/entities/lait-de-pierre.md) -- Civilisation de la Confluence, 2 mentions, Tour 10 - Tour 12
 
-**Tribunal de moeurs** (Civilisation de la Confluence, 1 mentions)
-: L'entité 'Tribunal de moeurs' est une technologie impliquée dans la validation des décisions de l'Aurore, mentionnée en relation avec les Gardiens de la confluence.
+- [**Leg des ancêtres**](../civilizations/civilisation-de-la-confluence/entities/leg-des-ancetres.md) -- Civilisation de la Confluence, 1 mentions, Tour 9
 
-**Argile vivante** (Civilisation de la Confluence, 2 mentions)
-: L'entité 'argile vivante' est une substance dont les racines plongent dans elle et que ses branches touchent les quatre vents, pouvant également être utilisée pour gravir des noms sur une stèle.
+- [**Les Cercles de Vigile**](../civilizations/civilisation-de-la-confluence/entities/les-cercles-de-vigile.md) -- Civilisation de la Confluence, 2 mentions, Tour 9
 
-**Chroniques de la Fresque** (Civilisation de la Confluence, 1 mentions)
-: Les chroniques de la Fresque sont un ensemble de textes permanents qui sont pressés dans des...
+- [**Les Larmes du Ciel**](../civilizations/civilisation-de-la-confluence/entities/les-larmes-du-ciel.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 - Tour 14
 
-**Colliers de glyphes** (Civilisation de la Confluence, 1 mentions)
-: Les colliers de glyphes sont une technologie utilisée pour consigner des informations, associés aux tablettes de glyphes.
+- [**Lois du Sang**](../civilizations/civilisation-de-la-confluence/entities/lois-du-sang.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
 
-**La Bête** (Civilisation de la Confluence, 1 mentions)
-: La Bête est une entité liée aux Lois du Sang qui permettent l'assassinat et la mort.
+- [**Maîtrise des Profondeurs**](../civilizations/civilisation-de-la-confluence/entities/maitrise-des-profondeurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 13
 
-**La Fresque des Âges** (Civilisation de la Confluence, 1 mentions)
-: La Fresque des Âges est une technologie qui a été mise au point après avoir précipité sa mise au point à cause de l'aspect et les interprétations données par rumeurs.
+- [**Porteurs de Flamme**](../civilizations/civilisation-de-la-confluence/entities/porteurs-de-flamme.md) -- Civilisation de la Confluence, 1 mentions, Tour 9
 
-**Lait de pierre** (Civilisation de la Confluence, 2 mentions)
-: Une substance laiteux qui s'écoue des murs de certa, associée à des vertus curatives.
+- [**Premiers Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/premiers-ancetres.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
-**Leg des ancêtres** (Civilisation de la Confluence, 1 mentions)
-: Il s'agit d'une technologie transmise de génération en génération, continuant à perdurer.
+- [**Rhombes**](../civilizations/civilisation-de-la-confluence/entities/rhombes.md) -- Civilisation de la Confluence, 5 mentions, Tour 7 - Tour 12
 
-**Rhombes** (Civilisation de la Confluence, 5 mentions)
-: Des instruments en forme de rhombes, utilisés pour le son et potentiellement les rituels.
+- [**Tribunal de moeurs**](../civilizations/civilisation-de-la-confluence/entities/tribunal-de-moeurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 8
+
+## Institutions
+
+- [**Arbitre des Esprits**](../civilizations/civilisation-de-la-confluence/entities/arbitre-des-esprits.md) -- Civilisation de la Confluence, 3 mentions, Tour 11 - Tour 14
+
+- [**Assemblée des Chefs**](../civilizations/civilisation-de-la-confluence/entities/assemblee-des-chefs.md) -- Civilisation de la Confluence, 2 mentions, Tour 11 - Tour 12
+
+- [**Autels des Pionniers**](../civilizations/civilisation-de-la-confluence/entities/autels-des-pionniers.md) -- Civilisation de la Confluence, 3 mentions, Tour 14
+
+- [**Cercle des sages**](../civilizations/civilisation-de-la-confluence/entities/cercle-des-sages.md) -- Civilisation de la Confluence, 5 mentions, Tour 3 - Tour 14
+
+- [**Gardiens du Hall**](../civilizations/civilisation-de-la-confluence/entities/gardiens-du-hall.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Maison des Découvertes**](../civilizations/civilisation-de-la-confluence/entities/maison-des-decouvertes.md) -- Civilisation de la Confluence, 4 mentions, Tour 11 - Tour 14
+
+- [**Premier Artefact**](../civilizations/civilisation-de-la-confluence/entities/premier-artefact.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Salle du Conseil**](../civilizations/civilisation-de-la-confluence/entities/salle-du-conseil.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Tribunal des mœurs**](../civilizations/civilisation-de-la-confluence/entities/tribunal-des-moeurs.md) -- Civilisation de la Confluence, 3 mentions, Tour 7 - Tour 12
+
+## Civilisations
+
+- [**Cheveux de Sang**](../civilizations/civilisation-de-la-confluence/entities/cheveux-de-sang.md) -- Civilisation de la Confluence, 4 mentions, Tour 14 | *alias: Pupupasu*
+
+- [**Nanzagouet**](../civilizations/civilisation-de-la-confluence/entities/nanzagouet.md) -- Civilisation de la Confluence, 2 mentions, Tour 14
+
+- [**Pouleheimos**](../civilizations/civilisation-de-la-confluence/entities/pouleheimos.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Siliaska**](../civilizations/civilisation-de-la-confluence/entities/siliaska.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Tlazhuaneca**](../civilizations/civilisation-de-la-confluence/entities/tlazhuaneca.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+## Castes
+
+- [**Ailes-Grises**](../civilizations/civilisation-de-la-confluence/entities/ailes-grises.md) -- Civilisation de la Confluence, 14 mentions, Tour 7 - Tour 14
+
+- [**Ciels-clairs**](../civilizations/civilisation-de-la-confluence/entities/ciels-clairs.md) -- Civilisation de la Confluence, 4 mentions, Tour 11 - Tour 14
+
+- [**Enfants des échos**](../civilizations/civilisation-de-la-confluence/entities/enfants-des-echos.md) -- Civilisation de la Confluence, 7 mentions, Tour 10 - Tour 14
+
+- [**Enfants du Courant**](../civilizations/civilisation-de-la-confluence/entities/enfants-du-courant.md) -- Civilisation de la Confluence, 7 mentions, Tour 7 - Tour 14
+
+- [**Faucons Chasseurs**](../civilizations/civilisation-de-la-confluence/entities/faucons-chasseurs.md) -- Civilisation de la Confluence, 6 mentions, Tour 11 - Tour 14
+
+- [**Passes-bien**](../civilizations/civilisation-de-la-confluence/entities/passes-bien.md) -- Civilisation de la Confluence, 6 mentions, Tour 10 - Tour 14
+
+- [**Regards-Libres**](../civilizations/civilisation-de-la-confluence/entities/regards-libres.md) -- Civilisation de la Confluence, 8 mentions, Tour 6 - Tour 14
+
+- [**Sans ciel**](../civilizations/civilisation-de-la-confluence/entities/sans-ciel.md) -- Civilisation de la Confluence, 9 mentions, Tour 3 - Tour 14
+
+- [**Voix de l'Aurore**](../civilizations/civilisation-de-la-confluence/entities/voix-de-l-aurore.md) -- Civilisation de la Confluence, 6 mentions, Tour 7 - Tour 14
+
+## Evenements
+
+- [**Maladie des Antres**](../civilizations/civilisation-de-la-confluence/entities/maladie-des-antres.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
+
+- [**Rituel du Regard Partagé**](../civilizations/civilisation-de-la-confluence/entities/rituel-du-regard-partage.md) -- Civilisation de la Confluence, 2 mentions, Tour 9 - Tour 14

@@ -34,11 +34,20 @@ nav:
   - Index: civilizations/index.md
   - Civilisation de la Confluence:
     - Apercu: civilizations/civilisation-de-la-confluence/index.md
-    - Tours: civilizations/civilisation-de-la-confluence/turns.md
-    - Entites: civilizations/civilisation-de-la-confluence/entities.md
+    - Tours:
+      - Index: civilizations/civilisation-de-la-confluence/turns/index.md
+    - Entites:
+      - Index: civilizations/civilisation-de-la-confluence/entities/index.md
+    - Base de connaissances:
+      - Technologies: civilizations/civilisation-de-la-confluence/knowledge/technologies.md
+      - Ressources: civilizations/civilisation-de-la-confluence/knowledge/resources.md
+      - Croyances: civilizations/civilisation-de-la-confluence/knowledge/beliefs.md
+      - Geographie: civilizations/civilisation-de-la-confluence/knowledge/geography.md
+    - Analytics: civilizations/civilisation-de-la-confluence/analytics.md
 - Global:
   - Timeline: global/timeline.md
   - Entites: global/entities.md
+  - Reseau d'entites: global/entity-network.md
 - Meta:
   - Pipeline: meta/pipeline.md
 markdown_extensions:
