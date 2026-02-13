@@ -1291,7 +1291,7 @@ def generate_enriched_index(conn: sqlite3.Connection) -> str:
         ])
         for turn in recent_turns:
             civ_slug = slugify(turn["civ_name"])
-            turn_link = f"civilizations/{civ_slug}/turns.md#tour-{turn['turn_number']}"
+            turn_link = f"civilizations/{civ_slug}/turns/turn-{turn['turn_number']:02d}.md"
 
             # Format date
             date_str = ""
@@ -1397,8 +1397,8 @@ def generate_civ_index(conn: sqlite3.Connection, civ_id: int, civ_name: str, pla
         "",
         "## Pages",
         "",
-        "- [Historique complet des tours](turns.md)",
-        "- [Index des entites](entities.md)",
+        "- [Historique complet des tours](turns/index.md)",
+        "- [Index des entites](entities/index.md)",
         "",
     ])
     return "\n".join(lines)
@@ -2441,13 +2441,6 @@ def generate_wiki(
             if progress_callback:
                 progress_callback(current_page, total_pages, "page")
 
-            _write_page(civ_dir / "turns.md",
-                        generate_civ_turns(conn, civ["id"], civ["name"]))
-            stats["pages_generated"] += 1
-            current_page += 1
-            if progress_callback:
-                progress_callback(current_page, total_pages, "page")
-
             # Phase 2: Generate individual turn pages
             _write_page(civ_dir / "turns" / "index.md",
                         generate_turn_index(conn, civ["id"], civ["name"]))
@@ -2466,7 +2459,7 @@ def generate_wiki(
 
             # generate_civ_entities now returns (page_content, fused_list)
             entities_content, fused_list = generate_civ_entities(conn, civ["id"], civ["name"])
-            _write_page(civ_dir / "entities.md", entities_content)
+            _write_page(civ_dir / "entities" / "index.md", entities_content)
             all_fused[civ["id"]] = fused_list
             stats["pages_generated"] += 1
             current_page += 1
@@ -2546,8 +2539,8 @@ def _build_nav(civs: list) -> list:
         civ_nav.append({
             civ["name"]: [
                 {"Apercu": f"civilizations/{slug}/index.md"},
-                {"Tours": f"civilizations/{slug}/turns.md"},
-                {"Entites": f"civilizations/{slug}/entities.md"},
+                {"Tours": f"civilizations/{slug}/turns/index.md"},
+                {"Entites": f"civilizations/{slug}/entities/index.md"},
             ]
         })
 

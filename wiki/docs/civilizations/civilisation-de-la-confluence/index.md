@@ -25,5 +25,5 @@
 
 ## Pages
 
-- [Historique complet des tours](turns.md)
-- [Index des entites](entities.md)
+- [Historique complet des tours](turns/index.md)
+- [Index des entites](entities/index.md)
