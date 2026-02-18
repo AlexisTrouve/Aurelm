@@ -2,14 +2,14 @@
 
 📅 **09/11/2024** | 📊 **7 segments** | 🎯 **5 nouvelles entités**
 
-> La présence des Regards-Libres dans le village a déclenché un intérêt général parmi les habitants, qui voient en ces animaux des qualités qu'ils aspirent à émuler. Les artisans couvrent leurs productions avec des représentations de l'animal, tandis que certains tentent d'imiter leur chant avec des instruments improvisés. Parallèlement, les Regards-Libres se sont intégrés dans la vie du village en guideant les groupes de chasseurs et de pêcheurs, mais aussi les cueilleurs vers de nouvelles sources de nourriture. Cette présence a contribué à l'élargissement de la tribu, entraînant une modification des structures sociales et politiques.
+> Le village est marqué par l'apparition des groupes de Regards-Libres qui inspirent les artisans et les villageois. Les Ailes-Grises, issus des rends du peuple des cieux, deviennent des guides importants pour la tribu, conduisant les chasseurs, pêcheurs et cueilleurs vers leurs proies et aidant les mourants à rejoindre les ancêtres. Leur influence grandit avec le temps, influençant le fonctionnement de la tribu et la place des sages et du tribunal.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Ailes-Grises`, `Enfants du Courant`, `Voix de l'Aurore`, `Tribunal des mœurs`, `Rhombes`
 - **Mentions totales** : 8
 - **Technologies** : 2
-- **Ressources** : 2
+- **Ressources** : 1
 - **Densité narrative** : 4 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -45,25 +45,24 @@ Les rhombes en pierre deviennent les instruments sacrés. Les artisans découvre
 
 ### 🗺️ Géographie
 
-- village
 - vallée
+- tribus qui se fait sans cesse plus large
 
 ### 🔧 Technologies
 
-- pipeau en bambou
 - rhombes en pierre
+- pipeau en bambou
 
 ### 🌾 Ressources
 
 - baies
-- pierres (dures et finement polies)
 
 ### ✨ Croyances
 
-- croyance dans la capacité des Ailes-Grises à voir au-delà du monde visible
-- anciennes lois
-- rituels sacrés
-- présages
+- les Regards-Libres sont des animaux sacrés
+- les Ailes-Grises guident les âmes vers l'endroit où les ancêtres les attendent
+- le cercle de sages est important dans le fonctionnement de la tribu
+- les places au tribunal des mœurs sont importantes
 
 ## 🏷️ Entités mentionnées
 

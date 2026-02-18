@@ -2,6 +2,9 @@
 
 *Technologies* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/argile-vive.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -27,6 +30,18 @@ Tour 14  ████████████████████
 - 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 2 tours
 - 🔵 **[Faucons Chasseurs](faucons-chasseurs.md)** (Castes) — 2 tours
 - 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 2 tours
+
+## Description
+
+L'argile vivante est une technologie qui apparaît dans les visions du protagoniste. Elle semble être liée à la création d'une demeure terrestre pour l'Arbre de toutes les possibilités. Cette argile a des propriétés particulières car elle reflète la voûte céleste et est associée aux saisons, qui sont répliquées dans l'architecture du lieu.
+
+## Chronologie
+
+**Tour 11: Dans les visions, l'arbre de toutes les possibilités est décrit avec ses racines dans l'argile vivante et ses branches touchant les quatre vents. Le protagoniste décide de bâtir sa demeure terrestre près d'une confluence où l'eau chante.**
+
+**Tour 11 (déjà inclus mais ajout supplémentaire): Un grand cercle de pierre, d'argile et de bois est prévu pour refléter la voûte céleste, avec des climats correspondant aux saisons. À l'est, une zone humide est mentionnée.**
+
+**Tour 14: L'argile vivante est utilisée pour ériger un Autel des Pionniers à l'entrée du Gouffre Humide, là où les noms de ceux qui sont partis avant les explorateurs sont gravés à jamais. De tels autels devraient être érigés dans chaque lieu important.**
 
 ## 💬 Mentions avec contexte
 

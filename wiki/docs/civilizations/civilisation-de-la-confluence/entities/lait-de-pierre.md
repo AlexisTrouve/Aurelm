@@ -2,6 +2,9 @@
 
 *Technologies* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/lait-de-pierre.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -27,6 +30,18 @@ Tour 12  ████████████████████
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 2 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 2 tours
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 2 tours
+
+## Description
+
+Le lait de pierre est une substance laiteuse qui suinte des murs de certaines cavernes. Il a des propriétés médicinales et il est utilisé pour ses bienfaits.
+
+## Chronologie
+
+**Tour 10: Tu cherches le lait de pierre car tu as entendu parler de ses propriétés médicinales, mais tu ne veux pas rester dans l'Antre trop longtemps.**
+
+**Tour 12: Les Enfants des Échos cherchent le lait de pierre aux vertus curatives et à d'autres substances mystérieuses.**
+
+- Turn 12: D'autres murmures évoquent le lait de pierre comme étant une substance rare et précieuse.
 
 ## 💬 Mentions avec contexte
 

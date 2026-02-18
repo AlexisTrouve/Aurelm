@@ -29,6 +29,18 @@ Tour 12  ████████████████████
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 3 tours
 - 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 2 tours
 
+## Description
+
+Le Tribunal des Mœurs est une institution chargée de juger et de punir les individus coupables d'infractions graves, notamment le meurtre sans cause juste. Il s'agit d'un organe de justice traditionnel qui suit des lois spécifiques (les Lois du Sang et de la Bête). Les membres du Tribunal sont appelés Proclamateurs.
+
+## Chronologie
+
+**Tour 7: Le Tribunal des Mœurs gagne en importance au sein de la tribu, qui se fait de plus en plus large. Les places au sein de l'organe de justice deviennent plus importantes.**
+
+**Tour 11: Lorsque le premier meurtre est commis, le Tribunal doit évoluer pour juger cette affaire sans précédent. Les Proclamateurs sont nommés selon leur droiture pour appliquer les Lois du Sang et de la Bête.**
+
+**Tour 12: Le Tribunal des Mœurs devra statuer sur le meurtre commis, ce qui oblige les membres à prendre une décision difficile car il n'y a pas d'exemple dans leurs lois ou traditions.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 7**

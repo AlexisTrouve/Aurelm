@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+Les Autels des Pionniers sont une institution qui consiste en la création de stèles d'argile vivante à l'entrée de lieux importants, comme le Gouffre Humide. Ces autels servent de sanctuaires pour les voyageurs qui déposent des offrandes et reçoivent la protection des explorateurs, chasseurs et artisans qui ont précédé eux. Chaque autel est créé pour honorer les morts et assurer leur mémoire.
+
+## Chronologie
+
+**Tour 14: De petits sanctuaires sont créés le long des routes et des rivières pour accueillir les voyageurs qui déposent des offrandes en l'honneur des morts.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

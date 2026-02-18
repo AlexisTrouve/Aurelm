@@ -17,6 +17,14 @@
 Tour  9  ████████████████████  ← Pic
 ```
 
+## Description
+
+Les Cercles de Vigile sont des lieux sacrés établis par l'ancêtre dans les montagnes, où l'on peut embrasser toute la vallée. Ils ne sont pas seulement des postes d'observation mais des sanctuaires avec des feux perpétuels allumés par les Ailes-Grises. Ces feux permettent de porter des prières vers les ancêtres et favorisent les voyages entre les différents Cercles.
+
+## Chronologie
+
+**Tour 9: Les ancêtres ont montré où nos racines doivent s'étendre, dans la montagne, là où les rivières prennent leur source. Les Cercles de Vigile sont créés sur des promontoires à mi-hauteur des montagnes pour être des sanctuaires et faciliter les voyages entre eux.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 9**

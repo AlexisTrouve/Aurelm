@@ -2,7 +2,7 @@
 
 📅 **19/08/2025** | 📊 **2 segments** | 🎯 **1 nouvelles entités**
 
-> Les groupes de la civilisation de la Confluence se rassemblent pour rechercher les disparus dans le Gouffre Humide. Ils découvrent des fresques anciennes sur les parois des galeries, qui semblent raconter l'histoire d'un temple ou d'un lieu sacré. Cependant, leur attention est attirée par la découverte de squelettes alignés et d'artefacts abandonnés. Alors que les explorateurs se rapprochent de l'endroit où ils ont trouvé le premier groupe disparu, ils entendent un appel à l'aide, ce qui les incite à rebrousser chemin pour porter secours.
+> Après avoir reçu les instructions du Maître du Jeu, le groupe de recherche entreprend l'exploration de la galerie de Gouffre Humide en quête de la civilisation disparue. Ils progressent prudemment dans les profondeurs de la grotte, s'éloignant progressivement des autres groupes. Les membres du groupe sont intimidés par les aspérités des parois et l'inconnu qui les entoure. Cependant, ils trouvent finalement une galerie avec des fresques mystérieuses qui les intriguent. Plus loin dans le tunnel, ils découvrent une multitude d'artefacts abandonnés ainsi que des squelettes d'animaux et peut-être même de membres du groupe disparu. La situation se complique lorsque l'un des membres trouve un bol avec ce qui ressemble à une maladie inconnue, et qu'ils sont finalement confrontés au cri pour secours d'une rhombe.
 
 ## 📊 Statistiques du tour
 

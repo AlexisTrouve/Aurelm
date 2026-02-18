@@ -2,7 +2,7 @@
 
 📅 **28/10/2024** | 📊 **8 segments** | 🎯 **6 nouvelles entités**
 
-> La civilisation de la Confluence a évolué autour de la confluence des deux fleuves, dans une vallée montagneuse fertile. Les villageois ont développé un mode de vie en harmonie avec les animaux de la vallée, dont certains sont même domestiqués. Leur régime alimentaire est omnilorique, incluant des légumes sauvages, gibiers, poissons gras et quelques serpents d'eau. Cependant, leur cuisine manque d'imagination, avec un même goût pour les plats traditionnels.
+> Le village a été établi par votre peuple il y a quelques générations après que vous avez guidé les survivants jusqu'à la confluence des deux fleuves. La Vallée offre des largesses à vos habitants, avec une terre fertile et une eau poissonneuse qui attirent des gibiers pour migrer. Les villageois ont développé une relation symbiotique avec certains animaux qui vivent dans la vallée, notamment des herbivores qui se sont fait domestication.
 
 ## 📊 Statistiques du tour
 
@@ -48,9 +48,9 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 - Vallée montagneuse
 - Confluence des deux fleuves
-- Plateau rocailleux en amont
-- Rivières bleues et vertes
-- Zones humides
+- rivières bleues et vertes
+- plateau rocailleux en amont
+- villages sur pilotis
 
 ### 🔧 Technologies
 
@@ -65,14 +65,14 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 - gibiers
 - baies
 - tubercules
-- herbes pour parfumer
+- herbes pour parfumer le tout
 - Gingembre sauvage (Morsure-des-Ancêtres)
 
 ### ✨ Croyances
 
 - croyance dans les anciens
-- importance des nouvelles lunes
-- vitalité particulière chez les couples qui partagent 'Les Larmes du Ciel' lors de ces périodes
+- importance de la coopération avec les Regards-Libres
+- rituel du partage des Larmes du Ciel lors des nouvelles lunes
 
 ## 🏷️ Entités mentionnées
 

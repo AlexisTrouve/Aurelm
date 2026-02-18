@@ -17,6 +17,14 @@
 Tour  8  ████████████████████  ← Pic
 ```
 
+## Description
+
+Le Tribunal de moeurs est une institution chargée de faire respecter les normes sociales et les règles morales dans la communauté. Il joue un rôle central dans l'application de la justice et la régulation des comportements. Son fonctionnement et ses décisions sont discutés par plusieurs autres institutions, comme le cercle des sages, les Gardiens de la confluence et les voix de l'Aurore.
+
+## Chronologie
+
+**Tour 8: Les processions rituelles se multiplient alors que le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant, tout comme le souhaite le Tribunal de moeurs.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 8**

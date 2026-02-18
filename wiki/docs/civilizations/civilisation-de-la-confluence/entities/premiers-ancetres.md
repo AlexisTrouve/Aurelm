@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+Les premiers ancêtres sont une technologie ancienne qui a laissé des traces dans les fresques de grands halls décorés. Il s'agit d'un travail partagé entre les savants de surface, qui tentent d'interpréter ces images pour comprendre le destin de leur peuple.
+
+## Chronologie
+
+**Tour 14: Les savants de surface considèrent que l'interprétation des fresques des premiers ancêtres est un travail partagé entre les générations. Les conclusions sont mémorisées et transmises aux successeurs.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

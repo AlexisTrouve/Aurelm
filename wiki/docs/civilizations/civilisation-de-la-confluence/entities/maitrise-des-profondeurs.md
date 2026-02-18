@@ -17,6 +17,14 @@
 Tour 13  ████████████████████  ← Pic
 ```
 
+## Description
+
+La Maîtrise des Profondeurs est une technologie inconnue qui semble être liée à la découverte des galeries souterraines. Elle est mentionnée comme une option libre pour l'équipe 4, suggérant qu'il pourrait y avoir plusieurs moyens de gérer cette situation. La Maîtrise des Profondeurs n'est pas explicitement définie dans les extraits, mais elle semble être liée à la technologie ou au savoir-faire nécessaire pour comprendre et maîtriser les dangers des profondeurs.
+
+## Chronologie
+
+**Tour 13: L'option libre de l'équipe 4 est de choisir entre Sauvetage à la corde et Maîtrise des Profondeurs, suggérant que les deux options sont considérées comme alternatives viables pour gérer la situation.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 13**

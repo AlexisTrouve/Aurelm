@@ -28,6 +28,16 @@ Tour 14  ████████████████████
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 2 tours
 - 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 2 tours
 
+## Description
+
+Le Rituel du Regard Partagé est un rituel qui utilise le contact visuel pour sceller les accords et échanges importants. Il est basé sur la mutation physique où les yeux des individus deviennent une palette de couleurs qui révèlent leur nature profonde. Ce rituel est utilisé dans divers contextes, notamment dans un rite annuel pour les Gardiens du Hall.
+
+## Chronologie
+
+**Tour 9: Ce tour décrit l'émergence du Rituel du Regard Partagé comme une nouvelle tradition qui rassemble les peuples à travers un langage silencieux mais profond.**
+
+**Tour 14: Dans ce tour, le Rituel du Regard Partagé est mentionné dans la description de l'obligation annuelle des Gardiens du Hall de revenir à La Confluence pour y participer.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 9**

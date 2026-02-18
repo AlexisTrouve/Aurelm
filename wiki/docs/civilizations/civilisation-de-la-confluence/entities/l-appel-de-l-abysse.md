@@ -17,6 +17,14 @@
 Tour 12  ████████████████████  ← Pic
 ```
 
+## Description
+
+L'Appel de l'Abysse est une technologie qui permet aux Enfants des Échos d'accéder à des zones inexplorées et cachées dans la vallée. Elle représente un moyen de découvrir de nouvelles connaissances et ressources en explorant les profondeurs de la vallée, mais elle peut également être considérée comme une forme d'exploitation ou une remise en question de l'autorité des Passes-bien.
+
+## Chronologie
+
+**Tour 12: Les anciens Enfants des Échos murmurent que la vallée récompense ceux qui osent chercher au-delà des sentiers battus, et les membres de cette génération se sentent appelés à poursuivre ce but. L'Appel de l'Abysse devient le symbole de leur détermination à explorer et à découvrir.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 12**

@@ -2,14 +2,14 @@
 
 📅 **22/05/2025** | 📊 **9 segments** | 🎯 **8 nouvelles entités**
 
-> La narration décrit les activités quotidiennes de la civilisation de la Confluence, où les enfants des échos travaillent en étroite collaboration pour construire de nouvelles Antres. L'air est froid mais le soleil réchauffe la vallée et permet à la vie simple des plantes de se dérouler. La réalisation interrompt la méditation d'un personnage qui se demande si l'on pourrait être un arbuste à baie rêvant qu'il est un homme. Le transport de l'argile vive est mentionné comme une affaire importante, et la construction de nouveaux bâtiments est en cours, notamment un Temple majestueux, une maison des castes, un hall des passages et autres projets.
+> Le jeu se déroule dans la civilisation de la Confluence, où les enfants des échos travaillent ensemble pour aménager une nouvelle Antre. L'air est froid, mais le soleil réchauffe la vallée, et les plantes commencent à pousser après l'hiver. Les chantiers sont nombreux, et les biens affluent, notamment grâce au partage de ressources entre les castes. Cependant, cette année est différente, car les réserves sont plus importantes que d'habitude en raison de la politique de constructions de réserves. Le peuple travailleur se remet en marche, et de nouveaux projets émergent, notamment un Temple majestueux, une maison des castes et un hall des passages.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Faucons Chasseurs`, `Ciels-clairs`, `Arbitre des Esprits`, `Assemblée des Chefs`, `Maison des Découvertes`, `Lois du Sang`, `Argile vivante`, `La Bête`
 - **Mentions totales** : 21
 - **Technologies** : 2
-- **Ressources** : 7
+- **Ressources** : 6
 - **Densité narrative** : 7 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -61,9 +61,9 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 
 ### 🗺️ Géographie
 
-- confluence des rivières
+- confluence
 - montagnes
-- vallée
+- rivière bleue
 
 ### 🔧 Technologies
 
@@ -73,21 +73,19 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 ### 🌾 Ressources
 
 - argile vivante
-- pierres
-- bois
-- légumes
 - poisson
-- os
-- métal (non spécifié)
+- légumes
+- pierre
+- bois
+- mets savoureux
 
 ### ✨ Croyances
 
 - Loi du Sang et de la Bête
 - Tribunal des Mœurs
-- Assemblée des Chefs
 - Arbitre des Esprits
 - Cercle des Sages
-- Maison des Découvertes
+- Assemblée des Chefs
 
 ## 🏷️ Entités mentionnées
 

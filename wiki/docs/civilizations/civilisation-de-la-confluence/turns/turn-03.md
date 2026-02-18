@@ -2,14 +2,14 @@
 
 📅 **13/09/2024** | 📊 **4 segments** | 🎯 **2 nouvelles entités**
 
-> La tribu a connu une période de croissance et de développement sous l'influence du personnage, qui a guidé les membres dans leur gestion des terres de chasse et leur approvisionnement en nourriture. Les rôles traditionnels ont été modifiés, avec les anciens désormais considérés comme une source de sagesse, ce qui a conduit à l'augmentation du respect pour le personnage et sa position dans la tribu. Cette évolution sociale a permis à la tribu de surmonter ses difficultés passées et de se développer.
+> Les saisons ont passé et les anciens sont maintenant considérés comme une source de sagesse. Les plus jeunes montrent du respect et de l'humilité envers eux, notamment ceux qui sont nés 'sans ciel'. Le Maitre du Jeu a guidé la tribu dans l'utilisation optimale de leur territoire de chasse, ce qui a permis d'établir des villages temporaires et de stocker de la viande fumée. La tribu se développe et le Maitre du Jeu réalise que sa position évolue avec les temps.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Sans ciel`, `Cercle des sages`
 - **Mentions totales** : 3
 - **Technologies** : 2
-- **Ressources** : 3
+- **Ressources** : 2
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -44,21 +44,19 @@ Je décide de forger une nouvelle structure pour la tribu. Je convoque les espri
 
 ### 🔧 Technologies
 
-- fumage
-- pièges (mentionné dans la chasse)
+- rites de déposition des morts
+- mémentos en mémoire des aïeux
 
 ### 🌾 Ressources
 
-- viande
+- viande fumée
 - terres de chasse
-- feu
 
 ### ✨ Croyances
 
 - croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel
-- adoption des anciens comme source de savoir
-- importance de la piété filiale
-- idée selon laquelle guider un ancien vers son dernier repos permet d'obtenir une parcelle de la providence
+- adoration des anciens comme source de savoir
+- piété filiale pour racheter la providence refusée à la naissance
 
 ## 🏷️ Entités mentionnées
 

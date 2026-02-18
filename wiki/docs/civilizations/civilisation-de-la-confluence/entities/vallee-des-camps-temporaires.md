@@ -19,13 +19,11 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-La Vallée des camps temporaires est une région géographique où se trouvent plusieurs villages, l'un à la confluence et l'autre sur des pilotis plus bas. Ces villages coexistent de manière complémentaire sans se mélanger, les uns cultivant la rivière tandis que les autres échangent des outils, viandes et plantes avec eux.
+La Vallée des camps temporaires est une vallée où les protagonistes demeurent pour chasser, cueillir et pêcher. Il y a deux villages situés dans cette vallée : l'un à la confluence de la rivière et l'autre plus bas sur des pilotis.
 
 ## Chronologie
 
-**Tour 6: Les personnages sont présents dans la Vallée des camps temporaires tout au long de ce tour, s'engageant dans diverses activités comme la chasse, la cueillette et la pêche. Ils reviennent finalement au village, ou plutôt aux villages, qui se voulent complémentaires.**
-
-**Tour 6 (suite): Il est mentionné que les deux villages sont distincts, l'un cultivant la rivière tandis que l'autre reçoit des échanges avec le premier.**
+**Tour 6: Les deux villages dans la vallée sont complémentaires sans se mélanger, avec les uns cultivant la rivière tandis que les autres échangent avec eux des outils, viandes et plantes.**
 
 ## 💬 Mentions avec contexte
 

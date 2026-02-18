@@ -1,7 +1,5 @@
 # Civilisation de la Confluence
 
-**Joueur** : Rubanc
-
 **Tours de jeu** : 14
 
 ## Entites par type
@@ -17,13 +15,22 @@
 
 ## Derniers tours
 
-- **Tour 10** -- Le Maitre du Jeu décrit sa visite dans les villages de la vallée et ses observations sur les changements qui ont lieu. L...
-- **Tour 11** -- La civilisation de la Confluence poursuit son développement avec la construction de nouveaux bâtiments et l'utilisation ...
-- **Tour 12** -- Un cadavre a été découvert dans le village de la Confluence, et une dispute éclate entre les habitants sur l'identité du...
-- **Tour 13** -- La civilisation de la Confluence traverse une période difficile après la disparition d'un groupe dans le Gouffre Humide....
-- **Tour 14** -- La narration concerne l'univers de Gouffre Humide et les Ailes-Grises, où un peuple adore les premiers ancêtres en se re...
+- **Tour 10** -- Tu visites les villages de la vallée pour observer le progrès de ta civilisation, mais tu te demandes si ton anonymat es...
+- **Tour 11** -- Les enfants des échos travaillent à aménager une nouvelle Antre, tandis que la vallée commence à se réveiller après l'hi...
+- **Tour 12** -- Un crime a été commis dans le village de la Confluence, un ciel-clair accusant un sans-ciel d'un meurtre. Le Tribunal de...
+- **Tour 13** -- Le groupe de recherche entre dans la galerie de Gouffre Humide en quête de la civilisation disparue. Ils découvrent des ...
+- **Tour 14** -- Les Ailes-Grises visitent les halls sacrés de Gouffre Humide pour méditer et interpréter les fresques des Premiers Ancêt...
 
 ## Pages
 
 - [Historique complet des tours](turns/index.md)
 - [Index des entites](entities/index.md)
+
+### Base de connaissances
+
+- [Technologies](knowledge/technologies.md)
+- [Ressources](knowledge/resources.md)
+- [Croyances](knowledge/beliefs.md)
+- [Geographie](knowledge/geography.md)
+- [Choix et Decisions](knowledge/choices.md)
+- [Relations entre Entites](knowledge/relations.md)

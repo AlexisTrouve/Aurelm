@@ -827,6 +827,485 @@ def search_turn_content(
 
 
 # --------------------------------------------------------------------------- #
+# Tool 10: getStructuredFacts
+# --------------------------------------------------------------------------- #
+
+VALID_FACT_TYPES = {"technologies", "resources", "beliefs", "geography"}
+
+
+def _parse_json_list(raw: str | None) -> list[str]:
+    """Parse a JSON array string into a list of strings."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return [str(e) for e in parsed if e]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return []
+
+
+def get_structured_facts(
+    conn: sqlite3.Connection,
+    civ_id: int,
+    civ_name: str,
+    fact_type: str | None = None,
+    turn_number: int | None = None,
+) -> str:
+    types_to_query = (
+        [fact_type] if fact_type and fact_type in VALID_FACT_TYPES else sorted(VALID_FACT_TYPES)
+    )
+
+    sql = "SELECT turn_number, technologies, resources, beliefs, geography FROM turn_turns WHERE civ_id = ?"
+    params: list = [civ_id]
+    if turn_number is not None:
+        sql += " AND turn_number = ?"
+        params.append(int(turn_number))
+    sql += " ORDER BY turn_number"
+
+    rows = conn.execute(sql, params).fetchall()
+
+    lines = [f"# Structured Facts - {civ_name}", ""]
+    if fact_type and fact_type in VALID_FACT_TYPES:
+        lines.append(f"**Filter:** {fact_type}")
+    if turn_number is not None:
+        lines.append(f"**Turn:** {turn_number}")
+    lines.append("")
+
+    found_any = False
+    for row in rows:
+        t_num = row[0]
+        facts_for_turn: dict[str, list[str]] = {}
+        col_map = {"technologies": row[1], "resources": row[2], "beliefs": row[3], "geography": row[4]}
+        for ft in types_to_query:
+            items = _parse_json_list(col_map.get(ft))
+            if items:
+                facts_for_turn[ft] = items
+
+        if facts_for_turn:
+            found_any = True
+            lines.append(f"## Turn {t_num}")
+            lines.append("")
+            for ft, items in facts_for_turn.items():
+                lines.append(f"**{ft.capitalize()}:**")
+                for item in items:
+                    lines.append(f"- {item}")
+                lines.append("")
+
+    if not found_any:
+        lines.append("No structured facts found for the given filters.")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Tool 11: getChoiceHistory
+# --------------------------------------------------------------------------- #
+
+def get_choice_history(
+    conn: sqlite3.Connection,
+    civ_id: int,
+    civ_name: str,
+    turn_number: int | None = None,
+) -> str:
+    sql = """
+        SELECT turn_number, title, summary, choices_proposed, choices_made
+        FROM turn_turns
+        WHERE civ_id = ? AND (choices_proposed IS NOT NULL OR choices_made IS NOT NULL)
+    """
+    params: list = [civ_id]
+    if turn_number is not None:
+        sql += " AND turn_number = ?"
+        params.append(int(turn_number))
+    sql += " ORDER BY turn_number"
+
+    rows = conn.execute(sql, params).fetchall()
+
+    lines = [f"# Choice History - {civ_name}", ""]
+
+    if not rows:
+        lines.append("No choices recorded for this civilization.")
+        return "\n".join(lines)
+
+    for row in rows:
+        t_num, title, summary, proposed_raw, made_raw = row
+        lines.append(f"## Turn {t_num}: {title or '(untitled)'}")
+        if summary:
+            lines.append(f"*{truncate(summary, 200)}*")
+        lines.append("")
+
+        proposed = _parse_json_list(proposed_raw)
+        if proposed:
+            lines.append("**Choices proposed:**")
+            for i, choice in enumerate(proposed, 1):
+                lines.append(f"{i}. {choice}")
+            lines.append("")
+
+        made = _parse_json_list(made_raw)
+        if made:
+            lines.append("**Decision:**")
+            for decision in made:
+                lines.append(f"-> {decision}")
+            lines.append("")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Tool 12: exploreRelations
+# --------------------------------------------------------------------------- #
+
+def _resolve_entity(
+    conn: sqlite3.Connection, entity_name: str, civ_id: int | None = None
+) -> list[dict]:
+    """Find entities matching a name or alias."""
+    sql = """
+        SELECT e.id, e.canonical_name, e.entity_type
+        FROM entity_entities e
+        WHERE (e.canonical_name LIKE ? OR e.id IN (
+            SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ?
+        ))
+    """
+    pattern = f"%{entity_name}%"
+    params: list = [pattern, pattern]
+    if civ_id is not None:
+        sql += " AND e.civ_id = ?"
+        params.append(civ_id)
+    sql += " ORDER BY e.canonical_name LIMIT 5"
+    rows = conn.execute(sql, params).fetchall()
+    return [{"id": r[0], "name": r[1], "type": r[2]} for r in rows]
+
+
+def explore_relations(
+    conn: sqlite3.Connection,
+    entity_name: str,
+    civ_id: int | None = None,
+    depth: int = 1,
+) -> str:
+    entities = _resolve_entity(conn, entity_name, civ_id)
+    if not entities:
+        return f'# Relations: "{entity_name}"\n\nNo entity found matching "{entity_name}".'
+
+    root = entities[0]
+    lines = [f"# Relations: {root['name']} ({root['type']})", ""]
+
+    visited: set[int] = set()
+    queue: list[tuple[int, str, int]] = [(root["id"], root["name"], 0)]
+    relation_lines: list[str] = []
+
+    while queue:
+        eid, ename, current_depth = queue.pop(0)
+        if eid in visited:
+            continue
+        visited.add(eid)
+
+        rels = conn.execute("""
+            SELECT 'outgoing' AS direction, t.id, t.canonical_name, t.entity_type,
+                   r.relation_type, r.description
+            FROM entity_relations r
+            JOIN entity_entities t ON r.target_entity_id = t.id
+            WHERE r.source_entity_id = ? AND r.is_active = 1
+            UNION ALL
+            SELECT 'incoming' AS direction, s.id, s.canonical_name, s.entity_type,
+                   r.relation_type, r.description
+            FROM entity_relations r
+            JOIN entity_entities s ON r.source_entity_id = s.id
+            WHERE r.target_entity_id = ? AND r.is_active = 1
+        """, (eid, eid)).fetchall()
+
+        for rel in rels:
+            direction, other_id, other_name, other_type, rel_type, desc = rel
+            indent = "  " * current_depth
+            if direction == "outgoing":
+                arrow = f"{ename} --[{rel_type}]--> {other_name} ({other_type})"
+            else:
+                arrow = f"{other_name} ({other_type}) --[{rel_type}]--> {ename}"
+            detail = f" -- {desc}" if desc else ""
+            relation_lines.append(f"{indent}- {arrow}{detail}")
+
+            if current_depth + 1 < depth and other_id not in visited:
+                queue.append((other_id, other_name, current_depth + 1))
+
+    if relation_lines:
+        lines.append(f"**Depth:** {depth}")
+        lines.append(f"**Relations found:** {len(relation_lines)}")
+        lines.append("")
+        lines.extend(relation_lines)
+    else:
+        lines.append("No relations found for this entity.")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Tool 13: filterTimeline
+# --------------------------------------------------------------------------- #
+
+def filter_timeline(
+    conn: sqlite3.Connection,
+    civ_id: int | None = None,
+    turn_type: str | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    entity_name: str | None = None,
+) -> str:
+    if entity_name:
+        sql = """
+            SELECT DISTINCT t.turn_number, t.title, t.summary, t.turn_type,
+                   t.game_date_start, c.name AS civ_name
+            FROM turn_turns t
+            JOIN civ_civilizations c ON t.civ_id = c.id
+            LEFT JOIN entity_mentions m ON m.turn_id = t.id
+            LEFT JOIN entity_entities e ON m.entity_id = e.id
+            LEFT JOIN entity_aliases a ON a.entity_id = e.id
+            WHERE (e.canonical_name LIKE ? OR a.alias LIKE ?)
+        """
+        pattern = f"%{entity_name}%"
+        params: list = [pattern, pattern]
+    else:
+        sql = """
+            SELECT t.turn_number, t.title, t.summary, t.turn_type,
+                   t.game_date_start, c.name AS civ_name
+            FROM turn_turns t
+            JOIN civ_civilizations c ON t.civ_id = c.id
+            WHERE 1=1
+        """
+        params = []
+
+    if civ_id is not None:
+        sql += " AND t.civ_id = ?"
+        params.append(civ_id)
+    if turn_type:
+        sql += " AND t.turn_type = ?"
+        params.append(turn_type)
+    if from_turn is not None:
+        sql += " AND t.turn_number >= ?"
+        params.append(int(from_turn))
+    if to_turn is not None:
+        sql += " AND t.turn_number <= ?"
+        params.append(int(to_turn))
+
+    sql += " ORDER BY t.turn_number ASC, c.name LIMIT 100"
+    rows = conn.execute(sql, params).fetchall()
+
+    # Build title
+    filters = []
+    if turn_type:
+        filters.append(f"type={turn_type}")
+    if from_turn is not None or to_turn is not None:
+        f_str = str(from_turn) if from_turn is not None else "?"
+        t_str = str(to_turn) if to_turn is not None else "?"
+        filters.append(f"turns {f_str}-{t_str}")
+    if entity_name:
+        filters.append(f"entity={entity_name}")
+    filter_str = f" ({', '.join(filters)})" if filters else ""
+
+    lines = [f"# Filtered Timeline{filter_str}", ""]
+
+    if not rows:
+        lines.append("No turns match the given filters.")
+        return "\n".join(lines)
+
+    lines += [
+        f"**{len(rows)}** turn(s) found.",
+        "",
+        "| Turn | Civilization | Type | Summary |",
+        "|---|---|---|---|",
+    ]
+    for r in rows:
+        turn_num, title, summary, t_type, gd_start, cn = r
+        text = truncate(summary or title or "(no summary)", 100)
+        lines.append(f"| {turn_num} | {cn} | {t_type} | {text} |")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Tool 14: entityActivity
+# --------------------------------------------------------------------------- #
+
+def entity_activity(
+    conn: sqlite3.Connection,
+    entity_name: str,
+    civ_id: int | None = None,
+) -> str:
+    entities = _resolve_entity(conn, entity_name, civ_id)
+    if not entities:
+        return f'# Entity Activity: "{entity_name}"\n\nNo entity found matching "{entity_name}".'
+
+    entity = entities[0]
+    eid = entity["id"]
+
+    rows = conn.execute("""
+        SELECT t.turn_number, COUNT(*) AS cnt
+        FROM entity_mentions m
+        JOIN turn_turns t ON m.turn_id = t.id
+        WHERE m.entity_id = ?
+        GROUP BY t.turn_number
+        ORDER BY t.turn_number
+    """, (eid,)).fetchall()
+
+    lines = [f"# Entity Activity: {entity['name']} ({entity['type']})", ""]
+
+    if not rows:
+        lines.append("No mentions found.")
+        return "\n".join(lines)
+
+    turn_counts = [(r[0], r[1]) for r in rows]
+    first_turn = turn_counts[0][0]
+    last_turn = turn_counts[-1][0]
+    total_mentions = sum(c for _, c in turn_counts)
+    peak_turn, peak_count = max(turn_counts, key=lambda x: x[1])
+
+    lines.append(f"**First appearance:** Turn {first_turn}")
+    lines.append(f"**Last appearance:** Turn {last_turn}")
+    lines.append(f"**Total mentions:** {total_mentions}")
+    lines.append(f"**Peak activity:** Turn {peak_turn} ({peak_count} mentions)")
+    lines.append("")
+
+    # ASCII sparkline
+    max_count = max(c for _, c in turn_counts)
+    sparkline_chars = " _.-:=+*#"
+    lines.append("## Activity by Turn")
+    lines.append("")
+    lines.append("```")
+    for t_num, cnt in turn_counts:
+        bar_idx = min(int(cnt / max_count * (len(sparkline_chars) - 1)), len(sparkline_chars) - 1)
+        bar = sparkline_chars[bar_idx] * cnt
+        lines.append(f"Turn {t_num:>3}: {bar} ({cnt})")
+    lines.append("```")
+    lines.append("")
+
+    # Recent contexts
+    recent = conn.execute("""
+        SELECT m.context, t.turn_number
+        FROM entity_mentions m
+        JOIN turn_turns t ON m.turn_id = t.id
+        WHERE m.entity_id = ?
+        ORDER BY t.turn_number DESC
+        LIMIT 3
+    """, (eid,)).fetchall()
+
+    if recent:
+        lines.append("## Recent Mentions")
+        lines.append("")
+        for r in recent:
+            ctx = truncate(r[0], 200) if r[0] else "(no context)"
+            lines.append(f"- **Turn {r[1]}:** {ctx}")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# getTechTree
+# --------------------------------------------------------------------------- #
+
+TECH_CATEGORIES = {
+    "Outils de chasse": ["gourdin", "pieux", "pieu", "arc", "fleche", "lance", "harpon", "chasseur"],
+    "Outils de peche": ["filet", "ligne", "hamecon", "peche", "nasse", "poisson"],
+    "Agriculture": ["semence", "irrigation", "culture", "plantation", "recolte", "agriculture", "champ"],
+    "Artisanat": ["tissage", "poterie", "vannerie", "tannage", "artisan", "metier"],
+    "Construction": ["cabane", "palissade", "maison", "construction", "batiment", "architecture"],
+    "Navigation": ["radeau", "barque", "bateau", "pirogue", "navigation", "voile"],
+    "Feu et lumiere": ["feu", "flambeau", "braise", "torche", "foyer", "fumage"],
+    "Musique et rituel": ["rhombe", "pipeau", "tambour", "chant", "rituel", "musique", "voix", "presage"],
+    "Materiaux": ["argile", "pierre", "roche", "os", "bois", "pigment"],
+}
+
+
+def _categorize_tech(tech_name: str) -> str:
+    """Assign a category to a technology based on keywords."""
+    tech_lower = tech_name.lower()
+    for cat, keywords in TECH_CATEGORIES.items():
+        if any(kw in tech_lower for kw in keywords):
+            return cat
+    return "Autre"
+
+
+def get_tech_tree(
+    conn: sqlite3.Connection,
+    civ_id: int,
+    civ_name: str,
+    *,
+    category: str | None = None,
+) -> str:
+    """Return the full technology tree for a civilization, organized by category.
+
+    Args:
+        conn: Database connection
+        civ_id: Civilization ID
+        civ_name: Civilization name (for display)
+        category: Optional filter by category name
+    """
+    rows = conn.execute(
+        """SELECT turn_number, technologies
+           FROM turn_turns
+           WHERE civ_id = ? AND technologies IS NOT NULL AND technologies != '[]'
+           ORDER BY turn_number""",
+        (civ_id,),
+    ).fetchall()
+
+    if not rows:
+        return f"No technologies found for {civ_name}."
+
+    # Build flat list: (tech_name, turn_number, category)
+    # row[0] = turn_number, row[1] = technologies JSON
+    all_techs: list[tuple[str, int, str]] = []
+    for r in rows:
+        techs = _parse_json_list(r[1])
+        for t in techs:
+            cat = _categorize_tech(t)
+            all_techs.append((t, r[0], cat))
+
+    # Filter by category if requested
+    if category:
+        cat_lower = category.lower()
+        filtered = [t for t in all_techs if cat_lower in t[2].lower()]
+        if not filtered:
+            available = sorted(set(t[2] for t in all_techs))
+            return f"No technologies in category '{category}'. Available: {', '.join(available)}"
+        all_techs = filtered
+
+    # Group by category
+    by_cat: dict[str, list[tuple[str, int]]] = {}
+    for tech_name, turn_num, cat in all_techs:
+        by_cat.setdefault(cat, []).append((tech_name, turn_num))
+
+    lines = [f"# Tech Tree -- {civ_name}", ""]
+
+    # Summary
+    total = len(all_techs)
+    first_turn = min(t[1] for t in all_techs)
+    last_turn = max(t[1] for t in all_techs)
+    lines.append(f"**{total} technologies** acquired from Turn {first_turn} to Turn {last_turn}")
+    lines.append(f"**Categories:** {', '.join(sorted(by_cat.keys()))}")
+    lines.append("")
+
+    # By category
+    for cat in sorted(by_cat.keys()):
+        techs = sorted(by_cat[cat], key=lambda x: x[1])
+        lines.append(f"## {cat} ({len(techs)})")
+        lines.append("")
+        for tech_name, turn_num in techs:
+            lines.append(f"- **{tech_name}** (Tour {turn_num})")
+        lines.append("")
+
+    # Chronological timeline
+    lines.append("## Timeline")
+    lines.append("")
+    by_turn: dict[int, list[str]] = {}
+    for tech_name, turn_num, _ in sorted(all_techs, key=lambda x: x[1]):
+        by_turn.setdefault(turn_num, []).append(tech_name)
+    for turn_num in sorted(by_turn.keys()):
+        techs_str = ", ".join(by_turn[turn_num])
+        lines.append(f"**Tour {turn_num}** -> {techs_str}")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
 # Tool definitions for Claude API tool_use
 # --------------------------------------------------------------------------- #
 
@@ -937,6 +1416,83 @@ TOOL_DEFINITIONS = [
                 "segmentType": {"type": "string", "description": "Filtrer par type de segment (optionnel)"},
             },
             "required": ["query"],
+        },
+    },
+    {
+        "name": "getStructuredFacts",
+        "description": "Faits structures par tour: technologies, ressources, croyances, geographie.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Nom de la civilisation"},
+                "factType": {"type": "string", "description": "Type de fait: technologies, resources, beliefs, geography, ou all (optionnel)"},
+                "turnNumber": {"type": "integer", "description": "Numero du tour (optionnel)"},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "getChoiceHistory",
+        "description": "Historique des choix proposes et decisions prises par civilisation.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Nom de la civilisation"},
+                "turnNumber": {"type": "integer", "description": "Numero du tour (optionnel)"},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "exploreRelations",
+        "description": "Explore le graphe de relations d'une entite (controle, appartenance, alliances...).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Nom de l'entite"},
+                "civName": {"type": "string", "description": "Filtrer par civilisation (optionnel)"},
+                "depth": {"type": "integer", "description": "Profondeur de navigation (1-3, defaut 1)"},
+            },
+            "required": ["entityName"],
+        },
+    },
+    {
+        "name": "filterTimeline",
+        "description": "Timeline filtree par type de tour, intervalle, ou entite mentionnee.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Filtrer par civilisation (optionnel)"},
+                "turnType": {"type": "string", "description": "Type de tour: standard, event, first_contact, crisis (optionnel)"},
+                "fromTurn": {"type": "integer", "description": "Tour de depart (optionnel)"},
+                "toTurn": {"type": "integer", "description": "Tour de fin (optionnel)"},
+                "entityName": {"type": "string", "description": "Filtrer les tours mentionnant cette entite (optionnel)"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "entityActivity",
+        "description": "Activite temporelle d'une entite: sparkline des mentions, pic, contexte recent.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Nom de l'entite"},
+                "civName": {"type": "string", "description": "Filtrer par civilisation (optionnel)"},
+            },
+            "required": ["entityName"],
+        },
+    },
+    {
+        "name": "getTechTree",
+        "description": "Arbre technologique complet d'une civilisation, organise par categorie (chasse, peche, construction, etc.) avec timeline.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Nom de la civilisation"},
+                "category": {"type": "string", "description": "Filtrer par categorie (optionnel): Outils de chasse, Outils de peche, Construction, Navigation, etc."},
+            },
+            "required": ["civName"],
         },
     },
 ]
@@ -1070,5 +1626,86 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
         return search_turn_content(conn, query, civ_id=civ_id, segment_type=tool_input.get("segmentType"))
+
+    if tool_name == "getStructuredFacts":
+        resolved = _resolve()
+        if resolved is None:
+            return "Error: civName is required."
+        if "error" in resolved:
+            return resolved["error"]
+        return get_structured_facts(
+            conn,
+            resolved["id"],
+            resolved["name"],
+            fact_type=tool_input.get("factType"),
+            turn_number=tool_input.get("turnNumber"),
+        )
+
+    if tool_name == "getChoiceHistory":
+        resolved = _resolve()
+        if resolved is None:
+            return "Error: civName is required."
+        if "error" in resolved:
+            return resolved["error"]
+        return get_choice_history(
+            conn,
+            resolved["id"],
+            resolved["name"],
+            turn_number=tool_input.get("turnNumber"),
+        )
+
+    if tool_name == "exploreRelations":
+        entity_name = tool_input.get("entityName", "")
+        if not entity_name:
+            return "Error: entityName is required."
+        civ_id = None
+        civ_name_str = tool_input.get("civName")
+        if civ_name_str:
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        depth = min(int(tool_input.get("depth", 1)), 3)
+        return explore_relations(conn, entity_name, civ_id=civ_id, depth=depth)
+
+    if tool_name == "filterTimeline":
+        civ_id = None
+        civ_name_str = tool_input.get("civName")
+        if civ_name_str:
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        return filter_timeline(
+            conn,
+            civ_id=civ_id,
+            turn_type=tool_input.get("turnType"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            entity_name=tool_input.get("entityName"),
+        )
+
+    if tool_name == "entityActivity":
+        entity_name = tool_input.get("entityName", "")
+        if not entity_name:
+            return "Error: entityName is required."
+        civ_id = None
+        civ_name_str = tool_input.get("civName")
+        if civ_name_str:
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        return entity_activity(conn, entity_name, civ_id=civ_id)
+
+    if tool_name == "getTechTree":
+        resolved = _resolve()
+        if resolved is None:
+            return "Error: civName is required."
+        if "error" in resolved:
+            return resolved["error"]
+        return get_tech_tree(
+            conn,
+            resolved["id"],
+            resolved["name"],
+            category=tool_input.get("category"),
+        )
 
     return f"Unknown tool: {tool_name}"

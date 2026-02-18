@@ -2,6 +2,9 @@
 
 *Technologies* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/rhombes.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -33,19 +36,19 @@ Tour 12  ████████████████████
 
 ## Description
 
-Les rhombes sont une technologie utilisée pour façonner des structures durables et complexes, notamment des poteries imperméables, des réceptacles sacrés et des canaux qui guident l'eau. Ils sont fabriqués en pierres et peuvent être utilisés comme liant pour assembler les pierres dans des constructions imposantes. Les Ailes-Grises utilisent les rhombes pour façonner des formes complexes et durables.
+Les rhombes sont une technologie utilisée pour créer des structures qui défient les saisons, des habitations qui protègent les générations à venir et des canaux qui guident l'eau précieuse. Ils sont fabriqués en massant de l'argile vive entre des moules ou façonner directement avec les mains. Les rhombes peuvent être utilisés pour créer des réceptacles sacrés, des liants pour assembler des pierres et même des poteries imperméables.
 
 ## Chronologie
 
-**Tour 7: Les joueurs choisissent de fabriquer des rhombes en pierres parmi quatre options de technologies différentes.**
+**Tour 7: Les joueurs peuvent choisir d'utiliser des rhombes en pierres comme instrument musical dans la procession rituelle.**
 
-**Tour 8: Au son des rhombes, les processions rituelles se multiplient alors que les institutions concurrentes entre en conflit.**
+**Tour 8: Au son des rhombes, les processions rituelles se multiplient alors que les institutions que le joueur a participé à établir entrent en concurrence.**
 
-**Tour 10: L'argile vive est comparée aux rhombes en termes de capacité à façonner des structures durables et complexes.**
+**Tour 10: Les artisans utilisent les rhombes comme liant pour assembler les pierres et créer des structures plus imposantes que jamais.**
 
-**Tour 11: Les enfants du courant utilisent encore les rhombes pour façonner des cratères et des vases rituels, tandis que l'argile vive est utilisée dans la construction d'abris qui survivent aux générations.**
+**Tour 11: Les enfants du courant utiliseront également les rhombes, mais il faut maintenir le matériau humide précieux.**
 
-**Tour 12: Une équipe utilise des rhombes pour les rituels et communications lors de l'exploration de galeries souterraines.**
+**Tour 12: L'Aile-Grise utilise les rhombes pour les rituels et les communications lors de l'expédition dans les galeries.**
 
 ## 💬 Mentions avec contexte
 

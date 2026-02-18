@@ -2,6 +2,9 @@
 
 *Castes* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/la-voix-des-cieux.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -30,6 +33,18 @@ Tour 14  ██████████
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 5 tours
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 3 tours
+
+## Description
+
+La Voix de l'Aurore est une caste du peuple du ciel clair qui défend la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises. Les membres de cette caste ont un rôle important dans la société en guidant les processions rituelles, en interprétant les présages et en préservant les traditions ancestrales.
+
+## Chronologie
+
+**Tour 7: La Voix de l'Aurore est créée comme une des institutions du peuple du ciel clair, avec pour but de défendre la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises.**
+
+**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, anticipant le conflit entre les différentes institutions.**
+
+- Turn 9: Tu utilise les voix de l'Aurore pour guider les explorations des enfants du courant.
 
 ## 💬 Mentions avec contexte
 

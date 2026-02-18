@@ -2,14 +2,14 @@
 
 📅 **28/09/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> L'Oracle a formé un cercle des sages, composé de personnages influents de la tribu, avec pour but de développer une culture de dialogue respectueux et productif. Ce cercle est toujours actif même après la mort de l'Oracle, qui est désormais considéré comme une entité quasi divine appelée 'l'Oracle'. Le cercle continue à guider la communauté, mais un problème surgit lorsqu'un jeune chasseur accuse son rival d'avoir séduit la sienne et de chercher à l'humilier.
+> Le Maitre du Jeu s'entoure d'un groupe d'individus qu'il considère comme les plus intelligents et les plus sages de la tribu. Il leur enseigne la voix des cieux, un moyen de trouver des présages dans la nature pour guider leurs décisions. Lorsqu'il quitte la tribu, il laisse derrière lui un héritage qui se poursuit par l'influence du cercle sur la tribu. Les membres du cercle continuent à exercer leur influence et à guider les décisions de la tribu, même si c'est de manière plus discrète.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : aucune
 - **Mentions totales** : 1
 - **Technologies** : 2
-- **Ressources** : 0
+- **Ressources** : 2
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -39,19 +39,26 @@ Je guide la tribu vers une nouvelle structure culturelle et institutionnel. Un h
 ### 🗺️ Géographie
 
 - la fourche dans la rivière
-- la montagne
+- le sommet visible depuis la fourche
 
 ### 🔧 Technologies
 
 - la voix des cieux
-- comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles
+- l'interprétation des présages dans les étoiles, le vent et les entrailles
+
+### 🌾 Ressources
+
+- nourriture recoltee
+- materiaux travailles
 
 ### ✨ Croyances
 
-- l'importance de la sagesse
-- le rôle des ancêtres
-- la bénédiction des esprits pour les futures générations
-- les valeurs communes
+- le cercle des sages
+- la coutume de dialogue respectueux et productif
+- l'influence de l'Oracle sur la tribu
+- les rituels de fertilité
+- l'invocation de la bénédiction des esprits pour les futures générations
+- le rôle valorisé des mères dans la société
 
 ## 🏷️ Entités mentionnées
 

@@ -32,6 +32,20 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 4 tours
 
+## Description
+
+Les Enfants du Courant sont une caste de la société qui revendiquent une plus grande voix dans les décisions de la vallée. Ils sont issus de villages prospères et se caractérisent par leur richesse et leur influence.
+
+## Chronologie
+
+**Tour 7: Les Enfants du Courant apparaissent comme l'une des castes émergeantes, avec les Voix de l'Aurore et les Gardiens de la Confluence, qui revendiquent une plus grande voix dans les décisions de la vallée.**
+
+**Tour 8: Le cercle des sages tente de faire valoir sa juridiction sur les Enfants du Courant, mais ces derniers sont déterminés à avoir leur mot à dire dans les décisions de la vallée.**
+
+- Turn 9: Les Enfants du Courant sont promis une reconnaissance et un prestige qui leur étaient jusqu'alors refusés en raison de l'établissement de nouveaux lieux sacrés, tels que les Antres des Échos, où ils deviendront les gardiens des secrets de la terre.
+
+**Tour 12: L'inimitié entre deux membres des Enfants du Courant conduit à un meurtre qui remet en question l'équilibre des forces dans la vallée.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 7**

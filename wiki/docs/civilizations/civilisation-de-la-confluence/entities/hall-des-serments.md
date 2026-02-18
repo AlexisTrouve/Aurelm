@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+Le Hall des Serments est un endroit où les individus peuvent servir en prêtant serment. Il s'agit d'une institution importante pour ceux qui souhaitent montrer leur dévotion à une cause ou à un maître. Le Hall des Serments est souvent associé aux castes et à la hiérarchie sociale de la société.
+
+## Chronologie
+
+**Tour 14: Il est mentionné que les individus qui veulent servir dans le Hall des Serments devraient maîtriser les Glyphes du Gouffre, car c'est la langue commune utilisée pour communiquer avec La Confluence et se distinguer dans leur caste. Cela suggère que le Hall des Serments est un endroit où les compétences linguistiques sont essentielles.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

@@ -30,6 +30,22 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 3 tours
 - 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 3 tours
 
+## Description
+
+La caste des Passes-bien est chargée de transporter d'un côté de la vallée ce qu'on ne trouve que de l'autre, entretenant les sanctuaires sacrés. Ils sont considérés comme importants pour la survie des voyageurs et des vigiles qui les protègent. Les Passes-bien sont également impliqués dans le commerce et le troc avec d'autres groupes, échangeant des biens contre de l'argile vive ou autre chose d'intéressant. Ils semblent avoir un lien fort avec la terre et la production alimentaire.
+
+## Chronologie
+
+**Tour 10: Les Passes-bien sont mentionnés comme les principaux pourvoyeurs de nourriture pour les sanctuaires sacrés, transportant des aliments séchés qu'ils abandonnent sur leur chemin. Ils sont considérés comme importants pour la survie des voyageurs et des vigiles.**
+
+- Turn 10: Les Passes-bien sont chargés de transporter des aliments séchés qu'ils abandonnent sur leur chemin pour nourrir les voyageurs et les vigiles.
+
+**Tour 11: Les Passes-bien se chargent du commerce et du troc avec d'autres groupes, échangeant des biens contre de l'argile vive ou autre chose d'intéressant. Ils sont mentionnés comme étant têtus et ayant tendances à s'acharner avant de s'y résoudre.**
+
+**Tour 12: Les Passes-bien ont construit les escaliers sur la montagne en transportant des pierres, ce qui paraît absurde au premier abord. C'est un travail multi-générationnel qui a nécessité une grande quantité de travail.**
+
+**Tour 14: Un Passe-bien est mentionné comme étant membre du Conseil du village, responsable d'organiser le troc entre les différentes castes et groupes.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 10**

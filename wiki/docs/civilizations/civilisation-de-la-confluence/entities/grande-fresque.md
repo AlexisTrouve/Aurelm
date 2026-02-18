@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+La Grande Fresque est une technologie ancienne qui a inspiré la culture et l'iconographie des Premiers Ancêtres. Elle dépassait les capacités techniques de leur peuple, mais restera un chef-d'œuvre durablement influenciant. Les représentations de cette fresque montrent des animaux mythiques qui ont peut-être existé à une époque lointaine.
+
+## Chronologie
+
+**Tour 14: Les chercheurs d'un regard libre méditent devant la Grande Fresque, étant éclairés seulement par des feux. Ils cherchent à comprendre les mystères que cachent ce chef-d'œuvre. L'influence de cette technologie est visible dans l'iconographie des Premiers Ancêtres.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

@@ -2,14 +2,14 @@
 
 📅 **20/10/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> La tribu de la Confluence est en pleine expansion et croissance. Les hommes se disputent le pouvoir et le contrôle sur les femmes, créant une concurrence féroce pour s'accaparer les partenaires. Cette concurrence se fait sentir dans la manière dont les familles sont structurées, avec des maris qui prennent plusieurs épouses et où les liens familiaux sont considérés comme sacrés. Les sans-ciel, c'est-à-dire ceux qui n'appartiennent à aucune famille, sont exclus de cette société complexe. Dans ce contexte, les marginaux, qui fabriquent des outils et des armes perfectionnées, sont cantonnés dans leurs ateliers complexes et ne peuvent plus pérégriner librement. Le Maitre du Jeu pense que ces artisans pourraient offrir plus si leur créativité était redirigée vers la production de biens utiles ou décoratifs.
+> La tribu doit se démarquer en faisant fructifier l'éden qu'elle a reçu en héritage de ses ancêtres. Cela entraîne une concurrence féroce entre les hommes pour s'accaparer les femmes, conduisant à une exploitation des sans-ciel qui sont exclus au fil du temps. Les liens familiaux sont sacrés et la notion de famille est renforcée, mais cela conduit également à une forme d'exploitation des femmes qui deviennent propriété de leur mari. La généalogie d'une grande famille s'étend jusqu'à ceux qui les ont précédés, et perdre leur faveur signifie perdre leur protection.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : aucune
 - **Mentions totales** : 1
 - **Technologies** : 2
-- **Ressources** : 3
+- **Ressources** : 2
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -52,19 +52,15 @@ Les esprits m'ont montré notre erreur : nous ne pouvons faire coexister sur la 
 
 ### 🌾 Ressources
 
-- femmes
-- enfants
-- matériaux pour les outils
+- nourriture recoltée
+- materiaux travaillés pour les outils
 
 ### ✨ Croyances
 
-- sacralité des liens familiaux
-- propriété des femmes par leurs maris
-- tribunal spécial
-- esprits des ancêtres
-- protection des esprits
-- unions entre enfants du ciel clair et enfants des nuages ne peuvent être
-- les sans-ciels sont bénis d'une autre manière
+- les esprits des ancêtres veillent sur la tribu
+- la sacralité des liens familiaux
+- les sans-ciel sont bénis d'une autre manière
+- l'eau échappe à l'union de la terre et du ciel
 
 ## 🏷️ Entités mentionnées
 

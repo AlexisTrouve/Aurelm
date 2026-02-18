@@ -416,12 +416,120 @@ def get_turn_messages_grouped(conn: sqlite3.Connection, turn_id: int) -> list[di
 
 # -- Knowledge base generators (Phase 5) ---------------------------------------
 
-def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
-    """Generate technology knowledge base page for a civilization.
+STOP_WORDS_MATCH = {"de", "du", "des", "la", "le", "les", "l", "en", "et", "a", "au", "aux", "un", "une", "pour", "dans", "sur", "par"}
 
-    Creates civilizations/{civ_slug}/knowledge/technologies.md with:
-    - Timeline chronologique (by turn)
-    - Technologies par catégorie (inferred from keywords)
+
+def _fuzzy_name_score(name_a: str, name_b: str) -> float:
+    """Score how well two names match. Higher = better. 0 = no match.
+
+    Uses significant word overlap (ignoring French stop words).
+    Returns ratio of common significant words to total significant words.
+    """
+    words_a = set(name_a.lower().split()) - STOP_WORDS_MATCH
+    words_b = set(name_b.lower().split()) - STOP_WORDS_MATCH
+    if not words_a or not words_b:
+        return 0.0
+    common = words_a & words_b
+    if not common:
+        return 0.0
+    # Score = common / max(len_a, len_b) -- penalizes partial matches
+    return len(common) / max(len(words_a), len(words_b))
+
+
+def _find_best_tech_match(entity: dict, tech_names: set[str]) -> str | None:
+    """Find the best matching tech for an entity, or None.
+
+    Tries: exact match, substring, then best fuzzy score (>= 0.5).
+    Also checks entity aliases.
+    """
+    names_to_check = [entity["canonical_name"]]
+    if entity.get("aliases"):
+        names_to_check.extend(entity["aliases"])
+
+    best_match = None
+    best_score = 0.0
+
+    for name in names_to_check:
+        name_lower = name.lower()
+        for tn in tech_names:
+            tn_lower = tn.lower()
+            # Exact
+            if tn_lower == name_lower:
+                return tn
+            # Substring
+            if tn_lower in name_lower or name_lower in tn_lower:
+                return tn
+            # Fuzzy score
+            score = _fuzzy_name_score(name, tn)
+            if score > best_score:
+                best_score = score
+                best_match = tn
+
+    return best_match if best_score >= 0.5 else None
+
+
+def _find_best_entity_match(tech_name: str, entity_lookup: dict[str, dict]) -> dict | None:
+    """Find the best matching entity for a tech name, or None.
+
+    Tries: exact match, substring, then best fuzzy score (>= 0.5).
+    """
+    tech_lower = tech_name.lower()
+
+    # Exact
+    if tech_lower in entity_lookup:
+        return entity_lookup[tech_lower]
+
+    best_match = None
+    best_score = 0.0
+
+    for ename, edata in entity_lookup.items():
+        # Substring
+        if tech_lower in ename or ename in tech_lower:
+            return edata
+        # Fuzzy score
+        score = _fuzzy_name_score(tech_name, ename)
+        if score > best_score:
+            best_score = score
+            best_match = edata
+
+    return best_match if best_score >= 0.5 else None
+
+
+def _build_entity_lookup(conn: sqlite3.Connection, civ_id: int) -> dict[str, dict]:
+    """Build a lowercase name -> entity dict for matching techs to entities.
+
+    Matches on canonical_name and aliases.
+    """
+    lookup: dict[str, dict] = {}
+    entities = conn.execute(
+        "SELECT id, canonical_name, entity_type, description FROM entity_entities WHERE civ_id = ? AND is_active = 1",
+        (civ_id,),
+    ).fetchall()
+    for e in entities:
+        lookup[e["canonical_name"].lower()] = dict(e)
+
+    aliases = conn.execute(
+        """SELECT a.alias, e.id, e.canonical_name, e.entity_type, e.description
+           FROM entity_aliases a
+           JOIN entity_entities e ON a.entity_id = e.id
+           WHERE e.civ_id = ? AND e.is_active = 1""",
+        (civ_id,),
+    ).fetchall()
+    for a in aliases:
+        lookup[a["alias"].lower()] = {
+            "id": a["id"], "canonical_name": a["canonical_name"],
+            "entity_type": a["entity_type"], "description": a["description"],
+        }
+
+    return lookup
+
+
+def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate technology index page + individual tech pages for a civilization.
+
+    Creates:
+    - civilizations/{civ_slug}/knowledge/technologies.md (index with links)
+    - civilizations/{civ_slug}/knowledge/tech/{slug}.md (per-tech detail page)
     """
     civ_slug = slugify(civ_name)
     tech_tree = get_tech_tree(conn, civ_id)
@@ -429,18 +537,23 @@ def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, out
     if not tech_tree:
         return  # No technologies to display
 
+    entity_lookup = _build_entity_lookup(conn, civ_id)
+
     # Categorization keywords
     categories = {
-        "Outils de chasse": ["gourdin", "pieux", "arc", "flèche", "lance", "harpon", "chasseur"],
-        "Outils de pêche": ["filet", "ligne", "hameçon", "pêche", "nasse", "poisson"],
-        "Agriculture": ["semence", "irrigation", "culture", "plantation", "récolte", "agriculture", "champ"],
-        "Artisanat": ["tissage", "poterie", "vannerie", "tannage", "artisan", "métier"],
-        "Construction": ["cabane", "palissade", "maison", "construction", "bâtiment", "architecture"],
+        "Outils de chasse": ["gourdin", "pieux", "arc", "fleche", "lance", "harpon", "chasseur"],
+        "Outils de peche": ["filet", "ligne", "hamecon", "peche", "nasse", "poisson"],
+        "Agriculture": ["semence", "irrigation", "culture", "plantation", "recolte", "agriculture", "champ"],
+        "Artisanat": ["tissage", "poterie", "vannerie", "tannage", "artisan", "metier"],
+        "Construction": ["cabane", "palissade", "maison", "construction", "batiment", "architecture"],
     }
 
     # Build category mapping
     tech_by_category: dict[str, list[tuple[str, int]]] = {cat: [] for cat in categories}
     tech_by_category["Autre"] = []
+
+    # Collect all unique techs for individual page generation
+    all_techs: dict[str, list[int]] = {}  # tech_name -> [turn_numbers]
 
     lines = [
         f"# Arbre Technologique",
@@ -451,8 +564,13 @@ def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, out
 
     # Chronological section
     for turn_num, techs in tech_tree:
-        tech_list = ", ".join(techs)
-        lines.append(f"**Tour {turn_num}** → {tech_list}")
+        tech_links = []
+        for tech in techs:
+            tslug = slugify(tech)
+            tech_links.append(f"[{tech}](tech/{tslug}.md)")
+            all_techs.setdefault(tech, []).append(turn_num)
+
+        lines.append(f"**Tour {turn_num}** -> {', '.join(tech_links)}")
 
         # Categorize each tech
         for tech in techs:
@@ -467,13 +585,13 @@ def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, out
                 tech_by_category["Autre"].append((tech, turn_num))
 
     lines.append("")
-    lines.append("## Par catégorie")
+    lines.append("## Par categorie")
     lines.append("")
 
     # Category sections with emojis
     category_emojis = {
         "Outils de chasse": "🛠️",
-        "Outils de pêche": "🎣",
+        "Outils de peche": "🎣",
         "Agriculture": "🌾",
         "Artisanat": "🎨",
         "Construction": "🏗️",
@@ -485,13 +603,189 @@ def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, out
             lines.append(f"### {emoji} {cat}")
             lines.append("")
             for tech, turn_num in tech_by_category[cat]:
-                lines.append(f"- {tech} (Tour {turn_num})")
+                tslug = slugify(tech)
+                lines.append(f"- [{tech}](tech/{tslug}.md) (Tour {turn_num})")
             lines.append("")
 
-    # Write page
+    # Write index page
     content = "\n".join(lines)
     out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
     _write_page(out_path / "technologies.md", content)
+
+    # Build tech -> category mapping for individual pages
+    tech_categories: dict[str, str] = {}
+    for cat, tech_list in tech_by_category.items():
+        for tech, _ in tech_list:
+            tech_categories[tech] = cat
+
+    # Generate individual tech pages
+    for tech_name, turn_numbers in all_techs.items():
+        _generate_single_tech_page(
+            conn, civ_id, civ_name, civ_slug, tech_name, turn_numbers,
+            entity_lookup, all_techs, tech_categories, output_dir,
+        )
+
+
+def _generate_single_tech_page(
+    conn: sqlite3.Connection,
+    civ_id: int,
+    civ_name: str,
+    civ_slug: str,
+    tech_name: str,
+    turn_numbers: list[int],
+    entity_lookup: dict[str, dict],
+    all_techs: dict[str, list[int]],
+    tech_categories: dict[str, str],
+    output_dir: str,
+) -> None:
+    """Generate an individual technology detail page.
+
+    Focus: gameplay/practical -- acquisition, category, same-era techs,
+    tech timeline (before/after), cross-link to entity for narrative.
+    """
+    tslug = slugify(tech_name)
+    first_turn = min(turn_numbers)
+    category = tech_categories.get(tech_name, "Autre")
+
+    # Cross-link to entity page if exists
+    matched_entity = _find_best_entity_match(tech_name, entity_lookup)
+
+    lines = [
+        f"# {tech_name}",
+        "",
+        f"*Technologie* -- {civ_name}",
+        "",
+        "| | |",
+        "|---|---|",
+        f"| **Acquisition** | Tour {first_turn} |",
+        f"| **Categorie** | {category} |",
+    ]
+
+    if len(turn_numbers) > 1:
+        lines.append(f"| **Re-mentionne** | Tours {', '.join(str(t) for t in sorted(turn_numbers))} |")
+
+    if matched_entity:
+        entity_slug = slugify(matched_entity["canonical_name"])
+        lines.append(f"| **Fiche narrative** | [Voir la page entite](../../entities/{entity_slug}.md) |")
+
+    lines.append("")
+
+    # Same-era techs (acquired same turn)
+    same_turn_techs = [
+        t for t, turns in all_techs.items()
+        if min(turns) == first_turn and t != tech_name
+    ]
+    if same_turn_techs:
+        lines.extend(["## Acquis en meme temps (Tour {})".format(first_turn), ""])
+        for t in same_turn_techs:
+            lines.append(f"- [{t}]({slugify(t)}.md)")
+        lines.append("")
+
+    # Tech before/after (chronological neighbors)
+    all_first_turns = sorted(set(min(turns) for turns in all_techs.values()))
+    current_idx = all_first_turns.index(first_turn) if first_turn in all_first_turns else -1
+
+    prev_techs = []
+    next_techs = []
+    if current_idx > 0:
+        prev_turn = all_first_turns[current_idx - 1]
+        prev_techs = [t for t, turns in all_techs.items() if min(turns) == prev_turn]
+    if current_idx >= 0 and current_idx < len(all_first_turns) - 1:
+        next_turn = all_first_turns[current_idx + 1]
+        next_techs = [t for t, turns in all_techs.items() if min(turns) == next_turn]
+
+    if prev_techs or next_techs:
+        lines.extend(["## Arbre chronologique", ""])
+        if prev_techs:
+            prev_turn = all_first_turns[current_idx - 1]
+            prev_links = ", ".join(f"[{t}]({slugify(t)}.md)" for t in prev_techs)
+            lines.append(f"**Tour {prev_turn}** (precedent) : {prev_links}")
+        lines.append(f"**Tour {first_turn}** (actuel) : **{tech_name}**")
+        if next_techs:
+            next_turn = all_first_turns[current_idx + 1]
+            next_links = ", ".join(f"[{t}]({slugify(t)}.md)" for t in next_techs)
+            lines.append(f"**Tour {next_turn}** (suivant) : {next_links}")
+        lines.append("")
+
+    # Same-category techs
+    same_cat_techs = [
+        t for t, cat in tech_categories.items()
+        if cat == category and t != tech_name
+    ]
+    if same_cat_techs:
+        lines.extend([f"## Meme categorie : {category}", ""])
+        for t in sorted(same_cat_techs, key=lambda x: min(all_techs.get(x, [99]))):
+            t_turn = min(all_techs.get(t, [0]))
+            lines.append(f"- [{t}]({slugify(t)}.md) (Tour {t_turn})")
+        lines.append("")
+
+    # Narrative excerpt -- search with stem-aware matching, fallback to summary
+    turn = conn.execute(
+        "SELECT id, summary FROM turn_turns WHERE civ_id = ? AND turn_number = ?",
+        (civ_id, first_turn),
+    ).fetchone()
+    found_excerpt = False
+    if turn:
+        segments = conn.execute(
+            "SELECT content FROM turn_segments WHERE turn_id = ? ORDER BY segment_order",
+            (turn["id"],),
+        ).fetchall()
+
+        # Build search variants: exact, without trailing s/x/es, first word
+        tech_lower = tech_name.lower()
+        search_variants = [tech_lower]
+        # Singular forms
+        if tech_lower.endswith("x") or tech_lower.endswith("s"):
+            search_variants.append(tech_lower[:-1])
+        if tech_lower.endswith("es"):
+            search_variants.append(tech_lower[:-2])
+        # First significant word (for multi-word techs)
+        first_word = tech_lower.split()[0] if " " in tech_lower else None
+        if first_word and len(first_word) > 3:
+            search_variants.append(first_word)
+
+        for seg in segments:
+            seg_lower = seg["content"].lower()
+            for variant in search_variants:
+                pos = seg_lower.find(variant)
+                if pos != -1:
+                    content = seg["content"]
+                    start = max(0, pos - 150)
+                    end = min(len(content), pos + len(variant) + 150)
+                    excerpt = content[start:end].strip()
+                    if start > 0:
+                        excerpt = "..." + excerpt
+                    if end < len(content):
+                        excerpt = excerpt + "..."
+                    lines.extend([
+                        "## Extrait narratif",
+                        "",
+                        f"> {excerpt}",
+                        "",
+                    ])
+                    found_excerpt = True
+                    break
+            if found_excerpt:
+                break
+
+        # Fallback: turn summary if no excerpt found
+        if not found_excerpt and turn["summary"]:
+            lines.extend([
+                "## Contexte (Tour {})".format(first_turn),
+                "",
+                f"{turn['summary']}",
+                "",
+            ])
+
+    lines.extend([
+        "---",
+        f"[Retour a l'arbre technologique](../technologies.md)",
+        "",
+    ])
+
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge" / "tech"
+    _write_page(out_path / f"{tslug}.md", content)
 
 
 def generate_resources_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
@@ -800,6 +1094,115 @@ def generate_geography_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
 
 
 # -- Analytics pages (Phase 6) -------------------------------------------------
+
+def generate_choices_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate choices/decisions page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/choices.md with:
+    - Chronological list of all GM-proposed choices and player decisions
+    """
+    civ_slug = slugify(civ_name)
+
+    rows = conn.execute("""
+        SELECT turn_number, title, summary, choices_proposed, choices_made
+        FROM turn_turns
+        WHERE civ_id = ? AND (choices_proposed IS NOT NULL OR choices_made IS NOT NULL)
+        ORDER BY turn_number
+    """, (civ_id,)).fetchall()
+
+    if not rows:
+        return  # No choices to display
+
+    lines = [
+        "# Choix et Decisions",
+        "",
+        f"Historique des choix proposes par le MJ et des decisions prises par le joueur pour **{civ_name}**.",
+        "",
+    ]
+
+    for row in rows:
+        turn_num = row["turn_number"]
+        title = row["title"] or "(sans titre)"
+        summary = row["summary"] or ""
+
+        lines.append(f"## Tour {turn_num} : {title}")
+        lines.append("")
+        if summary:
+            lines.append(f"*{summary[:200]}*")
+            lines.append("")
+
+        proposed = _parse_json_list(row["choices_proposed"])
+        if proposed:
+            lines.append('??? question "Choix proposes"')
+            for i, choice in enumerate(proposed, 1):
+                lines.append(f"    {i}. {choice}")
+            lines.append("")
+
+        made = _parse_json_list(row["choices_made"])
+        if made:
+            lines.append('!!! success "Decision prise"')
+            for decision in made:
+                lines.append(f"    {decision}")
+            lines.append("")
+
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "choices.md", content)
+
+
+def generate_relations_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate typed relations page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/relations.md with:
+    - Relations grouped by type (controls, member_of, located_in, etc.)
+    """
+    civ_slug = slugify(civ_name)
+
+    rows = conn.execute("""
+        SELECT r.relation_type, r.description,
+               s.canonical_name AS source_name, s.entity_type AS source_type,
+               t.canonical_name AS target_name, t.entity_type AS target_type,
+               tt.turn_number
+        FROM entity_relations r
+        JOIN entity_entities s ON r.source_entity_id = s.id
+        JOIN entity_entities t ON r.target_entity_id = t.id
+        LEFT JOIN turn_turns tt ON r.turn_id = tt.id
+        WHERE r.is_active = 1 AND (s.civ_id = ? OR t.civ_id = ?)
+        ORDER BY r.relation_type, s.canonical_name
+    """, (civ_id, civ_id)).fetchall()
+
+    if not rows:
+        return  # No relations to display
+
+    lines = [
+        "# Relations entre Entites",
+        "",
+        f"Graphe textuel des relations pour **{civ_name}**.",
+        "",
+    ]
+
+    # Group by relation type
+    by_type: dict[str, list] = {}
+    for row in rows:
+        rel_type = row["relation_type"]
+        by_type.setdefault(rel_type, []).append(row)
+
+    for rel_type, rels in sorted(by_type.items()):
+        lines.append(f"## {rel_type.replace('_', ' ').title()} ({len(rels)})")
+        lines.append("")
+        lines.append("| Source | | Cible | Tour |")
+        lines.append("|---|---|---|---|")
+        for r in rels:
+            src = f"{r['source_name']} ({r['source_type']})"
+            tgt = f"{r['target_name']} ({r['target_type']})"
+            turn = str(r["turn_number"]) if r["turn_number"] else "-"
+            lines.append(f"| {src} | --> | {tgt} | {turn} |")
+        lines.append("")
+
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "relations.md", content)
+
 
 def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
     """Generate analytics page for a civilization.
@@ -1400,6 +1803,15 @@ def generate_civ_index(conn: sqlite3.Connection, civ_id: int, civ_name: str, pla
         "- [Historique complet des tours](turns/index.md)",
         "- [Index des entites](entities/index.md)",
         "",
+        "### Base de connaissances",
+        "",
+        "- [Technologies](knowledge/technologies.md)",
+        "- [Ressources](knowledge/resources.md)",
+        "- [Croyances](knowledge/beliefs.md)",
+        "- [Geographie](knowledge/geography.md)",
+        "- [Choix et Decisions](knowledge/choices.md)",
+        "- [Relations entre Entites](knowledge/relations.md)",
+        "",
     ])
     return "\n".join(lines)
 
@@ -1724,6 +2136,7 @@ def generate_entity_page(
     civ_name: str,
     civ_slug: str,
     id_to_primary: dict[int, str] | None = None,
+    tech_names: set[str] | None = None,
 ) -> str:
     """Generate a full markdown page for a single entity."""
     name = _capitalize_entity(entity["canonical_name"])
@@ -1737,6 +2150,17 @@ def generate_entity_page(
         f"*{etype_label}* -- {civ_name}",
         "",
     ]
+
+    # Cross-link to tech page if this entity is also a technology
+    if tech_names:
+        matched_tech = _find_best_tech_match(entity, tech_names)
+        if matched_tech:
+            tech_slug = slugify(matched_tech)
+            lines.extend([
+                f"!!! info \"Technologie active\"",
+                f"    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/{tech_slug}.md).",
+                "",
+            ])
 
     # --- PHASE 4 ADDITION: Section "Vue d'ensemble" avec stats détaillées ---
     # Get entity timeline for stats calculation
@@ -1974,7 +2398,7 @@ def generate_civ_entities(conn: sqlite3.Connection, civ_id: int, civ_name: str) 
                 alias_info = f" | *alias: {alias_display}*"
 
             lines.append(
-                f"- [**{name}**](entities/{eslug}.md) "
+                f"- [**{name}**]({eslug}.md) "
                 f"-- {e['mention_count']} mentions{turn_info}{alias_info}"
             )
 
@@ -2469,10 +2893,17 @@ def generate_wiki(
             # Write individual entity pages
             entity_dir = civ_dir / "entities"
             id_to_primary = _build_id_to_primary(fused_list)
+
+            # Build tech names set for cross-linking
+            tech_tree = get_tech_tree(conn, civ["id"])
+            tech_names: set[str] = set()
+            for _, techs in tech_tree:
+                tech_names.update(techs)
+
             for entity in fused_list:
                 eslug = slugify(entity["canonical_name"])
                 page_content = generate_entity_page(
-                    conn, entity, civ["name"], civ_slug, id_to_primary
+                    conn, entity, civ["name"], civ_slug, id_to_primary, tech_names
                 )
                 _write_page(entity_dir / f"{eslug}.md", page_content)
                 stats["entity_pages"] += 1
@@ -2485,7 +2916,9 @@ def generate_wiki(
             generate_resources_page(conn, civ["id"], civ["name"], output_dir)
             generate_beliefs_page(conn, civ["id"], civ["name"], output_dir)
             generate_geography_page(conn, civ["id"], civ["name"], output_dir)
-            stats["pages_generated"] += 4
+            generate_choices_page(conn, civ["id"], civ["name"], output_dir)
+            generate_relations_page(conn, civ["id"], civ["name"], output_dir)
+            stats["pages_generated"] += 6
 
             # Phase 6: Generate analytics page
             generate_analytics_page(conn, civ["id"], civ["name"], output_dir)
@@ -2541,6 +2974,14 @@ def _build_nav(civs: list) -> list:
                 {"Apercu": f"civilizations/{slug}/index.md"},
                 {"Tours": f"civilizations/{slug}/turns/index.md"},
                 {"Entites": f"civilizations/{slug}/entities/index.md"},
+                {"Connaissances": [
+                    {"Technologies": f"civilizations/{slug}/knowledge/technologies.md"},
+                    {"Ressources": f"civilizations/{slug}/knowledge/resources.md"},
+                    {"Croyances": f"civilizations/{slug}/knowledge/beliefs.md"},
+                    {"Geographie": f"civilizations/{slug}/knowledge/geography.md"},
+                    {"Choix": f"civilizations/{slug}/knowledge/choices.md"},
+                    {"Relations": f"civilizations/{slug}/knowledge/relations.md"},
+                ]},
             ]
         })
 

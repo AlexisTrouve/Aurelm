@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+Nanzagouet est une civilisation qui vit sur une péninsule exposée aux vents et aux tempêtes. Leur économie est centrée autour de la mer, où ils capturent des Nantons pour leur viande et leur peau. Ils ont développé une compréhension unique de l'écologie marine.
+
+## Chronologie
+
+**Tour 14: Les membres du groupe discutent et décident comment répondre aux Nanzagouets lorsqu'ils sont interrogés.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

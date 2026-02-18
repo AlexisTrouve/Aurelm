@@ -2,14 +2,14 @@
 
 📅 **10/06/2025** | 📊 **10 segments** | 🎯 **4 nouvelles entités**
 
-> La civilisation de la Confluence est secouée par un événement inattendu : le découverte d'un cadavre dans le village. La communauté se mobilise pour déterminer l'identité du coupable, mais les preuves sont inexistantes et les accusations se multiplient. Le Tribunal des mœurs doit prendre une décision cruciale qui pourrait avoir des conséquences importantes pour la société. Dans un autre contexte, le narrateur est approché par des ailes grises envoyées pour lui rapporter des nouvelles inquiétantes qui doivent rester secrètes.
+> Le village de la Confluence est secoué par l'assassinat d'un membre de leur communauté, un cadavre retrouvé dans la nuit avec une blessure causée par le couteau utilisé pour évider les poissons de la confluence. La scène du crime a été découverte et des témoins ont identifié l'accusé, un sans-ciel qui avait une rixe connue avec la victime. Le Tribunal des mœurs doit maintenant statuer sur le cas et décider comment punir l'accusé.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Maladie des Antres`, `Gouffre Humide`, `Antre des échos`, `L'Appel de l'Abysse`
 - **Mentions totales** : 20
-- **Technologies** : 3
-- **Ressources** : 4
+- **Technologies** : 2
+- **Ressources** : 1
 - **Densité narrative** : 7 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -67,26 +67,20 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 - vallée
 - montagne
 - Gouffre Humide
-- Confluence
-- galeries de Gouffre Humide
+- galeries inconnues de Gouffre Humide
 
 ### 🔧 Technologies
 
-- couteau
-- outils
-- marteau
+- outils pour évider les poissons de la Confluence
+- rhombes pour les rituels et communications
 
 ### 🌾 Ressources
 
 - poisson de la Confluence
-- lait de pierre
-- pierres qui chantent
-- terres colorées
 
 ### ✨ Croyances
 
-- communication avec les roches
-- utilisation des voix pour amplifier et communiquer
+- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent
 
 ## 🏷️ Entités mentionnées
 

@@ -30,6 +30,7 @@ class EntityProfile:
     description: str = ""
     history: list[str] = field(default_factory=list)
     aliases_suggested: list[str] = field(default_factory=list)
+    raw_relations: list[dict] = field(default_factory=list)
     mention_count: int = 0
     mention_contexts: list[str] = field(default_factory=list)
 
@@ -48,15 +49,17 @@ Produis :
 1. **description** : Description factuelle de cette entité (3-6 phrases). Qui/quoi est-ce ? Quel rôle joue-t-elle ? Quelles sont ses caractéristiques notables ?
 2. **turn_summaries** : Pour CHAQUE tour où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité dans ce tour. Format : {{"Tour X": "résumé..."}}
 3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
+4. **relations** : Les relations avec d'autres entités NOMMÉES dans les extraits. Types possibles : located_in, member_of, created_by, allied_with, controls, part_of, produces, worships, enemy_of, trades_with. Format : [{{"target": "Nom exact de l'autre entité", "type": "type_relation", "description": "brève explication"}}]
 
 Règles :
 - Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
 - Sois précis et factuel, cite les détails importants (noms, lieux, événements)
 - Pour turn_summaries : résume le CONTEXTE et le RÔLE de l'entité, pas juste "elle est mentionnée"
 - Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
+- Pour les relations : ne liste que des relations EXPLICITES dans les extraits, avec le nom exact de l'entité cible
 
 Réponds UNIQUEMENT en JSON :
-{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."]}}"""
+{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}]}}"""
 
 
 def _find_rich_context_for_mention(
@@ -142,9 +145,15 @@ def build_entity_profiles(
     """
     conn = get_connection(db_path)
 
+    effective_run_id: int | None = None
     if incremental:
         # Get entities that have mentions in newly processed turns (last pipeline run)
-        # We'll consider turns processed in the current or most recent pipeline run
+        # Use provided run_id, or fall back to the most recent pipeline_run_id
+        if run_id is None:
+            row = conn.execute("SELECT MAX(pipeline_run_id) as max_id FROM pipeline_turn_status").fetchone()
+            effective_run_id = row["max_id"] if row and row["max_id"] is not None else 0
+        else:
+            effective_run_id = run_id
         entities = conn.execute("""
             SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.civ_id, e.history, e.description
             FROM entity_entities e
@@ -152,9 +161,9 @@ def build_entity_profiles(
             JOIN turn_turns t ON m.turn_id = t.id
             JOIN pipeline_turn_status pts ON t.id = pts.turn_id
             WHERE e.is_active = 1
-            AND (pts.pipeline_run_id = ? OR pts.processed_at > datetime('now', '-1 hour'))
+            AND pts.pipeline_run_id = ?
             ORDER BY e.id
-        """, (run_id or 0,)).fetchall()
+        """, (effective_run_id,)).fetchall()
     else:
         # Full reprocess: all entities
         entities = conn.execute("""
@@ -175,21 +184,21 @@ def build_entity_profiles(
         name = row["canonical_name"]
         entity_type = row["entity_type"]
         civ_id = row["civ_id"]
-        existing_history = row.get("history")
-        existing_description = row.get("description")
+        existing_history = row["history"]
+        existing_description = row["description"]
 
         # In incremental mode, get only mentions from newly processed turns
         # In full mode, get all mentions
-        if incremental and run_id:
+        if incremental and effective_run_id:
             mentions = conn.execute("""
                 SELECT m.mention_text, m.context, t.turn_number
                 FROM entity_mentions m
                 JOIN turn_turns t ON m.turn_id = t.id
                 JOIN pipeline_turn_status pts ON t.id = pts.turn_id
                 WHERE m.entity_id = ?
-                AND (pts.pipeline_run_id = ? OR pts.processed_at > datetime('now', '-1 hour'))
+                AND pts.pipeline_run_id = ?
                 ORDER BY t.turn_number
-            """, (entity_id, run_id)).fetchall()
+            """, (entity_id, effective_run_id)).fetchall()
         else:
             mentions = conn.execute("""
                 SELECT m.mention_text, m.context, t.turn_number
@@ -271,6 +280,13 @@ def build_entity_profiles(
                         a.strip() for a in raw_aliases
                         if isinstance(a, str) and a.strip() and a.strip().lower() != name.lower()
                     ]
+
+                    raw_relations = data.get("relations", [])
+                    if isinstance(raw_relations, list):
+                        profile.raw_relations = [
+                            r for r in raw_relations
+                            if isinstance(r, dict) and r.get("target") and r.get("type")
+                        ]
                 except Exception as e:
                     print(f"       WARNING: LLM failed for '{name}': {e}")
 
@@ -330,12 +346,105 @@ def build_entity_profiles(
             total, total, "entity", "completed"
         )
 
+    # Resolve and insert relations
+    if use_llm:
+        relations_count = _resolve_and_insert_relations(conn, profiles, incremental=incremental)
+        print(f"       -> {relations_count} relations inserted")
+
     conn.close()
 
     described = sum(1 for p in profiles if p.description)
     print(f"       -> {described}/{total} entities got LLM descriptions")
 
     return profiles
+
+
+VALID_RELATION_TYPES = {
+    "located_in", "member_of", "created_by", "allied_with", "controls",
+    "part_of", "produces", "worships", "enemy_of", "trades_with",
+}
+
+
+def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], incremental: bool = False) -> int:
+    """Resolve raw LLM relations to entity IDs and insert into entity_relations.
+
+    Uses fuzzy matching: exact match on canonical_name first, then case-insensitive
+    LIKE match, then alias lookup. Deduplicates (source, target, type) pairs.
+
+    In incremental mode, only removes/replaces relations for the entities in the current
+    batch (preserving relations from prior runs for unaffected entities).
+    In full mode, clears all relations before reinserting.
+    """
+    # Build entity name -> id lookup (canonical + aliases)
+    all_entities = conn.execute(
+        "SELECT id, canonical_name, civ_id FROM entity_entities WHERE is_active = 1"
+    ).fetchall()
+    name_to_id: dict[str, int] = {}
+    for e in all_entities:
+        name_to_id[e["canonical_name"].lower()] = e["id"]
+
+    all_aliases = conn.execute(
+        "SELECT entity_id, alias FROM entity_aliases"
+    ).fetchall()
+    for a in all_aliases:
+        name_to_id[a["alias"].lower()] = a["entity_id"]
+
+    if incremental:
+        # Only delete relations for entities we are about to reprocess
+        source_ids = [p.entity_id for p in profiles if p.raw_relations]
+        if source_ids:
+            placeholders = ",".join("?" * len(source_ids))
+            conn.execute(
+                f"DELETE FROM entity_relations WHERE source_entity_id IN ({placeholders})",
+                source_ids,
+            )
+    else:
+        # Full mode: clear all relations (regenerate from scratch)
+        conn.execute("DELETE FROM entity_relations")
+
+    inserted = 0
+    seen: set[tuple[int, int, str]] = set()
+
+    for profile in profiles:
+        source_id = profile.entity_id
+        for rel in profile.raw_relations:
+            target_name = rel["target"].strip()
+            rel_type = rel["type"].strip().lower()
+            description = rel.get("description", "")
+
+            # Validate relation type
+            if rel_type not in VALID_RELATION_TYPES:
+                continue
+
+            # Resolve target entity
+            target_id = name_to_id.get(target_name.lower())
+            if target_id is None:
+                # Fuzzy: try LIKE match
+                row = conn.execute(
+                    "SELECT id FROM entity_entities WHERE LOWER(canonical_name) LIKE ? AND is_active = 1 LIMIT 1",
+                    (f"%{target_name.lower()}%",),
+                ).fetchone()
+                if row:
+                    target_id = row["id"]
+
+            if target_id is None or target_id == source_id:
+                continue
+
+            # Deduplicate
+            key = (source_id, target_id, rel_type)
+            if key in seen:
+                continue
+            seen.add(key)
+
+            conn.execute(
+                """INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type, description)
+                   VALUES (?, ?, ?, ?)""",
+                (source_id, target_id, rel_type, description),
+            )
+            inserted += 1
+
+    conn.commit()
+    return inserted
 
 
 def _extract_turn_number(key: str) -> int:

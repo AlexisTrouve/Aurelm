@@ -34,19 +34,21 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les sans ciel sont une caste de personnes qui naissent sous les nuages, ils sont souvent rejetés et doivent se racheter par la piété filiale. Ils sont associés à l'eau et aux rivieres, leur habitat est souvent sur des pilotis ou des radeaux dans les zones humides.
+Les sans ciel sont une caste de personnes nées sans le bénéfice du ciel, considérées comme étant hors du mariage sacré entre la terre et le ciel. Ils vivent dans des villages sur pilotis ou en radeaux, se concentrant souvent sur les arts utilitaires. Leurs artisans sont respectés pour leur praticité et leur rôle dans la vie quotidienne.
 
 ## Chronologie
 
-**Tour 3: Les anciens de la caste sont considérés comme une source de savoir et doivent être guidés vers leur dernier repos par leurs proches, ce qui permet de se racheter. Les sans ciel sont souvent rejetés mais peuvent trouver un sens dans la piété filiale.**
+**Tour 3: Les sans ciel sont rejetés par la société, mais ils peuvent obtenir une parcelle de providence en guidant un ancien vers son dernier repos. Cette pratique permet aux sans ciel de se racheter.**
 
-**Tour 5: Les esprits révèlent que les sans ciel naissent sous les nuages et seront le peuple des eaux, ils doivent bâtir leurs demeures sur pilotis ou radeaux au-dessus des flots.**
+**Tour 5: Les esprits révèlent que les sans ciel sont liés à l'eau et ne peuvent pas coexister avec ceux bénis par le ciel clair. Ils doivent construire leurs demeures sur des pilotis ou en radeaux, élevées au-dessus des flots.**
 
-**Tour 6: Les villages sans ciel se situent souvent à la confluence de deux cours d'eau, ils sont associés à l'eau et échangent avec les autres castes qui leur fournissent outils et denrées.**
+**Tour 6: Les sans ciel vivent dans les villages de la confluence et échangent avec ceux des cieux qui leur fournissent outils et nourriture. Ils sont considérés comme anonymes et n'ont pas accès à l'Oracle de leur vie.**
 
-**Tour 9: Les artisans sans ciel sont des membres éminents des villages et tirent leur fierté de leur praticité dans la vie quotidienne.**
+**Tour 9: Les artisans sans ciel se concentrent sur les objets utilitaires, tandis que les artisans des ciels clairs créent les outils des rituels sacrés. Les sans ciel tirent leur fierté de leur praticité, tandis que les cieux clairs la tirent du lien entre les objets et le monde spirituel.**
 
-**Tour 14: Un jeune homme sans ciel est proposé comme dirigeant, mais son audace provoque débat chez les autres villageois.**
+**Tour 11: Les sans ciel sont impliqués dans la construction, utilisant l'argile vive pour créer des abris qui survivent aux générations. Ils utilisent également les eaux sacrées de la confluence pour honorer leurs ancêtres.**
+
+**Tour 14: Un jeune homme sans ciel est chargé d'une mission importante et s'en sort avec succès, mais son audace est qualifiée à la fois de courageuse et de téméraire.**
 
 ## 💬 Mentions avec contexte
 

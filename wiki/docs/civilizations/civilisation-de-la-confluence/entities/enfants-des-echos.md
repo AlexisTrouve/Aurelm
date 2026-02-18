@@ -31,6 +31,22 @@ Tour 14  ████████████████████
 - 🔵 **[Gouffre Humide](gouffre-humide.md)** (Lieux) — 3 tours
 - 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 3 tours
 
+## Description
+
+Les enfants des échos sont une caste qui vit dans les profondeurs de Gouffre Humide. Ils ont pour caractéristique d'avoir un développement physique et intellectuel limité, ce qui les rend aptes aux tâches physiques ingrates. Ils utilisent des outils en pierre pour façonner la roche et transforment l'environnement naturel. Leur mode de vie est influencé par leur éloignement des fleuves d'où viennent l'énergie nécessaire à la survie.
+
+## Chronologie
+
+**Tour 10: Les enfants des échos sont responsables du chaos dans les profondeurs, transformant la nature avec leurs outils en pierre. Leur travail crée un grand contraste entre l'esprit de l'homme et la puissance de la nature.**
+
+**Tour 11: La chaleur corporelle est précieuse pour les enfants des échos qui utilisent des roches chauffées dans le feu pour se garder au chaud. Ils sont impliqués dans la construction des Antres, perçant des galeries dans la roche.**
+
+**Tour 12: Les changements physiques chez les enfants des échos peuvent être liés à leur éloignement des fleuves qui alimentent l'énergie nécessaire à la survie. Le poisson de la confluence est essentiel pour leur bien-être, mais il a manqué récemment.**
+
+**Tour 13: Les enfants des échos sont utilisés pour les tâches ingrates et physiques en raison de leur développement limité. Ils manipulent leurs armes de fortune : pioches et ciseaux à pierre.**
+
+**Tour 14: L'exploration est complexe et traîtresse, mais les enfants des échos ont mal commencé la construction, avec une grande perte d'hommes dans les miasmes qui empoisonnent certains niveaux.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 10**

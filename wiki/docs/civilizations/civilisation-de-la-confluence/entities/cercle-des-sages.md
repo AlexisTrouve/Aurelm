@@ -33,19 +33,19 @@ Tour 14  ████████████████████
 
 ## Description
 
-Le Cercle des Sages est une institution qui rassemble les esprits les plus éclairés et les âmes les plus sages de la tribu. Il a pour rôle de garder le savoir, d'interpréter les cieux et de guider la communauté. Le Cercle est formé par un processus de sélection et de formation, mené par un individu qui aspire à en être l'oracle.
+Le Cercle des Sages est une institution créée pour rassembler les esprits les plus éclairés et les âmes les plus sages de la tribu. Il est chargé d'interpréter les cieux et de guider le clan vers la sagesse.
 
 ## Chronologie
 
-**Tour 3: Le héros convoque les esprits les plus éclairés et les âmes les plus sages pour former le Cercle des Sages, qui devient son intermédiaire avec la communauté.**
+**Tour 3: Le Cercle des Sages est créé pour rassembler les esprits les plus éclairés et les âmes les plus sages, en guise de gardiens du savoir et d'interprètes des cieux.**
 
-**Tour 4: Le héros assemble le Cercle des Sages en sélectionnant les individus qu'il considère les plus vifs d'esprits et les plus sages. Il prend un rôle de médiateur pour guider leurs échanges et créer une coutume de dialogue respectueux.**
+**Tour 4: Le Cercle des Sages est constitué de personnages sélectionnés par le héros pour rassembler leurs pensées et créer une coutume de dialogue respectueux et productif.**
 
-**Tour 8: Le Cercle des Sages essaie de faire valoir sa juridiction sur les enfants du courant, mais le héros leur indique que l'ordre caché derrière le chaos apparent doit être mis en place.**
+**Tour 8: Le Cercle des Sages tente de faire valoir sa juridiction sur les enfants du courant, mais se heurte à d'autres institutions telles que l'Aurore et le Tribunal de moeurs.**
 
-**Tour 11: L'Assemblée des Chefs et l'Arbitre des Esprits sont créés pour mettre en place l'ordre caché. Le Cercle des Sages devient le tronc de l'arbre, solide, patient et tourné vers le ciel.**
+**Tour 11: Le Cercle des Sages devient le tronc solide de la société, porteur de traditions et guide pour les branches nouvelles.**
 
-**Tour 14: Chaque année, les quatre Gardiens du Hall doivent revenir à La Confluence pour rendre compte devant le Cercle des Sages et renouveler leur serment.**
+- Turn 14: Les Gardiens du Hall doivent revenir à La Confluence chaque année pour rendre compte devant le Cercle des Sages.
 
 ## 💬 Mentions avec contexte
 

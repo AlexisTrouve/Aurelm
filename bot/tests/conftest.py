@@ -44,6 +44,11 @@ CREATE TABLE turn_turns (
     turn_type TEXT NOT NULL DEFAULT 'standard',
     game_date_start TEXT,
     game_date_end TEXT,
+    technologies TEXT,
+    resources TEXT,
+    beliefs TEXT,
+    geography TEXT,
+    choices_proposed TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     processed_at TEXT,
     UNIQUE(civ_id, turn_number)
@@ -117,11 +122,11 @@ INSERT INTO civ_civilizations (name, player_name) VALUES
     ('Civilisation de la Confluence', 'Rubanc'),
     ('Cheveux de Sang', 'PlayerB');
 
-INSERT INTO turn_turns (civ_id, turn_number, title, summary, raw_message_ids, turn_type, game_date_start) VALUES
-    (1, 1, 'Fondation', 'Les cinq castes fondent la cite au confluent des deux fleuves.', '[]', 'standard', 'An 1'),
-    (1, 2, 'Premier Contact', 'Les eclaireurs rapportent une presence etrangere.', '[]', 'first_contact', 'An 5'),
-    (1, 3, 'Decouverte des Ruines', 'Exploration des ruines anciennes revele l argile vivante.', '[]', 'standard', 'An 8'),
-    (2, 1, 'Depart Maritime', 'Les Cheveux de Sang prennent la mer pour explorer.', '[]', 'standard', 'An 1');
+INSERT INTO turn_turns (civ_id, turn_number, title, summary, raw_message_ids, turn_type, game_date_start, technologies, resources, beliefs, geography, choices_proposed, choices_made) VALUES
+    (1, 1, 'Fondation', 'Les cinq castes fondent la cite au confluent des deux fleuves.', '[]', 'standard', 'An 1', '["gourdins","pieux"]', '["Poisson","Bois"]', '["Culte des Cinq Elements"]', '["Confluent des deux fleuves"]', NULL, NULL),
+    (1, 2, 'Premier Contact', 'Les eclaireurs rapportent une presence etrangere.', '[]', 'first_contact', 'An 5', '["lance"]', NULL, NULL, NULL, '["Envoyer une delegation diplomatique","Renforcer les defenses"]', '["Envoyer une delegation diplomatique"]'),
+    (1, 3, 'Decouverte des Ruines', 'Exploration des ruines anciennes revele l argile vivante.', '[]', 'standard', 'An 8', '["Argile Vivante"]', NULL, NULL, '["Ruines Anciennes"]', '["Explorer les ruines","Ignorer les ruines"]', '["Explorer les ruines"]'),
+    (2, 1, 'Depart Maritime', 'Les Cheveux de Sang prennent la mer pour explorer.', '[]', 'standard', 'An 1', '["Navigation"]', '["Bois","Poisson"]', NULL, '["Cote maritime"]', NULL, NULL);
 
 INSERT INTO turn_segments (turn_id, segment_order, segment_type, content) VALUES
     (1, 1, 'narrative', 'Au confluent des deux fleuves, cinq castes se reunissent pour fonder une nouvelle civilisation.'),

@@ -17,6 +17,14 @@
 Tour  9  ████████████████████  ← Pic
 ```
 
+## Description
+
+Le leg des ancêtres est une technologie qui représente l'héritage de générations d'artisans. Il s'agit d'un objet, généralement un lance, qui a été transmis de père en fils et qui continue à perdurer même après la disparition du dernier artisan à l'avoir possédé. Ce leg contient les marques de chaque génération qui y a ajouté sa propre marque, ce qui crée une histoire unique et riche. L'objet lui-même peut changer de forme au fil des générations, mais son histoire continue.
+
+## Chronologie
+
+**Tour 9: L'artisan ajoute sa propre marque au leg des ancêtres, en le transformant en lance. Cette action crée une nouvelle histoire et continue la chaîne d'héritage.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 9**

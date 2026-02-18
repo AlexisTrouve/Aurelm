@@ -2,7 +2,7 @@
 
 📅 **07/12/2024** | 📊 **7 segments** | 🎯 **1 nouvelles entités**
 
-> Les membres de la tribu de la Confluence cherchent à transmettre leurs connaissances et leurs idées aux générations futures. Ils utilisent divers moyens tels que les gravures, les histoires orales et des processions rituelles pour atteindre cet objectif. Cependant, cela entraîne une concurrence accrue entre les différentes institutions de la tribu, telles que le cercle des sages, l'Aurore et les Gardiens de la confluence. Le Maitre du Jeu t'informe que ces tensions pourraient conduire à un conflit si pas de solution est trouvée.
+> La civilisation de la Confluence atteint un tournant important, où les membres de la tribu cherchent à trouver des moyens plus efficaces pour partager leurs expériences et connaissances avec les générations futures. Des choix sont proposés pour déterminer comment ces idées seront transmises : par l'art, l'histoire orale ou autrement. Alors que les institutions de la tribu entrent en concurrence, le Maitre du Jeu propose des présages pour essayer d'éviter un conflit éventuel.
 
 ## 📊 Statistiques du tour
 
@@ -49,21 +49,19 @@ C'est à travers les artefacts que le savoir trouve sa voie. Les artisans créen
 ### 🔧 Technologies
 
 - rhombes
-- artefacts
+- outils des artisans
 
 ### 🌾 Ressources
 
-- nourriture
-- matériaux
+- nourriture pêchée
+- materiaux pour les outils des artisans
 
 ### ✨ Croyances
 
-- Aurore
-- Tribunal de moeurs
-- Cercle des sages
-- Gardiens de la Confluence
-- Regards-Libres
-- shamans
+- croyances de l'Aurore
+- juridiction du cercle des sages
+- tribunal de moeurs
+- Gardiens de la confluence
 
 ## 🏷️ Entités mentionnées
 

@@ -28,6 +28,18 @@ Tour 12  ████████████████████
 - 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 2 tours
 - 🔵 **[Passes-bien](passes-bien.md)** (Castes) — 2 tours
 
+## Description
+
+L'Assemblée des Chefs est une institution chargée de guider la mission des Faucons Chasseurs dans l'enquête sur les événements tragiques. Elle semble jouer un rôle important dans la détermination de la vérité et de la justice. L'Assemblée est présente à chaque étape de l'enquête, et ses membres sont impliqués dans la prise de décision.
+
+## Chronologie
+
+**Tour 1: Pas de mention explicite, mais il est possible que l'entité soit présente en arrière-plan.**
+
+**Tour 11: L'Assemblée des Chefs est mentionnée comme la future guide des Faucons Chasseurs. Les anciens lui soufflent que de cette tragédie doit naître une voie nouvelle et qu'elle devra guider les Faucons dans leur mission.**
+
+**Tour 12: L'Assemblée des Chefs est informée de la situation par les Passes-bien et est donc mise au courant des progrès de l'enquête.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 11**

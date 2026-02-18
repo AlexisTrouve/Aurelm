@@ -17,6 +17,14 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
+## Description
+
+Le Premier Artefact est un artefact précieux et mystérieux qui a été utilisé pour immortaliser le patrimoine de la civilisation. Il est mentionné comme un élément central dans les méthodes d'enregistrement des idéoglyphes. Les ébauches créées avec l'argile vivante et d'autres matériaux se sont révélées adaptées aux discussions des ailes grises, sans nécessiter de déplacement physique. Il semble être un objet ou un concept important pour la compréhension du patrimoine civilisationnel.
+
+## Chronologie
+
+**Tour 14: Les idéoglyphes créés avec le Premier Artefact ont été utilisés comme brouillons de gravure pour immortaliser ce patrimoine, mais ils n'ont pas prouvé leur efficacité dans la conservation. Les ébauches créées se sont cependant révélées adaptées aux discussions des ailes grises sur les éléments particuliers du Premier Artefact.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 14**

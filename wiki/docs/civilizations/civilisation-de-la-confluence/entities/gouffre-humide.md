@@ -29,6 +29,18 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 2 tours
 - 🔵 **[Faucons Chasseurs](faucons-chasseurs.md)** (Castes) — 2 tours
 
+## Description
+
+Le Gouffre Humide est une antre des échos située dans les profondeurs de la terre, dont les habitants dépendent pour leur subsistance. Il s'agit d'un lieu important pour l'échange commercial entre les villages aux sorties des galeries et les colonies souterraines. La maladie des Antres peut se développer rapidement si le poisson de la confluence n'est pas disponible.
+
+## Chronologie
+
+**Tour 12: Les ouvriers multi-générationnels ont travaillé pour couvrir chaque pas depuis la confluence jusqu'au Gouffre Humide, créant un escalier bien visible. Cela a accéléré le trafic piéton entre les deux endroits.**
+
+**Tour 13: Les groupes de recherches sont descendus dans les entrailles du Gouffre Humide, une expérience mystique pour ceux qui n'y étaient pas habitués.**
+
+**Tour 14: Les ailes grises se succèdent dans les halls sacrés du Gouffre Humide, un lieu important pour l'adoration des ancêtres par le peuple de Rithelgo.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 12**

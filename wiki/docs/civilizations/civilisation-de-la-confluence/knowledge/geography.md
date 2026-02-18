@@ -2,145 +2,96 @@
 
 ## Lieux par ordre de découverte
 
-**Tour 1** : cascade, ciel terne et uniforme, guet succédé de rapides, paysage blanc et grisâtre, plante qui pousse dans la neige, rivières qui lacèrent la terre, sol noirâtre, île au milieu de la rivière
-**Tour 2** : confluence de deux rivières cristallines, large vallée
+**Tour 1** : cascade, ciel terne et uniforme, guet succédé de rapides, neige jusqu'à l'horizon, paysage immobile, rivière, île au milieu de la rivière
+**Tour 2** : confluence de deux rivières cristallines, vallée
 **Tour 3** : confluence, crêtes adjacentes, territoire de chasse, village temporaire
-**Tour 4** : la fourche dans la rivière, la montagne
+**Tour 4** : la fourche dans la rivière, le sommet visible depuis la fourche
 **Tour 5** : ciel, confluents, montagne, nuages, rivières, terre
-**Tour 6** : Confluence des deux fleuves, Plateau rocailleux en amont, Rivières bleues et vertes, Vallée montagneuse, Zones humides
-**Tour 7** : vallée, village
+**Tour 6** : Confluence des deux fleuves, Vallée montagneuse, plateau rocailleux en amont, rivières bleues et vertes, villages sur pilotis
+**Tour 7** : tribus qui se fait sans cesse plus large, vallée
 **Tour 8** : vallée
 **Tour 9** : montagnes, plaines, rivières, vallée
-**Tour 10** : Gorge Profonde, cavernes, grottes, montagne, rivières, vallée
-**Tour 11** : confluence des rivières, montagnes, vallée
-**Tour 12** : Confluence, Gouffre Humide, galeries de Gouffre Humide, montagne, vallée
+**Tour 10** : Gorge Profonde, montagne, rivières, vallée
+**Tour 11** : confluence, montagnes, rivière bleue
+**Tour 12** : Gouffre Humide, galeries inconnues de Gouffre Humide, montagne, vallée
 **Tour 13** : galeries, profondeurs
-**Tour 14** : côtes rocailleuses et traîtresses, péninsule battue par les vents et les tempêtes, terres rocailleuses
+**Tour 14** : péninsule battue par les vents et les tempêtes, terres rocailleuses
 
 ## Carte textuelle
 
 ```
-large vallée
-├─ rivières qui lacèrent la terre
+vallée
+├─ rivière
 ├─ île au milieu de la rivière
 ├─ confluence de deux rivières cristallines
 ├─ crêtes adjacentes
 ├─ la fourche dans la rivière
-├─ la montagne
 ├─ montagne
 ├─ rivières
 ├─ Confluence des deux fleuves
-├─ Rivières bleues et vertes
+├─ rivières bleues et vertes
 ├─ montagnes
-├─ confluence des rivières
+├─ rivière bleue
 ├─ Villages
    ├─ village temporaire
-   ├─ village
+   ├─ villages sur pilotis
       ├─ cascade
       ├─ ciel terne et uniforme
       ├─ guet succédé de rapides
-      ├─ paysage blanc et grisâtre
-      ├─ plante qui pousse dans la neige
-      ├─ sol noirâtre
+      ├─ neige jusqu'à l'horizon
+      ├─ paysage immobile
       ├─ confluence
       ├─ territoire de chasse
+      ├─ le sommet visible depuis la fourche
       ├─ ciel
       ├─ confluents
       ├─ nuages
       ├─ terre
-      ├─ Plateau rocailleux en amont
-      ├─ Zones humides
+      ├─ plateau rocailleux en amont
+      ├─ tribus qui se fait sans cesse plus large
       ├─ plaines
       ├─ Gorge Profonde
-      ├─ cavernes
-      ├─ grottes
       ├─ Gouffre Humide
-      ├─ galeries de Gouffre Humide
+      ├─ galeries inconnues de Gouffre Humide
       ├─ galeries
       ├─ profondeurs
-      ├─ côtes rocailleuses et traîtresses
       ├─ péninsule battue par les vents et les tempêtes
       └─ terres rocailleuses
 Vallée montagneuse
-├─ rivières qui lacèrent la terre
+├─ rivière
 ├─ île au milieu de la rivière
 ├─ confluence de deux rivières cristallines
 ├─ crêtes adjacentes
 ├─ la fourche dans la rivière
-├─ la montagne
 ├─ montagne
 ├─ rivières
 ├─ Confluence des deux fleuves
-├─ Rivières bleues et vertes
+├─ rivières bleues et vertes
 ├─ montagnes
-├─ confluence des rivières
+├─ rivière bleue
 ├─ Villages
    ├─ village temporaire
-   ├─ village
+   ├─ villages sur pilotis
       ├─ cascade
       ├─ ciel terne et uniforme
       ├─ guet succédé de rapides
-      ├─ paysage blanc et grisâtre
-      ├─ plante qui pousse dans la neige
-      ├─ sol noirâtre
+      ├─ neige jusqu'à l'horizon
+      ├─ paysage immobile
       ├─ confluence
       ├─ territoire de chasse
+      ├─ le sommet visible depuis la fourche
       ├─ ciel
       ├─ confluents
       ├─ nuages
       ├─ terre
-      ├─ Plateau rocailleux en amont
-      ├─ Zones humides
+      ├─ plateau rocailleux en amont
+      ├─ tribus qui se fait sans cesse plus large
       ├─ plaines
       ├─ Gorge Profonde
-      ├─ cavernes
-      ├─ grottes
       ├─ Gouffre Humide
-      ├─ galeries de Gouffre Humide
+      ├─ galeries inconnues de Gouffre Humide
       ├─ galeries
       ├─ profondeurs
-      ├─ côtes rocailleuses et traîtresses
-      ├─ péninsule battue par les vents et les tempêtes
-      └─ terres rocailleuses
-vallée
-├─ rivières qui lacèrent la terre
-├─ île au milieu de la rivière
-├─ confluence de deux rivières cristallines
-├─ crêtes adjacentes
-├─ la fourche dans la rivière
-├─ la montagne
-├─ montagne
-├─ rivières
-├─ Confluence des deux fleuves
-├─ Rivières bleues et vertes
-├─ montagnes
-├─ confluence des rivières
-├─ Villages
-   ├─ village temporaire
-   ├─ village
-      ├─ cascade
-      ├─ ciel terne et uniforme
-      ├─ guet succédé de rapides
-      ├─ paysage blanc et grisâtre
-      ├─ plante qui pousse dans la neige
-      ├─ sol noirâtre
-      ├─ confluence
-      ├─ territoire de chasse
-      ├─ ciel
-      ├─ confluents
-      ├─ nuages
-      ├─ terre
-      ├─ Plateau rocailleux en amont
-      ├─ Zones humides
-      ├─ plaines
-      ├─ Gorge Profonde
-      ├─ cavernes
-      ├─ grottes
-      ├─ Gouffre Humide
-      ├─ galeries de Gouffre Humide
-      ├─ galeries
-      ├─ profondeurs
-      ├─ côtes rocailleuses et traîtresses
       ├─ péninsule battue par les vents et les tempêtes
       └─ terres rocailleuses
 ```

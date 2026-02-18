@@ -2,7 +2,7 @@
 
 📅 **08/09/2025** | 📊 **177 segments** | 🎯 **19 nouvelles entités**
 
-> La narration de la Civilisation de la Confluence se déroule dans un univers où le peuple adorateur des premiers ancêtres vit dans les halls sacrés de Gouffre Humide. L'existence de ce peuple est influencée par une fresque mystérieuse qui raconte leur histoire, mais aussi les peurs et les interrogations liées à cette culture. La narration explore l'influence de la fresque sur la croyance du peuple, ainsi que l'importance des halls sacrés dans leur vie religieuse. Les Ailes-Grises sont chargés d’élucider le secret de la chute des premiers ancêtres et de comprendre les mystères de la Grande Fresque.
+> La narration présente la visite des Ailes-Grises aux halls sacrés de Gouffre Humide, un endroit considéré comme saint par leur peuple. Ils y méditent, observent et cherchent à comprendre les mystères cachés dans la Grande Fresque, qui est considérée comme un chef-d'œuvre des Premiers Ancêtres. Cette fresque contient des symboles, des allégories et des représentations qui inspirent durablement l'art et les croyances de leur peuple.
 
 ## 📊 Statistiques du tour
 
@@ -492,24 +492,22 @@ __Choix : Siliaska - Ceux qui portent le regard libre__
 
 - péninsule battue par les vents et les tempêtes
 - terres rocailleuses
-- côtes rocailleuses et traîtresses
 
 ### 🔧 Technologies
 
 - construction de bois
-- évaluation des ressources marines
+- outils pour la construction
 
 ### 🌾 Ressources
 
+- viande de Nantons
+- peau de Nantons
 - fleurs charnues
-- Nantons (animal domestiqué pour sa viande et sa peau épaisse)
-- fruits de la mer
 
 ### ✨ Croyances
 
-- reincarnation dans un autre monde
-- mission sacrée à accomplir à la fin de leur vie
-- loi implacable
+- croyance en la réincarnation
+- mission sacrée
 - exil des fauteurs de troubles
 
 ## 🏷️ Entités mentionnées

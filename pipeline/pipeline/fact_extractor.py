@@ -64,6 +64,9 @@ class FactExtractor:
             if seg["segment_type"] in ["narrative", "consequence", "description"]
         )
 
+        # Extract choices proposed (pattern-based, works on choice segments)
+        choices_proposed = self._extract_choices_proposed(segments)
+
         if not relevant_text.strip():
             return StructuredFacts(
                 media_links=media_links,
@@ -71,11 +74,8 @@ class FactExtractor:
                 resources=[],
                 beliefs=[],
                 geography=[],
-                choices_proposed=[]
+                choices_proposed=choices_proposed
             )
-
-        # Extract choices proposed (pattern-based + LLM confirmation)
-        choices_proposed = self._extract_choices_proposed(segments)
 
         # Use LLM to extract other structured facts
         llm_facts = self._llm_extract_facts(relevant_text)
@@ -121,7 +121,7 @@ class FactExtractor:
                 content = seg["content"]
 
                 # Pattern 1: Markdown list (- choice, - choice)
-                list_items = re.findall(r'^[-*]\s+(.+)$', content, re.MULTILINE)
+                list_items = re.findall(r'^\s*[-*]\s+(.+)$', content, re.MULTILINE)
                 if list_items:
                     choices.extend([item.strip() for item in list_items if item.strip()])
                     continue
@@ -168,17 +168,18 @@ Texte du tour :
 Extrais les informations suivantes et retourne UNIQUEMENT un objet JSON valide (pas de texte avant ou après) :
 
 {{
-  "technologies": ["liste des outils, techniques, savoirs découverts ou mentionnés"],
-  "resources": ["liste des ressources naturelles mentionnées (nourriture, matériaux, etc.)"],
-  "beliefs": ["liste des croyances, rituels, systèmes sociaux, ou institutions mentionnés"],
-  "geography": ["liste des lieux, caractéristiques géographiques, ou environnements décrits"]
+  "technologies": ["outils, techniques ou savoirs ACTIVEMENT developpes, fabriques ou adoptes par la civilisation"],
+  "resources": ["ressources naturelles ACTIVEMENT exploitees ou utilisees (nourriture recoltee, materiaux travailles, etc.)"],
+  "beliefs": ["croyances, rituels, systemes sociaux, ou institutions mentionnes"],
+  "geography": ["lieux, caracteristiques geographiques, ou environnements decrits"]
 }}
 
-Règles :
-- Sois spécifique et concret (ex: "gourdins", "pieux", pas juste "outils")
-- Inclus uniquement ce qui est explicitement mentionné dans le texte
+Regles :
+- Sois specifique et concret (ex: "gourdins", "pieux", pas juste "outils")
+- technologies : UNIQUEMENT ce que la civilisation a cree, fabrique, appris a faire ou adopte comme pratique. PAS les substances/materiaux juste observes ou mentionnes en passant.
+- resources : UNIQUEMENT ce qui est recolte, exploite ou utilise. PAS les elements naturels juste observes sans exploitation.
 - Utilise les termes exacts du texte quand possible
-- Si une catégorie est vide, retourne une liste vide []
+- Si une categorie est vide, retourne une liste vide []
 - Retourne UNIQUEMENT le JSON, rien d'autre"""
 
         try:

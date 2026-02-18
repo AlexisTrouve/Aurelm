@@ -2,14 +2,14 @@
 
 📅 **03/09/2024** | 📊 **11 segments** | 🎯 **0 nouvelles entités**
 
-> Les êtres humains sont à leurs débuts, cherchant à survivre dans un monde hostile. Ils ont faim et semblent perdus. Le choix de survie est présenté : chasser le gibier, pêcher les poissons de rivière ou trouver des baies et des graines.
+> La narration commence par une voix mystérieuse, le 'Maitre', qui semble avoir été vaincu dans un combat lointain. Il décide de disséminer son pouvoir et laisse aux humains la possibilité de se développer. Les premiers âges de la civilisation sont marqués par l'apparition des hommes, tapies à attendre leur heure dans une vaste étendue blanche et glacée. Ils découvrent les premières plantes, et bientôt, le monde change rapidement : les rivières creusent les terres noires, et un ciel éclatant apparaît.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : aucune
 - **Mentions totales** : 0
-- **Technologies** : 0
-- **Ressources** : 3
+- **Technologies** : 2
+- **Ressources** : 2
 - **Densité narrative** : 8 narratifs, 1 choix, 0 conséquences
 
 ## 🎵 Ambiance
@@ -52,20 +52,23 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ### 🗺️ Géographie
 
-- paysage blanc et grisâtre
+- paysage immobile
+- neige jusqu'à l'horizon
 - ciel terne et uniforme
-- plante qui pousse dans la neige
-- rivières qui lacèrent la terre
-- sol noirâtre
+- rivière
 - cascade
 - guet succédé de rapides
 - île au milieu de la rivière
 
+### 🔧 Technologies
+
+- outils
+- techniques
+
 ### 🌾 Ressources
 
-- neige
-- rivière
-- terre noireâtre
+- nourriture recoltee
+- materiaux travailles
 
 ---
 

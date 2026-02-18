@@ -2,6 +2,9 @@
 
 *Lieux* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/outils-pour-evider-les-poissons-de-la-confluence.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -38,15 +41,27 @@ Tour 14  ████████████████████
 
 ## Description
 
-La Confluence est une vallée située à la confluence de deux rivières cristallines, bleue azur et verte. C'est un endroit fertile et propice à la vie. La tribu s'y installe pour y prospérer.
+La Confluence est une vallée montagneuse où deux rivières se rejoignent, créant un endroit fertile et propice à la vie. Elle abrite plusieurs villages et est le lieu de rencontre des différentes tribus. La Confluence offre des ressources naturelles importantes telles que des poissons, des mollusques et d'autres animaux, ainsi qu'une terre fertile pour cultiver. Les gens qui y vivent sont divisés en différentes factions, dont les Voix de l'Aurore, les Enfants du Courant et les Gardiens de la Confluence.
 
 ## Chronologie
 
-**Tour 2: La tribu arrive au lieu de vie qu'elle a recherché et se détermine à y rester. Ils sont épuisés mais reconnaissent l'importance de cet endroit, qui leur offre sécurité et nourriture.**
+**Tour 2: Un groupe de survivants arrive à La Confluence, un endroit sécurisé où ils peuvent se installer et se reconstituer. Ils commencent à cultiver la terre et pêcher dans les rivières.**
 
-**Tour 3: La tribu s'établit à la confluence en alternant entre deux villages temporaires pour ne pas épuiser les terrains de chasse. Ils explorent les ressources de la vallée.**
+**Tour 3: La tribu se déplace entre deux villages, l'un à la Confluence et l'autre à distance, pour éviter de fatiguer les terrains de chasse.**
 
-**Tour 6: Le peuple grandit et se développe à La Confluence, qui devient un endroit prospère avec des activités variées : agriculture, pêche, artisanat...**
+**Tour 6: Les gens qui vivent à La Confluence ont vu leur peuple grandir et prospérer. Ils ont développé une société complexe avec des institutions telles que le Tribunal de moeurs et les Voix de l'Aurore.**
+
+**Tour 7: Les différentes factions de la vallée entrent en concurrence pour obtenir plus d'influence et de pouvoir dans la décision du peuple.**
+
+**Tour 9: Le peuple se divise et cherche à restaurer l'harmonie dans leur vie et dans la société. Les Voix de l'Aurore guident les explorations pour trouver des nouvelles ressources.**
+
+**Tour 10: La Confluence devient le lieu où se rencontrent les courants invisibles qui animent les différentes traditions du peuple.**
+
+**Tour 11: Les rivières débordent à cause de la fonte des glaces, facilitant le transport de l'argile vive pour créer des cratères et des vases rituels.**
+
+**Tour 12: Un cadavre est découvert avec un couteau près du corps, ce qui suggère une mort suspecte.**
+
+**Tour 14: Une histoire d'exil se développe, où le narrateur réfléchit sur son rôle dans la vallée et la manière dont les différentes factions interagissent entre elles.**
 
 ## 💬 Mentions avec contexte
 

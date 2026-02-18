@@ -2,14 +2,14 @@
 
 📅 **06/09/2024** | 📊 **5 segments** | 🎯 **1 nouvelles entités**
 
-> Le chemin vers ce refuge a été ardu pour les membres de cette civilisation. Ils ont dû se contenter de petites ressources, tels que des mollusques et des poissons coincés dans des remous, pour survivre. L'arrivée enfin au lieu promis par le Maitre du Jeu a été un soulagement, mais la reconstruction et la reprise nécessiteraient encore beaucoup de temps. Le peuple se tourne vers l'avenir, espérant améliorer leur quotidien grâce à l'aide du Maitre du Jeu.
+> Le maître du jeu a promis un havre de paix à ces migrants, qui ont parcouru longtemps pour arriver au lieu choisi. Ils ont dû lutter contre la faim, la fatigue et les pertes, mais sont enfin arrivés et se sont installés le long des rivières. Ils ont commencé à chasser et à récolter des aliments, mais la vie reste difficile et les saisons passent. Le maître du jeu a observé leur quotidien et imagine des moyens d'améliorer leur vie.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `La confluence`
 - **Mentions totales** : 1
 - **Technologies** : 2
-- **Ressources** : 6
+- **Ressources** : 3
 - **Densité narrative** : 3 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -39,7 +39,7 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 ### 🗺️ Géographie
 
 - confluence de deux rivières cristallines
-- large vallée
+- vallée
 
 ### 🔧 Technologies
 
@@ -48,19 +48,16 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ### 🌾 Ressources
 
-- mollusques
-- baie
-- poisson
+- poissons
 - graines
-- fruits
-- animaux migrants
+- baies
 
 ### ✨ Croyances
 
-- esprit s'élève et veille sur les vivants depuis le ciel
-- corps retourne à la terre, se mêlant à la nature
-- offrir en respect aux défunts des preuves de sagesses
-- voir les nuages comme des obstacles à la transmission de la sagesse aux nouveaux nés
+- l'esprit s'élève et veille sur les vivants depuis le ciel
+- le corps retourne à la terre, se mêlant à la nature
+- il faut offrir en respect aux défunts des preuves de sagesses
+- il faut voir les nuages comme des obstacles à la transmission de la sagesse aux nouveaux nés
 
 ## 🏷️ Entités mentionnées
 

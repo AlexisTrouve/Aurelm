@@ -2,6 +2,9 @@
 
 *Castes* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/faucons-chasseurs.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -28,6 +31,18 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 3 tours
 - 🔵 **[Passes-bien](passes-bien.md)** (Castes) — 3 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 3 tours
+
+## Description
+
+Les Faucons Chasseurs sont une caste de guerriers chevaliers chargés de la défense et de la justice dans le village. Ils sont connus pour leur courage, leur force et leur droiture. Ils ont été créés en réponse à un événement tragique et sont guidés par l'Assemblée des Chefs.
+
+## Chronologie
+
+**Tour 11: Les Faucons Chasseurs sont créés pour rassembler les indices de la nuit funeste et capturer les menaces dans les montagnes. Ils travaillent en équipe avec les Regards-Libres et les Enfants des Échos.**
+
+**Tour 12: L'Arbitre des Esprits coordonne une mission avec quatre équipes de six personnes chacune, dont trois Faucons Chasseurs. Les équipes sont envoyées pour sécuriser l'entrée des galeries et reconstituer la vérité.**
+
+**Tour 14: Les Faucons Chasseurs forment l'un des conseils du village, commandant la défense et la justice.**
 
 ## 💬 Mentions avec contexte
 

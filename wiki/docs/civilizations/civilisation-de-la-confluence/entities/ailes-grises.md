@@ -34,6 +34,24 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 5 tours
 
+## Description
+
+Les Ailes-Grises sont une caste de personnes qui jouent un rôle important dans la tribu en guidant les groupes de chasseurs, de pêcheurs et des cueilleurs. Ils sont chargés de préserver la mémoire des ancêtres et transmettre leurs connaissances aux générations futures. Les Ailes-Grises possèdent des rhombes qui servent à leur rituel et communiquer avec les roches.
+
+## Chronologie
+
+**Tour 7: Les dresseurs de regards-libres deviennent des membres importants de la tribu, guidant les groupes de chasseurs et de pêcheurs vers leurs proies. Ils sont appelés les Ailes-Grises.**
+
+**Tour 8: Les Ailes-Grises gravent leurs visions sur leurs rhombes, transmettant ainsi leur mémoire aux générations futures.**
+
+**Tour 9: L'artiste est chargé de préserver la mémoire des ancêtres en transformant les objets en artefacts qui continuent à exister sous d'autres formes.**
+
+**Tour 10: Un travail solitaire, et où viennent souvent achever sa vie, le lieu est réservé aux anciens Ailes-Grises.**
+
+**Tour 12: Les Ailes-Grises sont chargés de rapporter des nouvelles inquiétantes qu'ils ont pu garder secrètes jusqu'à présent.**
+
+**Tour 13: La gravité avec laquelle tu traite la situation les intimide clairement.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 7**

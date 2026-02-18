@@ -78,6 +78,11 @@ Pre-seeded context for the OpenClaw agent. This file is loaded at session start 
 7. **Recherche textuelle** : "Ou parle-t-on de bronze ?" -> `searchTurnContent`
 8. **Inventaire** : "Liste toutes les civs" -> `listCivs`
 9. **Exploration** : "Quelles entites militaires existent ?" -> `searchLore` avec `entityType`
+10. **Acquis technologiques** : "Quelles technos a la Confluence ?" -> `getStructuredFacts(civName, factType="technologies")`
+11. **Historique des choix** : "Quels choix au tour 8 ?" -> `getChoiceHistory(civName, turnNumber=8)`
+12. **Relations** : "Qui controle quoi ?" / "Relations de l'Argile Vivante ?" -> `exploreRelations(entityName, depth=2)`
+13. **Timeline filtree** : "Tous les premiers contacts" / "Tours 5-10" -> `filterTimeline(turnType, fromTurn, toTurn)`
+14. **Activite d'entite** : "Quand l'Argile est-elle devenue importante ?" -> `entityActivity(entityName)`
 
 ## Mots-cles d'aspects (pour compareCivs)
 

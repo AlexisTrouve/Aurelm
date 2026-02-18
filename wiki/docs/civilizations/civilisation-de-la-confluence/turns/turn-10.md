@@ -2,14 +2,14 @@
 
 📅 **20/03/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
 
-> Le Maitre du Jeu, qui est apparenté à la Civilisation des Échos, relate son voyage dans les villages de la vallée. Il observe les transformations qui se produisent dans les colonies, y compris l'arrivée de nouvelles familles et le développement d'une économie locale. Le Maitre du Jeu s'intéresse particulièrement aux Passes-bien, des porteurs de flammes qui fournissent les villages avec des marchandises essentielles. Il décrit également sa visite à la Gorge Profonde, une colonie située en profondeur dans la terre, où il observe le travail des façonneurs de pierre et découvre de nouvelles technologies, comme l'argile vive, le lait de pierre et la roche braise.
+> Au cours de tes expéditions annuelles dans la vallée, tu es impressionné par les changements qui se produisent. Les villages sont plus nombreux et les coutumes ont évolué. Cependant, tu commences à te demander si ton anonymat est encore nécessaire, car personne ne te reconnait plus comme un ancien membre de la communauté.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Gorge Profonde`, `Passes-bien`, `Enfants des échos`, `Lait de pierre`
 - **Mentions totales** : 10
-- **Technologies** : 5
-- **Ressources** : 5
+- **Technologies** : 3
+- **Ressources** : 2
 - **Densité narrative** : 8 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -70,32 +70,23 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 - vallée
 - montagne
 - rivières
-- cavernes
-- grottes
 
 ### 🔧 Technologies
 
-- fagots de bois
-- flambeau de fortune
 - argile vive
-- la roche braise
-- le lait de pierre
+- roche braise
+- lait de pierre
 
 ### 🌾 Ressources
 
 - bois
-- air
-- eau
 - pierres rares
-- poisson frais
 
 ### ✨ Croyances
 
 - Confluence des Esprits
 - Confluence des Biens
 - Confluence des Formes
-- échange
-- guidance vers l'avenir
 
 ## 🏷️ Entités mentionnées
 

@@ -2,6 +2,9 @@
 
 *Castes* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/regards-libres.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -34,19 +37,21 @@ Tour 14  ██████████
 
 ## Description
 
-Les Regards-Libres sont une caste de grues cendrées qui ont été découvertes et appréciées par les habitants de la vallée pour leur capacité à repérer les bancs de poissons et les changements de courants. Ils ont développé une relation avec les peuples locaux, en particulier avec ceux qui incarnent la dualité du ciel. Les Regards-Libres sont connus pour leur nature double, contemplative et puissante, ce qui les rend à la fois plus proches des shamans dans leur sagesse et plus aiguisés dans leur rôle d'éclaireurs.
+La caste des Regards-Libres est une entité qui vit avec les peuples de la vallée. Elle se caractérise par sa capacité à repérer les bancs de poissons et les changements de courants, ce qui en a fait un partenaire précieux pour les villageois. Les jeunes grues des Regards-Libres montrent une grande capacité d'apprentissage et sont souvent présentes dans le village. Leurs chants sont également appréciés et certains ont essayé de les imiter.
 
 ## Chronologie
 
-**Tour 6: Les Regards-Libres sont découverts près du village par le peuple des eaux, qui apprécie leur capacité à repérer les poissons et les changements de courants. Cette découverte devient une coexistence pratique qui évolue vers une relation plus intéressante.**
+**Tour 6: Les peuples découvrent les regards-libres près des villages sur pilotis, où leur capacité à repérer les poissons est utile.**
 
-**Tour 7: Les Regards-Libres deviennent une vision commune autour du village, inspirant les artisans et les villageois, qui trouvent en eux des qualités à émuler. Leur chant est également apprécié par les villageois, qui tentent d'imiter leur call avec des petits pipeau en bambou.**
+**Tour 7: Les groupes de Regards-Libres deviennent une vision courante autour du village et inspirent l'art des artisans, qui les représentent dans leurs productions.**
 
-**Tour 8: Les Regards-Libres se lient avec ceux qui incarnent la dualité du ciel et recherchent des compagnons capables d'observer patiemment avant de guider avec acuité. Cette nature double façonne leur évolution, les rendant à la fois plus proches des shamans dans leur sagesse et plus aiguisés dans leur rôle d'éclaireurs.**
+**Tour 8: Les Regards-Libres se lient avec ceux qui incarnent la dualité du ciel et recherchent des compagnons capables d'observer patiemment avant de guider avec acuité.**
 
-**Tour 9: Les enfants des Regards-Libres cherchent de nouvelles manières d'exister et restaurer l'harmonie dans leur vie et dans la société, étendant ainsi l'emprise de leurs peuples sur leurs environs. Les voix de l'Aurore guident leurs explorations.**
+- Turn 9: Leur nature double, contemplative et puissante, façonne leur évolution et les rend plus proches des shamans dans leur sagesse et plus aiguisés dans leur rôle d'éclaireurs.
 
-**Tour 14: Les Regards-Libres sont utilisés par les Faucons Chasseurs pour observer en silence depuis les hauteurs avec leurs traqueurs et comprendre l'Autre en silence.**
+**Tour 11: Les Regards-Libres sont utilisés pour guider les explorations des Faucons Chasseurs, qui rassemblent des indices et interroger des témoins pour reconstituer la vérité de cette nuit funeste.**
+
+- Turn 14: Les Regards-Libres sont observées depuis les hauteurs par les meilleurs traqueurs, qui comptent leurs armes et étudient leurs mouvements.
 
 ## 💬 Mentions avec contexte
 

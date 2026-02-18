@@ -19,13 +19,13 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-La Morsure-des-Ancêtres est une zone humide de la vallée où pousse le gingembre sauvage, dont on fait une racine au goût mordant. C'est là que les protagonistes vont chercher des ingrédients pour préparer leur plat traditionnel, « Les Larmes du Ciel ». Cette zone est importante pour l'économie et la culture locale.
+La 'Gingembre sauvage' est une racine qui pousse dans les zones humides de la vallée. Elle a un goût mordant et est utilisée pour son arôme et sa chaleur. Cette racine est considérée comme un ingrédient important pour préparer le plat traditionnel 'Les Larmes du Ciel'. La préparation de cette spécialité nécessite du savoir-faire et des étapes spécifiques.
 
 ## Chronologie
 
-**Tour 6: Dans les zones humides de la vallée pousse la Gingembre sauvage, dont la chaleur et l'arôme en font un ingrédient recherché. Elle est devenue la base de « Les Larmes du Ciel », notre plat traditionnel.**
+**Tour 6: La 'Gingembre sauvage' est mentionnée dans le contexte de la chasse, où les anciens utilisent l'intelligence des oiseaux pour repérer les troupeaux. Cela laisse entrevoir d'autres possibilités. Cette racine est également mentionnée comme étant cultivée dans les zones humides de la vallée.**
 
-**Tour 6: Le gingembre sauvage de la Morsure-des-Ancêtres est utilisé pour préparer « Les Larmes du Ciel », un plat traditionnel qui nécessite du savoir-faire et un mélange de poisson fumé, gibier marinés avec la racine pilée.**
+**Tour 6: La Morsure-des-Ancêtres est mentionnée comme lieu où pousse le Gingembre sauvage, utilisé pour préparer "Les Larmes du Ciel". Les anciens sont impressionnés par la capacité des oiseaux à comprendre des tâches complexes dans les zones humides de la vallée où se trouve la Morsure-des-Ancêtres.**
 
 ## 💬 Mentions avec contexte
 

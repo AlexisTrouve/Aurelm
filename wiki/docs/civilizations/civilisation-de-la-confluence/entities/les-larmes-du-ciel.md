@@ -28,13 +28,13 @@ Tour 14  ████████████████████
 
 ## Description
 
-Les Larmes du Ciel est un plat traditionnel de la civilisation, préparé avec la racine de 'Morsure-des-Ancêtres' (Gingembre sauvage), du poisson fumé et du gibier. Sa préparation nécessite du savoir-faire et la cuisson lente fait perler la graisse à la surface, rappelant la pluie. Ce plat raconte l'histoire de la civilisation en associant les éléments naturels et les traditions.
+Les Larmes du Ciel est une technologie qui constitue le plat traditionnel d'une culture spécifique. Elle repose sur l'utilisation de la racine 'Morsure-des-Ancêtres' (Gingembre sauvage) et nécessite un savoir-faire pour sa préparation, qui consiste en la marinade de poisson fumé et de gibier avec cette racine pilée, puis leur dispos dans des récipients en pierre. Cette technologie a une signification historique et culturelle significative pour la communauté.
 
 ## Chronologie
 
-**Tour 6: La racine 'Morsure-des-Ancêtres' est décrite comme un ingrédient recherché dans le préparation du plat traditionnel. Le poisson fumé, le gibier et la racine pilée sont disposés en couches dans des récipients en pierre pour la cuisson lente.**
+**Tour 6: Les Larmes du Ciel sont décrites comme le plat traditionnel qui raconte l'histoire de la communauté, symbolisant sa force ancestrale, ses rivières et sa relation avec la nature. Sa préparation est présentée comme un art qui nécessite savoir-faire.**
 
-**Tour 14: Le plat 'Les Larmes du Ciel' est mentionné comme un élément de l'accueil préparé par la civilisation pour les délégués Ailes Grises, symbolisant le dialogue possible et non la soumission.**
+**Tour 14: Les Larmes du Ciel sont mentionnées lors d'un accueil diplomatique vers les Ailes Grises, indiquant qu'elles sont considérées comme représentatives de la culture et sont offertes en signe de respect et d'ouverture au dialogue.**
 
 ## 💬 Mentions avec contexte
 

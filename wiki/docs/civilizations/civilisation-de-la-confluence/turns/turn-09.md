@@ -2,14 +2,14 @@
 
 📅 **15/01/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
 
-> Dans cette vallée, les gens vivent dans un équilibre fragile entre leur lien avec la nature et leur désir de progrès. Les artisans occupent une place centrale en créant des objets qui sont à la fois fonctionnels et spirituels. Ils sont chargés de préserver la mémoire des ancêtres et de donner vie aux objets qu'ils créent. Cependant, avec l'apparition de nouvelles technologies et de nouveaux modes de vie, les gens commencent à chercher leurs propres places dans la société et à explorer de nouvelles frontières. Les Regards-libres guident ces explorations, mais il est possible que d'autres groupes, tels que les Aurore, aient également une influence sur les événements.
+> La civilisation de la confluence est en pleine évolution, marquée par la création de nouveaux artefacts et la diversification des métiers. Les artisans sont à la fois respectés et craints, car ils possèdent le pouvoir de transformer la nature en objets d'art et d'utilité. La société est divisée en deux groupes principaux : les artisans sans ciel qui se concentrent sur les objets utiles au quotidien et les artisans avec ciel clair qui produisent des outils pour les rituels sacrés et les arts. Les changements sont également observés parmi les peuples de la vallée, dont certains semblent subir une mutation qui leur donne des yeux et des cheveux teints de couleurs liées au ciel.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Les Cercles de Vigile`, `Rituel du Regard Partagé`, `Porteurs de Flamme`, `Leg des ancêtres`
 - **Mentions totales** : 15
 - **Technologies** : 4
-- **Ressources** : 5
+- **Ressources** : 2
 - **Densité narrative** : 8 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -65,15 +65,12 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 - lance
 - cuillère
 - barreau de berceau
-- seuils de porte
+- artefacts
 
 ### 🌾 Ressources
 
-- bois
-- pierre
-- argile
-- eaux
-- poissons
+- poissons des rivières
+- materiaux de la pierre
 
 ### ✨ Croyances
 

@@ -29,6 +29,18 @@ Tour 14  ██████████
 - 🔵 **[Passes-bien](passes-bien.md)** (Castes) — 3 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 3 tours
 
+## Description
+
+La caste des ciels-clairs est une entité sociale qui joue un rôle important dans la communauté. Ils sont reconnus pour leur courage, leur force et leur droiture. Les ciels-clairs sont invités à rejoindre les Faucons Chasseurs, une organisation chargée de rassembler des indices et d'interroger des témoins pour reconstruire la vérité sur un événement tragique. Ils ont également l'obligation de capturer une bête sacrée.
+
+## Chronologie
+
+**Tour 11: L'Assemblée des Chefs demande à la caste des ciels-clairs de rejoindre les Faucons Chasseurs pour rassembler des indices et interroger des témoins. Les ciels-clairs sont choisis pour leur courage, leur force et leur droiture.**
+
+**Tour 12: Un cadavre de ciel-clair est découvert dans la foule, et il semble que sa mort soit due à une cause différente des accidents ordinaires.**
+
+**Tour 14: Les ciels-clairs invoquent les yeux de l'aurore, un don des esprits, lors d'un débat sur les relations entre les différentes castes.**
+
 ## 💬 Mentions avec contexte
 
 **Tour 11**
