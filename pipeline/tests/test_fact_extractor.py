@@ -2,7 +2,16 @@
 
 import json
 import pytest
+from unittest.mock import patch, MagicMock
 from pipeline.fact_extractor import FactExtractor, StructuredFacts
+
+
+def _mock_llm_response(body: dict) -> MagicMock:
+    """Build a mock httpx response returning the given dict as LLM JSON."""
+    mock = MagicMock()
+    mock.raise_for_status.return_value = None
+    mock.json.return_value = {"response": json.dumps(body)}
+    return mock
 
 
 class TestMediaLinkExtraction:
@@ -292,3 +301,91 @@ class TestErrorHandling:
 
         # Should not crash, may or may not extract choices
         assert isinstance(facts.choices_proposed, list)
+
+
+class TestLLMOutputTypeValidation:
+    """Bug A: LLM can return string/null/nested instead of List[str].
+    These tests FAIL before the fix and PASS after.
+    """
+
+    def _extract_with_mock(self, body: dict) -> StructuredFacts:
+        extractor = FactExtractor()
+        segments = [{"segment_type": "narrative", "content": "Some game text."}]
+        with patch.object(extractor.client, "post", return_value=_mock_llm_response(body)):
+            return extractor.extract_facts(segments)
+
+    def test_string_field_coerced_to_list(self):
+        """LLM returns a bare string instead of a list -- must be wrapped."""
+        facts = self._extract_with_mock({
+            "technologies": "gourdins",
+            "resources": [],
+            "beliefs": [],
+            "geography": [],
+        })
+        assert isinstance(facts.technologies, list), "technologies must be a list"
+        assert facts.technologies == ["gourdins"]
+
+    def test_null_field_becomes_empty_list(self):
+        """LLM returns null for a field -- must become []."""
+        facts = self._extract_with_mock({
+            "technologies": None,
+            "resources": None,
+            "beliefs": [],
+            "geography": [],
+        })
+        assert facts.technologies == [], "null technologies must become []"
+        assert facts.resources == [], "null resources must become []"
+
+    def test_nested_list_flattened(self):
+        """LLM returns list-of-lists -- must be flattened to list of strings."""
+        facts = self._extract_with_mock({
+            "technologies": [["gourdins", "pieux"], "lances"],
+            "resources": [],
+            "beliefs": [],
+            "geography": [],
+        })
+        assert isinstance(facts.technologies, list)
+        # No nested lists allowed
+        for item in facts.technologies:
+            assert isinstance(item, str), f"Expected str, got {type(item)}: {item!r}"
+
+    def test_mixed_types_only_strings_kept(self):
+        """LLM returns list with ints and None -- only non-empty strings kept."""
+        facts = self._extract_with_mock({
+            "technologies": ["gourdins", 42, None, "", "pieux"],
+            "resources": [],
+            "beliefs": [],
+            "geography": [],
+        })
+        assert isinstance(facts.technologies, list)
+        for item in facts.technologies:
+            assert isinstance(item, str) and item, f"Got invalid item: {item!r}"
+        assert "gourdins" in facts.technologies
+        assert "pieux" in facts.technologies
+
+
+class TestNumPredictSufficient:
+    """Bug B: num_predict=500 is too low for a 4-list JSON response.
+    Verify the request uses at least 1000 tokens.
+    """
+
+    def test_num_predict_at_least_1000(self):
+        """Fact extractor must request enough tokens to complete the JSON."""
+        extractor = FactExtractor()
+        segments = [{"segment_type": "narrative", "content": "Some text."}]
+        captured = {}
+
+        def capture_post(url, json=None, **kwargs):
+            captured["options"] = json.get("options", {})
+            return _mock_llm_response({
+                "technologies": [], "resources": [], "beliefs": [], "geography": []
+            })
+
+        with patch.object(extractor.client, "post", side_effect=capture_post):
+            extractor.extract_facts(segments)
+
+        num_predict = captured.get("options", {}).get("num_predict", 0)
+        assert num_predict >= 1000, (
+            f"num_predict={num_predict} is too low -- JSON with 4 lists can easily "
+            f"exceed 500 tokens and be silently truncated"
+        )

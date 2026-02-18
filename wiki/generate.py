@@ -2900,8 +2900,16 @@ def generate_wiki(
             for _, techs in tech_tree:
                 tech_names.update(techs)
 
+            used_slugs: set[str] = set()
             for entity in fused_list:
                 eslug = slugify(entity["canonical_name"])
+                # Deduplicate: append -2, -3, ... if slug already used
+                if eslug in used_slugs:
+                    counter = 2
+                    while f"{eslug}-{counter}" in used_slugs:
+                        counter += 1
+                    eslug = f"{eslug}-{counter}"
+                used_slugs.add(eslug)
                 page_content = generate_entity_page(
                     conn, entity, civ["name"], civ_slug, id_to_primary, tech_names
                 )

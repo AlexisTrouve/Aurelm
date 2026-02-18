@@ -1267,6 +1267,10 @@ def get_tech_tree(
             return f"No technologies in category '{category}'. Available: {', '.join(available)}"
         all_techs = filtered
 
+    # After parsing, all_techs may still be empty if JSON contained only nulls
+    if not all_techs:
+        return f"No valid technologies found for {civ_name} (all entries were null/empty)."
+
     # Group by category
     by_cat: dict[str, list[tuple[str, int]]] = {}
     for tech_name, turn_num, cat in all_techs:

@@ -442,3 +442,46 @@ class TestDispatchTool:
     def test_unknown_tool(self, db):
         result = dispatch_tool(db, "foobar", {})
         assert "Unknown tool" in result
+
+
+# --------------------------------------------------------------------------- #
+# Bug C: getTechTree min() crash when technologies JSON contains only nulls
+# --------------------------------------------------------------------------- #
+
+class TestGetTechTreeNullTechnologies:
+    """Bug C: rows exist but _parse_json_list filters all nulls -> all_techs empty
+    -> min() on empty sequence -> ValueError crash.
+    """
+
+    def test_null_technologies_does_not_crash(self, db):
+        """Turn with technologies='[null]' must not raise ValueError."""
+        # Insert a turn whose technologies JSON parses to [] after null filtering
+        db.execute(
+            "INSERT INTO turn_turns (civ_id, turn_number, title, summary, raw_message_ids, technologies) "
+            "VALUES (1, 99, 'Tour Null Tech', 'test', '[]', '[null]')"
+        )
+        db.commit()
+        result = get_tech_tree(db, 1, "Civilisation de la Confluence")
+        # Must not raise -- should return a graceful message or valid content
+        assert isinstance(result, str)
+
+    def test_null_technologies_returns_no_techs_message(self, db):
+        """When all technologies JSON entries are null, return a helpful message."""
+        # Replace all existing tech rows with null-only ones
+        db.execute("UPDATE turn_turns SET technologies = '[null]' WHERE civ_id = 1")
+        db.commit()
+        result = get_tech_tree(db, 1, "Civilisation de la Confluence")
+        # Should not crash and should not return the normal tech tree header
+        # (since all_techs is empty after filtering)
+        assert "No" in result or "technologies" in result.lower()
+
+    def test_mixed_null_and_valid_still_works(self, db):
+        """Mix of null and valid tech entries: only valid ones shown, no crash."""
+        db.execute(
+            "INSERT INTO turn_turns (civ_id, turn_number, title, summary, raw_message_ids, technologies) "
+            "VALUES (1, 98, 'Tour Mixed', 'test', '[]', '[null, \"forge\"]')"
+        )
+        db.commit()
+        result = get_tech_tree(db, 1, "Civilisation de la Confluence")
+        assert isinstance(result, str)
+        assert "forge" in result

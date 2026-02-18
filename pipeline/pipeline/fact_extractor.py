@@ -159,6 +159,37 @@ class FactExtractor:
 
         return unique_choices
 
+    @staticmethod
+    def _coerce_list(val: Any) -> List[str]:
+        """Coerce any LLM output value to a clean List[str].
+
+        Handles common LLM misbehaviour: bare strings, None, nested lists,
+        lists containing ints or None.
+        """
+        if val is None:
+            return []
+        if isinstance(val, str):
+            return [val] if val.strip() else []
+        if isinstance(val, list):
+            result = []
+            for item in val:
+                if item is None or item == "":
+                    continue
+                if isinstance(item, list):
+                    # Flatten one level of nesting
+                    for sub in item:
+                        if sub and isinstance(sub, str):
+                            result.append(sub)
+                elif isinstance(item, str):
+                    result.append(item)
+                else:
+                    # Convert non-string scalars (int, float, ...) to string
+                    s = str(item).strip()
+                    if s:
+                        result.append(s)
+            return result
+        return []
+
     def _llm_extract_facts(self, text: str) -> Dict[str, List[str]]:
         """Use LLM to extract technologies, resources, beliefs, and geography."""
 
@@ -194,7 +225,7 @@ Regles :
                     "stream": False,
                     "options": {
                         "temperature": 0.1,  # Low temperature for factual extraction
-                        "num_predict": 500
+                        "num_predict": 1024
                     }
                 }
             )
@@ -208,12 +239,12 @@ Regles :
             if json_match:
                 facts = json.loads(json_match.group(0))
 
-                # Validate structure
+                # Validate and coerce all fields to List[str]
                 return {
-                    "technologies": facts.get("technologies", []),
-                    "resources": facts.get("resources", []),
-                    "beliefs": facts.get("beliefs", []),
-                    "geography": facts.get("geography", [])
+                    "technologies": self._coerce_list(facts.get("technologies")),
+                    "resources": self._coerce_list(facts.get("resources")),
+                    "beliefs": self._coerce_list(facts.get("beliefs")),
+                    "geography": self._coerce_list(facts.get("geography")),
                 }
             else:
                 print(f"Warning: LLM response not valid JSON: {response_text[:200]}")
