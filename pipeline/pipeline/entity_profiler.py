@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 import ollama
 
+from . import llm_stats
 from .db import get_connection, update_progress
 
 
@@ -455,6 +456,7 @@ def _extract_turn_number(key: str) -> int:
 
 def _call_ollama(model: str, prompt: str) -> dict:
     """Call Ollama and parse JSON response."""
+    llm_stats.increment("entity_profiling")
     response = ollama.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],

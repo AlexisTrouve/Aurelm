@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 
 import ollama
 
+from . import llm_stats
+
 
 @dataclass
 class TurnSummary:
@@ -253,6 +255,7 @@ def _single_call_summary(
 
 def _call_ollama(model: str, prompt: str) -> dict:
     """Call Ollama and parse JSON response."""
+    llm_stats.increment("summarization")
     response = ollama.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],

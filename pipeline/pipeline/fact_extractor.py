@@ -16,6 +16,8 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 import httpx
 
+from . import llm_stats
+
 
 @dataclass
 class StructuredFacts:
@@ -183,6 +185,7 @@ Regles :
 - Retourne UNIQUEMENT le JSON, rien d'autre"""
 
         try:
+            llm_stats.increment("fact_extraction")
             response = self.client.post(
                 f"{self.ollama_base_url}/api/generate",
                 json={

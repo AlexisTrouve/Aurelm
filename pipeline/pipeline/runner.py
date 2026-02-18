@@ -28,6 +28,8 @@ from .ner import EntityExtractor
 from .summarizer import summarize_turn, AuthorContent
 from .entity_profiler import build_entity_profiles
 from .alias_resolver import resolve_aliases
+from .fact_extractor import FactExtractor
+from . import llm_stats
 
 
 # Known GM author names --messages from these authors are GM posts
@@ -50,6 +52,7 @@ def run_pipeline(
     Returns a stats dict with counts of processed items.
     """
     _entity_cache.clear()
+    llm_stats.reset()
 
     stats = {
         "messages_loaded": 0,
@@ -89,8 +92,9 @@ def run_pipeline(
     print(f"       ->{len(chunks)} turns detected")
 
     # Step 6: Process each turn
-    print("[6/9] Processing turns (classify -> NER -> summarize)...")
+    print("[6/9] Processing turns (classify -> extract facts -> NER -> summarize)...")
     extractor = _init_ner()
+    fact_extractor = FactExtractor() if use_llm else None
 
     conn = get_connection(db_path)
     run_id = _start_pipeline_run(conn)
@@ -102,6 +106,7 @@ def run_pipeline(
         for i, chunk in enumerate(chunks):
             turn_text = "\n\n".join(m.content for m in chunk.messages)
             raw_ids = json.dumps([m.id for m in chunk.messages])
+            raw_content = "\n\n".join(m.content for m in chunk.messages)  # For media extraction
 
             # Create turn record
             cursor = conn.execute(
@@ -114,6 +119,17 @@ def run_pipeline(
 
             # Classify segments
             segments = classify_segments(turn_text)
+
+            # Extract structured facts
+            structured_facts = None
+            if fact_extractor:
+                segment_dicts = [
+                    {"segment_type": seg.segment_type.value, "content": seg.text}
+                    for seg in segments
+                ]
+                structured_facts = fact_extractor.extract_facts(segment_dicts, raw_content)
+
+            # Insert segments
             for seg_order, seg in enumerate(segments):
                 conn.execute(
                     """INSERT INTO turn_segments (turn_id, segment_order, segment_type, content)
@@ -141,17 +157,43 @@ def run_pipeline(
                 civ_name=civ_name, player_name=player_name,
                 author_contents=author_contents if use_llm else None,
             )
+
+            # Persist summary + structured facts
+            update_fields = {
+                "summary": summary.short_summary,
+                "detailed_summary": summary.detailed_summary,
+                "key_events": json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
+                "choices_made": json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
+                "processed_at": datetime.now().isoformat(),
+            }
+
+            if structured_facts:
+                update_fields["media_links"] = json.dumps(structured_facts.media_links, ensure_ascii=False)
+                update_fields["technologies"] = json.dumps(structured_facts.technologies, ensure_ascii=False)
+                update_fields["resources"] = json.dumps(structured_facts.resources, ensure_ascii=False)
+                update_fields["beliefs"] = json.dumps(structured_facts.beliefs, ensure_ascii=False)
+                update_fields["geography"] = json.dumps(structured_facts.geography, ensure_ascii=False)
+                update_fields["choices_proposed"] = json.dumps(structured_facts.choices_proposed, ensure_ascii=False)
+
             conn.execute(
                 """UPDATE turn_turns
                    SET summary = ?, detailed_summary = ?,
-                       key_events = ?, choices_made = ?, processed_at = ?
+                       key_events = ?, choices_made = ?, processed_at = ?,
+                       media_links = ?, technologies = ?, resources = ?,
+                       beliefs = ?, geography = ?, choices_proposed = ?
                    WHERE id = ?""",
                 (
-                    summary.short_summary,
-                    summary.detailed_summary,
-                    json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
-                    json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
-                    datetime.now().isoformat(),
+                    update_fields["summary"],
+                    update_fields["detailed_summary"],
+                    update_fields["key_events"],
+                    update_fields["choices_made"],
+                    update_fields["processed_at"],
+                    update_fields.get("media_links"),
+                    update_fields.get("technologies"),
+                    update_fields.get("resources"),
+                    update_fields.get("beliefs"),
+                    update_fields.get("geography"),
+                    update_fields.get("choices_proposed"),
                     turn_id,
                 ),
             )
@@ -255,6 +297,11 @@ def run_pipeline(
             import importlib.util
             wiki_gen_path = Path(wiki_dir) / "generate.py"
             if wiki_gen_path.exists():
+                # Add wiki dir to sys.path so relative imports (turn_page_generator) work
+                import sys
+                wiki_abs = str(wiki_gen_path.parent.resolve())
+                if wiki_abs not in sys.path:
+                    sys.path.insert(0, wiki_abs)
                 spec = importlib.util.spec_from_file_location("wiki_generate", wiki_gen_path)
                 mod = importlib.util.module_from_spec(spec)  # type: ignore
                 spec.loader.exec_module(mod)  # type: ignore
@@ -485,6 +532,12 @@ def _print_stats(stats: dict) -> None:
         print(f"  Alias candidates:    {stats['alias_candidates']}")
     if "aliases_confirmed" in stats:
         print(f"  Aliases confirmed:   {stats['aliases_confirmed']}")
+    counts = llm_stats.get_counts()
+    if llm_stats.total() > 0:
+        print(f"  LLM calls total:     {llm_stats.total()}")
+        print(f"    fact extraction:   {counts['fact_extraction']}")
+        print(f"    summarization:     {counts['summarization']}")
+        print(f"    entity profiling:  {counts['entity_profiling']}")
     print("=" * 40)
 
 
@@ -527,6 +580,7 @@ def run_pipeline_for_channels(
     }
 
     extractor = _init_ner()
+    fact_extractor = FactExtractor() if use_llm else None
 
     for civ_id, civ_name, player_name, channel_id in civs:
         print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
@@ -552,6 +606,7 @@ def run_pipeline_for_channels(
             for i, chunk in enumerate(chunks):
                 turn_text = "\n\n".join(m.content for m in chunk.messages)
                 raw_ids = json.dumps([m.id for m in chunk.messages])
+                raw_content = "\n\n".join(m.content for m in chunk.messages)
 
                 cursor = conn.execute(
                     """INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type)
@@ -562,6 +617,16 @@ def run_pipeline_for_channels(
                 civ_stats["turns_created"] += 1
 
                 segments = classify_segments(turn_text)
+
+                # Extract structured facts
+                structured_facts = None
+                if fact_extractor:
+                    segment_dicts = [
+                        {"segment_type": seg.segment_type.value, "content": seg.text}
+                        for seg in segments
+                    ]
+                    structured_facts = fact_extractor.extract_facts(segment_dicts, raw_content)
+
                 for seg_order, seg in enumerate(segments):
                     conn.execute(
                         """INSERT INTO turn_segments (turn_id, segment_order, segment_type, content)
@@ -587,17 +652,43 @@ def run_pipeline_for_channels(
                     civ_name=civ_name, player_name=player_name,
                     author_contents=author_contents if use_llm else None,
                 )
+
+                # Persist summary + structured facts
+                update_fields = {
+                    "summary": summary.short_summary,
+                    "detailed_summary": summary.detailed_summary,
+                    "key_events": json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
+                    "choices_made": json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
+                    "processed_at": datetime.now().isoformat(),
+                }
+
+                if structured_facts:
+                    update_fields["media_links"] = json.dumps(structured_facts.media_links, ensure_ascii=False)
+                    update_fields["technologies"] = json.dumps(structured_facts.technologies, ensure_ascii=False)
+                    update_fields["resources"] = json.dumps(structured_facts.resources, ensure_ascii=False)
+                    update_fields["beliefs"] = json.dumps(structured_facts.beliefs, ensure_ascii=False)
+                    update_fields["geography"] = json.dumps(structured_facts.geography, ensure_ascii=False)
+                    update_fields["choices_proposed"] = json.dumps(structured_facts.choices_proposed, ensure_ascii=False)
+
                 conn.execute(
                     """UPDATE turn_turns
                        SET summary = ?, detailed_summary = ?,
-                           key_events = ?, choices_made = ?, processed_at = ?
+                           key_events = ?, choices_made = ?, processed_at = ?,
+                           media_links = ?, technologies = ?, resources = ?,
+                           beliefs = ?, geography = ?, choices_proposed = ?
                        WHERE id = ?""",
                     (
-                        summary.short_summary,
-                        summary.detailed_summary,
-                        json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
-                        json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
-                        datetime.now().isoformat(),
+                        update_fields["summary"],
+                        update_fields["detailed_summary"],
+                        update_fields["key_events"],
+                        update_fields["choices_made"],
+                        update_fields["processed_at"],
+                        update_fields.get("media_links"),
+                        update_fields.get("technologies"),
+                        update_fields.get("resources"),
+                        update_fields.get("beliefs"),
+                        update_fields.get("geography"),
+                        update_fields.get("choices_proposed"),
                         turn_id,
                     ),
                 )
