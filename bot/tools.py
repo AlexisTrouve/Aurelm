@@ -69,7 +69,7 @@ def _parse_history(history_json: str | None) -> list[str]:
     try:
         parsed = json.loads(history_json)
         if isinstance(parsed, list):
-            return [str(e) for e in parsed]
+            return [str(e) for e in parsed if e]  # filter None/empty like _parse_json_list
     except (json.JSONDecodeError, TypeError):
         pass
     return []

@@ -178,6 +178,21 @@ def _multi_call_summary(
     return _merge_summaries(gm_parts, player_parts)
 
 
+def _coerce_str_list(val: object) -> list[str]:
+    """Normalise any LLM list field to List[str].
+
+    Handles: None -> [], bare string -> [string], list with None/non-str -> filtered.
+    Same pattern as FactExtractor._coerce_list.
+    """
+    if val is None:
+        return []
+    if isinstance(val, str):
+        return [val] if val.strip() else []
+    if isinstance(val, list):
+        return [str(e) for e in val if e is not None and str(e).strip()]
+    return []
+
+
 def _merge_summaries(gm_parts: list[dict], player_parts: list[dict]) -> TurnSummary:
     """Merge GM and player LLM outputs into a single TurnSummary."""
     # GM: narrative summary, key events, entities
@@ -185,18 +200,18 @@ def _merge_summaries(gm_parts: list[dict], player_parts: list[dict]) -> TurnSumm
     gm_detailed = " ".join(d.get("detailed_summary", "") for d in gm_parts).strip()
     key_events = []
     for d in gm_parts:
-        key_events.extend(d.get("key_events", []))
+        key_events.extend(_coerce_str_list(d.get("key_events")))
 
     # Player: choices, short summary
     player_short = " ".join(d.get("short_summary", "") for d in player_parts).strip()
     choices_made = []
     for d in player_parts:
-        choices_made.extend(d.get("choices_made", []))
+        choices_made.extend(_coerce_str_list(d.get("choices_made")))
 
     # Merge entities from both
     entities = []
     for d in gm_parts + player_parts:
-        entities.extend(d.get("entities_mentioned", []))
+        entities.extend(_coerce_str_list(d.get("entities_mentioned")))
     # Deduplicate preserving order
     seen: set[str] = set()
     unique_entities = []
@@ -247,9 +262,9 @@ def _single_call_summary(
     return TurnSummary(
         short_summary=data.get("short_summary", ""),
         detailed_summary=data.get("detailed_summary", ""),
-        key_events=data.get("key_events", []),
-        entities_mentioned=data.get("entities_mentioned", []),
-        choices_made=data.get("choices_made", []),
+        key_events=_coerce_str_list(data.get("key_events")),
+        entities_mentioned=_coerce_str_list(data.get("entities_mentioned")),
+        choices_made=_coerce_str_list(data.get("choices_made")),
     )
 
 

@@ -445,6 +445,36 @@ class TestDispatchTool:
 
 
 # --------------------------------------------------------------------------- #
+# Bug G: _parse_history silently converts null entries to the string "None"
+# --------------------------------------------------------------------------- #
+
+class TestParseHistoryNoneFilter:
+    """Bug G: _parse_history at bot/tools.py converts None entries to the string 'None'.
+    _parse_json_list has an `if e` guard; _parse_history does not.
+    """
+
+    def test_entity_detail_does_not_show_none_string(self, db):
+        """Entity with history containing null must not show 'None' in output."""
+        db.execute(
+            "UPDATE entity_entities SET history = '[null, \"Fondation de la cite\"]' WHERE id = 2"
+        )
+        db.commit()
+        result = get_entity_detail(db, "Caste de l Air", 1)
+        assert "- None" not in result, (
+            "history null entry was converted to the literal string 'None'"
+        )
+
+    def test_entity_detail_keeps_valid_history_entries(self, db):
+        """After filtering nulls, real history entries must still appear."""
+        db.execute(
+            "UPDATE entity_entities SET history = '[null, \"Fondation de la cite\"]' WHERE id = 2"
+        )
+        db.commit()
+        result = get_entity_detail(db, "Caste de l Air", 1)
+        assert "Fondation de la cite" in result
+
+
+# --------------------------------------------------------------------------- #
 # Bug C: getTechTree min() crash when technologies JSON contains only nulls
 # --------------------------------------------------------------------------- #
 
