@@ -13,6 +13,14 @@ import sqlite3
 # Helpers (ported from mcp-server/src/helpers.ts)
 # --------------------------------------------------------------------------- #
 
+def _escape_like(value: str) -> str:
+    """Escape SQL LIKE special characters (% and _) so they match literally.
+
+    Use with `LIKE ? ESCAPE '!'` in the query.
+    """
+    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
 FRENCH_STOPWORDS = {
     "le", "la", "les", "de", "du", "des", "un", "une",
     "et", "ou", "en", "au", "aux", "ce", "ces", "son", "sa", "ses",
@@ -239,9 +247,10 @@ def search_lore(
         FROM entity_entities e
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN entity_aliases a ON a.entity_id = e.id
-        WHERE (e.canonical_name LIKE ? OR e.description LIKE ? OR a.alias LIKE ? OR e.history LIKE ?)
+        WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'
+               OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
     """
-    pattern = f"%{query}%"
+    pattern = f"%{_escape_like(query)}%"
     params: list = [pattern, pattern, pattern, pattern]
 
     if civ_id is not None:
@@ -676,7 +685,13 @@ def compare_civs(
     civs: list[dict],
     aspects: list[str] | None = None,
 ) -> str:
-    active_aspects = [a for a in (aspects or []) if a in ASPECT_ENTITY_MAP] or list(ASPECT_ENTITY_MAP.keys())
+    if aspects:
+        active_aspects = [a for a in aspects if a in ASPECT_ENTITY_MAP]
+        if not active_aspects:
+            valid = ", ".join(sorted(ASPECT_ENTITY_MAP.keys()))
+            return f"Error: invalid aspect(s) {aspects!r}. Valid aspects: {valid}"
+    else:
+        active_aspects = list(ASPECT_ENTITY_MAP.keys())
 
     relevant_types: set[str] = set()
     relevant_keywords: list[str] = []
@@ -799,9 +814,9 @@ def search_turn_content(
         FROM turn_segments s
         JOIN turn_turns t ON s.turn_id = t.id
         JOIN civ_civilizations c ON t.civ_id = c.id
-        WHERE s.content LIKE ?
+        WHERE s.content LIKE ? ESCAPE '!'
     """
-    params: list = [f"%{query}%"]
+    params: list = [f"%{_escape_like(query)}%"]
 
     if civ_id is not None:
         sql += " AND t.civ_id = ?"

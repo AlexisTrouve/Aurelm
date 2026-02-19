@@ -259,7 +259,7 @@ def build_entity_profiles(
 
                 try:
                     data = _call_ollama(model, prompt)
-                    profile.description = data.get("description", "")
+                    profile.description = data.get("description") or ""
 
                     # Convert turn_summaries dict to sorted list
                     turn_summaries = data.get("turn_summaries", {})

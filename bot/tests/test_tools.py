@@ -515,3 +515,74 @@ class TestGetTechTreeNullTechnologies:
         result = get_tech_tree(db, 1, "Civilisation de la Confluence")
         assert isinstance(result, str)
         assert "forge" in result
+
+
+# --------------------------------------------------------------------------- #
+# Bug I: search_lore / search_turn_content -- SQL LIKE wildcards in query
+# % and _ are treated as SQL wildcards, silently broadening results.
+# --------------------------------------------------------------------------- #
+
+class TestSearchLikeWildcardEscape:
+    """Bug I: query containing % or _ is used raw in LIKE pattern.
+    '5%' becomes '%5%%' which matches anything containing '5'.
+    '_' matches any single character.
+    """
+
+    def test_percent_in_lore_query_does_not_match_unrelated(self, db):
+        """search_lore('%') should NOT match every entity."""
+        # '%' as the full query becomes '%%%' which matches everything
+        result = search_lore(db, "%")
+        # Before fix: returns all 5 entities (% is wildcard matching everything)
+        # After fix: returns 0 or only entities whose name/description contains literal '%'
+        # In our seed data, no entity name/description contains a literal '%'
+        assert "Argile Vivante" not in result or "Caste de l Air" not in result, (
+            "search_lore('%') matched ALL entities -- % was treated as SQL wildcard"
+        )
+
+    def test_underscore_in_lore_query_matches_only_exact(self, db):
+        """'Argile_Vivante' (with underscore) should NOT match 'Argile Vivante' (with space)."""
+        # '_' in SQL LIKE matches any single character, including a space
+        result = search_lore(db, "Argile_Vivante")
+        # Before fix: matches 'Argile Vivante' (space == any char)
+        # After fix: no match (no entity has literal underscore in that position)
+        assert "Argile Vivante" not in result, (
+            "search_lore('Argile_Vivante') matched 'Argile Vivante' -- _ was treated as SQL wildcard"
+        )
+
+    def test_percent_in_turn_content_does_not_match_all(self, db):
+        """search_turn_content('%') should NOT match every segment."""
+        result = search_turn_content(db, "%")
+        # Before fix: returns every segment (% matches everything)
+        # After fix: returns only segments containing literal '%'
+        assert "confluent" not in result.lower() or "castes" not in result.lower(), (
+            "search_turn_content('%') matched ALL segments -- % was treated as SQL wildcard"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Bug J: compare_civs -- invalid aspect silently defaults to ALL aspects
+# --------------------------------------------------------------------------- #
+
+class TestCompareCivsInvalidAspect:
+    """Bug J: compare_civs(aspects=["invalid_aspect"]) silently falls back to
+    all aspects instead of reporting an error.
+    """
+
+    def test_invalid_aspect_returns_error(self, db):
+        """Passing an unknown aspect name must return an error, not all aspects."""
+        civ1 = {"id": 1, "name": "Civilisation de la Confluence", "player_name": "Rubanc"}
+        civ2 = {"id": 2, "name": "Cheveux de Sang", "player_name": "PlayerB"}
+        result = compare_civs(db, civs=[civ1, civ2], aspects=["aspect_inexistant"])
+        # Before fix: returns a full comparison of ALL aspects (silent fallback)
+        # After fix: returns an error message listing valid aspects
+        assert "error" in result.lower() or "invalid" in result.lower() or "aspect" in result.lower(), (
+            "compare_civs with invalid aspect should return an error, not silently compare everything"
+        )
+        # Must NOT show a full comparison -- the result should be a short error,
+        # not a full markdown comparison with civ stats
+        assert "Civilization Comparison" not in result, (
+            "compare_civs returned a full comparison despite receiving an invalid aspect"
+        )
+        assert "Civilisation de la Confluence" not in result or len(result) < 200, (
+            "compare_civs returned a full comparison despite receiving an invalid aspect"
+        )

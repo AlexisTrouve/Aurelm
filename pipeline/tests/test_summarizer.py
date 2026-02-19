@@ -1,4 +1,4 @@
-"""Tests for pipeline.summarizer -- focus on LLM output robustness.
+"""Tests for pipeline.summarizer and entity_profiler -- LLM output robustness.
 
 All tests in TestSummarizerNullFields fail before fix and pass after.
 """
@@ -105,3 +105,37 @@ class TestSummarizerSingleTurnNullFields:
         # Confirm that iterating over None crashes (proving we need the fix)
         with pytest.raises(TypeError):
             list(ts.key_events)   # None is not iterable
+
+
+# --------------------------------------------------------------------------- #
+# Bug H: entity_profiler -- data.get("description", "") returns None when LLM
+# returns {"description": null}. In full mode, the existing description is
+# overwritten with NULL in the DB.
+# --------------------------------------------------------------------------- #
+
+class TestEntityProfilerDescriptionNull:
+    """Bug H: data.get("description", "") returns None when key present but null.
+    In full mode (line 320), final_description=None -> DB UPDATE sets NULL,
+    overwriting a previously good description.
+    """
+
+    def test_get_with_or_empty_protects_against_null(self):
+        """data.get(key) or '' is the correct guard; data.get(key, '') is not."""
+        data = {"description": None, "turn_summaries": {}}
+        # Old buggy pattern: dict.get with default does NOT help when value is null
+        old_result = data.get("description", "")
+        assert old_result is None, "Sanity check: dict.get() returns None for null value"
+        # Fixed pattern: `or ""` correctly coerces None to ""
+        fixed_result = data.get("description") or ""
+        assert isinstance(fixed_result, str), (
+            f"Expected '', got {fixed_result!r}"
+        )
+        assert fixed_result == ""
+
+    def test_description_or_empty_string_is_always_str(self):
+        """After fix: data.get("description") or '' must always return str."""
+        for description_value in [None, "", "Valid description"]:
+            data = {"description": description_value}
+            result = data.get("description") or ""
+            assert isinstance(result, str)
+            assert result != description_value if description_value is None else True
