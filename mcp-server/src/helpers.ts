@@ -88,6 +88,14 @@ export function errorResult(text: string) {
 }
 
 /**
+ * Escape SQL LIKE special characters (% and _) so they match literally.
+ * Use with `LIKE ? ESCAPE '!'` in the query.
+ */
+export function escapeLike(value: string): string {
+  return value.replace(/!/g, "!!").replace(/%/g, "!%").replace(/_/g, "!_");
+}
+
+/**
  * Truncate text to a max length, adding "..." if truncated.
  */
 export function truncate(text: string | null, maxLen: number = 200): string {

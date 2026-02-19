@@ -173,7 +173,8 @@ def get_turn_detail(
 ) -> str:
     turn = conn.execute("""
         SELECT t.id, t.turn_number, t.title, t.summary, t.turn_type,
-               t.game_date_start, t.game_date_end, c.name AS civ_name
+               t.game_date_start, t.game_date_end, c.name AS civ_name,
+               t.key_events, t.choices_proposed, t.choices_made
         FROM turn_turns t
         JOIN civ_civilizations c ON t.civ_id = c.id
         WHERE t.turn_number = ? AND t.civ_id = ?
@@ -187,7 +188,7 @@ def get_turn_detail(
         available = ", ".join(str(t[0]) for t in turns) or "none"
         return f"# Turn {turn_number} - {civ_name}\n\nTurn not found. Available turns: {available}"
 
-    t_id, t_num, title, summary, turn_type, gd_start, gd_end, cn = turn
+    t_id, t_num, title, summary, turn_type, gd_start, gd_end, cn, key_events_raw, proposed_raw, made_raw = turn
     lines = [f"# Turn {t_num}: {title or '(untitled)'} - {cn}", ""]
 
     if turn_type != "standard":
@@ -198,6 +199,27 @@ def get_turn_detail(
     if summary:
         lines.append(f"**Summary:** {summary}")
     lines.append("")
+
+    key_events = _parse_json_list(key_events_raw)
+    if key_events:
+        lines += ["## Key Events", ""]
+        for ev in key_events:
+            lines.append(f"- {ev}")
+        lines.append("")
+
+    proposed = _parse_json_list(proposed_raw)
+    if proposed:
+        lines += ["## Choices Proposed", ""]
+        for i, ch in enumerate(proposed, 1):
+            lines.append(f"{i}. {ch}")
+        lines.append("")
+
+    made = _parse_json_list(made_raw)
+    if made:
+        lines += ["## Decision", ""]
+        for d in made:
+            lines.append(f"-> {d}")
+        lines.append("")
 
     # Segments
     segments = conn.execute(

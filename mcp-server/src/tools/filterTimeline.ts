@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { truncate } from "../helpers.js";
+import { truncate, escapeLike } from "../helpers.js";
 
 interface TimelineRow {
   turn_number: number;
@@ -22,7 +22,7 @@ export function filterTimeline(
   const params: unknown[] = [];
 
   if (entityName) {
-    const pattern = `%${entityName}%`;
+    const pattern = `%${escapeLike(entityName)}%`;
     sql = `
       SELECT DISTINCT t.turn_number, t.title, t.summary, t.turn_type,
              t.game_date_start, c.name AS civ_name
@@ -31,7 +31,7 @@ export function filterTimeline(
       LEFT JOIN entity_mentions m ON m.turn_id = t.id
       LEFT JOIN entity_entities e ON m.entity_id = e.id
       LEFT JOIN entity_aliases a ON a.entity_id = e.id
-      WHERE (e.canonical_name LIKE ? OR a.alias LIKE ?)
+      WHERE (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
     `;
     params.push(pattern, pattern);
   } else {

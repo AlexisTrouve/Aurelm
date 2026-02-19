@@ -209,6 +209,24 @@ class TestGetTurnDetail:
         assert "not found" in result
         assert "1, 2, 3" in result
 
+    def test_shows_choices_made(self, db):
+        """Turn 2 has choices_made=['Envoyer une delegation diplomatique'].
+        get_turn_detail must display them -- not silently omit structured decisions."""
+        result = get_turn_detail(db, 2, 1, "Civilisation de la Confluence")
+        # Before fix: choices_made not in SELECT, never displayed
+        # After fix: parsed JSON array rendered as list items
+        assert "delegation diplomatique" in result, (
+            "get_turn_detail omits choices_made -- GM can't see what decision was taken"
+        )
+
+    def test_shows_choices_proposed(self, db):
+        """Turn 3 has choices_proposed=['Explorer les ruines','Ignorer les ruines'].
+        get_turn_detail must display proposed choices too."""
+        result = get_turn_detail(db, 3, 1, "Civilisation de la Confluence")
+        assert "Explorer les ruines" in result or "Ignorer les ruines" in result, (
+            "get_turn_detail omits choices_proposed -- GM can't see what was offered"
+        )
+
 
 # --------------------------------------------------------------------------- #
 # searchTurnContent

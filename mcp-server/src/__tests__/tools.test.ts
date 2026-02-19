@@ -448,6 +448,21 @@ describe("filterTimeline", () => {
     const result = filterTimeline(db, null, "crisis", undefined, undefined, undefined);
     expect(result).toContain("No turns match");
   });
+
+  // Bug L: entity name with % should not act as SQL wildcard
+  it("percent entity name does not match all turns", () => {
+    const result = filterTimeline(db, null, undefined, undefined, undefined, "%");
+    // Before fix: LIKE '%%%' matches every entity mention -> all turns returned
+    // After fix: no entity name contains literal '%' -> 0 turns
+    expect(result).not.toContain("4 turn(s) found");
+    expect(result).not.toContain("3 turn(s) found");
+  });
+
+  it("underscore entity name does not match space", () => {
+    const result = filterTimeline(db, null, undefined, undefined, undefined, "Argile_Vivante");
+    // '_' should match only literal underscore, not the space in 'Argile Vivante'
+    expect(result).toContain("No turns match");
+  });
 });
 
 // --- entityActivity ---
