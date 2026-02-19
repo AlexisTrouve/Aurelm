@@ -227,6 +227,22 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 
 ---
 
+### 15. `getTechTree`
+
+**Params** :
+- `civName` (string) — civilisation
+- `category` (string, optionnel) — filtrer par categorie (Outils de chasse, Outils de peche, Agriculture, Artisanat, Construction, Navigation, Feu et lumiere, Musique et rituel, Materiaux)
+
+**Retourne** : Arbre technologique complet organise par categorie, avec timeline chronologique d'acquisition.
+**Quand l'utiliser** : "Quelles technos a la Confluence ?", "Quand ont-ils appris a naviguer ?", "Compare les techs de chasse entre civs".
+
+**Tips** :
+- Combine avec `getStructuredFacts` si tu as besoin du tour exact d'acquisition.
+- Le filtre `category` est en sous-chaine insensible a la casse ("chasse" matche "Outils de chasse").
+- La section Timeline montre l'ordre chronologique d'acquisition par tour.
+
+---
+
 ## Decision Trees
 
 ### Recherche d'entite

@@ -324,11 +324,11 @@ def get_entity_detail(
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN turn_turns ft ON e.first_seen_turn = ft.id
         LEFT JOIN turn_turns lt ON e.last_seen_turn = lt.id
-        WHERE (e.canonical_name LIKE ? OR e.id IN (
-          SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ?
+        WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+          SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
         ))
     """
-    pattern = f"%{entity_name}%"
+    pattern = f"%{_escape_like(entity_name)}%"
     params: list = [pattern, pattern]
 
     if civ_id is not None:
@@ -868,9 +868,10 @@ def get_structured_facts(
     fact_type: str | None = None,
     turn_number: int | None = None,
 ) -> str:
-    types_to_query = (
-        [fact_type] if fact_type and fact_type in VALID_FACT_TYPES else sorted(VALID_FACT_TYPES)
-    )
+    if fact_type and fact_type not in VALID_FACT_TYPES:
+        valid = ", ".join(sorted(VALID_FACT_TYPES))
+        return f"# Structured Facts - {civ_name}\n\nError: invalid factType '{fact_type}'. Valid types: {valid}"
+    types_to_query = [fact_type] if fact_type else sorted(VALID_FACT_TYPES)
 
     sql = "SELECT turn_number, technologies, resources, beliefs, geography FROM turn_turns WHERE civ_id = ?"
     params: list = [civ_id]
@@ -1074,9 +1075,9 @@ def filter_timeline(
             LEFT JOIN entity_mentions m ON m.turn_id = t.id
             LEFT JOIN entity_entities e ON m.entity_id = e.id
             LEFT JOIN entity_aliases a ON a.entity_id = e.id
-            WHERE (e.canonical_name LIKE ? OR a.alias LIKE ?)
+            WHERE (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
         """
-        pattern = f"%{entity_name}%"
+        pattern = f"%{_escape_like(entity_name)}%"
         params: list = [pattern, pattern]
     else:
         sql = """
@@ -1517,7 +1518,7 @@ TOOL_DEFINITIONS = [
 ]
 
 
-_NIL_VALUES = {"<nil>", "nil", "null", "none", "None", "undefined", ""}
+_NIL_VALUES = {"<nil>", "nil", "null", "none", "None", "undefined"}
 
 
 def _clean_input(tool_input: dict) -> dict:

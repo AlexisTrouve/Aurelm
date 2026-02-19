@@ -20,6 +20,7 @@ from bot.tools import (
     entity_activity,
     get_tech_tree,
     dispatch_tool,
+    _clean_input,
 )
 
 
@@ -586,3 +587,113 @@ class TestCompareCivsInvalidAspect:
         assert "Civilisation de la Confluence" not in result or len(result) < 200, (
             "compare_civs returned a full comparison despite receiving an invalid aspect"
         )
+
+
+# --------------------------------------------------------------------------- #
+# Bug A: get_entity_detail -- SQL LIKE wildcards not escaped in entity_name
+# --------------------------------------------------------------------------- #
+
+class TestGetEntityDetailLikeEscape:
+    """Bug A: get_entity_detail builds LIKE pattern without _escape_like().
+    '%' expands to match everything; '_' matches any single char.
+    """
+
+    def test_percent_does_not_match_all_entities(self, db):
+        """get_entity_detail('%') should NOT return all entities."""
+        result = get_entity_detail(db, "%")
+        # Before fix: LIKE '%%%' matches every entity
+        # After fix: only entities whose name literally contains '%'
+        assert "Argile Vivante" not in result or "Caste de l Air" not in result, (
+            "get_entity_detail('%') matched ALL entities -- % treated as SQL wildcard"
+        )
+
+    def test_underscore_does_not_match_space(self, db):
+        """get_entity_detail('Argile_Vivante') must NOT match 'Argile Vivante'."""
+        result = get_entity_detail(db, "Argile_Vivante")
+        # '_' matches any single char including space
+        assert "Argile Vivante" not in result, (
+            "get_entity_detail('Argile_Vivante') matched 'Argile Vivante' -- _ treated as SQL wildcard"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Bug B: filter_timeline -- entity_name search uses unescaped LIKE
+# --------------------------------------------------------------------------- #
+
+class TestFilterTimelineEntityLikeEscape:
+    """Bug B: filter_timeline entity_name uses raw LIKE without _escape_like()."""
+
+    def test_percent_entity_does_not_match_all_turns(self, db):
+        """filter_timeline(entityName='%') should NOT return all turns."""
+        result = filter_timeline(db, entity_name="%")
+        # Before fix: % matches everything -> all 4 turns returned
+        # After fix: no entity name contains literal %, 0 turns
+        lines = [l for l in result.splitlines() if l.startswith("|") and "Turn" not in l and "---" not in l]
+        # Don't expect all 4 civs' turns to appear
+        assert "4 turn(s) found" not in result, (
+            "filter_timeline(entityName='%') matched ALL turns -- % treated as SQL wildcard"
+        )
+
+    def test_underscore_entity_does_not_match_space(self, db):
+        """filter_timeline(entityName='Argile_Vivante') must NOT match 'Argile Vivante'."""
+        result = filter_timeline(db, entity_name="Argile_Vivante")
+        # '_' matches any single char including space -> would match "Argile Vivante"
+        assert "Argile" not in result or "0 turn" in result or "No turns" in result, (
+            "filter_timeline('Argile_Vivante') matched 'Argile Vivante' -- _ treated as SQL wildcard"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Bug C: getStructuredFacts -- invalid factType silently returns ALL types
+# --------------------------------------------------------------------------- #
+
+class TestGetStructuredFactsInvalidType:
+    """Bug C: fact_type not in VALID_FACT_TYPES -> silent fallback to ALL types.
+    User thinks they filtered, actually gets unfiltered output.
+    """
+
+    def test_invalid_fact_type_returns_error(self, db):
+        """Passing an unknown factType must return an error, not silently return all facts."""
+        result = get_structured_facts(db, 1, "Civilisation de la Confluence", fact_type="military")
+        # Before fix: returns all 4 fact types (technologies, resources, beliefs, geography)
+        # After fix: returns an error message mentioning valid types
+        assert "military" in result.lower() or "invalid" in result.lower() or "error" in result.lower(), (
+            "get_structured_facts with invalid factType should mention the invalid type or return error"
+        )
+        # Should NOT silently return full structured facts output
+        assert "Resources:" not in result and "Beliefs:" not in result, (
+            "get_structured_facts with invalid factType silently returned all fact types"
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Bug D: _clean_input -- empty string "" converted to None, breaking LIKE queries
+# --------------------------------------------------------------------------- #
+
+class TestCleanInputEmptyString:
+    """Bug D: "" is in _NIL_VALUES so _clean_input replaces it with None.
+    dispatch_tool then passes None as query to search_lore, which interpolates
+    it into f-string: f"%{_escape_like(None)}%" -> AttributeError crash.
+    """
+
+    def test_empty_string_not_converted_to_none(self):
+        """_clean_input should NOT convert '' to None -- it's a valid Python empty str."""
+        result = _clean_input({"query": ""})
+        # Before fix: result["query"] is None (crashes downstream in _escape_like)
+        # After fix: result["query"] is None OR "" depending on strategy, but must not crash
+        # The key invariant: dispatch_tool("searchLore", {"query": ""}) must not crash
+        assert result.get("query") is not None or result.get("query") == "", (
+            "_clean_input converted empty string to None -- will cause AttributeError in _escape_like"
+        )
+
+    def test_dispatch_search_lore_empty_query_does_not_crash(self, db):
+        """dispatch_tool searchLore with query='' must not raise AttributeError."""
+        # Before fix: crashes with AttributeError: 'NoneType' object has no attribute 'replace'
+        try:
+            result = dispatch_tool(db, "searchLore", {"query": ""})
+            # If it doesn't crash, it should return some result (not necessarily matches)
+            assert isinstance(result, str)
+        except AttributeError as e:
+            raise AssertionError(
+                f"dispatch_tool('searchLore', query='') crashed with AttributeError: {e}"
+            ) from e

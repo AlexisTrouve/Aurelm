@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from generate import (
     generate_choices_page,
     generate_relations_page,
+    generate_analytics_page,
     generate_civ_index,
     _build_nav,
     slugify,
@@ -141,8 +142,8 @@ class TestBuildNav:
         first_civ = nav[1]["Civilisations"][1]
         civ_pages = list(first_civ.values())[0]
         knowledge_pages = civ_pages[3]["Connaissances"]
-        # Should have 6 knowledge pages
-        assert len(knowledge_pages) == 6
+        # Should have 7 knowledge pages (Technologies, Ressources, Croyances, Geographie, Choix, Relations, Analytics)
+        assert len(knowledge_pages) == 7
         page_names = [list(p.keys())[0] for p in knowledge_pages]
         assert "Technologies" in page_names
         assert "Ressources" in page_names
@@ -150,6 +151,7 @@ class TestBuildNav:
         assert "Geographie" in page_names
         assert "Choix" in page_names
         assert "Relations" in page_names
+        assert "Analytics" in page_names
 
     def test_knowledge_paths_are_correct(self, db):
         civs = db.execute("SELECT * FROM civ_civilizations ORDER BY name").fetchall()
@@ -185,6 +187,43 @@ class TestCivIndexLinks:
     def test_civ_index_has_knowledge_section_header(self, db):
         content = generate_civ_index(db, 1, "Civilisation de la Confluence", "Rubanc")
         assert "Base de connaissances" in content
+
+
+# --------------------------------------------------------------------------- #
+# Bug E+F: generate_analytics_page wrong path + missing from nav
+# --------------------------------------------------------------------------- #
+
+class TestAnalyticsPage:
+    """Bug E: generate_analytics_page writes to civilizations/{slug}/analytics.md
+    instead of civilizations/{slug}/knowledge/analytics.md.
+    Bug F: _build_nav() does not include analytics in the knowledge nav.
+    """
+
+    def test_analytics_page_written_in_knowledge_subdir(self, db):
+        """analytics.md must be inside knowledge/ like all other knowledge pages."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            generate_analytics_page(db, 1, "Civilisation de la Confluence", tmpdir)
+            wrong_path = Path(tmpdir) / "civilizations" / "civilisation-de-la-confluence" / "analytics.md"
+            correct_path = Path(tmpdir) / "civilizations" / "civilisation-de-la-confluence" / "knowledge" / "analytics.md"
+            assert not wrong_path.exists(), (
+                "analytics.md was written to civilizations/{slug}/analytics.md -- should be in knowledge/"
+            )
+            assert correct_path.exists(), (
+                "analytics.md not found in civilizations/{slug}/knowledge/analytics.md"
+            )
+
+    def test_nav_includes_analytics(self, db):
+        """_build_nav() knowledge section must include Analytics entry."""
+        civs = db.execute("SELECT * FROM civ_civilizations ORDER BY name").fetchall()
+        nav = _build_nav(civs)
+        # Navigate to Connaissances section of first civ
+        first_civ = nav[1]["Civilisations"][1]
+        civ_pages = list(first_civ.values())[0]
+        knowledge_pages = civ_pages[3]["Connaissances"]
+        page_names = [list(p.keys())[0] for p in knowledge_pages]
+        assert "Analytics" in page_names, (
+            f"_build_nav() missing 'Analytics' in knowledge pages. Found: {page_names}"
+        )
 
 
 # --------------------------------------------------------------------------- #

@@ -1361,7 +1361,7 @@ def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
 
     # Write page
     content = "\n".join(lines)
-    out_path = Path(output_dir) / "civilizations" / civ_slug
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
     _write_page(out_path / "analytics.md", content)
 
 
@@ -2989,6 +2989,7 @@ def _build_nav(civs: list) -> list:
                     {"Geographie": f"civilizations/{slug}/knowledge/geography.md"},
                     {"Choix": f"civilizations/{slug}/knowledge/choices.md"},
                     {"Relations": f"civilizations/{slug}/knowledge/relations.md"},
+                    {"Analytics": f"civilizations/{slug}/knowledge/analytics.md"},
                 ]},
             ]
         })
