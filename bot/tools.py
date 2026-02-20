@@ -1005,7 +1005,7 @@ def _resolve_entity(
             SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ?
         ))
     """
-    pattern = f"%{entity_name}%"
+    pattern = f"%{_escape_like(entity_name)}%"
     params: list = [pattern, pattern]
     if civ_id is not None:
         sql += " AND e.civ_id = ?"

@@ -487,6 +487,18 @@ describe("entityActivity", () => {
 
 // --- getTechTree ---
 // Seed: civ 1 has gourdins+pieux (T1), lance (T2), Argile Vivante (T3)
+// Bug: invalid factType silently ignored in TS (Python returns error)
+describe("getStructuredFacts invalid factType", () => {
+  it("invalid factType returns error not all facts", () => {
+    const result = getStructuredFacts(db, 1, "Civilisation de la Confluence", "military", undefined);
+    expect(result).toContain("Error");
+    expect(result).toContain("military");
+    // Must NOT silently return all fact types
+    expect(result).not.toContain("**Technologies:**");
+    expect(result).not.toContain("**Resources:**");
+  });
+});
+
 describe("getTechTree", () => {
   it("lists all 4 techs with correct count", () => {
     const result = getTechTree(db, 1, "Civilisation de la Confluence", undefined);

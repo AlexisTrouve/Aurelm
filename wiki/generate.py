@@ -1387,6 +1387,7 @@ def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
         (civ_id,)
     ).fetchall()
 
+    clean_new_entities: list[tuple[int, int]] = []
     if new_entities_by_turn:
         lines.extend([
             "## 📈 Évolution des entités découvertes",
@@ -1395,7 +1396,6 @@ def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
         ])
 
         # Filter noise and recalculate
-        clean_new_entities = []
         for row in new_entities_by_turn:
             turn_num = row["turn_number"]
             # Count clean entities for this turn
@@ -1489,7 +1489,7 @@ def generate_analytics_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
     key_turns = []
 
     # Check for turns with >5 new entities
-    for turn_num, new_count in clean_new_entities if 'clean_new_entities' in locals() else []:
+    for turn_num, new_count in clean_new_entities:
         if new_count > 5:
             key_turns.append((turn_num, f"Explosion de {new_count} nouvelles entités"))
 

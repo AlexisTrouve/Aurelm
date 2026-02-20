@@ -688,6 +688,31 @@ class TestGetStructuredFactsInvalidType:
 # Bug D: _clean_input -- empty string "" converted to None, breaking LIKE queries
 # --------------------------------------------------------------------------- #
 
+class TestResolveEntityLikeEscape:
+    """Bug: _resolve_entity built LIKE pattern without _escape_like(), so
+    '_' matched any single character and '%' matched any substring.
+    """
+
+    def test_underscore_does_not_match_space(self, db):
+        """'Argile_Vivante' with _ should NOT match 'Argile Vivante' (space)."""
+        from bot.tools import _resolve_entity
+        results = _resolve_entity(db, "Argile_Vivante", civ_id=None)
+        names = [r["name"] for r in results]
+        assert "Argile Vivante" not in names, (
+            "_resolve_entity: '_' treated as SQL wildcard and matched space"
+        )
+
+    def test_percent_does_not_match_all(self, db):
+        """'%' alone should NOT match every entity name."""
+        from bot.tools import _resolve_entity
+        results = _resolve_entity(db, "%", civ_id=None)
+        # Before fix: LIKE '%%%' matches everything → many results
+        # After fix: no entity name contains literal '%' → 0 results
+        assert len(results) == 0, (
+            "_resolve_entity: '%' treated as SQL wildcard and matched all entities"
+        )
+
+
 class TestCleanInputEmptyString:
     """Bug D: "" is in _NIL_VALUES so _clean_input replaces it with None.
     dispatch_tool then passes None as query to search_lore, which interpolates

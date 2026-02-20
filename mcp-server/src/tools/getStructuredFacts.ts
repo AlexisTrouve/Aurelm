@@ -28,7 +28,12 @@ export function getStructuredFacts(
   factType: string | undefined,
   turnNumber: number | undefined
 ): string {
-  const typesToQuery = factType && VALID_FACT_TYPES.has(factType)
+  if (factType && !VALID_FACT_TYPES.has(factType)) {
+    const valid = [...VALID_FACT_TYPES].sort().join(", ");
+    return `# Structured Facts - ${civName}\n\nError: invalid factType '${factType}'. Valid types: ${valid}`;
+  }
+
+  const typesToQuery = factType
     ? [factType]
     : [...VALID_FACT_TYPES].sort();
 

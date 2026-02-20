@@ -54,6 +54,8 @@ def run_pipeline(
     """
     _entity_cache.clear()
     llm_stats.reset()
+    if use_llm:
+        _register_unload_atexit()
 
     stats = {
         "messages_loaded": 0,
@@ -353,8 +355,15 @@ def _unload_ollama_model() -> None:
         pass  # Non-critical — Ollama may already be unloaded or not running
 
 
-# Register atexit so model is unloaded even on Ctrl+C / abrupt exit
-atexit.register(_unload_ollama_model)
+_atexit_registered = False
+
+
+def _register_unload_atexit() -> None:
+    """Register atexit handler at most once (guards against double module import)."""
+    global _atexit_registered
+    if not _atexit_registered:
+        atexit.register(_unload_ollama_model)
+        _atexit_registered = True
 
 
 def _init_ner() -> EntityExtractor | None:
@@ -740,6 +749,9 @@ def run_pipeline_for_channels(
     if gm_authors:
         global GM_AUTHORS
         GM_AUTHORS = gm_authors
+
+    if use_llm:
+        _register_unload_atexit()
 
     init_db(db_path)
     run_migrations(db_path)
