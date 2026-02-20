@@ -3,7 +3,7 @@
 *Technologies* -- Civilisation de la Confluence
 
 !!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/rhombes.md).
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/rhombes-en-pierre.md).
 
 ## 📊 Vue d'ensemble
 
@@ -36,19 +36,17 @@ Tour 12  ████████████████████
 
 ## Description
 
-Les rhombes sont une technologie utilisée pour créer des structures qui défient les saisons, des habitations qui protègent les générations à venir et des canaux qui guident l'eau précieuse. Ils sont fabriqués en massant de l'argile vive entre des moules ou façonner directement avec les mains. Les rhombes peuvent être utilisés pour créer des réceptacles sacrés, des liants pour assembler des pierres et même des poteries imperméables.
+Les rhombes sont une technologie qui permet de façonner des structures complexes et durables, utilisée pour construire des habitations, des canaux, et d'autres infrastructures. Elles sont confectionnées en pierres et peuvent être façonnées en forme de cratères ou de vases rituels. Les rhombes ont un rôle essentiel dans la construction et permettent aux abris de devenir des structures qui survivent aux générations.
 
 ## Chronologie
 
-**Tour 7: Les joueurs peuvent choisir d'utiliser des rhombes en pierres comme instrument musical dans la procession rituelle.**
+**Tour 7: Les rhombes en pierres sont une option pour les processions rituelles, offrant une musique distinctive.**
 
-**Tour 8: Au son des rhombes, les processions rituelles se multiplient alors que les institutions que le joueur a participé à établir entrent en concurrence.**
+**Tour 8: Le son des rhombes accompagne les processions rituelles multipliées et l'ensemble de la société est perturbé par la compétition entre institutions.**
 
-**Tour 10: Les artisans utilisent les rhombes comme liant pour assembler les pierres et créer des structures plus imposantes que jamais.**
+**Tour 10: Les enfants du ciel utilisent les rhombes pour leurs rituels, tandis que les artisans utilisent le liant en pierre pour assembler des pierres dans des structures plus imposantes que jamais. L'arrivée de l'argile vive rend les rhombes obsolètes.**
 
-**Tour 11: Les enfants du courant utiliseront également les rhombes, mais il faut maintenir le matériau humide précieux.**
-
-**Tour 12: L'Aile-Grise utilise les rhombes pour les rituels et les communications lors de l'expédition dans les galeries.**
+**Tour 11: Les enfants du courant utiliseront les rhombes à la fin, et il faut maintenir le matériau humide précieux.**
 
 ## 💬 Mentions avec contexte
 

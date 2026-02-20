@@ -28,23 +28,27 @@ Tour 14  ████████████████████  ← Pic
 
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 6 tours
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 6 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 5 tours
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 4 tours
+- 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 3 tours
 
 ## Description
 
-Les Enfants du Courant sont une caste de la société qui revendiquent une plus grande voix dans les décisions de la vallée. Ils sont issus de villages prospères et se caractérisent par leur richesse et leur influence.
+Les Enfants du Courant sont une caste qui se caractérise par ses villages prospères et sa capacité à revendiquer une plus grande voix dans les décisions de la vallée. Ils jouent un rôle important dans l'équilibre des forces au sein de la société. Ils contrôlent les flux de la vallée et sont forts en raison de leurs villages prospères.
 
 ## Chronologie
 
-**Tour 7: Les Enfants du Courant apparaissent comme l'une des castes émergeantes, avec les Voix de l'Aurore et les Gardiens de la Confluence, qui revendiquent une plus grande voix dans les décisions de la vallée.**
+**Tour 7: Les Enfants du Courant revendiquent une plus grande voix dans les décisions de la vallée, ce qui provoque un changement dans la structure du conseil.**
 
-**Tour 8: Le cercle des sages tente de faire valoir sa juridiction sur les Enfants du Courant, mais ces derniers sont déterminés à avoir leur mot à dire dans les décisions de la vallée.**
+**Tour 8: Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant, mais ils sont en concurrence avec les autres institutions**
 
-- Turn 9: Les Enfants du Courant sont promis une reconnaissance et un prestige qui leur étaient jusqu'alors refusés en raison de l'établissement de nouveaux lieux sacrés, tels que les Antres des Échos, où ils deviendront les gardiens des secrets de la terre.
+**Tour 9: Les Enfants du Courant obtiendront une reconnaissance et un prestige qui leur était jusqu'alors refusés grâce à la création d'une nouvelle branche de notre peuple, liée aux Antres et gardiens des secrets de la terre.**
 
-**Tour 12: L'inimitié entre deux membres des Enfants du Courant conduit à un meurtre qui remet en question l'équilibre des forces dans la vallée.**
+**Tour 11: Les Enfants du Courant seront les derniers à utiliser l'argile vive avant qu'elle ne soit transportée vers la confluence.**
+
+**Tour 12: L'accusé est un membre de la caste des enfants du courant et il est accusé d'avoir commis le premier meurtre dans l'histoire de la société.**
+
+- Turn 14: Les Enfants du Courant sont libres d'inventer leurs propres messages en nouant des cordes.
 
 ## 💬 Mentions avec contexte
 

@@ -31,27 +31,27 @@ Tour 14  ██████████
 
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 6 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 5 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 5 tours
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 5 tours
 - 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 4 tours
+- 🔵 **[Rhombes](rhombes.md)** (Technologies) — 3 tours
 
 ## Description
 
-La caste des Regards-Libres est une entité qui vit avec les peuples de la vallée. Elle se caractérise par sa capacité à repérer les bancs de poissons et les changements de courants, ce qui en a fait un partenaire précieux pour les villageois. Les jeunes grues des Regards-Libres montrent une grande capacité d'apprentissage et sont souvent présentes dans le village. Leurs chants sont également appréciés et certains ont essayé de les imiter.
+Les Regards-Libres sont une caste de grues cendrées qui vivent en harmonie avec les peuples de la vallée. Elles sont connues pour leur capacité à repérer les bancs de poissons et les changements de courants, ce qui leur a valu un rôle important dans l'économie locale. Les Regards-Libres sont également appréciées pour leur chant et leur nature curieuse et prompte à apprendre.
 
 ## Chronologie
 
-**Tour 6: Les peuples découvrent les regards-libres près des villages sur pilotis, où leur capacité à repérer les poissons est utile.**
+**Tour 6: Les Regards-Libres sont découvertes par le peuple des eaux près des villages sur pilotis, où elles peuvent aider à repérer les poissons et les changements de courants. Les jeunes grues montrent une vraie capacité d'apprentissage.**
 
-**Tour 7: Les groupes de Regards-Libres deviennent une vision courante autour du village et inspirent l'art des artisans, qui les représentent dans leurs productions.**
+**Tour 7: Les groupes de Regards-Libres deviennent une vision courante autour du village, inspirant les artisans qui couvrent leurs productions de leur représentation. Les villageois trouvent dans l'animal des qualités qu'ils cherchent à émuler.**
 
-**Tour 8: Les Regards-Libres se lient avec ceux qui incarnent la dualité du ciel et recherchent des compagnons capables d'observer patiemment avant de guider avec acuité.**
+**Tour 8: Les Regards-Libres se lient avec ceux qui incarnent la dualité du ciel, recherchant des compagnons capables d'observer patiemment avant de guider avec acuité. Cette nature double façonne peu à peu leur évolution.**
 
-- Turn 9: Leur nature double, contemplative et puissante, façonne leur évolution et les rend plus proches des shamans dans leur sagesse et plus aiguisés dans leur rôle d'éclaireurs.
+**Tour 9: Les enfants des Regards-Libres cherchent de nouvelles manières d'exister, de restaurer l'harmonie dans leur vie et dans la société. Ils sont guidés par les voix de l'Aurore pour explorer leurs environs.**
 
-**Tour 11: Les Regards-Libres sont utilisés pour guider les explorations des Faucons Chasseurs, qui rassemblent des indices et interroger des témoins pour reconstituer la vérité de cette nuit funeste.**
+**Tour 11: Les Regards-Libres sont associées aux Faucons Chasseurs, qui travaillent ensemble pour rassembler des indices et reconstituer la vérité d'une nuit funeste.**
 
-- Turn 14: Les Regards-Libres sont observées depuis les hauteurs par les meilleurs traqueurs, qui comptent leurs armes et étudient leurs mouvements.
+**Tour 14: Les regards-Libres observent les Faucons Chasseurs depuis les hauteurs avec leurs Regards-Libres : compter leurs armes, étudient leurs mouvements, identifient les plus isolés.**
 
 ## 💬 Mentions avec contexte
 

@@ -17,16 +17,6 @@
 Tour 12  ████████████████████  ← Pic
 ```
 
-## Description
-
-L'antre des échos est une galerie souterraine mature qui relie la confluence à Gouffre Humide, permettant le trafic piéton et facilitant l'auto-suffisance des colonies. Elle présente des difficultés respiratoires si elle ne reçoit pas suffisamment de poisson.
-
-## Chronologie
-
-**Tour 1: Aucune mention spécifique dans la première partie, mais on sait qu'il y aura une description plus détaillée dans le futur.**
-
-**Tour 12: L'escalier de l'antre des échos est presque terminé, facilitant les échanges entre les villages et les profondeurs. Les habitants commencent à se sentir malades en raison d'un manque de poisson.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 12**

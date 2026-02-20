@@ -36,15 +36,15 @@ Tour 14  ██████████
 
 ## Description
 
-La Voix de l'Aurore est une caste du peuple du ciel clair qui défend la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises. Les membres de cette caste ont un rôle important dans la société en guidant les processions rituelles, en interprétant les présages et en préservant les traditions ancestrales.
+La caste des Voix de l'Aurore est une institution qui défend la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises et joue un rôle important dans la préservation des traditions ancestrales du peuple du ciel.
 
 ## Chronologie
 
-**Tour 7: La Voix de l'Aurore est créée comme une des institutions du peuple du ciel clair, avec pour but de défendre la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises.**
+**Tour 7: Les Voix de l'Aurore sont mentionnées comme une des institutions émergentes qui défendent la primauté des anciennes lois et des rituels sacrés. Ils sont dirigés par les Ailes-Grises.**
 
-**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, anticipant le conflit entre les différentes institutions.**
+**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, ce qui suggère que leur rôle est de garantir la conformité aux anciennes lois et rituels.**
 
-- Turn 9: Tu utilise les voix de l'Aurore pour guider les explorations des enfants du courant.
+**Tour 14: La caste des Voix de l'Aurore souhaite interdire l'accès aux ruines à d'autres que les ciels clairs venus en pèlerinage, ce qui montre leur intérêt pour la préservation des traditions ancestrales.**
 
 ## 💬 Mentions avec contexte
 

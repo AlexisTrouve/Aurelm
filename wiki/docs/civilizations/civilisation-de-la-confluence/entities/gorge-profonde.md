@@ -19,13 +19,11 @@ Tour 10  ████████████████████  ← Pic
 
 ## Description
 
-La Gorge Profonde est un réseau de conduits et de grottes profondes qui se sont révélés être un véritable labyrinthe. C'est une nouvelle colonie qui a été créée par les fils des échos pour échapper à l'animation de la basse vallée. Le village à son entrée n'est pas développé pour l'instant.
+La Gorge Profonde est une colonie située dans les entrailles de la terre, connue pour ses grottes et passages escarpés. C'est un véritable labyrinthe de conduits connectés entre eux et de grottes profondes. Le village à son entrée n'est guère développé pour l'instant.
 
 ## Chronologie
 
-**Tour X: Il faut dire que beaucoup de fils des échos sont venus ici pour justement échapper à l'animation de la basse vallée.**
-
-**Tour 10: La partie se déroule dans la Gorge Profonde, une nouvelle colonie qui se jette dans les entrailles de la terre. Les grottes et passages escarpés forment un véritable labyrinthe de conduits connectés entre eux.**
+**Tour 10: C'est mentionné que beaucoup de fils des échos sont venus ici pour échapper à l'animation de la basse vallée.**
 
 ## 💬 Mentions avec contexte
 

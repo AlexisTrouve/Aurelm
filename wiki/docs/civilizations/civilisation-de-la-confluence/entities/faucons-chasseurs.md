@@ -34,15 +34,15 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les Faucons Chasseurs sont une caste de guerriers chevaliers chargés de la défense et de la justice dans le village. Ils sont connus pour leur courage, leur force et leur droiture. Ils ont été créés en réponse à un événement tragique et sont guidés par l'Assemblée des Chefs.
+Les Faucons Chasseurs sont une caste de guerriers et d'investigateurs chargés de rassembler des indices, interroger des témoins et reconstituer la vérité dans le cadre d'une enquête. Ils travaillent en étroite collaboration avec les Regards-Libres pour identifier les coupables et mettre fin aux menaces qui pèsent sur la communauté. Les Faucons Chasseurs sont réputés pour leur courage, leur force et leur droiture, ce qui justifie leur nom.
 
 ## Chronologie
 
-**Tour 11: Les Faucons Chasseurs sont créés pour rassembler les indices de la nuit funeste et capturer les menaces dans les montagnes. Ils travaillent en équipe avec les Regards-Libres et les Enfants des Échos.**
+**Tour 11: L'Assemblée des Chefs désigne les Faucons Chasseurs pour mener l'enquête sur la tragédie de la nuit. Ils sont chargés de rassembler des indices et d'interroger des témoins avec l'aide des Regards-Libres.**
 
-**Tour 12: L'Arbitre des Esprits coordonne une mission avec quatre équipes de six personnes chacune, dont trois Faucons Chasseurs. Les équipes sont envoyées pour sécuriser l'entrée des galeries et reconstituer la vérité.**
+**Tour 12: Les Faucons Chasseurs forment une équipe de quatre, dirigée par l'Arbitre des Esprits, pour explorer les colonies souterraines et capturer le ou les individus responsables du danger qui y pèse.**
 
-**Tour 14: Les Faucons Chasseurs forment l'un des conseils du village, commandant la défense et la justice.**
+**Tour 14 (Option 1): Un groupe de Faucons Chasseurs est chargé de traquer et identifier les inconnus qui ont été vus dans les montagnes, en espérant comprendre leurs intentions et mettre fin à la menace qu'ils représentent.**
 
 ## 💬 Mentions avec contexte
 

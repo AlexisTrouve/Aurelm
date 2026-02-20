@@ -2,7 +2,7 @@
 
 📅 **06/09/2024** | 📊 **5 segments** | 🎯 **1 nouvelles entités**
 
-> Le maître du jeu a promis un havre de paix à ces migrants, qui ont parcouru longtemps pour arriver au lieu choisi. Ils ont dû lutter contre la faim, la fatigue et les pertes, mais sont enfin arrivés et se sont installés le long des rivières. Ils ont commencé à chasser et à récolter des aliments, mais la vie reste difficile et les saisons passent. Le maître du jeu a observé leur quotidien et imagine des moyens d'améliorer leur vie.
+> Les participants ont traversé une longue période de famine et de fatigue, mais ont finalement atteint un endroit idéal appelé la Confluence, où deux rivières cristallines se rencontrent dans une vallée large. La nourriture est abondante, et ils peuvent vivre et s'épanouir dans cet environnement favorable. Cependant, la mort demeure une partie intégrante de leur quotidien, ce qui suscite des questions et des spéculations sur ce qui se passe après la mort.
 
 ## 📊 Statistiques du tour
 
@@ -39,7 +39,7 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 ### 🗺️ Géographie
 
 - confluence de deux rivières cristallines
-- vallée
+- large vallée
 
 ### 🔧 Technologies
 
@@ -54,10 +54,16 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ### ✨ Croyances
 
-- l'esprit s'élève et veille sur les vivants depuis le ciel
-- le corps retourne à la terre, se mêlant à la nature
-- il faut offrir en respect aux défunts des preuves de sagesses
-- il faut voir les nuages comme des obstacles à la transmission de la sagesse aux nouveaux nés
+- esprit s'élève et veille sur les vivants depuis le ciel
+- corps retourne à la terre, se mêlant à la nature
+- offrir en respect aux défunts des preuves de sagesses
+- Parfois la nature se fait prodigue
+- Parfois, la nourriture vient à manquer
+- La mort est partie prenante du quotidien
+- Une saison qui s'écoule sans la mort d'un nouveau né ou d'un chasseur un peu trop audacieux peut être célébrée
+- Je leur montre des techniques afin de perfectionner l'art de la chasse et à préserver leurs prises (vivantes ou mortes)
+- Je leur explique que l'esprit s'élève et veille sur les vivants depuis le ciel, offrant une part de leur sagesse aux nouveau nés
+- On doit ainsi offrir en respect aux défunts des preuves de sagesses
 
 ## 🏷️ Entités mentionnées
 

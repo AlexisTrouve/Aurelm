@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La Salle du Conseil est une salle située dans le Hall des Serments, elle abrite les réserves et l'armurerie. Elle est décrite comme un espace protégé par les murs épais de pierre et argile vivante. Cette salle est destinée à servir de lieu d'assemblée pour les conseillers ou les dirigeants du groupe. L'autel des Pionniers y est également situé.
+La Salle du Conseil est une pièce importante située dans le Hall des Serments, bâti en pierre et argile vivante. Elle abrite l'armurerie, les réserves et un Autel des Pionniers. La Salle du Conseil joue un rôle central dans la prise de décision et la planification des actions de la communauté.
 
 ## Chronologie
 
-**Tour 14: La description de la Salle du Conseil est donnée en même temps que celle du Hall des Serments, elle est décrite comme étant protégée par les murs épais.**
+**Tour 14: La construction du Hall des Serments commence avec l'érection d'un Autel des Pionniers, une armurerie et une Salle du Conseil. Une tour de guet sur pilotis est également élevée à son sommet.**
 
 ## 💬 Mentions avec contexte
 

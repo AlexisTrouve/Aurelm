@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 from datetime import datetime
 from pathlib import Path
@@ -331,10 +332,29 @@ def run_pipeline(
     else:
         print("[9/9] Skipping wiki generation (use --wiki-dir to enable)")
 
+    # Unload Ollama model to free VRAM and virtual memory
+    if use_llm:
+        _unload_ollama_model()
+
     # Final summary
     print("[DONE] Pipeline complete!")
     _print_stats(stats)
     return stats
+
+
+def _unload_ollama_model() -> None:
+    """Unload Ollama model to free VRAM and Windows pagefile reservation."""
+    from .summarizer import DEFAULT_MODEL
+    try:
+        import ollama
+        ollama.generate(model=DEFAULT_MODEL, prompt="", keep_alive=0)
+        print("  Ollama model unloaded from VRAM.")
+    except Exception:
+        pass  # Non-critical — Ollama may already be unloaded or not running
+
+
+# Register atexit so model is unloaded even on Ctrl+C / abrupt exit
+atexit.register(_unload_ollama_model)
 
 
 def _init_ner() -> EntityExtractor | None:
@@ -541,6 +561,168 @@ def _print_stats(stats: dict) -> None:
     print("=" * 40)
 
 
+def _build_civ_entity_lookup(conn, civ_id: int) -> dict:
+    """Build {name_lower: {canonical_name, entity_type}} for known entities of a civ.
+
+    Used by the pattern pass in FactExtractor to detect entity names in turn text.
+    Includes both canonical names and aliases.
+    """
+    lookup: dict = {}
+    rows = conn.execute(
+        "SELECT canonical_name, entity_type FROM entity_entities WHERE civ_id = ? AND is_active = 1",
+        (civ_id,),
+    ).fetchall()
+    for r in rows:
+        name = r["canonical_name"] if hasattr(r, "keys") else r[0]
+        etype = r["entity_type"] if hasattr(r, "keys") else r[1]
+        lookup[name.lower()] = {"canonical_name": name, "entity_type": etype}
+
+    aliases = conn.execute(
+        """SELECT a.alias, e.canonical_name, e.entity_type
+           FROM entity_aliases a
+           JOIN entity_entities e ON a.entity_id = e.id
+           WHERE e.civ_id = ? AND e.is_active = 1""",
+        (civ_id,),
+    ).fetchall()
+    for a in aliases:
+        alias = a["alias"] if hasattr(a, "keys") else a[0]
+        canonical = a["canonical_name"] if hasattr(a, "keys") else a[1]
+        etype = a["entity_type"] if hasattr(a, "keys") else a[2]
+        lookup[alias.lower()] = {"canonical_name": canonical, "entity_type": etype}
+
+    return lookup
+
+
+def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True) -> int:
+    """Re-run fact extraction on all existing turns for a civilization.
+
+    Uses the hybrid LLM + pattern approach with the civ's entity lookup.
+    Updates turn_turns in place (merges new facts with existing ones).
+
+    Args:
+        db_path: Path to SQLite database
+        civ_id: Civilization ID to reprocess
+        use_llm: Whether to call Ollama for LLM extraction (default True)
+
+    Returns:
+        Number of turns updated
+    """
+    conn = get_connection(db_path)
+    conn.row_factory = __import__("sqlite3").Row
+
+    # Build entity lookup for this civ (uses entities already in DB)
+    entity_lookup = _build_civ_entity_lookup(conn, civ_id)
+    print(f"  Entity lookup: {len(entity_lookup)} entries")
+
+    fact_extractor = FactExtractor() if use_llm else FactExtractor.__new__(FactExtractor)
+    if not use_llm:
+        # Init a no-LLM extractor that only runs the pattern pass
+        fact_extractor.ollama_base_url = ""
+        fact_extractor.model = ""
+        fact_extractor.client = None
+
+    turns = conn.execute(
+        "SELECT id, turn_number FROM turn_turns WHERE civ_id = ? ORDER BY turn_number",
+        (civ_id,),
+    ).fetchall()
+
+    updated = 0
+    for turn in turns:
+        turn_id = turn["id"]
+        turn_num = turn["turn_number"]
+
+        # Rebuild segment dicts from DB
+        segs = conn.execute(
+            "SELECT segment_type, content FROM turn_segments WHERE turn_id = ? ORDER BY segment_order",
+            (turn_id,),
+        ).fetchall()
+        if not segs:
+            continue
+
+        segment_dicts = [
+            {"segment_type": s["segment_type"], "content": s["content"]}
+            for s in segs
+        ]
+
+        # Run hybrid extraction
+        if use_llm:
+            facts = fact_extractor.extract_facts(segment_dicts, "", entity_lookup)
+        else:
+            # Pattern-only: bypass LLM
+            relevant_text = "\n\n".join(
+                s["content"] for s in segs
+                if s["segment_type"] in ("narrative", "consequence", "description")
+            )
+            pattern_facts = fact_extractor._pattern_extract_facts(relevant_text, entity_lookup)
+            # Merge with existing DB values
+            existing = conn.execute(
+                "SELECT technologies, resources, beliefs, geography FROM turn_turns WHERE id = ?",
+                (turn_id,),
+            ).fetchone()
+
+            def _load(col):
+                val = existing[col]
+                try:
+                    return json.loads(val) if val else []
+                except Exception:
+                    return []
+
+            def _merge(existing_list, new_list):
+                seen = set()
+                result = []
+                for item in existing_list + new_list:
+                    key = item.strip().lower()
+                    if key and key not in seen:
+                        seen.add(key)
+                        result.append(item.strip())
+                return result
+
+            facts_dict = {
+                "technologies": _merge(_load("technologies"), pattern_facts.get("technologies", [])),
+                "resources":    _merge(_load("resources"),    pattern_facts.get("resources", [])),
+                "beliefs":      _merge(_load("beliefs"),      pattern_facts.get("beliefs", [])),
+                "geography":    _merge(_load("geography"),    pattern_facts.get("geography", [])),
+            }
+            conn.execute(
+                """UPDATE turn_turns SET technologies=?, resources=?, beliefs=?, geography=?
+                   WHERE id=?""",
+                (
+                    json.dumps(facts_dict["technologies"], ensure_ascii=False),
+                    json.dumps(facts_dict["resources"],    ensure_ascii=False),
+                    json.dumps(facts_dict["beliefs"],      ensure_ascii=False),
+                    json.dumps(facts_dict["geography"],    ensure_ascii=False),
+                    turn_id,
+                ),
+            )
+            conn.commit()
+            updated += 1
+            print(f"  Turn {turn_num}: +{len(pattern_facts.get('beliefs', []))} beliefs, "
+                  f"+{len(pattern_facts.get('technologies', []))} techs")
+            continue
+
+        # LLM path: full update
+        conn.execute(
+            """UPDATE turn_turns SET technologies=?, resources=?, beliefs=?, geography=?
+               WHERE id=?""",
+            (
+                json.dumps(facts.technologies, ensure_ascii=False),
+                json.dumps(facts.resources,    ensure_ascii=False),
+                json.dumps(facts.beliefs,      ensure_ascii=False),
+                json.dumps(facts.geography,    ensure_ascii=False),
+                turn_id,
+            ),
+        )
+        conn.commit()
+        updated += 1
+        print(f"  Turn {turn_num}: {len(facts.beliefs)} beliefs, {len(facts.technologies)} techs")
+
+    if use_llm:
+        fact_extractor.close()
+
+    print(f"  Updated {updated} turns.")
+    return updated
+
+
 def run_pipeline_for_channels(
     db_path: str,
     use_llm: bool = False,
@@ -742,19 +924,50 @@ def run_pipeline_for_channels(
             print(f"  Wiki generation failed: {exc}")
             aggregated["wiki_error"] = str(exc)
 
+    # Unload Ollama model to free VRAM and virtual memory
+    _unload_ollama_model()
+
     return aggregated
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Aurelm ML Pipeline")
-    parser.add_argument("--data-dir", required=True, help="Path to markdown files directory")
-    parser.add_argument("--civ", required=True, help="Civilization name")
+    parser.add_argument("--data-dir", help="Path to markdown files directory")
+    parser.add_argument("--civ", help="Civilization name")
     parser.add_argument("--db", default="aurelm.db", help="Database file path")
     parser.add_argument("--player", default=None, help="Player name")
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
+    parser.add_argument(
+        "--reextract-facts", action="store_true",
+        help="Re-run hybrid fact extraction (LLM + patterns) on all existing turns and update DB"
+    )
+    parser.add_argument(
+        "--pattern-only", action="store_true",
+        help="With --reextract-facts: skip LLM, run only the keyword/entity pattern pass (fast)"
+    )
     args = parser.parse_args()
+
+    if args.reextract_facts:
+        if not args.civ:
+            parser.error("--reextract-facts requires --civ")
+        conn = get_connection(args.db)
+        conn.row_factory = __import__("sqlite3").Row
+        row = conn.execute(
+            "SELECT id, name FROM civ_civilizations WHERE name = ?", (args.civ,)
+        ).fetchone()
+        if not row:
+            parser.error(f"Civilization '{args.civ}' not found in {args.db}")
+        civ_id = row["id"]
+        conn.close()
+        print(f"Re-extracting facts for '{args.civ}' (civ_id={civ_id})...")
+        use_llm = not (args.no_llm or args.pattern_only)
+        reextract_facts_for_civ(args.db, civ_id, use_llm=use_llm)
+        return
+
+    if not args.data_dir or not args.civ:
+        parser.error("--data-dir and --civ are required unless using --reextract-facts")
 
     run_pipeline(
         data_dir=args.data_dir,

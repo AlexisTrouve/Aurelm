@@ -2,14 +2,14 @@
 
 📅 **28/09/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> Le Maitre du Jeu s'entoure d'un groupe d'individus qu'il considère comme les plus intelligents et les plus sages de la tribu. Il leur enseigne la voix des cieux, un moyen de trouver des présages dans la nature pour guider leurs décisions. Lorsqu'il quitte la tribu, il laisse derrière lui un héritage qui se poursuit par l'influence du cercle sur la tribu. Les membres du cercle continuent à exercer leur influence et à guider les décisions de la tribu, même si c'est de manière plus discrète.
+> Le Maitre du Jeu a rassemblé ses plus sages et les plus vifs d'esprits pour former le 'cercle des sages'. Il leur enseigne la manière de trouver les présages dans la nature et comment prendre des décisions importantes. Après avoir guidé leurs échanges, il annonce son départ, mais assure qu'il veillera sur eux en communiant avec les ancêtres. Il continue à influencer la tribus par le biais du cercle des sages, mais est surpris de constater que celui-ci est en crise due à une dispute entre deux hommes qui se disputent l'amour d'une femme.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : aucune
 - **Mentions totales** : 1
 - **Technologies** : 2
-- **Ressources** : 2
+- **Ressources** : 0
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -44,21 +44,20 @@ Je guide la tribu vers une nouvelle structure culturelle et institutionnel. Un h
 ### 🔧 Technologies
 
 - la voix des cieux
-- l'interprétation des présages dans les étoiles, le vent et les entrailles
-
-### 🌾 Ressources
-
-- nourriture recoltee
-- materiaux travailles
+- comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles
 
 ### ✨ Croyances
 
 - le cercle des sages
-- la coutume de dialogue respectueux et productif
-- l'influence de l'Oracle sur la tribu
-- les rituels de fertilité
-- l'invocation de la bénédiction des esprits pour les futures générations
-- le rôle valorisé des mères dans la société
+- l'Oracle
+- les ancêtres
+- la bénédiction des esprits
+- les valeurs communes
+- Tu t'entoures lentement de ceux que tu considères les plus vifs d'esprits, et les plus sages
+- A la surprise de certains, un "Sanciel" finit même par s'y intégrer
+- Les discussions se font tardives et tu prends souvent le rôle de médiateur, cherchant au maximum à guider leurs échanges pour créer une coutume de dialogue respectueux et productif qui puisse survivre à ton absence
+- Quand on t'interroge de quelle manière, tu leur réponds que tu seras en permanence en communion avec les ancêtres, à les guider comme ces derniers
+- A l'écart, tu ajoutes au cercle des sages que si jamais il venait un jour où leur sagesse venait à manquer, que les ancêtres restaient muet
 
 ## 🏷️ Entités mentionnées
 

@@ -2,7 +2,7 @@
 
 📅 **22/05/2025** | 📊 **9 segments** | 🎯 **8 nouvelles entités**
 
-> Le jeu se déroule dans la civilisation de la Confluence, où les enfants des échos travaillent ensemble pour aménager une nouvelle Antre. L'air est froid, mais le soleil réchauffe la vallée, et les plantes commencent à pousser après l'hiver. Les chantiers sont nombreux, et les biens affluent, notamment grâce au partage de ressources entre les castes. Cependant, cette année est différente, car les réserves sont plus importantes que d'habitude en raison de la politique de constructions de réserves. Le peuple travailleur se remet en marche, et de nouveaux projets émergent, notamment un Temple majestueux, une maison des castes et un hall des passages.
+> Les travailleurs sans-ciels de la Civilisation de la Confluence se remettent en marche après l'hiver. Ils sont occupés à construire plusieurs nouveaux bâtiments dans la vallée, dont un temple majestueux pour honorer les ancêtres et accumuler des artefacts. Le processus de construction est rigoureux, avec différentes castes travaillant ensemble : les explorateurs découvrent les cavités, les tailleurs de pierre les percent, les égalisateurs les délimitent, les dessinateurs préparent les décorations, et les sculpteurs les terminent. Les travailleurs sans-ciels utilisent l'argile vive pour construire ces bâtiments, qui seront importants pour la communauté.
 
 ## 📊 Statistiques du tour
 
@@ -62,8 +62,9 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 ### 🗺️ Géographie
 
 - confluence
-- montagnes
 - rivière bleue
+- huttes chaudes
+- montagnes
 
 ### 🔧 Technologies
 
@@ -86,6 +87,11 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 - Arbitre des Esprits
 - Cercle des Sages
 - Assemblée des Chefs
+- Le premier meurtre Choix : Loi du Sang et de la Bête (option libre) Face à cette scène qui glace le sang, je sens la colère monter dans la foule, les accusations qui fusent, la suspicion qui divise déjà nos peuples
+- Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle
+- Je désigne parmi les ciels-clairs ceux dont le courage, la force et la droiture sont reconnus de tous
+- Et ils devront aussi capturer dans nos montagnes une bête sacrée - car si la culpabilité est établie, seule l'épreuve de l'arène révélera si les ancêtres protègent encore l'accusé
+- J'y nomme des Proclamateurs selon la droiture de leur cœur - ils appliqueront les Lois du Sang et de la Bête que je révèle maintenant : quand une vie est ôtée sans cause juste, l'enquête doit établir la vérité, puis l'épreuve de l'arène trancher ce que les hommes ne peuvent
 
 ## 🏷️ Entités mentionnées
 

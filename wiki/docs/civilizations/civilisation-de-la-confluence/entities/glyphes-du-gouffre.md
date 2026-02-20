@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les Glyphes du Gouffre sont une technologie utilisée pour communiquer avec La Confluence, s'élever dans sa caste et servir dans un Hall des Serments. Elle est décrite comme la langue commune qui relie les territoires de la civilisation. Les glyphes du gouffre sont considérés utiles mais pas obligatoires.
+Les Glyphes du Gouffre sont une technologie utilisée pour communiquer avec La Confluence, s'élever dans sa caste ou servir dans un Hall des Serments. Ils constituent la langue commune qui relie les territoires de l'organisation. Cette technologie est considérée comme utile mais pas obligatoire.
 
 ## Chronologie
 
-**Tour 14: La maîtrise des Glyphes du Gouffre est mentionnée comme un moyen de communiquer avec La Confluence, d'accéder à la caste et de servir dans le Hall des Serments. Elle est décrite comme une opportunité pragmatique.**
+**Tour 14: La maîtrise des Glyphes du Gouffre est recommandée pour communiquer avec La Confluence, accéder à une caste ou servir dans un Hall des Serments, non par obligation mais par pragmatisme.**
 
 ## 💬 Mentions avec contexte
 

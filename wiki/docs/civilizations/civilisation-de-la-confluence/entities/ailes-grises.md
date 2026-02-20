@@ -2,14 +2,17 @@
 
 *Castes* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/la-voix-des-cieux.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 14 |
+| **Mentions totales** | 20 |
 | **Tours actifs** | 7-14 (8 tours) |
 | **Pic d'activite** | Tour 14 (5 mentions) |
-| **Moyenne** | 1.8 mentions/tour |
+| **Moyenne** | 2.5 mentions/tour |
 
 ## 📈 Graphe d'activite
 
@@ -31,26 +34,34 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 7 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 6 tours
 - 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 5 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 5 tours
+- 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 5 tours
 
 ## Description
 
-Les Ailes-Grises sont une caste de personnes qui jouent un rôle important dans la tribu en guidant les groupes de chasseurs, de pêcheurs et des cueilleurs. Ils sont chargés de préserver la mémoire des ancêtres et transmettre leurs connaissances aux générations futures. Les Ailes-Grises possèdent des rhombes qui servent à leur rituel et communiquer avec les roches.
+Les Ailes-Grises sont une caste qui joue un rôle important dans la société en guidant les groupes de chasseurs et de pêcheurs, ainsi que les cueilleurs vers leurs proies ou les buissons de baies insoupçonnés. Ils sont également chargés d'être les gardiens de la mémoire collective. Avec le temps, ils deviennent des artisans qui créent des objets empreints de leur histoire et leur patine donne une valeur exceptionnelle à ces artefacts.
 
 ## Chronologie
 
-**Tour 7: Les dresseurs de regards-libres deviennent des membres importants de la tribu, guidant les groupes de chasseurs et de pêcheurs vers leurs proies. Ils sont appelés les Ailes-Grises.**
+**Tour 7: Les Ailes-Grises sont mentionnés comme étant les guideurs du groupe de chasseurs, pêcheurs et cueilleurs. Ils deviennent avec le temps des artisans qui donnent vie aux objets en les gravant de leurs visions et en ajoutant leur histoire.**
 
-**Tour 8: Les Ailes-Grises gravent leurs visions sur leurs rhombes, transmettant ainsi leur mémoire aux générations futures.**
+**Tour 8: Les Ailes-Grises sont chargés d'être les gardiens de la mémoire collective, ils créent des artefacts empreints de leur histoire, tels que les rhombes qui racontent l'origine et l'utilisation des objets.**
 
-**Tour 9: L'artiste est chargé de préserver la mémoire des ancêtres en transformant les objets en artefacts qui continuent à exister sous d'autres formes.**
+**Tour 9: La mission sacrée des artisans, dont font partie les Ailes-Grises, est de préserver la mémoire des ancêtres en permettant à un objet d'être transformé en artefact avec une vie riche en histoire.**
 
-**Tour 10: Un travail solitaire, et où viennent souvent achever sa vie, le lieu est réservé aux anciens Ailes-Grises.**
+**Tour 10: Un unique Ailes-grises maintient le feu des générations et l'abri qu'il entretient est celui où un voyageur a pu se reposer. Un travail solitaire, souvent achevé par vieillesse.**
 
-**Tour 12: Les Ailes-Grises sont chargés de rapporter des nouvelles inquiétantes qu'ils ont pu garder secrètes jusqu'à présent.**
+**Tour 11: Les Ailes-Grises sont chargés de maintenir le précieux matériau humide appelé argile vive, indispensable pour la création d'objets et la construction de structures qui survivent aux générations.**
 
-**Tour 13: La gravité avec laquelle tu traite la situation les intimide clairement.**
+**Tour 12: Des Ailes-Grises se rendent auprès du protagoniste pour le prévenir d'un danger rôdant dans les profondeurs des antres.**
+
+**Tour 13: L'Aile-Grise présente une solution et des plans de coordination avec son équipe et les autres membres chargés d'aborder la situation.**
+
+**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, ce qui entraîne une concurrence avec les autres institutions de la société.**
+
+**Tour 11: La caste des Voix de l'Aurore bénéficie d'un privilège pour recevoir les meilleurs biens dans le troc, qu'ils dédie aux ancêtres.**
+
+**Tour 14: Les Voix de l'Aurore sont chargées de protéger les ruines d'accès exclusif et réservent leur accès aux ciels clairs venus en pèlerinage.**
 
 ## 💬 Mentions avec contexte
 
@@ -87,11 +98,17 @@ Les Ailes-Grises sont une caste de personnes qui jouent un rôle important dans 
 
     > Les dresseurs de regards-libres deviennent des membres importants de la tribu, guidant les groupes de chasseurs et de pêcheurs vers leurs proies, mais parfois aussi les cueilleurs vers des buissons de baies insoupçonnés. On les appelle les ailes-grises. Certains disent qu'ils guident aussi les âmes des mourants vers l'endroit où les ancêtres les attendent. Les Ailes-Grises deviennent avec le temps:
 
+    > ...ises deviennent des Shamans, choisis uniquement parmi les enfants du ciel clair. Leur lien avec les Regards-Libres devient un signe de leur capacité à voir au-delà du monde visible. Au son des rhombes sacrés, ils guident les âmes et interprètent les présages, préservant les traditions ancestrales du peuple du ciel Des Cliques émergent dans notre société, transformant la structure du conseil : Les Voix de l'Aurore : dirigés par les Ailes-Grises, ils défendent la primauté des anciennes lois et des rituels sacrés Les Enfants du Courant : forts de leurs villages prospères, ils revendiquent une plus grande voix dans les décisions de la vallée Les Gardiens de la Confluence : enrichis par l'échange entre les peuples, ils cultivent leur influence dans les flux de la vallée
+
     **Tour 8**
+
+    > Au son des rhombes, les processions rituelles se multiplient alors que les nombreuses institutions que tu as participé à établir entre en concurrence. Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant. Les voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs. Les Gardiens de la confluence de par leur position estiment être indépendants de toutes les décisions des villageois. Anticipant le conflit, tu leur indique par voie de présages que …
 
     > ...ils sont les gardiens de notre mémoire. Un rhombe n'est plus seulement un instrument - ses gravures racontent son origine, ses marques témoignent de son utilisation, ses motifs enseignent les rituels qu'il accompagne. Ces artefacts deviennent des témoins vivants, transmis de main en main, chaque génération y ajoutant sa marque et son histoire. Ces objets de pouvoir prennent diverses formes : les Ailes-Grises gravent leurs visions sur leurs rhombes, les chasseurs marquent leurs prises sur leurs armes, les pêcheurs inscrivent les courants sur leurs radeaux, et les artisans cachent leurs secrets dans leurs outils. Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aus...
 
     **Tour 9**
+
+    > ...rchent-ils de nouvelles manières d'exister, de restaurer l'harmonie dans leur vie et dans la société. Un artisan cherche une nouvelle matière à travailler que nul autre ne proposera. Un pécheur cherche dans d'autres rivières des poissons qu'on ne trouve pas à la confluence. Guidé par les yeux acérés des Regards-libres, ils étendent sans cesse l'emprise des tiens sur leurs environs. Tu utilise les voix de l'Aurore pour guider leur explorations :
 
     > ...cuillère, le seuil d'une porte ou encore le barreau d'un berceau. Son histoire ne s'achève pas en perdant sa nature puisqu'il continue à exister sous d'autres formes. Le temps ne décrépit plus l'objet, il lui donne une patine. C'est la mission sacrée des artisans que de préserver la mémoire des ancêtres. De permettre à un objet de devenir artefact. De lui donner, une deux, ou comme le dicton des ailes-grises le dit: 100 vies pour un artefact. Peut-être ce chiffre sera amené à grandir dans le futur pour préserver l'exceptionnalisme des artefacts, mais leur apparence elle …
 
@@ -102,6 +119,13 @@ Les Ailes-Grises sont une caste de personnes qui jouent un rôle important dans 
     > Un peu plus tôt, tu as quitté le dernier cercle des vigiles avant les cimes. Celui-là aussi est nouveau. Un unique Ailes-grises y maintient le feu des générations et l'abri qu'il maintient avait à peine de la place pour ton couchage. C'est la responsabilité des vigiles que de s'occuper des voyageurs, les protéger des intempéries et les nourrir. Et c'est aux voyageurs de s'assurer que les vigiles puissent continuer leur noble tâche. A une époque, ce n'était que les porteurs de flammes qui amenait du fond de la vallée des a...
 
     **Tour 11**
+
+    > ...argile vive. Ces échanges sont basés sur …
+    Vous avez dit commerce ?
+    le troc : ils négocient avec les passe-biens pour obtenir la plus grande quantités de biens en échanges de ceux qu'ils ont à offrir,
+    l'offrande : les passes-bien sont un relais, la totalité des biens qu'ils échangent sont le fruit de dons. Plus la caste est prestigieuse, plus on reçoit en retour. La part du lion étant réservé aux voix de l'Aurore, qui la dédie aux ancêtres,
+    le partage : les passes-bien reçoivent ce que les gens ont en trop et se dédient à leur fournir ce dont ils manquent. C'est leur devoir et leur privilège que de faire l'arbitrage des besoins dans cette société qui manque encore de tout,
+    Autres [ libre ],
 
     > ...à cause de la fonte des glaces. Facilitant le transport de l'argile vive. Transporter l'argile vive n'est pas une mince affaire. Des hautes cimes dans les antres des échos, jusqu'à la confluence où les enfants du courant seront les derniers à les utiliser, il faut maintenir le précieux matériau humide. Celui-ci s'est immiscé au fil des générations dans toutes les couches de la société. Des fiers ailes grises qui s'en servent pour façonner les cratères, vases rituels qui servent à recueillir les eaux sacrés de la confluence, aux humbles sans-ciels qui agrémentent les frontons de leur demeures de rhombes miniatures fabriquée en masse à l'aide de moules, qui sifflent au rythme des vents. Qui plus est, elle aide à la construction, permettant aux abris de devenir structure qui survivent aux générations. U...
 
@@ -120,6 +144,14 @@ Les Ailes-Grises sont une caste de personnes qui jouent un rôle important dans 
     > Rithelgo
     Pillars of Eternity Soundtrack - Engwith
     Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide. La valse des hommes de foi est justifiée d'abord par l'importance des lieux. Ton peuple qui adore les ancêtres voit dans ces halls oubliés un peuple qui vous a précédé. Avec le temps, on les qualifient même de premier ancêtre, à la fois avec révérence, fierté, mais surtout inquiétude. Le secret de leur chute interroge et influe ton peuple qui...
+
+    > ...plus important que ce les tiens ne soient capable de retirer. Un échec mordant pour les tiens qui cherchaient à satisfaire tes exigences. Et aussi pour toi, car tes ordres ont directement causé la perte de ceux qui te faisaient confiance. Tu décides …
+    une cité dans la cité
+    D'interdire l'accès aux ruines à d'autres que les ciels clairs venus en pèlerinage. Le monopole de son accès est réservé à la voix de l'Aurore
+    D'ordonner que les parties accessibles soient malgré tout réaménagée et intégré à Gouffre humide
+    Que les ruines deviennent un test aux plus courageux et aux plus inventifs. Un endroit où l'on s'enfonce pour devenir un héros, ou mourir en essayant
+    Autres [ libre ]
+    Tu n'entends après cette décision guère plus parler de gouffre humide en plusieurs générations. C'est le temps qu'il faut au tient pour...
 
     > Que les Ailes-Grises continuent leur pèlerinage et leurs méditations dans les halls sacrés. Que la Maison des Découvertes étudie aussi les techniques, les pigments, les couches de peinture. La vérité spirituelle et la vérité matérielle sont deux faces d'un même mystère. L'une n'exclut pas l'autre - elles se complètent.
 

@@ -19,11 +19,13 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-La Vallée est un endroit où il y a une confluence de deux fleuves. L'un est bleu azur et l'autre est vert, leur cru alimente une terre fertile et poissonneuse. C'est un emplacement idéal pour le village qui s'y trouve.
+La Vallée est un endroit géographique montagneux où deux fleuves se rencontrent. C'est un emplacement idéal pour que le peuple du protagoniste s'y établisse, offrant une terre fertile et une eau poissonneuse.
 
 ## Chronologie
 
-**Tour 6: Le protagoniste se rappelle avoir guidé son peuple vers la confluence de ces deux fleuves, dans cette vallée montagneuse. Il se souvient que La Vallée a offert ses largesses aux siens et que la Confluence a fourni sécurité.**
+**Tour 1: N'a pas été mentionné explicitement, mais on peut déduire que le protagoniste était déjà présent dans La Vallée lorsqu'il a guidé son peuple vers la confluence des fleuves.**
+
+**Tour 6: Le protagoniste se rappelle avoir guidé son peuple jusqu'à la confluence des deux fleuves dans La Vallée. Il y a mis en place un village qui prospère grâce à l'abondance de la vallée. Le changement d'un environnement primitif à une communauté sédentaire est mis en avant.**
 
 ## 💬 Mentions avec contexte
 

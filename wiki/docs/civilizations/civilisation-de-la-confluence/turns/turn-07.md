@@ -2,7 +2,7 @@
 
 📅 **09/11/2024** | 📊 **7 segments** | 🎯 **5 nouvelles entités**
 
-> Le village est marqué par l'apparition des groupes de Regards-Libres qui inspirent les artisans et les villageois. Les Ailes-Grises, issus des rends du peuple des cieux, deviennent des guides importants pour la tribu, conduisant les chasseurs, pêcheurs et cueilleurs vers leurs proies et aidant les mourants à rejoindre les ancêtres. Leur influence grandit avec le temps, influençant le fonctionnement de la tribu et la place des sages et du tribunal.
+> La présence des groupes de Regards-Libres dans le village est devenue une inspiration pour les artisans qui couvrent leurs productions avec leur représentation. Les villageois sont fascinés par les qualités que ces oiseaux démontrent, notamment leur patience, leur curiosité et leur promptitude à apprendre. Leurs chants sont également appréciés, ce qui a amené certains artisans à essayer de les imiter avec des instruments en bambou. Cependant, il semble que d'autres instruments, tels que des tambours en peau d'herbivore ou des guimbardes en os, captent l'attention des Regards-Libres. Les Ailes-Grises, des dresseurs de regards-libres, ont acquis un rôle important dans la tribu en guidant les groupes de chasseurs et de pêcheurs vers leurs proies, ainsi que les cueilleurs vers des buissons de baies insoupçonnés. Certains disent même qu'ils guident également les âmes des mourants vers l'endroit où les ancêtres les attendent.
 
 ## 📊 Statistiques du tour
 
@@ -46,7 +46,6 @@ Les rhombes en pierre deviennent les instruments sacrés. Les artisans découvre
 ### 🗺️ Géographie
 
 - vallée
-- tribus qui se fait sans cesse plus large
 
 ### 🔧 Technologies
 
@@ -59,10 +58,16 @@ Les rhombes en pierre deviennent les instruments sacrés. Les artisans découvre
 
 ### ✨ Croyances
 
-- les Regards-Libres sont des animaux sacrés
-- les Ailes-Grises guident les âmes vers l'endroit où les ancêtres les attendent
-- le cercle de sages est important dans le fonctionnement de la tribu
-- les places au tribunal des mœurs sont importantes
+- croyance dans les Ailes-Grises comme guide des âmes
+- importance de la primauté des anciennes lois et des rituels sacrés
+- influence des Enfants du Courant dans les décisions de la vallée
+- culte des Gardiens de la Confluence
+- Les dresseurs de regards-libres deviennent des membres importants de la tribu, guidant les groupes de chasseurs et de pêcheurs vers leurs proies, mais parfois aussi les cueilleurs vers des buissons de baies insoupçonnés
+- Certains disent qu'ils guident aussi les âmes des mourants vers l'endroit où les ancêtres les attendent
+- Les rhombes en pierre deviennent les instruments sacrés
+- La recherche des meilleurs matériaux à travers la vallée devient un art, certaines pierres aux éclats brillants se révélant particulièrement résonnantes Les Ailes-Grises deviennent des Shamans, choisis uniquement parmi les enfants du ciel clair
+- Leur lien avec les Regards-Libres devient un signe de leur capacité à voir au-delà du monde visible
+- Au son des rhombes sacrés, ils guident les âmes et interprètent les présages, préservant les traditions ancestrales du peuple du ciel Des Cliques émergent dans notre société, transformant la structure du conseil : Les Voix de l'Aurore : dirigés par les Ailes-Grises, ils défendent la primauté des anciennes lois et des rituels sacrés Les Enfants du Courant : forts de leurs villages prospères, ils revendiquent une plus grande voix dans les décisions de la vallée Les Gardiens de la Confluence : enrichis par l'échange entre les peuples, ils cultivent leur influence dans les flux de la vallée
 
 ## 🏷️ Entités mentionnées
 

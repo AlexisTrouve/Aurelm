@@ -5,17 +5,17 @@
 **Tour 1** -> [outils](tech/outils.md), [techniques](tech/techniques.md)
 **Tour 2** -> [gourdins](tech/gourdins.md), [pieux](tech/pieux.md)
 **Tour 3** -> [rites de déposition des morts](tech/rites-de-deposition-des-morts.md), [mémentos en mémoire des aïeux](tech/mementos-en-memoire-des-aieux.md)
-**Tour 4** -> [la voix des cieux](tech/la-voix-des-cieux.md), [l'interprétation des présages dans les étoiles, le vent et les entrailles](tech/l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
+**Tour 4** -> [la voix des cieux](tech/la-voix-des-cieux.md), [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](tech/comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
 **Tour 5** -> [pointes de flèches](tech/pointes-de-fleches.md), [roches striées](tech/roches-striees.md)
 **Tour 6** -> [filet de pêche lesté](tech/filet-de-peche-leste.md), [lance à la pointe polie](tech/lance-a-la-pointe-polie.md), [serpes grossières taillées dans des os](tech/serpes-grossieres-taillees-dans-des-os.md), [hameçons et casiers à poisson](tech/hamecons-et-casiers-a-poisson.md)
 **Tour 7** -> [rhombes en pierre](tech/rhombes-en-pierre.md), [pipeau en bambou](tech/pipeau-en-bambou.md)
-**Tour 8** -> [rhombes](tech/rhombes.md), [outils des artisans](tech/outils-des-artisans.md)
+**Tour 8** -> [rhombes](tech/rhombes.md), [outils créés par les artisans](tech/outils-crees-par-les-artisans.md)
 **Tour 9** -> [lance](tech/lance.md), [cuillère](tech/cuillere.md), [barreau de berceau](tech/barreau-de-berceau.md), [artefacts](tech/artefacts.md)
 **Tour 10** -> [argile vive](tech/argile-vive.md), [roche braise](tech/roche-braise.md), [lait de pierre](tech/lait-de-pierre.md)
 **Tour 11** -> [Regards-Libres](tech/regards-libres.md), [Faucons Chasseurs](tech/faucons-chasseurs.md)
 **Tour 12** -> [outils pour évider les poissons de la Confluence](tech/outils-pour-evider-les-poissons-de-la-confluence.md), [rhombes pour les rituels et communications](tech/rhombes-pour-les-rituels-et-communications.md)
 **Tour 13** -> [fresques](tech/fresques.md), [pigments](tech/pigments.md), [artefacts translucides](tech/artefacts-translucides.md), [techniques de creusage](tech/techniques-de-creusage.md)
-**Tour 14** -> [construction de bois](tech/construction-de-bois.md), [outils pour la construction](tech/outils-pour-la-construction.md)
+**Tour 14** -> [construction de bois](tech/construction-de-bois.md), [outils](tech/outils.md)
 
 ## Par categorie
 
@@ -35,12 +35,11 @@
 
 ### 🎨 Artisanat
 
-- [outils des artisans](tech/outils-des-artisans.md) (Tour 8)
+- [outils créés par les artisans](tech/outils-crees-par-les-artisans.md) (Tour 8)
 
 ### 🏗️ Construction
 
 - [construction de bois](tech/construction-de-bois.md) (Tour 14)
-- [outils pour la construction](tech/outils-pour-la-construction.md) (Tour 14)
 
 ### 📦 Autre
 
@@ -49,7 +48,7 @@
 - [rites de déposition des morts](tech/rites-de-deposition-des-morts.md) (Tour 3)
 - [mémentos en mémoire des aïeux](tech/mementos-en-memoire-des-aieux.md) (Tour 3)
 - [la voix des cieux](tech/la-voix-des-cieux.md) (Tour 4)
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](tech/l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](tech/comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
 - [pointes de flèches](tech/pointes-de-fleches.md) (Tour 5)
 - [roches striées](tech/roches-striees.md) (Tour 5)
 - [serpes grossières taillées dans des os](tech/serpes-grossieres-taillees-dans-des-os.md) (Tour 6)
@@ -68,3 +67,4 @@
 - [pigments](tech/pigments.md) (Tour 13)
 - [artefacts translucides](tech/artefacts-translucides.md) (Tour 13)
 - [techniques de creusage](tech/techniques-de-creusage.md) (Tour 13)
+- [outils](tech/outils.md) (Tour 14)

@@ -31,15 +31,13 @@ Tour 14  ████████████████████
 
 ## Description
 
-L'Arbitre des Esprits est une entité qui semble jouer un rôle important dans la société de la civilisation, notamment en matière de coordination et de prise de décision. L'entité est mentionnée comme étant responsable de l'exécution de missions et de la gestion des risques pour le peuple. Le titre d'Arbitre des Esprits suggère un lien avec les forces spirituelles ou supra-naturelles.
+L'Arbitre des Esprits est une entité qui joue un rôle de leader et de guide dans la société. Il semble être responsable de la coordination d'opérations importantes, comme la recherche de disparus et la gestion des relations entre les peuples. L'Arbitre des Esprits possède une certaine autorité et peut convoquer des équipes pour effectuer des missions. Il utilise également un système de communication via des rhombes.
 
 ## Chronologie
 
-**Tour 11: L'Arbitre des Esprits se révèle aux personnages à travers la Révélation de la Confluence des Échanges, qui met en avant l'importance de l'échange et du partage entre les peuples. La révélation suggère que l'entité est une figure d'autorité et de sagesse.**
+**Tour 11: L'Arbitre des Esprits révèle les Trois Révélations, qui mettent en avant l'importance de l'échange et de la collaboration entre les peuples. La première révélation met en valeur le modèle d'échange entre les rivières.**
 
-**Tour 12: L'Arbitre des Esprits prend la décision de descendre personnellement dans les galeries inconnues pour coordonner une mission visant à retrouver des disparus. L'entité organise l'expédition avec soin, démontrant sa capacité à prendre des décisions éclairées.**
-
-**Tour 14: L'Arbitre des Esprits répond directement aux questions et inquiétudes des personnages, révélant sa vision globale de la situation. L'entité fournit des conseils importants pour l'avancement de la mission.**
+**Tour 12: L'Arbitre des Esprits décide de descendre personnellement coordonner une mission pour retrouver des disparus dans les galeries inconnues de Gouffre Humide. Il convoque quatre équipes et prend la tête d'une d'entre elles.**
 
 ## 💬 Mentions avec contexte
 

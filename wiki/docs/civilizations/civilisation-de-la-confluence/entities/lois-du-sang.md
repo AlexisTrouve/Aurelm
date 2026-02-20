@@ -19,13 +19,11 @@ Tour 11  ████████████████████  ← Pic
 
 ## Description
 
-Les Lois du Sang sont une technologie qui régissent l'enquête et la justice, en particulier pour les meurtres sans cause juste. Elles prescrivent que le Tribunal des Mœurs doit établir la vérité avant de prononcer sentence, puis que l'épreuve de l'arène détermine si les ancêtres protègent encore l'accusé.
+Les Lois du Sang sont une technologie utilisée par le Tribunal des Mœurs pour établir la vérité et appliquer la justice. Lorsqu'une vie est ôtée sans cause juste, l'enquête doit établir la vérité avant que l'épreuve de l'arène ne trancher ce qui les hommes ne peuvent.
 
 ## Chronologie
 
-**Tour 11: Le roi annonce qu'il nomme des Proclamateurs pour appliquer les Lois du Sang et de la Bête, en prévision d'un défi sans précédent. Il révèle maintenant ces lois : si une vie est ôtée sans cause juste, l'enquête doit établir la vérité puis l'épreuve de l'arène tranchera ce que les hommes ne peuvent.**
-
-- Turn 11: Le roi annonce qu'il nomme des Proclamateurs selon la droiture de leur cœur pour appliquer les Lois du Sang. Il révèle maintenant ces lois : quand une vie est ôtée sans cause juste, l'enquête doit établir la vérité, puis l'épreuve de l'arène tranchera ce que les hommes ne peuvent.
+**Tour 11: La bête sacrée est mentionnée comme une épreuve pour prouver si les ancêtres protègent encore l'accusé. L'épreuve de l'arène sera utilisée pour déterminer la culpabilité et la justice.**
 
 ## 💬 Mentions avec contexte
 

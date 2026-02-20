@@ -2,7 +2,7 @@
 
 📅 **07/12/2024** | 📊 **7 segments** | 🎯 **1 nouvelles entités**
 
-> La civilisation de la Confluence atteint un tournant important, où les membres de la tribu cherchent à trouver des moyens plus efficaces pour partager leurs expériences et connaissances avec les générations futures. Des choix sont proposés pour déterminer comment ces idées seront transmises : par l'art, l'histoire orale ou autrement. Alors que les institutions de la tribu entrent en concurrence, le Maitre du Jeu propose des présages pour essayer d'éviter un conflit éventuel.
+> Les membres de la tribu cherchent à transmettre leurs expériences et leurs idées aux générations futures, donnant naissance à différentes formes d'héritage. Les gravures, les histoires orales et d'autres moyens sont utilisés pour partager les connaissances. Cependant, cela conduit à des conflits entre les institutions établies, telles que le cercle des sages, la voix de l'Aurore et les Gardiens de la confluence.
 
 ## 📊 Statistiques du tour
 
@@ -45,11 +45,12 @@ C'est à travers les artefacts que le savoir trouve sa voie. Les artisans créen
 ### 🗺️ Géographie
 
 - vallée
+- confluence
 
 ### 🔧 Technologies
 
 - rhombes
-- outils des artisans
+- outils créés par les artisans
 
 ### 🌾 Ressources
 
@@ -62,6 +63,12 @@ C'est à travers les artefacts que le savoir trouve sa voie. Les artisans créen
 - juridiction du cercle des sages
 - tribunal de moeurs
 - Gardiens de la confluence
+- Au son des rhombes, les processions rituelles se multiplient alors que les nombreuses institutions que tu as participé à établir entre en concurrence
+- Les shamans, à leur image, ne s'immiscent pas dans ces querelles, et continuent leur mission d'observer le monde invisible
+- Un rhombe n'est plus seulement un instrument - ses gravures racontent son origine, ses marques témoignent de son utilisation, ses motifs enseignent les rituels qu'il accompagne
+- Les ancêtres m'ont révélé que le pouvoir lui-même prend différentes formes
+- La sagesse des Ailes-Grises guide nos âmes, la force des chasseurs protège nos corps, l'habileté des pêcheurs nourrit nos ventres, l'art des artisans enrichit nos vies, et les échanges unissent nos peuples
+- Les Regards-Libres, ont eu tendance à se lier avec ceux qui, comme eux, incarnent la dualité du ciel
 
 ## 🏷️ Entités mentionnées
 

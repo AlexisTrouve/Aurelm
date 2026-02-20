@@ -6,6 +6,7 @@
 |---|---|
 | **Acquisition** | Tour 1 |
 | **Categorie** | Autre |
+| **Re-mentionne** | Tours 1, 14 |
 
 ## Acquis en meme temps (Tour 1)
 
@@ -22,7 +23,7 @@
 - [rites de déposition des morts](rites-de-deposition-des-morts.md) (Tour 3)
 - [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md) (Tour 3)
 - [la voix des cieux](la-voix-des-cieux.md) (Tour 4)
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
 - [pointes de flèches](pointes-de-fleches.md) (Tour 5)
 - [roches striées](roches-striees.md) (Tour 5)
 - [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md) (Tour 6)
@@ -44,7 +45,7 @@
 
 ## Contexte (Tour 1)
 
-La civilisation de la Confluence est à ses débuts, émergeant dans un monde glacé et vierge. Les premiers humains apparaissent, méfiants et affamés, mais guidés par une entité qui leur montre les bases de la survie. Le joueur montre le charme de la rivière en présentant différents lieux pittoresques.
+La Civilisation de la Confluence commence à naître dans un monde glacial et hostile, où les premières plantes émergent de la neige et où des hommes perdus cherchent à survivre. Le joueur montre à la civilisation le potentiel de suivre une rivière pour atteindre des lieux de vie et de paix.
 
 ---
 [Retour a l'arbre technologique](../technologies.md)

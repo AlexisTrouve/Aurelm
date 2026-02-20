@@ -45,13 +45,25 @@ class FactExtractor:
         self.model = model
         self.client = httpx.Client(timeout=120.0)
 
-    def extract_facts(self, segments: List[Dict[str, Any]], raw_content: str = "") -> StructuredFacts:
+    def extract_facts(
+        self,
+        segments: List[Dict[str, Any]],
+        raw_content: str = "",
+        entity_lookup: Optional[Dict[str, Dict]] = None,
+    ) -> StructuredFacts:
         """
         Extract structured facts from turn segments.
+
+        Uses two passes:
+        1. LLM pass  — semantic understanding
+        2. Pattern pass — keyword lists + known entity names (catches what LLM misses)
+        Results are merged and deduplicated.
 
         Args:
             segments: List of segment dicts with 'segment_type' and 'content'
             raw_content: Optional raw Discord message content for media link extraction
+            entity_lookup: Optional {name_lower: {canonical_name, entity_type, ...}}
+                           built from DB entities for the current civ.
 
         Returns:
             StructuredFacts object with all extracted information
@@ -79,16 +91,30 @@ class FactExtractor:
                 choices_proposed=choices_proposed
             )
 
-        # Use LLM to extract other structured facts
+        # Pass 1: LLM extraction
         llm_facts = self._llm_extract_facts(relevant_text)
+
+        # Pass 2: pattern + entity-based extraction
+        pattern_facts = self._pattern_extract_facts(relevant_text, entity_lookup or {})
+
+        # Merge: LLM ∪ patterns, case-insensitive dedup
+        def merge(a: List[str], b: List[str]) -> List[str]:
+            seen: set = set()
+            result: List[str] = []
+            for item in a + b:
+                key = item.strip().lower()
+                if key and key not in seen:
+                    seen.add(key)
+                    result.append(item.strip())
+            return result
 
         return StructuredFacts(
             media_links=media_links,
-            technologies=llm_facts.get("technologies", []),
-            resources=llm_facts.get("resources", []),
-            beliefs=llm_facts.get("beliefs", []),
-            geography=llm_facts.get("geography", []),
-            choices_proposed=choices_proposed
+            technologies=merge(llm_facts.get("technologies", []), pattern_facts.get("technologies", [])),
+            resources=merge(llm_facts.get("resources", []), pattern_facts.get("resources", [])),
+            beliefs=merge(llm_facts.get("beliefs", []), pattern_facts.get("beliefs", [])),
+            geography=merge(llm_facts.get("geography", []), pattern_facts.get("geography", [])),
+            choices_proposed=choices_proposed,
         )
 
     def _extract_media_links(self, raw_content: str) -> List[Dict[str, str]]:
@@ -253,6 +279,88 @@ Regles :
         except Exception as e:
             print(f"Error during LLM fact extraction: {e}")
             return {"technologies": [], "resources": [], "beliefs": [], "geography": []}
+
+    # --- keyword lists for pattern pass ---
+
+    _BELIEF_KEYWORDS = [
+        "esprit", "âme", "ame", "ancêtre", "ancetre", "sacré", "sacre",
+        "rituel", "cérémonie", "ceremonie", "offrande", "sacrifice",
+        "oracle", "bénédiction", "benediction", "piété", "piete",
+        "sacralité", "sacralite", "foi", "vénérer", "venerer", "prier",
+        "divin", "cosmologie", "cosmologique", "céleste", "celeste",
+        "au-delà", "au-dela", "ciel", "mort", "défunt", "defunt",
+        "croyance", "croire", "tradition", "coutume", "tabou",
+        "totem", "chamane", "shaman", "prophétie", "prophetie",
+        "réincarnation", "reincarnation", "âmes", "esprits",
+        "loi du sang", "lois du sang",
+    ]
+
+    _RESOURCE_KEYWORDS = [
+        "récolte", "recolte", "pêche", "peche", "chasse", "cueillette",
+        "culture", "cultive", "extrait", "exploite", "stocke",
+        "nourriture", "viande", "poisson", "baie", "graine", "tubercule",
+        "herbe", "plante", "bois", "pierre", "argile", "silex",
+        "gingembre", "fleur", "champignon", "résine", "resine",
+        "fourrure", "peau", "cuir", "os", "griffe", "corne",
+        "cuivre", "bronze", "fer", "minerai", "sel",
+    ]
+
+    def _pattern_extract_facts(
+        self, text: str, entity_lookup: Dict[str, Dict]
+    ) -> Dict[str, List[str]]:
+        """Pattern-based extraction: keyword lists + known entity names.
+
+        Complements LLM extraction — catches entities the LLM ignored and
+        beliefs signalled by spiritual/social keywords.
+        """
+        technologies: List[str] = []
+        resources: List[str] = []
+        beliefs: List[str] = []
+        geography: List[str] = []
+
+        text_lower = text.lower()
+
+        # --- Entity-based pass ---
+        # If a known entity name appears in the text, add it to the right bucket
+        ENTITY_TYPE_TO_BUCKET: Dict[str, List[str]] = {
+            "technology": technologies,
+            "place": geography,
+            "institution": beliefs,
+            "caste": beliefs,
+            "event": beliefs,
+            "civilization": [],  # don't auto-add civs
+        }
+        for name_lower, entity in entity_lookup.items():
+            if len(name_lower) < 4:
+                continue  # skip very short names (noise risk)
+            bucket = ENTITY_TYPE_TO_BUCKET.get(entity.get("entity_type", ""), None)
+            if bucket is None:
+                continue
+            if name_lower in text_lower:
+                bucket.append(entity["canonical_name"])
+
+        # --- Keyword pass for beliefs ---
+        sentences = re.split(r'[.!?\n]', text)
+        for sentence in sentences:
+            s_lower = sentence.lower().strip()
+            if not s_lower:
+                continue
+            if any(kw in s_lower for kw in self._BELIEF_KEYWORDS):
+                clean = sentence.strip()
+                if clean and len(clean) > 10:
+                    beliefs.append(clean)
+
+        # Resource keyword pass: intentionally disabled.
+        # Sentence-level keyword matching produces too much noise (narrative sentences
+        # containing "pêche" or "rivière" are not resource entries).
+        # The LLM pass already handles resources well enough.
+
+        return {
+            "technologies": technologies,
+            "resources": resources,
+            "beliefs": beliefs,
+            "geography": geography,
+        }
 
     def close(self):
         """Close HTTP client."""

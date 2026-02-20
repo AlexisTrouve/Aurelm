@@ -1,125 +1,65 @@
 # Système de Croyances
 
-## Évolution
+## ✨ Figures & Entités vénérées
 
-**Tour 2**
-- il faut offrir en respect aux défunts des preuves de sagesses
-- il faut voir les nuages comme des obstacles à la transmission de la sagesse aux nouveaux nés
-- l'esprit s'élève et veille sur les vivants depuis le ciel
-- le corps retourne à la terre, se mêlant à la nature
+- [sans ciel](../entities/sans-ciel.md) *(Tour 3)*
+- [cercle des sages](../entities/cercle-des-sages.md) *(Tour 3)*
+- [Regards-Libres](../entities/regards-libres.md) *(Tour 6)*
+- [Ailes-Grises](../entities/ailes-grises.md) *(Tour 7)*
+- [tribunal des mœurs](../entities/tribunal-des-moeurs.md) *(Tour 7)*
+- [Voix de l'Aurore](../entities/voix-de-l-aurore.md) *(Tour 7)*
+- [Enfants du Courant](../entities/enfants-du-courant.md) *(Tour 7)*
+- [Rituel du Regard Partagé](../entities/rituel-du-regard-partage.md) *(Tour 9)*
+- [Passes-bien](../entities/passes-bien.md) *(Tour 10)*
+- [enfants des échos](../entities/enfants-des-echos.md) *(Tour 10)*
+- [Faucons Chasseurs](../entities/faucons-chasseurs.md) *(Tour 11)*
+- [ciels-clairs](../entities/ciels-clairs.md) *(Tour 11)*
+- [Arbitre des Esprits](../entities/arbitre-des-esprits.md) *(Tour 11)*
+- [Autels des Pionniers](../entities/autels-des-pionniers.md) *(Tour 14)*
+- [Gardiens du Hall](../entities/gardiens-du-hall.md) *(Tour 14)*
 
-**Tour 3**
-- adoration des anciens comme source de savoir
-- croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel
-- piété filiale pour racheter la providence refusée à la naissance
+## 🕯️ Rituels & Pratiques
 
-**Tour 4**
-- l'influence de l'Oracle sur la tribu
-- l'invocation de la bénédiction des esprits pour les futures générations
-- la coutume de dialogue respectueux et productif
-- le cercle des sages
-- le rôle valorisé des mères dans la société
-- les rituels de fertilité
+- importance de partager '[Les Larmes du Ciel](../entities/les-larmes-du-ciel.md)' lors des nouvelles lunes *(Tour 6)*
+- importance de la primauté des anciennes lois et des rituels sacrés *(Tour 7)*
 
-**Tour 5**
-- l'eau échappe à l'union de la terre et du ciel
-- la sacralité des liens familiaux
-- les esprits des ancêtres veillent sur la tribu
-- les sans-ciel sont bénis d'une autre manière
+## 🌌 Cosmologie & Spiritualité
 
-**Tour 6**
-- croyance dans les anciens
-- importance de la coopération avec les Regards-Libres
-- rituel du partage des Larmes du Ciel lors des nouvelles lunes
+- esprit s'élève et veille sur les vivants depuis le ciel *(Tour 2)*
+- les ancêtres *(Tour 4)*
+- la bénédiction des esprits *(Tour 4)*
+- les esprits des ancêtres *(Tour 5)*
+- le mariage sacré entre la terre et le ciel *(Tour 5)*
+- l'union des sans-ciel pour prospérer sur les eaux *(Tour 5)*
+- croyance dans les [Ailes-Grises](../entities/ailes-grises.md) comme guide des âmes *(Tour 7)*
+- Prendre soin d'un artefact c'est honorer les ancêtres *(Tour 9)*
+- Confluence des Esprits *(Tour 10)*
+- mission sacrée *(Tour 14)*
+- réincarnation dans un autre monde *(Tour 14)*
+- Essence divine *(Tour 14)*
 
-**Tour 7**
-- le cercle de sages est important dans le fonctionnement de la tribu
-- les Ailes-Grises guident les âmes vers l'endroit où les ancêtres les attendent
-- les Regards-Libres sont des animaux sacrés
-- les places au tribunal des mœurs sont importantes
+## ⚖️ Valeurs & Normes sociales
 
-**Tour 8**
-- Gardiens de la confluence
-- croyances de l'Aurore
-- juridiction du cercle des sages
-- tribunal de moeurs
+- offrir en respect aux défunts des preuves de sagesses *(Tour 2)*
+- On doit ainsi offrir en respect aux défunts des preuves de sagesses *(Tour 2)*
+- la notion de famille renforcée *(Tour 5)*
+- la sacralité des liens familiaux *(Tour 5)*
+- juridiction du [cercle des sages](../entities/cercle-des-sages.md) *(Tour 8)*
+- Loi du Sang et de [la Bête](../entities/la-bete.md) *(Tour 11)*
+- exil des fauteurs de troubles *(Tour 14)*
 
-**Tour 9**
-- Ailes-Grises
-- Antres des Échos
-- Cercles de Vigile
-- Porteurs de Flamme
-- Rituel du Regard Partagé
-- Voix de l'Aurore
+## 📿 Autres croyances
 
-**Tour 10**
-- Confluence des Biens
-- Confluence des Esprits
-- Confluence des Formes
-
-**Tour 11**
-- Arbitre des Esprits
-- Assemblée des Chefs
-- Cercle des Sages
-- Loi du Sang et de la Bête
-- Tribunal des Mœurs
-
-**Tour 12**
-- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent
-
-**Tour 14**
-- croyance en la réincarnation
-- exil des fauteurs de troubles
-- mission sacrée
-
-## Rituels développés
-
-- les rituels de fertilité (Tour 4)
-- rituel du partage des Larmes du Ciel lors des nouvelles lunes (Tour 6)
-- Rituel du Regard Partagé (Tour 9)
-
-## Concepts spirituels
-
-- il faut offrir en respect aux défunts des preuves de sagesses (Tour 2)
-- il faut voir les nuages comme des obstacles à la transmission de la sagesse aux nouveaux nés (Tour 2)
-- l'esprit s'élève et veille sur les vivants depuis le ciel (Tour 2)
-- le corps retourne à la terre, se mêlant à la nature (Tour 2)
-- adoration des anciens comme source de savoir (Tour 3)
-- croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel (Tour 3)
-- piété filiale pour racheter la providence refusée à la naissance (Tour 3)
-- l'influence de l'Oracle sur la tribu (Tour 4)
-- l'invocation de la bénédiction des esprits pour les futures générations (Tour 4)
-- la coutume de dialogue respectueux et productif (Tour 4)
-- le cercle des sages (Tour 4)
-- le rôle valorisé des mères dans la société (Tour 4)
-- l'eau échappe à l'union de la terre et du ciel (Tour 5)
-- la sacralité des liens familiaux (Tour 5)
-- les esprits des ancêtres veillent sur la tribu (Tour 5)
-- les sans-ciel sont bénis d'une autre manière (Tour 5)
-- croyance dans les anciens (Tour 6)
-- importance de la coopération avec les Regards-Libres (Tour 6)
-- le cercle de sages est important dans le fonctionnement de la tribu (Tour 7)
-- les Ailes-Grises guident les âmes vers l'endroit où les ancêtres les attendent (Tour 7)
-- les Regards-Libres sont des animaux sacrés (Tour 7)
-- les places au tribunal des mœurs sont importantes (Tour 7)
-- Gardiens de la confluence (Tour 8)
-- croyances de l'Aurore (Tour 8)
-- juridiction du cercle des sages (Tour 8)
-- tribunal de moeurs (Tour 8)
-- Ailes-Grises (Tour 9)
-- Antres des Échos (Tour 9)
-- Cercles de Vigile (Tour 9)
-- Porteurs de Flamme (Tour 9)
-- Voix de l'Aurore (Tour 9)
-- Confluence des Biens (Tour 10)
-- Confluence des Esprits (Tour 10)
-- Confluence des Formes (Tour 10)
-- Arbitre des Esprits (Tour 11)
-- Assemblée des Chefs (Tour 11)
-- Cercle des Sages (Tour 11)
-- Loi du Sang et de la Bête (Tour 11)
-- Tribunal des Mœurs (Tour 11)
-- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent (Tour 12)
-- croyance en la réincarnation (Tour 14)
-- exil des fauteurs de troubles (Tour 14)
-- mission sacrée (Tour 14)
+- corps retourne à la terre, se mêlant à la nature *(Tour 2)*
+- adoption rayonnant des anciens comme source de savoir *(Tour 3)*
+- l'Oracle *(Tour 4)*
+- les valeurs communes *(Tour 4)*
+- croyance dans les anciens et leur force *(Tour 6)*
+- influence des [Enfants du Courant](../entities/enfants-du-courant.md) dans les décisions de la vallée *(Tour 7)*
+- culte des Gardiens de [la Confluence](../entities/la-confluence.md) *(Tour 7)*
+- croyances de l'Aurore *(Tour 8)*
+- Gardiens de [la confluence](../entities/la-confluence.md) *(Tour 8)*
+- Cercles de Vigile *(Tour 9)*
+- Antres des Échos *(Tour 9)*
+- Confluence des Biens *(Tour 10)*
+- Confluence des Formes *(Tour 10)*

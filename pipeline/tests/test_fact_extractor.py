@@ -129,9 +129,26 @@ class TestChoicesProposedExtraction:
         assert facts.choices_proposed.count("option A") == 1
 
 
+def _ollama_available() -> bool:
+    """Return True if Ollama is reachable at localhost:11434."""
+    import socket
+    try:
+        with socket.create_connection(("localhost", 11434), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+_skip_no_ollama = pytest.mark.skipif(
+    not _ollama_available(),
+    reason="Ollama not running — integration tests skipped"
+)
+
+
 class TestLLMFactExtraction:
     """Test LLM-based fact extraction (integration test with Ollama)."""
 
+    @_skip_no_ollama
     @pytest.mark.integration
     def test_extract_technologies(self):
         """Should extract technologies from narrative text."""
@@ -152,6 +169,7 @@ class TestLLMFactExtraction:
         tech_lower = [t.lower() for t in facts.technologies]
         assert any("gourdin" in t for t in tech_lower)
 
+    @_skip_no_ollama
     @pytest.mark.integration
     def test_extract_resources(self):
         """Should extract resources from narrative text."""
@@ -173,6 +191,7 @@ class TestLLMFactExtraction:
         assert any("mollusque" in r for r in resources_lower)
         assert any("poisson" in r for r in resources_lower)
 
+    @_skip_no_ollama
     @pytest.mark.integration
     def test_extract_geography(self):
         """Should extract geography from narrative text."""
@@ -193,6 +212,7 @@ class TestLLMFactExtraction:
         assert any("vallée" in g or "vallee" in g for g in geo_lower)
         assert any("rivière" in g or "riviere" in g for g in geo_lower)
 
+    @_skip_no_ollama
     @pytest.mark.integration
     def test_extract_beliefs(self):
         """Should extract beliefs and rituals from narrative text."""
@@ -221,6 +241,7 @@ class TestLLMFactExtraction:
 class TestEndToEnd:
     """End-to-end integration tests."""
 
+    @_skip_no_ollama
     @pytest.mark.integration
     def test_full_turn_extraction(self):
         """Should extract all categories from a complete turn."""

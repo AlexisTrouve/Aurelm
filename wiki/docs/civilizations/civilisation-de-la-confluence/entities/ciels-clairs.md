@@ -31,15 +31,15 @@ Tour 14  ██████████
 
 ## Description
 
-La caste des ciels-clairs est une entité sociale qui joue un rôle important dans la communauté. Ils sont reconnus pour leur courage, leur force et leur droiture. Les ciels-clairs sont invités à rejoindre les Faucons Chasseurs, une organisation chargée de rassembler des indices et d'interroger des témoins pour reconstruire la vérité sur un événement tragique. Ils ont également l'obligation de capturer une bête sacrée.
+Les Ciels-clairs sont une caste de personnes reconnues pour leur courage, leur force et leur droiture. Ils jouent un rôle important dans la société en tant que guides et intermédiaires entre les différentes castes. Ils sont chargés d'apaiser les conflits et de trouver des solutions aux problèmes qui divisent les peuples. Les Ciels-clairs ont un lien spirituel avec les échos, qu'ils invoquent pour guider leur action.
 
 ## Chronologie
 
-**Tour 11: L'Assemblée des Chefs demande à la caste des ciels-clairs de rejoindre les Faucons Chasseurs pour rassembler des indices et interroger des témoins. Les ciels-clairs sont choisis pour leur courage, leur force et leur droiture.**
+**Tour 11: L'appel au leadership des Ciels-clairs est lancé par le chef pour rassembler les indices et interroger les témoins de l'incident qui a déclenché la crise. Les Ciels-clairs sont chargés de réconstituer la vérité de cette nuit funeste avant de juger.**
 
-**Tour 12: Un cadavre de ciel-clair est découvert dans la foule, et il semble que sa mort soit due à une cause différente des accidents ordinaires.**
+**Tour 12: Un cadavre de ciel-clair est découvert, ce qui suggère que les crimes se poursuivent dans les montagnes. La poignée d'un couteau utilisé pour évider les poissons de la Confluence a peut-être été utilisée dans le meurtre.**
 
-**Tour 14: Les ciels-clairs invoquent les yeux de l'aurore, un don des esprits, lors d'un débat sur les relations entre les différentes castes.**
+**Tour 14: Les Ciels-clairs invoquent les yeux de l'aurore, don des esprits, alors que les Enfants des Échos parlent des profondeurs où reposent les Premiers Ancêtres. Leur rôle est crucial dans le débat qui se poursuit entre les différentes castes.**
 
 ## 💬 Mentions avec contexte
 

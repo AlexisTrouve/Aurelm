@@ -2,74 +2,57 @@
 
 Graphe textuel des relations pour **Civilisation de la Confluence**.
 
-## Allied With (6)
+## Allied With (2)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Assemblée des Chefs (institution) | --> | Passes-bien (caste) | - |
-| Les Cercles de Vigile (technology) | --> | Ailes-Grises (caste) | - |
-| Maison des Découvertes (institution) | --> | Ailes-Grises (caste) | - |
-| Porteurs de Flamme (technology) | --> | Enfants du Courant (caste) | - |
 | Tribunal de moeurs (technology) | --> | Voix de l'Aurore (caste) | - |
-| ciels-clairs (caste) | --> | Assemblée des Chefs (institution) | - |
+| cercle des sages (institution) | --> | Voix de l'Aurore (caste) | - |
 
 ## Controls (2)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Rituel du Regard Partagé (event) | --> | cercle des sages (institution) | - |
-| Tribunal de moeurs (technology) | --> | cercle des sages (institution) | - |
-
-## Created By (4)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Assemblée des Chefs (institution) | --> | Faucons Chasseurs (caste) | - |
-| Cheveux de Sang (civilization) | --> | Premiers Ancêtres (technology) | - |
 | Gardiens du Hall (institution) | --> | cercle des sages (institution) | - |
-| ciels-clairs (caste) | --> | Faucons Chasseurs (caste) | - |
+| Voix de l'Aurore (caste) | --> | Gouffre Humide (place) | - |
 
-## Enemy Of (1)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| cercle des sages (institution) | --> | Voix de l'Aurore (caste) | - |
-
-## Located In (9)
+## Located In (12)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
+| Arbitre des Esprits (institution) | --> | Gouffre Humide (place) | - |
 | Autels des Pionniers (institution) | --> | Gouffre Humide (place) | - |
 | Gingembre sauvage (place) | --> | La Vallée (place) | - |
 | Gouffre Humide (place) | --> | La confluence (place) | - |
-| La Vallée (place) | --> | La confluence (place) | - |
-| Maison des Découvertes (institution) | --> | La confluence (place) | - |
-| Morsure-des-Ancêtres (place) | --> | La Vallée (place) | - |
-| Passes-bien (caste) | --> | La Vallée (place) | - |
+| Grande Fresque (technology) | --> | Gouffre Humide (place) | - |
+| Hall des Serments (place) | --> | La confluence (place) | - |
+| Nanzagouet (civilization) | --> | Gouffre Humide (place) | - |
+| Rituel du Regard Partagé (event) | --> | La confluence (place) | - |
 | antre des échos (place) | --> | La confluence (place) | - |
-| maladie des Antres (event) | --> | Gouffre Humide (place) | - |
+| colliers de glyphes (technology) | --> | Maison des Découvertes (institution) | - |
+| enfants des échos (caste) | --> | Gouffre Humide (place) | - |
+| la Fresque des Âges (technology) | --> | Gouffre Humide (place) | - |
 
-## Member Of (2)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Ailes-Grises (caste) | --> | tribunal des mœurs (institution) | - |
-| ciels-clairs (caste) | --> | enfants des échos (caste) | - |
-
-## Part Of (3)
+## Member Of (3)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Glyphes du Gouffre (technology) | --> | Hall des Serments (place) | - |
-| Salle du Conseil (institution) | --> | Hall des Serments (place) | - |
-| antre des échos (place) | --> | Gouffre Humide (place) | - |
+| L'Appel de l'Abysse (technology) | --> | enfants des échos (caste) | - |
+| La Vallée (place) | --> | La confluence (place) | - |
+| Rituel du Regard Partagé (event) | --> | Gardiens du Hall (institution) | - |
+
+## Part Of (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Rituel du Regard Partagé (event) | --> | cercle des sages (institution) | - |
 
 ## Trades With (2)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
 | Pouleheimos (civilization) | --> | Tlazhuaneca (civilization) | - |
-| ciels-clairs (caste) | --> | Passes-bien (caste) | - |
+| Tlazhuaneca (civilization) | --> | Pouleheimos (civilization) | - |
 
 ## Worships (1)
 

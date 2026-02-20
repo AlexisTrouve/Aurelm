@@ -7,18 +7,10 @@
 | **Acquisition** | Tour 14 |
 | **Categorie** | Construction |
 
-## Acquis en meme temps (Tour 14)
-
-- [outils pour la construction](outils-pour-la-construction.md)
-
 ## Arbre chronologique
 
 **Tour 13** (precedent) : [fresques](fresques.md), [pigments](pigments.md), [artefacts translucides](artefacts-translucides.md), [techniques de creusage](techniques-de-creusage.md)
 **Tour 14** (actuel) : **construction de bois**
-
-## Meme categorie : Construction
-
-- [outils pour la construction](outils-pour-la-construction.md) (Tour 14)
 
 ## Extrait narratif
 

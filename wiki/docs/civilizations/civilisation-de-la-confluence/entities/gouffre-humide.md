@@ -6,10 +6,10 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 5 |
+| **Mentions totales** | 6 |
 | **Tours actifs** | 12-14 (3 tours) |
 | **Pic d'activite** | Tour 14 (3 mentions) |
-| **Moyenne** | 1.7 mentions/tour |
+| **Moyenne** | 2.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
@@ -31,15 +31,17 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Le Gouffre Humide est une antre des échos située dans les profondeurs de la terre, dont les habitants dépendent pour leur subsistance. Il s'agit d'un lieu important pour l'échange commercial entre les villages aux sorties des galeries et les colonies souterraines. La maladie des Antres peut se développer rapidement si le poisson de la confluence n'est pas disponible.
+L'antre des échos est une galerie souterraine mature qui facilite le trafic piéton entre la confluence et Gouffre Humide. Elle a été construite pour accélérer les échanges vitaux entre les villages aux sorties des galeries et les colonies en profondeur. Cette antre présente une importance cruciale pour l'auto-suffisance de ces dernières, car elle leur permet d'accéder à des ressources essentielles comme le poisson de la confluence. Si la maladie des Antres peut se développer si les réserves ne sont pas régulières.
 
 ## Chronologie
 
-**Tour 12: Les ouvriers multi-générationnels ont travaillé pour couvrir chaque pas depuis la confluence jusqu'au Gouffre Humide, créant un escalier bien visible. Cela a accéléré le trafic piéton entre les deux endroits.**
+**Tour 12: La construction d'un escalier a été entreprise, couvrant chaque pas depuis la confluence jusqu'à Gouffre Humide. Cela accélère le trafic piéton entre les deux et est vital pour l'antre. Les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies.**
 
-**Tour 13: Les groupes de recherches sont descendus dans les entrailles du Gouffre Humide, une expérience mystique pour ceux qui n'y étaient pas habitués.**
+**Tour 13: Les recherches du groupe disparu se déroulent dans les profondeurs de Gouffre Humide, où même les ailes grises peinent à maintenir un masque de sérénité. Les enfants des échos manipulent nerveusement leurs armes de fortune.**
 
-**Tour 14: Les ailes grises se succèdent dans les halls sacrés du Gouffre Humide, un lieu important pour l'adoration des ancêtres par le peuple de Rithelgo.**
+**Tour 14: Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide, que ton peuple voit comme le peuple qui vous a précédé et dont la chute est un secret interrogeant.**
+
+**Tour 12: L'antre facilite désormais les échanges entre les villages aux sorties des galeries et les colonies en profondeur. Les difficultés respiratoires liées à la maladie des Antres sont réduites, grâce à l'accès régulier au poisson de la confluence.**
 
 ## 💬 Mentions avec contexte
 
@@ -74,6 +76,8 @@ Que les ruines deviennent un test aux plus courag...
     **Tour 12**
 
     > ...ravail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des di...
+
+    > ...ionnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer...
 
     **Tour 13**
 

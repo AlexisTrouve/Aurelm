@@ -19,13 +19,13 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Pupupasu est une ancienne civilisation connue pour ses chevelures rouges, qui sont comparées au soleil mourant à l'horizon. Cette entité semble être un peuple en lien avec quelque chose de sanguinolent ou de sanglant. On ne sait pas grand-chose sur leur rôle ou leur positionnement dans la région.
+Pupupasu est une civilisation ancienne connue pour ses chevelures rouges sang, qui semblent symboliser la mort du soleil à l'horizon. Cette entité joue un rôle mystérieux dans les légendes et les récits des anciens. Les Cheveux-de-Sang sont associés à une terre ou un lieu non spécifié, mais leur présence semble avoir un impact sur la région. Leur nature exacte reste inconnue, mais ils sont perçus comme menaçants.
 
 ## Chronologie
 
-**Tour 14: Les anciens continuent à murmurer le nom *Pupupasu*, en référence aux chevelures rouges des Cheveux de Sang, qui sont considérés comme un phénomène inconnu et menaçant.**
+**Tour 14: L'Autre - les Cheveux de Sang - est présenté comme une entité inconnue et potentiellement dangereuse. Les Premiers Ancêtres ont laissé un avertissement gravé dans la pierre pour prévenir l'ignorance face à cette entité.**
 
-**Tour 14: L'appellation "Pupupasu" est associée aux observations directes de chevelures rouges, ce qui montre que cette entité a été observée en personne par les narrateurs. Cela suggère une proximité ou une présence notable dans la région.**
+**Tour 14: Dans notre propre langue, les anciens murmurent déjà : "Pupupasu" - les Cheveux-de-Sang, un nom qui dit ce que nos yeux ont vu en premier : ces chevelures rouge sang, comme le soleil qui meurt à l'horizon. Cette mention marque une transition dans les récits, suggérant que Pupupasu est devenu un élément clé des légendes.**
 
 ## 💬 Mentions avec contexte
 

@@ -46,6 +46,12 @@ CREATE TABLE IF NOT EXISTS turn_turns (
     turn_type TEXT NOT NULL DEFAULT 'standard',  -- standard, event, first_contact, crisis
     game_date_start TEXT,  -- In-game date/era
     game_date_end TEXT,
+    media_links TEXT,        -- JSON array of {type, url, title?}
+    technologies TEXT,       -- JSON array of strings
+    resources TEXT,          -- JSON array of strings
+    beliefs TEXT,            -- JSON array of strings
+    geography TEXT,          -- JSON array of strings
+    choices_proposed TEXT,   -- JSON array of strings
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     processed_at TEXT,
     UNIQUE(civ_id, turn_number)

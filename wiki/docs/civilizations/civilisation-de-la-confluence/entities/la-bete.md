@@ -19,11 +19,13 @@ Tour 11  ████████████████████  ← Pic
 
 ## Description
 
-La Bête est une entité technologique qui n'est pas explicitement définie dans les extraits, mais elle semble être un symbole ou une métaphore pour quelque chose de puissant et potentiellement dangereux. Elle pourrait représenter une innovation scientifique ou une découverte qui menace la stabilité sociale.
+La Bête est une technologie qui représente un danger ou une menace pour la société. Elle est liée à la Loi du Sang et de la Bête, qui fait référence à un événement tragique impliquant le meurtre d'une personne. La Bête joue probablement un rôle dans cet événement.
 
 ## Chronologie
 
-**Tour 11: La Bête est mentionnée dans le contexte d'un meurtre et d'une loi émergeante, celle du Sang et de la Bête. Le personnage principal essaie d'apaiser les tensions qui montent entre les différentes factions.**
+**Tour 5: L'événement du meurtre est mentionné comme étant lié à La Bête, mais le contexte n'est pas détaillé.**
+
+**Tour 11: La colère monte dans la foule face au meurtre et la scène devient tendue. L'héroïque personnage essaie d'apaiser les voix en utilisant la sagesse des ancêtres pour trouver une voie nouvelle.**
 
 ## 💬 Mentions avec contexte
 

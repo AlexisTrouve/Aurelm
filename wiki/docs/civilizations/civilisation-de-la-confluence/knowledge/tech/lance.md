@@ -15,7 +15,7 @@
 
 ## Arbre chronologique
 
-**Tour 8** (precedent) : [rhombes](rhombes.md), [outils des artisans](outils-des-artisans.md)
+**Tour 8** (precedent) : [rhombes](rhombes.md), [outils créés par les artisans](outils-crees-par-les-artisans.md)
 **Tour 9** (actuel) : **lance**
 **Tour 10** (suivant) : [argile vive](argile-vive.md), [roche braise](roche-braise.md), [lait de pierre](lait-de-pierre.md)
 

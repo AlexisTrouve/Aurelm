@@ -319,6 +319,7 @@ def _call_ollama(model: str, prompt: str) -> dict:
         messages=[{"role": "user", "content": prompt}],
         format="json",
         options={"num_ctx": NUM_CTX},
+        keep_alive=60,  # 60s idle timeout instead of default 5min
     )
     raw = response["message"]["content"]
     return _parse_json_response(raw)

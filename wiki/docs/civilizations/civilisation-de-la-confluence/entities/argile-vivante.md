@@ -33,15 +33,17 @@ Tour 14  ████████████████████
 
 ## Description
 
-L'argile vivante est une technologie qui apparaît dans les visions du protagoniste. Elle semble être liée à la création d'une demeure terrestre pour l'Arbre de toutes les possibilités. Cette argile a des propriétés particulières car elle reflète la voûte céleste et est associée aux saisons, qui sont répliquées dans l'architecture du lieu.
+L'argile vivante est une technologie qui permet de créer des objets et des constructions à partir d'une substance argileuse vivante. Elle semble avoir des propriétés uniques, puisque l'on peut la trouver enracinée dans les racines de l'arbre de toutes les possibilités et qu'elle est associée à la création de demeures terrestres et d'autels.
 
 ## Chronologie
 
-**Tour 11: Dans les visions, l'arbre de toutes les possibilités est décrit avec ses racines dans l'argile vivante et ses branches touchant les quatre vents. Le protagoniste décide de bâtir sa demeure terrestre près d'une confluence où l'eau chante.**
+**Tour 11: Dans le Tour 11, l'argile vivante est décrite comme étant enracinée dans les racines de l'arbre de toutes les possibilités. Cette découverte inspire la création de la Maison des Découvertes.**
 
-**Tour 11 (déjà inclus mais ajout supplémentaire): Un grand cercle de pierre, d'argile et de bois est prévu pour refléter la voûte céleste, avec des climats correspondant aux saisons. À l'est, une zone humide est mentionnée.**
+- Turn 11 et Tour 14: L'arbre de toutes les possibilités est décrit comme ayant ses racines dans l'argile vivante, ce qui inspire la création d'une demeure terrestre.
 
-**Tour 14: L'argile vivante est utilisée pour ériger un Autel des Pionniers à l'entrée du Gouffre Humide, là où les noms de ceux qui sont partis avant les explorateurs sont gravés à jamais. De tels autels devraient être érigés dans chaque lieu important.**
+- Turn 11: La technologie argile vivante permet de bâtir une demeure terrestre près de la confluence, enracinée dans la nature.
+
+**Tour 14: Les Autels des Pionniers sont construits à l'entrée de Gouffre Humide et ailleurs pour honorer les morts. L'argile vivante est utilisée pour créer ces autels.**
 
 ## 💬 Mentions avec contexte
 

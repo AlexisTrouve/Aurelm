@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La Grande Fresque est une technologie ancienne qui a inspiré la culture et l'iconographie des Premiers Ancêtres. Elle dépassait les capacités techniques de leur peuple, mais restera un chef-d'œuvre durablement influenciant. Les représentations de cette fresque montrent des animaux mythiques qui ont peut-être existé à une époque lointaine.
+La Grande Fresque est un chef-d'œuvre de technologie qui dépassait les capacités techniques du peuple. Il s'agit d'une série d'images et de symboles qui inspirent durablement le peuple. La Grande Fresque se trouve dans Gouffre Humide.
 
 ## Chronologie
 
-**Tour 14: Les chercheurs d'un regard libre méditent devant la Grande Fresque, étant éclairés seulement par des feux. Ils cherchent à comprendre les mystères que cachent ce chef-d'œuvre. L'influence de cette technologie est visible dans l'iconographie des Premiers Ancêtres.**
+**Tour 14: Ceux qui veulent porter un regard libre méditent, observent et cherchent à comprendre les mystères que cachent la Grande Fresque. Les techniques utilisées dépassent tout ce dont est capable le peuple, mais l'inspire durablement.**
 
 ## 💬 Mentions avec contexte
 

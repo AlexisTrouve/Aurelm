@@ -2,7 +2,7 @@
 
 📅 **13/09/2024** | 📊 **4 segments** | 🎯 **2 nouvelles entités**
 
-> Les saisons ont passé et les anciens sont maintenant considérés comme une source de sagesse. Les plus jeunes montrent du respect et de l'humilité envers eux, notamment ceux qui sont nés 'sans ciel'. Le Maitre du Jeu a guidé la tribu dans l'utilisation optimale de leur territoire de chasse, ce qui a permis d'établir des villages temporaires et de stocker de la viande fumée. La tribu se développe et le Maitre du Jeu réalise que sa position évolue avec les temps.
+> Les saisons passent et les traditions de la tribu continuent à prendre forme. Les défunt sont emmenés aux sommets pour être déposés, et on croit que les oiseaux viennent récupérer leur âme pour l'emmener au ciel. La famille garde des mementos en mémoire de leurs ancêtres, qui sont considérés comme des sources de sagesse. Les anciens sont maintenant respectés et considérés comme des conseillers. Vous, vous êtes d'une certaine manière le plus ancien de la tribu et avez guidé les membres dans l'utilisation du territoire de chasse et la création de petits villages temporaires. La tribu se relève des épreuves qu'elle a traversées et surpasse même son nombre original.
 
 ## 📊 Statistiques du tour
 
@@ -55,8 +55,15 @@ Je décide de forger une nouvelle structure pour la tribu. Je convoque les espri
 ### ✨ Croyances
 
 - croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel
-- adoration des anciens comme source de savoir
-- piété filiale pour racheter la providence refusée à la naissance
+- adoption rayonnant des anciens comme source de savoir
+- piété filiale pour racheter une parcelle de la providence refusée à la naissance
+- De nouveaux rites voient le jour, où le défunt est emmené aux sommets des crêtes adjacentes pour y être déposé
+- Une croyance s'est développé que ce sont les oiseaux qui viennent récupérer morceau par morceau le mort pour l'emmener au ciel d'où il pourra observer et offrir leur sagesse
+- Là où le corps est absorbé par la terre, l'âme l'est elle par les cieux
+- Ceux des parents sont gardés par les enfants et ceux d'avant sont empilés sur des autels qui sont régulièrement visités pour y recevoir conseil de la part des ancêtres
+- D'autant plus ceux qui sont nés "sans ciel"
+- Ceux-là, abandonnés par le sort sont souvent rejetés et la seule manière qu'ils ont de se racheter est à travers la piété filiale
+- En membre respecté, parfois vénéré, tu as fini par te mêler de plus d'une manière à la tribus
 
 ## 🏷️ Entités mentionnées
 

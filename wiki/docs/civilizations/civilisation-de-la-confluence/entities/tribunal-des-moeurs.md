@@ -31,15 +31,15 @@ Tour 12  ████████████████████
 
 ## Description
 
-Le Tribunal des Mœurs est une institution chargée de juger et de punir les individus coupables d'infractions graves, notamment le meurtre sans cause juste. Il s'agit d'un organe de justice traditionnel qui suit des lois spécifiques (les Lois du Sang et de la Bête). Les membres du Tribunal sont appelés Proclamateurs.
+Le Tribunal des Mœurs est une institution qui joue un rôle crucial dans la société du peuple des cieux. Il s'agit d'un organisme chargé de juger et de punir les coupables en fonction des lois et traditions établies. Le tribunal est composé de sages qui prennent des décisions importantes, et il a également des places pour les Proclamateurs qui appliquent les Lois du Sang et de la Bête. Le Tribunal des Mœurs doit évoluer pour faire face à des défis sans précédent, tels que l'investigation d'un meurtre.
 
 ## Chronologie
 
-**Tour 7: Le Tribunal des Mœurs gagne en importance au sein de la tribu, qui se fait de plus en plus large. Les places au sein de l'organe de justice deviennent plus importantes.**
+**Tour 7: Le cercle des sages du peuple des cieux se fait plus important et les places au Tribunal des Mœurs deviennent plus importantes. Les groupes de personnes se rapprochent pour porter leur voix collective, plutôt que d'être étouffés parmi toutes les autres.**
 
-**Tour 11: Lorsque le premier meurtre est commis, le Tribunal doit évoluer pour juger cette affaire sans précédent. Les Proclamateurs sont nommés selon leur droiture pour appliquer les Lois du Sang et de la Bête.**
+**Tour 11: Le Tribunal des Mœurs doit évoluer pour faire face à un défi sans précédent : une enquête sur un meurtre. Des Proclamateurs sont nommés pour appliquer les Lois du Sang et de la Bête, qui prévoient que si l'accusé survit au combat contre une bête sacrée, c'est que les ancêtres le protègent.**
 
-**Tour 12: Le Tribunal des Mœurs devra statuer sur le meurtre commis, ce qui oblige les membres à prendre une décision difficile car il n'y a pas d'exemple dans leurs lois ou traditions.**
+**Tour 12: Le Tribunal des Mœurs doit statuer sur un meurtre sans précédent. Rien ne le prépare pour la décision qu'il va devoir prendre : soit l'exil de l'accusé, soit une punition plus sévère.**
 
 ## 💬 Mentions avec contexte
 

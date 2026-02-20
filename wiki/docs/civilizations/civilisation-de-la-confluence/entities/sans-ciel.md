@@ -29,26 +29,26 @@ Tour 14  ████████████████████  ← Pic
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 5 tours
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 4 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 3 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 3 tours
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 3 tours
+- 🔵 **[Cercle des sages](cercle-des-sages.md)** (Institutions) — 3 tours
 
 ## Description
 
-Les sans ciel sont une caste de personnes nées sans le bénéfice du ciel, considérées comme étant hors du mariage sacré entre la terre et le ciel. Ils vivent dans des villages sur pilotis ou en radeaux, se concentrant souvent sur les arts utilitaires. Leurs artisans sont respectés pour leur praticité et leur rôle dans la vie quotidienne.
+Les sans ciel sont une caste de personnes qui naissent sans la bénédiction du ciel clair, ce qui signifie qu'elles sont considérées comme étant nées sous les nuages. Ils jouent un rôle important dans la société en tant que guideurs et interprètes des enseignements des anciens. Les sans ciel sont souvent associés à l'eau et aux rivières, et leurs villages se situent généralement le long de ces cours d'eau. Ils s'occupent également de créer des outils et des objets utiles au quotidien.
 
 ## Chronologie
 
-**Tour 3: Les sans ciel sont rejetés par la société, mais ils peuvent obtenir une parcelle de providence en guidant un ancien vers son dernier repos. Cette pratique permet aux sans ciel de se racheter.**
+**Tour 3: Les sans ciel sont considérés comme étant dignes de l'admiration et de la vénération, notamment en raison de leur rôle dans la guider les anciens vers leur dernier repos. Cette adoration rayonne également parmi les vivants.**
 
-**Tour 5: Les esprits révèlent que les sans ciel sont liés à l'eau et ne peuvent pas coexister avec ceux bénis par le ciel clair. Ils doivent construire leurs demeures sur des pilotis ou en radeaux, élevées au-dessus des flots.**
+**Tour 5: Les esprits révèlent à un individu que les sans ciel sont naturellement associés aux eaux et qu'ils bâtissent leurs demeures en regardant au-dessus des flots, sur des radeaux ou des pilotis. Cela suggère une complémentarité entre les peuples de la vallée.**
 
-**Tour 6: Les sans ciel vivent dans les villages de la confluence et échangent avec ceux des cieux qui leur fournissent outils et nourriture. Ils sont considérés comme anonymes et n'ont pas accès à l'Oracle de leur vie.**
+**Tour 6: L'individu se déplace parmi les villages sans ciel qui sont installés aux confluences et échangent avec ceux des cieux. Les sans ciel cultivent la rivière, tandis que ceux des cieux leur fournissent outils, viandes et plantes.**
 
-**Tour 9: Les artisans sans ciel se concentrent sur les objets utilitaires, tandis que les artisans des ciels clairs créent les outils des rituels sacrés. Les sans ciel tirent leur fierté de leur praticité, tandis que les cieux clairs la tirent du lien entre les objets et le monde spirituel.**
+**Tour 9: Les artisans sans ciel se concentrent sur les objets productifs et utiles au quotidien, tandis que ceux des cieux créent les outils rituels sacrés. Les sans ciel tirent leur fierté de leur praticité, tandis que ceux des cieux la tirent du lien entre les objets et le monde spirituel.**
 
-**Tour 11: Les sans ciel sont impliqués dans la construction, utilisant l'argile vive pour créer des abris qui survivent aux générations. Ils utilisent également les eaux sacrées de la confluence pour honorer leurs ancêtres.**
+**Tour 11: L'eau s'est immiscée dans toutes les couches de la société, y compris dans les constructions qui survivent aux générations. Les sans ciel agrémentent les frontons de leurs demeures avec des rhombes miniatures fabriqués en masse.**
 
-**Tour 14: Un jeune homme sans ciel est chargé d'une mission importante et s'en sort avec succès, mais son audace est qualifiée à la fois de courageuse et de téméraire.**
+**Tour 14: Un groupe de sans ciel est chargé d'une mission ambitieuse, qui implique l'utilisation d'armes et la capture d'autres groupes. Leur succès donnera de la gloire à leur dirigeant.**
 
 ## 💬 Mentions avec contexte
 

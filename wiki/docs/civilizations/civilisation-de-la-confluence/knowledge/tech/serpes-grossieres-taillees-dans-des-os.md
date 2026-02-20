@@ -26,7 +26,7 @@
 - [rites de déposition des morts](rites-de-deposition-des-morts.md) (Tour 3)
 - [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md) (Tour 3)
 - [la voix des cieux](la-voix-des-cieux.md) (Tour 4)
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
 - [pointes de flèches](pointes-de-fleches.md) (Tour 5)
 - [roches striées](roches-striees.md) (Tour 5)
 - [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)

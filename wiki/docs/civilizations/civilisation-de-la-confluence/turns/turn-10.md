@@ -2,7 +2,7 @@
 
 📅 **20/03/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
 
-> Au cours de tes expéditions annuelles dans la vallée, tu es impressionné par les changements qui se produisent. Les villages sont plus nombreux et les coutumes ont évolué. Cependant, tu commences à te demander si ton anonymat est encore nécessaire, car personne ne te reconnait plus comme un ancien membre de la communauté.
+> Le Maitre du Jeu explore les grottes profondes de la vallée, remarquant le développement rapide de la civilisation de la Confluence. Les enfants des échos s'installent dans les cavernes, façonnant la pierre et découvrant de nouvelles ressources comme l'argile vive, le lait de pierre et la roche braise. Le Maitre du Jeu est impressionné par leur ingéniosité et leur capacité à survivre dans un environnement hostile.
 
 ## 📊 Statistiques du tour
 
@@ -69,7 +69,6 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 - Gorge Profonde
 - vallée
 - montagne
-- rivières
 
 ### 🔧 Technologies
 
@@ -80,13 +79,20 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 ### 🌾 Ressources
 
 - bois
-- pierres rares
+- pierreries
 
 ### ✨ Croyances
 
 - Confluence des Esprits
 - Confluence des Biens
 - Confluence des Formes
+- Tout juste t'as-t-on offert un fagots de bois pour que tu puisses te constituer un flambeau de fortune et te voilà à avancer précautionneusement, et descendre (la première fois en un certain temps)
+- Parfois tu te demandes si c'est cela que d'être mort
+- Ils amènent au chaos de la nature, la grâce de l'homme en façonnant de leur main ce que la géologie a mis des éternités à créer et le transforment, comme s'ils en modifiait l'âme elle-même
+- C'est toujours un grand contraste de voir le fracas entre l'esprit de l'homme et la puissance de la nature
+- D'ici quelques décennies, cet endroit accueillera des ailes grises qui consacreront Gorge Profonde
+- Plus proche du dortoir que du faste de certaines Antres des échos consacrés depuis quelques générations maintenant
+- Il t'invite à boire une infusion amer absolument infecte qu'ils affectionnent tant sous terre
 
 ## 🏷️ Entités mentionnées
 

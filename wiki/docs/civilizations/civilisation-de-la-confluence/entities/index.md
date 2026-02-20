@@ -2,14 +2,12 @@
 
 ## Lieux
 
-- [**Antre des échos**](antre-des-echos.md) -- 1 mentions, Tour 12
 - [**Gorge Profonde**](gorge-profonde.md) -- 2 mentions, Tour 10
-- [**Gouffre Humide**](gouffre-humide.md) -- 5 mentions, Tour 12 - Tour 14
+- [**Gouffre Humide**](gouffre-humide.md) -- 6 mentions, Tour 12 - Tour 14 | *alias: Antre des échos*
 - [**Hall des Serments**](hall-des-serments.md) -- 1 mentions, Tour 14
 - [**La confluence**](la-confluence.md) -- 19 mentions, Tour 2 - Tour 14
-- [**La Vallée**](la-vallee.md) -- 1 mentions, Tour 6
-- [**Morsure-des-Ancêtres**](morsure-des-ancetres.md) -- 2 mentions, Tour 6 | *alias: Gingembre sauvage*
-- [**Vallée des camps temporaires**](vallee-des-camps-temporaires.md) -- 1 mentions, Tour 6
+- [**Morsure-des-Ancêtres**](morsure-des-ancetres.md) -- 2 mentions, Tour 6 | *alias: Gingembre sauvage, Gingembre sauvage*
+- [**Vallée des camps temporaires**](vallee-des-camps-temporaires.md) -- 2 mentions, Tour 6 | *alias: La Vallée, La vallée*
 
 ## Technologies
 
@@ -48,7 +46,7 @@
 
 ## Civilisations
 
-- [**Cheveux de Sang**](cheveux-de-sang.md) -- 4 mentions, Tour 14 | *alias: Pupupasu*
+- [**Cheveux de Sang**](cheveux-de-sang.md) -- 4 mentions, Tour 14 | *alias: Pupupasu, Pupupasu*
 - [**Nanzagouet**](nanzagouet.md) -- 2 mentions, Tour 14
 - [**Pouleheimos**](pouleheimos.md) -- 1 mentions, Tour 14
 - [**Siliaska**](siliaska.md) -- 1 mentions, Tour 14
@@ -56,7 +54,7 @@
 
 ## Castes
 
-- [**Ailes-Grises**](ailes-grises.md) -- 14 mentions, Tour 7 - Tour 14
+- [**Ailes-Grises**](ailes-grises.md) -- 20 mentions, Tour 7 - Tour 14 | *alias: Voix de l'Aurore, Voix de l'aurore*
 - [**Ciels-clairs**](ciels-clairs.md) -- 4 mentions, Tour 11 - Tour 14
 - [**Enfants des échos**](enfants-des-echos.md) -- 7 mentions, Tour 10 - Tour 14
 - [**Enfants du Courant**](enfants-du-courant.md) -- 7 mentions, Tour 7 - Tour 14
@@ -64,7 +62,6 @@
 - [**Passes-bien**](passes-bien.md) -- 6 mentions, Tour 10 - Tour 14
 - [**Regards-Libres**](regards-libres.md) -- 8 mentions, Tour 6 - Tour 14
 - [**Sans ciel**](sans-ciel.md) -- 9 mentions, Tour 3 - Tour 14
-- [**Voix de l'Aurore**](voix-de-l-aurore.md) -- 6 mentions, Tour 7 - Tour 14
 
 ## Evenements
 

@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les Tlazhuaneca sont un peuple étrange qui habitent sur des villages flottants. Ils ont les yeux d'or et la peau est d'ébène. Ils parlent avec trois voix. Ils ont déjà eu des contacts avec les joueurs avant leur arrivée.
+Les Tlazhuaneca sont un peuple étrange qui parlent avec trois voix et ont la peau d'ébène, les yeux dorés. Ils vivent sur des villages flottants et ont une relation paisible avec les joueurs avant leur arrivée.
 
 ## Chronologie
 
-**Tour 14: Avant les joueurs, les Tlazhuaneca ont eu des contacts avec les Pouleheimos, un peuple robuste de marchands cosmopolites et leur étrange religion.**
+**Tour 14: Avant l'arrivée des joueurs, les Tlazhuaneca traitaient déjà avec les Pouleheimos, un peuple de marchands cosmopolites. Les relations entre ces deux peuples sont paisibles et profitables.**
 
 ## 💬 Mentions avec contexte
 

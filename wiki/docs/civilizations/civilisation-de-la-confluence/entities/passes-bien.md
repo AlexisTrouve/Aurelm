@@ -32,19 +32,17 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La caste des Passes-bien est chargée de transporter d'un côté de la vallée ce qu'on ne trouve que de l'autre, entretenant les sanctuaires sacrés. Ils sont considérés comme importants pour la survie des voyageurs et des vigiles qui les protègent. Les Passes-bien sont également impliqués dans le commerce et le troc avec d'autres groupes, échangeant des biens contre de l'argile vive ou autre chose d'intéressant. Ils semblent avoir un lien fort avec la terre et la production alimentaire.
+La caste des Passes-bien est une entité qui joue un rôle crucial dans la fourniture de biens et de services aux habitants du village. Ils sont chargés d'acheminer les aliments séchés, mais également de négocier avec les autres castes pour obtenir les biens dont ils ont besoin. Les Passes-bien semblent être considérés comme des personnages importants dans la société, car ils reçoivent des biens en échange de leurs services.
 
 ## Chronologie
 
-**Tour 10: Les Passes-bien sont mentionnés comme les principaux pourvoyeurs de nourriture pour les sanctuaires sacrés, transportant des aliments séchés qu'ils abandonnent sur leur chemin. Ils sont considérés comme importants pour la survie des voyageurs et des vigiles.**
+**Tour 10: La caste des Passes-bien est mentionnée comme les principaux pourvoyeurs de nourriture pour les sanctuaires sacrés. Ils transportent d'un côté de la vallée ce qu'on ne trouve que de l'autre, et sont considérés comme des porteurs de flammes.**
 
-- Turn 10: Les Passes-bien sont chargés de transporter des aliments séchés qu'ils abandonnent sur leur chemin pour nourrir les voyageurs et les vigiles.
+**Tour 11: Les Passes-bien sont mentionnés dans le contexte du troc, où ils négocient avec les autres castes pour obtenir des biens en échange de leurs services.**
 
-**Tour 11: Les Passes-bien se chargent du commerce et du troc avec d'autres groupes, échangeant des biens contre de l'argile vive ou autre chose d'intéressant. Ils sont mentionnés comme étant têtus et ayant tendances à s'acharner avant de s'y résoudre.**
+**Tour 12: La caste des Passes-bien est mentionnée comme ayant travaillé à la construction de l'escalier qui mène au Gouffre Humide, sur le flanc de la montagne.**
 
-**Tour 12: Les Passes-bien ont construit les escaliers sur la montagne en transportant des pierres, ce qui paraît absurde au premier abord. C'est un travail multi-générationnel qui a nécessité une grande quantité de travail.**
-
-**Tour 14: Un Passe-bien est mentionné comme étant membre du Conseil du village, responsable d'organiser le troc entre les différentes castes et groupes.**
+**Tour 14: Un Passe-bien est mentionné comme membre du Conseil du village, chargé d'organiser le troc entre les différentes castes.**
 
 ## 💬 Mentions avec contexte
 

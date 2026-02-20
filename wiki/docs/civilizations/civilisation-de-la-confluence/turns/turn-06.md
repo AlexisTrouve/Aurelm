@@ -2,7 +2,7 @@
 
 📅 **28/10/2024** | 📊 **8 segments** | 🎯 **6 nouvelles entités**
 
-> Le village a été établi par votre peuple il y a quelques générations après que vous avez guidé les survivants jusqu'à la confluence des deux fleuves. La Vallée offre des largesses à vos habitants, avec une terre fertile et une eau poissonneuse qui attirent des gibiers pour migrer. Les villageois ont développé une relation symbiotique avec certains animaux qui vivent dans la vallée, notamment des herbivores qui se sont fait domestication.
+> Le village de la Confluence, établi à la confluence de deux fleuves dans une vallée montagneuse, a connu des changements importants depuis l'arrivée d'un groupe de survivants qui ont guidé le peuple jusqu'à cet endroit idéal. Le village a grandi et est devenu un centre prospère, avec une alimentation variée et riche, incluant légumes sauvages, gibiers, poisson, serpents d'eau et herbes parfumées. Les villageois ont développé une relation symbiotique avec des animaux qui vivaient déjà dans la vallée avant leur arrivée, dont ils sont en train de domestiquer.
 
 ## 📊 Statistiques du tour
 
@@ -48,9 +48,8 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 - Vallée montagneuse
 - Confluence des deux fleuves
-- rivières bleues et vertes
-- plateau rocailleux en amont
-- villages sur pilotis
+- Plateau rocailleux en amont
+- Rivières bleues azur et vertes
 
 ### 🔧 Technologies
 
@@ -70,9 +69,16 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 ### ✨ Croyances
 
-- croyance dans les anciens
-- importance de la coopération avec les Regards-Libres
-- rituel du partage des Larmes du Ciel lors des nouvelles lunes
+- croyance dans les anciens et leur force
+- importance de partager 'Les Larmes du Ciel' lors des nouvelles lunes
+- D'abord un des multiples campements utilisés par les tiens, plus difficile d'accès mais offrant une certaine paix de l'esprit, le seul accès ne traversant pas les rivières étant protégées en amont par un plateau rocailleux
+- Du filet de pêche lesté, à la lance à la pointe polie, aux serpes grossières taillées dans des os en passant par les délicats hameçons et casiers à poisson
+- Les sans-ciels, cultivant la rivière et échangeant avec ceux des cieux qui leur fournissent outils mais aussi viandes et plantes
+- Rare sont ceux à avoir vu l'Oracle de leur vie, encore moins, son visage
+- Farouche dans un premier temps, ils ont fini par aller au-delà de leur instinct et se rapprocher de l'homme
+- Tu es persuadé que cette galette avait déjà le même goût la dernière fois que tu es venu à la Confluence
+- Le peuple du ciel clair, voyant cet avantage, a commencé à les utiliser pour repérer les mouvements des troupeaux
+- Cette intelligence, au-delà de leur rôle d'éclaireur, laisse entrevoir d'autres possibilités Dans les zones humides de la vallée pousse la "Morsure-des-Ancêtres" (Gingembre sauvage), une racine au goût mordant dont la chaleur et l'arôme en font un ingrédient recherché
 
 ## 🏷️ Entités mentionnées
 

@@ -2,7 +2,7 @@
 
 📅 **08/09/2025** | 📊 **177 segments** | 🎯 **19 nouvelles entités**
 
-> La narration présente la visite des Ailes-Grises aux halls sacrés de Gouffre Humide, un endroit considéré comme saint par leur peuple. Ils y méditent, observent et cherchent à comprendre les mystères cachés dans la Grande Fresque, qui est considérée comme un chef-d'œuvre des Premiers Ancêtres. Cette fresque contient des symboles, des allégories et des représentations qui inspirent durablement l'art et les croyances de leur peuple.
+> La narration décrit l'intrigue autour de la Grande Fresque de Gouffre Humide, un monument sacré de la Civilisation de la Confluence. Les Ailes-Grises se sont rendues dans les halls sacrés pour méditer et comprendre les mystères de la fresque, qui contient des secrets importants sur l'histoire et la cosmologie de leur peuple. Les explorateurs ont découverte que les techniques utilisées pour créer la fresque dépassent tout ce dont est capable leur peuple, mais ils sont inspirés par son art. La fresque représente les Premiers Ancêtres avec des animaux mythiques, des géants et d'autres figures mystérieuses. Les Ailes-Grises essaient de comprendre le message caché derrière la fresque et son importance pour leur peuple.
 
 ## 📊 Statistiques du tour
 
@@ -492,23 +492,31 @@ __Choix : Siliaska - Ceux qui portent le regard libre__
 
 - péninsule battue par les vents et les tempêtes
 - terres rocailleuses
+- mer
 
 ### 🔧 Technologies
 
 - construction de bois
-- outils pour la construction
+- outils
 
 ### 🌾 Ressources
 
-- viande de Nantons
-- peau de Nantons
 - fleurs charnues
+- Nantons (viande et peau)
+- fruits de la mer
 
 ### ✨ Croyances
 
-- croyance en la réincarnation
 - mission sacrée
+- réincarnation dans un autre monde
+- loi
 - exil des fauteurs de troubles
+- Essence divine
+- Choix : Testament sacré et énigme (Option libre)
+- La Fresque est à la fois testament sacré et énigme à déchiffrer
+- Les Premiers Ancêtres nous ont légué un avertissement, pas un dogme à suivre aveuglément
+- Que les Ailes-Grises continuent leur pèlerinage et leurs méditations dans les halls sacrés
+- La vérité spirituelle et la vérité matérielle sont deux faces d'un même mystère
 
 ## 🏷️ Entités mentionnées
 

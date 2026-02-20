@@ -2,7 +2,7 @@
 
 📅 **19/08/2025** | 📊 **2 segments** | 🎯 **1 nouvelles entités**
 
-> Après avoir reçu les instructions du Maître du Jeu, le groupe de recherche entreprend l'exploration de la galerie de Gouffre Humide en quête de la civilisation disparue. Ils progressent prudemment dans les profondeurs de la grotte, s'éloignant progressivement des autres groupes. Les membres du groupe sont intimidés par les aspérités des parois et l'inconnu qui les entoure. Cependant, ils trouvent finalement une galerie avec des fresques mystérieuses qui les intriguent. Plus loin dans le tunnel, ils découvrent une multitude d'artefacts abandonnés ainsi que des squelettes d'animaux et peut-être même de membres du groupe disparu. La situation se complique lorsque l'un des membres trouve un bol avec ce qui ressemble à une maladie inconnue, et qu'ils sont finalement confrontés au cri pour secours d'une rhombe.
+> Les groupes de la surface se déplacent dans les entrailles de Gouffre Humide, à la recherche des disparus. Ils descendent dans les galeries souterraines, où ils découvrent des fresques et des artefacts anciens, mais aussi des centaines de squelettes abandonnés sans rite funéraire. Lorsque l'un d'eux appelle à l'aide en utilisant une rhombe, le groupe se rend compte que les disparus sont endormis et qu'il faut leur porter secours avant qu'ils ne meurent également.
 
 ## 📊 Statistiques du tour
 
@@ -54,6 +54,11 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 - pigments
 - artefacts translucides
 - techniques de creusage
+
+### ✨ Croyances
+
+- Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée
+- Une fois nos hommes secourus, nous mènerons une investigation méthodique : tests avec animaux, cartographie des courants d'air par la fumée de petit feu de camp, étude des zones dangereuses
 
 ## 🏷️ Entités mentionnées
 

@@ -2,7 +2,7 @@
 
 📅 **03/09/2024** | 📊 **11 segments** | 🎯 **0 nouvelles entités**
 
-> La narration commence par une voix mystérieuse, le 'Maitre', qui semble avoir été vaincu dans un combat lointain. Il décide de disséminer son pouvoir et laisse aux humains la possibilité de se développer. Les premiers âges de la civilisation sont marqués par l'apparition des hommes, tapies à attendre leur heure dans une vaste étendue blanche et glacée. Ils découvrent les premières plantes, et bientôt, le monde change rapidement : les rivières creusent les terres noires, et un ciel éclatant apparaît.
+> La narration débute avec une référence au combat perdu d'un être surnaturel, qui décide de disséminer son pouvoir pour qu'il prospère par lui-même. Puis elle passe à la description du Premier Âge de la Civilisation de la Confluence, où les premiers souvenirs sont des paysages glacés et des plante qui perçoivent dans cette neige. Les hommes apparaissent ensuite, méfiants et perdus, mais ils sont aidés par un être non identifié qui leur montre comment survivre.
 
 ## 📊 Statistiques du tour
 
@@ -69,6 +69,12 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 - nourriture recoltee
 - materiaux travailles
+
+### ✨ Croyances
+
+- Et au-delà: un ciel terne et uniforme
+- Un sol noirâtre émerge comme d'un long sommeil, le ciel est crevé d'une lumière aveuglante
+- Et pour la première fois tu goûtes à la conscience
 
 ---
 

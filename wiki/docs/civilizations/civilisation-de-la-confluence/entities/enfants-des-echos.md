@@ -33,19 +33,19 @@ Tour 14  ████████████████████
 
 ## Description
 
-Les enfants des échos sont une caste qui vit dans les profondeurs de Gouffre Humide. Ils ont pour caractéristique d'avoir un développement physique et intellectuel limité, ce qui les rend aptes aux tâches physiques ingrates. Ils utilisent des outils en pierre pour façonner la roche et transforment l'environnement naturel. Leur mode de vie est influencé par leur éloignement des fleuves d'où viennent l'énergie nécessaire à la survie.
+Les enfants des échos sont une caste qui habite dans les profondeurs de Gouffre Humide. Ils ont la responsabilité de sculpter et façonnner la roche, ce qui leur donne un impact sur l'environnement naturel.
 
 ## Chronologie
 
-**Tour 10: Les enfants des échos sont responsables du chaos dans les profondeurs, transformant la nature avec leurs outils en pierre. Leur travail crée un grand contraste entre l'esprit de l'homme et la puissance de la nature.**
+**Tour 10: Les enfants des échos sont visibles partout dans les profondeurs, où ils travaillent en modifiant la géologie pour créer de nouveaux espaces. Leur travail contraste avec la puissance de la nature.**
 
-**Tour 11: La chaleur corporelle est précieuse pour les enfants des échos qui utilisent des roches chauffées dans le feu pour se garder au chaud. Ils sont impliqués dans la construction des Antres, perçant des galeries dans la roche.**
+**Tour 11: Il est mentionné que les enfants des échos utilisent des roches chauffées pour se garder au chaud pendant leur longue journée de travail.**
 
-**Tour 12: Les changements physiques chez les enfants des échos peuvent être liés à leur éloignement des fleuves qui alimentent l'énergie nécessaire à la survie. Le poisson de la confluence est essentiel pour leur bien-être, mais il a manqué récemment.**
+**Tour 12: Les enfants des échos sont affectés par l'absence du poisson de la confluence, ce qui provoque des maladies physiques et intellectuelles. Il est également mentionné que leurs jambes peuvent être arquées, leurs fronts larges et qu'ils ont souvent une petite taille.**
 
-**Tour 13: Les enfants des échos sont utilisés pour les tâches ingrates et physiques en raison de leur développement limité. Ils manipulent leurs armes de fortune : pioches et ciseaux à pierre.**
+**Tour 13: Les enfants des échos manipulent nerveusement leurs armes de fortune : pioches et ciseaux à pierre, lors d'une inspection menée par un explorateur.**
 
-**Tour 14: L'exploration est complexe et traîtresse, mais les enfants des échos ont mal commencé la construction, avec une grande perte d'hommes dans les miasmes qui empoisonnent certains niveaux.**
+**Tour 14: Il est mentionné que les tentatives d'explorer la région ont été difficiles en raison de l'impact des enfants des échos sur l'environnement.**
 
 ## 💬 Mentions avec contexte
 

@@ -6,11 +6,11 @@
 |---|---|
 | **Acquisition** | Tour 4 |
 | **Categorie** | Autre |
-| **Fiche narrative** | [Voir la page entite](../../entities/voix-de-l-aurore.md) |
+| **Fiche narrative** | [Voir la page entite](../../entities/ailes-grises.md) |
 
 ## Acquis en meme temps (Tour 4)
 
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
 
 ## Arbre chronologique
 
@@ -24,7 +24,7 @@
 - [techniques](techniques.md) (Tour 1)
 - [rites de déposition des morts](rites-de-deposition-des-morts.md) (Tour 3)
 - [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md) (Tour 3)
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
 - [pointes de flèches](pointes-de-fleches.md) (Tour 5)
 - [roches striées](roches-striees.md) (Tour 5)
 - [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md) (Tour 6)

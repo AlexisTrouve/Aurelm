@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les chroniques de la Fresque sont un ensemble de textes historiques et législatifs gravés sur des tablettes d'argile vivante, qui deviennent durces après avoir été pressées. Ceux-ci constituent une source précieuse de connaissance pour les civilisations du Cercle et servent de référence pour leurs lois et traités.
+Les Chroniques de la Fresque sont une technologie qui permet d'enregistrer et de présenter les textes permanents, tels que les lois du Cercle, en les inscrivant sur des tablettes d'argile vivante avant leur durcissement. Cette technologie garantit l'intégrité et la pérennité de ces textes, qui restent ainsi accessibles aux générations futures.
 
 ## Chronologie
 
-**Tour 14: Les lois du Cercle et les chroniques de la Fresque sont pressées dans des tablettes d'argile vivante pour leur conservation durable à long terme. Cette technique garantit la durabilité de ces textes tout en limitant les risques de modification ou de destruction.**
+**Tour 14: Les Chroniques de la Fresque sont utilisées pour enregistrer les événements, les lois et les traités sacrés sur des tablettes d'argile vivante. Cette procédure garantit l'intégrité et la pérennité de ces textes, qui deviendront autant d'évidences de l'histoire.**
 
 ## 💬 Mentions avec contexte
 

@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La Fresque des Âges est une technologie créée pour consigner l'aspect et les interprétations de la Fresque. C'est un outil développé dans le Gouffre Humide, au cœur du Foyer du savoir. Elle a été conçue pour aider à la conservation de la fresque. Ses caractéristiques notables incluent la capacité à représenter des éléments de la fresque et à assurer sa conservation.
+La Fresque des Âges est une technologie développée dans le Foyer du savoir, à Gouffre Humide. Elle permet de consigner et d'interpréter l'aspect de la fresque, qui représente un élément important de la culture de la région. Les enfants des échos ont travaillé sur cette technique, en utilisant leurs méthodes de construction pour créer une représentation durable.
 
 ## Chronologie
 
-**Tour 14: La nécessité de consigner l'aspect mais aussi les interprétations donné à la Fresque des Âges a précipité sa mise au point. Les rumeurs veulent qu'au départ, ça n'ait été que la tentative par certains enfants des échos de représenter des éléments de la fresque, pour en assurer la conservation.**
+**Tour 14: La Fresque des Âges a été développée dans les profondeurs de Gouffre Humide pour consigner l'aspect mais aussi les interprétations données à la fresque. Les rumeurs veulent qu'au départ, ça n'ait été que la tentative par certains enfants des échos de représenter des éléments de la fresque, pour en assurer la conservation.**
 
 ## 💬 Mentions avec contexte
 

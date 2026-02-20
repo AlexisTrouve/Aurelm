@@ -30,15 +30,13 @@ Tour 12  ████████████████████
 
 ## Description
 
-L'Assemblée des Chefs est une institution chargée de guider la mission des Faucons Chasseurs dans l'enquête sur les événements tragiques. Elle semble jouer un rôle important dans la détermination de la vérité et de la justice. L'Assemblée est présente à chaque étape de l'enquête, et ses membres sont impliqués dans la prise de décision.
+L'Assemblée des Chefs est une institution qui guide et soutient les actions de la nouvelle formation : les Faucons Chasseurs. Elle semble jouer un rôle crucial dans l'enquête sur le traumatisme vécu par le groupe.
 
 ## Chronologie
 
-**Tour 1: Pas de mention explicite, mais il est possible que l'entité soit présente en arrière-plan.**
+**Tour 11: L'Assemblée des Chefs est mentionnée comme celle qui guidera les Faucons Chasseurs dans leur mission d'enquêter et de rassembler des indices. Elle est également responsable de l'épreuve de l'arène pour déterminer la culpabilité.**
 
-**Tour 11: L'Assemblée des Chefs est mentionnée comme la future guide des Faucons Chasseurs. Les anciens lui soufflent que de cette tragédie doit naître une voie nouvelle et qu'elle devra guider les Faucons dans leur mission.**
-
-**Tour 12: L'Assemblée des Chefs est informée de la situation par les Passes-bien et est donc mise au courant des progrès de l'enquête.**
+**Tour 12: L'Assemblée des Chefs est informée de la situation par rapport à la recherche des disparus et les décisions prises par le groupe en conséquence.**
 
 ## 💬 Mentions avec contexte
 

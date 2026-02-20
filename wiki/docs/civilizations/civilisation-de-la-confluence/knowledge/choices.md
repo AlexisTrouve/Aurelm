@@ -4,7 +4,7 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
 
 ## Tour 1 : (sans titre)
 
-*La civilisation de la Confluence est à ses débuts, émergeant dans un monde glacé et vierge. Les premiers humains apparaissent, méfiants et affamés, mais guidés par une entité qui leur montre les bases*
+*La Civilisation de la Confluence commence à naître dans un monde glacial et hostile, où les premières plantes émergent de la neige et où des hommes perdus cherchent à survivre. Le joueur montre à la c*
 
 ??? question "Choix proposes"
     1. comment chasser le gibier
@@ -13,12 +13,12 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     4. autres [libre]
 
 !!! success "Decision prise"
-    Montrer le chemin de la rivière vers les lieux de vie et de paix
-    Présenter le plus beau lieu de la rivière (cascade, guet ou île)
+    {'action': 'Montrez comment suivre la rivière mène à des lieux de vie et de paix.'}
+    {'action': "Montrez le plus beau lieu de la rivière, peut être celui d'une cascade, peut être un guet succédé de rapides, peut être une île au milieu de la rivière."}
 
 ## Tour 2 : (sans titre)
 
-*La civilisation de la Confluence, issue de migrants épuisés, s'est installée le long d'une confluence de deux rivières et a commencé à se rétablir après une période difficile. Le joueur a montré des t*
+*La civilisation de la Confluence a été déplacée vers un endroit ensoleillé où ils ont trouvé des ressources et peuvent maintenant s'installer pour une nouvelle vie. Rubanc a montré des techniques de c*
 
 ??? question "Choix proposes"
     1. Il y a un autre monde qui vous attend après la mort.
@@ -28,16 +28,15 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     5. Autres [libre]
 
 !!! success "Decision prise"
-    Perfectionner l'art de la chasse
-    Préserver leurs prises vivantes ou mortes
-    Montrer comment faire des meilleurs outils de chasse
-    Explaner que l'esprit s'élève et veille sur les vivants depuis le ciel
-    Expliciter qu'il faut offrir en respect aux défunts des preuves de sagesses
-    Se souvenir de ceux nés sous de mauvais auspices
+    Montrer des techniques de perfectionnement de l'art de la chasse
+    Présenter les méthodes de fabrication d'outils de chasse
+    Expliquer l'esprit et le cycle de vie
+    Parler de l'importance du ciel pour la transmission de sagesse
+    Se souvenir des naissances sous mauvais auspices
 
 ## Tour 3 : (sans titre)
 
-*La tribu de la Confluence a réussi à se relever et à surpasser son nombre original grâce aux conseils du Maitre du Jeu, qui est un membre respecté et vénéré de la communauté. Rubanc décide de créer un*
+*La tribu de la Confluence continue à évoluer, avec les anciens étant considérés comme des sources de sagesse et les membres se montrant plus respectueux. Le joueur Rubanc a créé un cercle des sages po*
 
 ??? question "Choix proposes"
     1. Tu deviens leur chef
@@ -46,14 +45,14 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     4. Autres [libre]
 
 !!! success "Decision prise"
-    forge une nouvelle structure
-    convoquer les esprits éclairés et âmes sages
-    façonner le cercle des sages
-    se muant en oracle de la tribu
+    forger une nouvelle structure
+    convoquer les esprits les plus éclairés et les âmes les plus sages
+    façonner un cercle des sages
+    se muant en une présence indirect mais influente
 
 ## Tour 4 : (sans titre)
 
-*Le Maitre du Jeu guide la civilisation de la Confluence en assemblant le cercle des sages, où il forme les pensées des membres pour qu'elles soient proches de la sienne. Lorsqu'il quitte la tribu, il *
+*Le Maitre du Jeu a rassemblé son entourage, les 'cercle des sages', pour former une coutume de dialogue respectueux et productif avant de partir. Il leur laisse la responsabilité de prendre des décisi*
 
 ??? question "Choix proposes"
     1. Un homme ne devrait partager sa couche qu'avec une seule femme
@@ -63,14 +62,13 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     5. Autres [libre]
 
 !!! success "Decision prise"
-    Instaurer un système où un homme n'a pas de limite de femmes tant qu'il peut subvenir à leurs besoins
-    Créer des rituels de fertilité pour célébrer la vie et la croissance de la tribu
-    Valoriser le rôle des mères dans la société
-    Créer un tribunal spécial pour gérer les affaires de morale
+    instaure des rituels de fertilité
+    valorise le rôle des mères dans la société
+    créer un tribunal spécial pour gérer les affaires de morale
 
 ## Tour 5 : (sans titre)
 
-*La tribu de la Confluence croît rapidement, mais la concurrence pour les ressources est féroce et la sacralité des liens familiaux conduit à une exploitation des femmes. Le joueur a décidé que la Civi*
+*La tribu de la Confluence doit croître et faire fructifier la terre qu'ils ont sacrifiée, créant ainsi une concurrence féroce entre les hommes pour s'accaparer les femmes. Le joueur décide que les san*
 
 ??? question "Choix proposes"
     1. De travailler la terre et décorer les paniers
@@ -80,13 +78,13 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     5. Autre [libre]
 
 !!! success "Decision prise"
-    construire des demeures flottantes
-    utiliser des pilotis profondément ancrés dans le lit des rivières
-    garder leurs richesses dans des paniers immergés
+    Construire des demeures sur des radeaux amarrés
+    Ancrez les pilotis profondément dans le lit des rivières
+    Créer des passerelles entre les villages
 
 ## Tour 6 : (sans titre)
 
-*La civilisation de la Confluence vit dans une vallée montagneuse où deux fleuves se rejoignent, créant un environnement fertile et propice à la vie. Le joueur observe les Regards-Libres, guêtres cendr*
+*Le village de la Confluence a connu des changements après l'arrivée d'un groupe de survivants qui ont guidé le peuple jusqu'à un endroit idéal pour prospérer, où deux rivières se rencontrent. Le joueu*
 
 ??? question "Choix proposes"
     1. De quel genre d'animal s'agit-il ?
@@ -96,12 +94,12 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     5. Quel est leur plat préféré ?
 
 !!! success "Decision prise"
-    Observer les Regards-Libres
-    Apprendre des comportements des Regards-Libres
+    observer les Regards-Libres
+    apprendre la préparation de 'Les Larmes du Ciel'
 
 ## Tour 7 : (sans titre)
 
-*Les Regards-Libres deviennent une vision courante dans le village et inspirent les artisans, tandis que les Ailes-Grises prennent une place importante dans la tribu. Les Ailes-Grises deviennent des Sh*
+*Les groupes de Regards-Libres deviennent une vision courante dans le village et inspirent les artisans. Les Ailes-Grises, des dresseurs de regards-libres, jouent un rôle important dans la tribu. Les R*
 
 ??? question "Choix proposes"
     1. Des tambours en peau d'herbivore
@@ -116,14 +114,12 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     10. Des Cliques, centrés autours d'une pensée
 
 !!! success "Decision prise"
-    les rhombes en pierre sont reconnus comme instruments sacrés
-    la recherche de pierres spécifiques se poursuit pour améliorer la qualité sonore
-    Les Ailes-Grises deviennent des Shamans choisis parmi les enfants du ciel clair
-    le conseil est réorganisé en Cliques : Les Voix de l'Aurore, Les Enfants du Courant et Les Gardiens de la Confluence
+    L'instrumentalisation des rhombes en pierre
+    La transformation des Ailes-Grises en shamans
 
 ## Tour 8 : (sans titre)
 
-*La tribu de la Confluence évolue et explore différentes méthodes pour transmettre ses idées à travers les générations. Le joueur a choisi de se concentrer sur la création d'artefacts uniques par les a*
+*La civilisation de la Confluence connaît un essor culturel avec l'émergence de nouvelles formes d'héritage des idées et des conflits entre différentes institutions. Le joueur met l'accent sur l'import*
 
 ??? question "Choix proposes"
     1. à travers les gravures, qui couvrent bientôt les rochers et les flancs des montagnes, comme autant de témoignage de vie passée
@@ -137,12 +133,11 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     9. ils ont eu tendance sélectionner ceux exhibant les plus beau plumages
 
 !!! success "Decision prise"
-    Se concentrer sur la création d'artefacts uniques par les artisans
-    Reconnaître la valeur de chaque pouvoir
+    Ces artefacts deviennent des témoins vivants, transmis de main en main, chaque génération y ajoutant sa marque et son histoire.
 
 ## Tour 9 : (sans titre)
 
-*La Civilisation de la Confluence connaît une période d'évolution et de changement, avec l'apparition de nouvelles techniques et de nouveaux artefacts. Rubanc décide d'explorer les profondeurs de la mo*
+*La civilisation de la Confluence est marquée par l'importance des artefacts et de l'artisanat. Les artisans sont respectés et recherchent de nouvelles matières à travailler, tandis que les habitants d*
 
 ??? question "Choix proposes"
     1. restera identiques. Il ne doit pas subir les modes. L'objet doit rester pur pour devenir artefact
@@ -155,32 +150,34 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     8. Il faut descendre le long du fleuve, explorer le bas-pays
 
 !!! success "Decision prise"
-    Explorer les profondeurs de la montagne
-    Établir deux types de lieux sacrés : Cercles de Vigile et Antres des Échos
+    s'enfoncer dans la montagne
+    établir les Cercles de Vigile
+    établir les Antres des Échos
+    créer une nouvelle branche de son peuple
 
 ## Tour 10 : (sans titre)
 
-*Tu visites les villages de la vallée pour observer le progrès de ta civilisation, mais tu te demandes si ton anonymat est encore nécessaire. Le joueur reconnait son rôle évolué comme Confluence des Es*
+*La civilisation de la Confluence se développe dans les grottes profondes de la vallée. Les enfants des échos créent une société souterraine où ils façonnent la pierre et découvrent de nouvelles ressou*
 
 !!! success "Decision prise"
-    percevoir mon rôle comme celui d'un équilibre
-    unir plutôt que de diviser
-    inspirer plutôt que de contraindre
-    l'argile vive est un symbole puissant
+    mon rôle évolue avec notre peuple
+    je suis la Confluence des Esprits
+    j'ai perçu mon rôle comme celui d'un équilibre
+    les trois confluences fondamentales – la pierre, l'échange et l'esprit
 
 ## Tour 11 : (sans titre)
 
-*Les enfants des échos travaillent à aménager une nouvelle Antre, tandis que la vallée commence à se réveiller après l'hiver. Le joueur Rubanc met en place une nouvelle loi pour traiter le premier meur*
+*Les travailleurs sans-ciels construisent de nouveaux bâtiments dans la vallée, notamment un temple majestueux pour honorer les ancêtres. Le joueur Rubanc crée la loi du Sang et de la Bête, met en plac*
 
 !!! success "Decision prise"
-    Loi du Sang et de la Bête (option libre)
-    Création des Faucons Chasseurs
-    Nomination des Proclamateurs
-    Poursuite d'une bête sacrée
+    Loi du Sang et de la Bête
+    Les Faucons Chasseurs pour enquêter sur le meurtre
+    Créer la Maison des Découvertes
+    L'Assemblée des Chefs et l'Arbitre des Esprits
 
 ## Tour 12 : (sans titre)
 
-*Un crime a été commis dans le village de la Confluence, un ciel-clair accusant un sans-ciel d'un meurtre. Le Tribunal des mœurs doit statuer sur la question. Rubanc mène une expédition pour retrouver *
+*Le village de la Confluence est secoué par le premier meurtre connu, et il faut trouver un moyen de juger le coupable sans preuve formelle. De plus, des rumeurs inquiétantes arrivent d'au-delà des mon*
 
 !!! success "Decision prise"
     L'Appel de l'Abysse
@@ -188,15 +185,15 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
 
 ## Tour 13 : (sans titre)
 
-*Le groupe de recherche entre dans la galerie de Gouffre Humide en quête de la civilisation disparue. Ils découvrent des fresques mystérieuses et des artefacts abandonnés. Rubanc a décidé d'assurer la *
+*La civilisation de la Confluence affronte une situation critique en profondeur, où plusieurs groupes sont disparus et d'autres rencontrent des difficultés pour survivre. Le joueur Rubanc décide de don*
 
 !!! success "Decision prise"
-    Mise en pause de l'étude des fresques
+    Mise en pause (Option libre) l'étude des fresques
     Sauvetage à la corde
 
 ## Tour 14 : (sans titre)
 
-*Les Ailes-Grises visitent les halls sacrés de Gouffre Humide pour méditer et interpréter les fresques des Premiers Ancêtres, tout en essayant de comprendre leur signification et leur avertissement. Le*
+*Les Ailes-Grises de la Civilisation de la Confluence se sont rendues dans les halls sacrés de Gouffre Humide pour méditer et comprendre les mystères de la Grande Fresque, un chef-d'œuvre des Premiers *
 
 ??? question "Choix proposes"
     1. L'exploration est complexe et traîtresse. Elle atteint rapidement une impasse. Elle a mal commencé, avec les premiers explorateurs qui ont majoritairement perdu la vie dans les miasmes qui empoisonnent certains niveaux. Les tentatives de déblayer les effondrements ont aussi été abandonnées, ceux-ci provoquant la plupart des éboulements secondaires que les enfants des échos ne peuvent pas empêcher ni même prévoir. Essayez de percer des galeries secondaires à aussi échoué pour la simple et bonne raison que la majorité de la roche qui sert d'écrin à cette construction est bien trop dure pour vous outils. C'est d'ailleurs certainement pour cette raison qu'elle a été choisie. Là où ce n'est pas la pierre qui vous bloque, ce sont les inondations. Il y a bien eu des tentatives de vider les sections concernées, mais il semble que l'eau n'entre à un rythme plus important que ce les tiens ne soient capable de retirer. Un échec mordant pour les tiens qui cherchaient à satisfaire tes exigences. Et aussi pour toi, car tes ordres ont directement causé la perte de ceux qui te faisaient confiance. Tu décides …
@@ -258,5 +255,7 @@ Historique des choix proposes par le MJ et des decisions prises par le joueur po
     57. Premier inventaire complet du territoire de la Confluence
 
 !!! success "Decision prise"
-    Quand un plan se déroule sans accroc - Un étranger semble vouloir s'enfuir...
-    Évaluation de l'initiative du Sans-ciel: De l'audace, encore de l'audace...
+    Quand un plan se déroule sans accroc
+    Évaluation de l'initiative du Sans-ciel: de l'audace, encore de l'audace, toujours de l'audace
+    Choix 2 - Identité collective: C'est vrai ça, qui êtes vous ?
+    Choix 1 - Une grande forêt

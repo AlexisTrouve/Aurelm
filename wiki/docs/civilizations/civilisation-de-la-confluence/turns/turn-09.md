@@ -2,14 +2,14 @@
 
 📅 **15/01/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
 
-> La civilisation de la confluence est en pleine évolution, marquée par la création de nouveaux artefacts et la diversification des métiers. Les artisans sont à la fois respectés et craints, car ils possèdent le pouvoir de transformer la nature en objets d'art et d'utilité. La société est divisée en deux groupes principaux : les artisans sans ciel qui se concentrent sur les objets utiles au quotidien et les artisans avec ciel clair qui produisent des outils pour les rituels sacrés et les arts. Les changements sont également observés parmi les peuples de la vallée, dont certains semblent subir une mutation qui leur donne des yeux et des cheveux teints de couleurs liées au ciel.
+> La civilisation de la Confluence est caractérisée par une symbiose entre l'artisanat et la nature. Les artefacts sont considérés comme des symboles de continuité et sont utilisés pour honorer les ancêtres. Les artisans sont divisés en deux groupes : les ciels clairs, qui produisent des outils rituels, et les ciels libres, qui semblent subir une mutation qui change la couleur de leurs yeux et de leurs cheveux. La population de la vallée cherche à trouver sa place dans la société, en fonction de son origine, de ses ancêtres et de son rôle dans la communauté. Cela conduit à des tensions entre les différentes castes et groupes sociaux.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Les Cercles de Vigile`, `Rituel du Regard Partagé`, `Porteurs de Flamme`, `Leg des ancêtres`
 - **Mentions totales** : 15
 - **Technologies** : 4
-- **Ressources** : 2
+- **Ressources** : 1
 - **Densité narrative** : 8 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -70,7 +70,6 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 ### 🌾 Ressources
 
 - poissons des rivières
-- materiaux de la pierre
 
 ### ✨ Croyances
 
@@ -79,7 +78,11 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 - Voix de l'Aurore
 - Cercles de Vigile
 - Antres des Échos
-- Porteurs de Flamme
+- La nature est à la fois constante et changeante
+- Un arbre sortira de terre, étendra ses branches vers le ciel dans un acte désespéré qui ne pourra empêcher son destin qui est de pourrir
+- La branche devient lance, et transmise de génération en génération comme un leg des ancêtres, elle continuera de perdurer là où l'arbre qui l'a porté aura disparu
+- C'est la mission sacrée des artisans que de préserver la mémoire des ancêtres
+- Peut-être ce chiffre sera amené à grandir dans le futur pour préserver l'exceptionnalisme des artefacts, mais leur apparence elle …
 
 ## 🏷️ Entités mentionnées
 

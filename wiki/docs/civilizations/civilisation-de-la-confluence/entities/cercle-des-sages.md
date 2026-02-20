@@ -27,25 +27,25 @@ Tour 14  ████████████████████
 
 - 🔵 **[La confluence](la-confluence.md)** (Lieux) — 4 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 3 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 3 tours
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 3 tours
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 3 tours
+- 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 3 tours
 
 ## Description
 
-Le Cercle des Sages est une institution créée pour rassembler les esprits les plus éclairés et les âmes les plus sages de la tribu. Il est chargé d'interpréter les cieux et de guider le clan vers la sagesse.
+Le Cercle des Sages est une institution qui rassemble les esprits les plus éclairés et les âmes les plus sages de la tribu. Il est chargé de garder le savoir et d'interpréter les signes du ciel. Le Cercle des Sages joue un rôle central dans l'orientation de la tribu, avec pour objectif de faire grandir la sagesse et la connaissance.
 
 ## Chronologie
 
-**Tour 3: Le Cercle des Sages est créé pour rassembler les esprits les plus éclairés et les âmes les plus sages, en guise de gardiens du savoir et d'interprètes des cieux.**
+**Tour 3: Le Cercle des Sages est créé par l'influence du protagoniste, qui en fait une institution gardienne du savoir et interprète des cieux. Il devient ainsi un pilier de la tribu.**
 
-**Tour 4: Le Cercle des Sages est constitué de personnages sélectionnés par le héros pour rassembler leurs pensées et créer une coutume de dialogue respectueux et productif.**
+**Tour 4: Le protagoniste assemble les membres du Cercle des Sages, cherchant à créer une coutume de dialogue respectueux et productif pour faire grandir leur pensée commune.**
 
-**Tour 8: Le Cercle des Sages tente de faire valoir sa juridiction sur les enfants du courant, mais se heurte à d'autres institutions telles que l'Aurore et le Tribunal de moeurs.**
+**Tour 8: Les processions rituelles se multiplient alors que le Cercle des Sages essaie de faire valoir sa juridiction sur les enfants du courant. Le protagoniste indique par présages à diverses institutions qu'elles doivent coopérer.**
 
-**Tour 11: Le Cercle des Sages devient le tronc solide de la société, porteur de traditions et guide pour les branches nouvelles.**
+**Tour 11: Le Cercle des Sages devient le tronc solide et patient d'un arbre qui symbolise la tribu, chargé de porter en lui les traditions et de faire monter vers les branches les orientations nouvelles.**
 
-- Turn 14: Les Gardiens du Hall doivent revenir à La Confluence chaque année pour rendre compte devant le Cercle des Sages.
+**Tour 14: Les Gardiens du Hall doivent se présenter chaque année devant le Cercle des Sages pour renouveler leur serment par le Rituel du Regard Partagé.**
 
 ## 💬 Mentions avec contexte
 

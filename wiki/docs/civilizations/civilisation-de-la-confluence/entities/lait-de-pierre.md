@@ -33,15 +33,13 @@ Tour 12  ████████████████████
 
 ## Description
 
-Le lait de pierre est une substance laiteuse qui suinte des murs de certaines cavernes. Il a des propriétés médicinales et il est utilisé pour ses bienfaits.
+Le lait de pierre est une substance laiteuse qui s'écoule des murs de certaines cavernes, utilisée pour ses propriétés médicinales. Il s'agit d'une technologie naturelle présente dans l'environnement souterrain.
 
 ## Chronologie
 
-**Tour 10: Tu cherches le lait de pierre car tu as entendu parler de ses propriétés médicinales, mais tu ne veux pas rester dans l'Antre trop longtemps.**
+**Tour 10: Le lait de pierre est mentionné comme une substance utilisée pour ses propriétés médicinales, qui peut être trouvée dans certaines cavernes. Les personnages sont attirés par ce lieu car ils ont entendu parler de quelque chose qu'on ne trouve qu'ici.**
 
-**Tour 12: Les Enfants des Échos cherchent le lait de pierre aux vertus curatives et à d'autres substances mystérieuses.**
-
-- Turn 12: D'autres murmures évoquent le lait de pierre comme étant une substance rare et précieuse.
+**Tour 12: Les Enfants des Échos cherchent à explorer les galeries les plus reculées pour trouver le lait de pierre, qui est censé avoir des vertus curatives. Les légendes parlent du lait de pierre comme d'une substance mystérieuse avec des propriétés inconnues.**
 
 ## 💬 Mentions avec contexte
 

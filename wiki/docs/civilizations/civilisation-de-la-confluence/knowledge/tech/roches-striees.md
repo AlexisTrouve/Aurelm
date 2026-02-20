@@ -13,7 +13,7 @@
 
 ## Arbre chronologique
 
-**Tour 4** (precedent) : [la voix des cieux](la-voix-des-cieux.md), [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
+**Tour 4** (precedent) : [la voix des cieux](la-voix-des-cieux.md), [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md)
 **Tour 5** (actuel) : **roches striées**
 **Tour 6** (suivant) : [filet de pêche lesté](filet-de-peche-leste.md), [lance à la pointe polie](lance-a-la-pointe-polie.md), [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md), [hameçons et casiers à poisson](hamecons-et-casiers-a-poisson.md)
 
@@ -24,7 +24,7 @@
 - [rites de déposition des morts](rites-de-deposition-des-morts.md) (Tour 3)
 - [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md) (Tour 3)
 - [la voix des cieux](la-voix-des-cieux.md) (Tour 4)
-- [l'interprétation des présages dans les étoiles, le vent et les entrailles](l-interpretation-des-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
+- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
 - [pointes de flèches](pointes-de-fleches.md) (Tour 5)
 - [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md) (Tour 6)
 - [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)

@@ -2,21 +2,17 @@
 
 ## Lieux
 
-- [**Antre des échos**](../civilizations/civilisation-de-la-confluence/entities/antre-des-echos.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
-
 - [**Gorge Profonde**](../civilizations/civilisation-de-la-confluence/entities/gorge-profonde.md) -- Civilisation de la Confluence, 2 mentions, Tour 10
 
-- [**Gouffre Humide**](../civilizations/civilisation-de-la-confluence/entities/gouffre-humide.md) -- Civilisation de la Confluence, 5 mentions, Tour 12 - Tour 14
+- [**Gouffre Humide**](../civilizations/civilisation-de-la-confluence/entities/gouffre-humide.md) -- Civilisation de la Confluence, 6 mentions, Tour 12 - Tour 14 | *alias: Antre des échos*
 
 - [**Hall des Serments**](../civilizations/civilisation-de-la-confluence/entities/hall-des-serments.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
 
 - [**La confluence**](../civilizations/civilisation-de-la-confluence/entities/la-confluence.md) -- Civilisation de la Confluence, 19 mentions, Tour 2 - Tour 14
 
-- [**La Vallée**](../civilizations/civilisation-de-la-confluence/entities/la-vallee.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
+- [**Morsure-des-Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/morsure-des-ancetres.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: Gingembre sauvage, Gingembre sauvage*
 
-- [**Morsure-des-Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/morsure-des-ancetres.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: Gingembre sauvage*
-
-- [**Vallée des camps temporaires**](../civilizations/civilisation-de-la-confluence/entities/vallee-des-camps-temporaires.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
+- [**Vallée des camps temporaires**](../civilizations/civilisation-de-la-confluence/entities/vallee-des-camps-temporaires.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: La Vallée, La vallée*
 
 ## Technologies
 
@@ -82,7 +78,7 @@
 
 ## Civilisations
 
-- [**Cheveux de Sang**](../civilizations/civilisation-de-la-confluence/entities/cheveux-de-sang.md) -- Civilisation de la Confluence, 4 mentions, Tour 14 | *alias: Pupupasu*
+- [**Cheveux de Sang**](../civilizations/civilisation-de-la-confluence/entities/cheveux-de-sang.md) -- Civilisation de la Confluence, 4 mentions, Tour 14 | *alias: Pupupasu, Pupupasu*
 
 - [**Nanzagouet**](../civilizations/civilisation-de-la-confluence/entities/nanzagouet.md) -- Civilisation de la Confluence, 2 mentions, Tour 14
 
@@ -94,7 +90,7 @@
 
 ## Castes
 
-- [**Ailes-Grises**](../civilizations/civilisation-de-la-confluence/entities/ailes-grises.md) -- Civilisation de la Confluence, 14 mentions, Tour 7 - Tour 14
+- [**Ailes-Grises**](../civilizations/civilisation-de-la-confluence/entities/ailes-grises.md) -- Civilisation de la Confluence, 20 mentions, Tour 7 - Tour 14 | *alias: Voix de l'Aurore, Voix de l'aurore*
 
 - [**Ciels-clairs**](../civilizations/civilisation-de-la-confluence/entities/ciels-clairs.md) -- Civilisation de la Confluence, 4 mentions, Tour 11 - Tour 14
 
@@ -109,8 +105,6 @@
 - [**Regards-Libres**](../civilizations/civilisation-de-la-confluence/entities/regards-libres.md) -- Civilisation de la Confluence, 8 mentions, Tour 6 - Tour 14
 
 - [**Sans ciel**](../civilizations/civilisation-de-la-confluence/entities/sans-ciel.md) -- Civilisation de la Confluence, 9 mentions, Tour 3 - Tour 14
-
-- [**Voix de l'Aurore**](../civilizations/civilisation-de-la-confluence/entities/voix-de-l-aurore.md) -- Civilisation de la Confluence, 6 mentions, Tour 7 - Tour 14
 
 ## Evenements
 

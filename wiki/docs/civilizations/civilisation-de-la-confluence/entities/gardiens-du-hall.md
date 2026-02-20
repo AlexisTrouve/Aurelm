@@ -19,11 +19,11 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les Gardiens du Hall sont une institution chargée de veiller sur le Hall et son contenu. Ils ont un rôle essentiel dans la gestion des ressources et assurent la sécurité du lieu. Chaque année, ils doivent se rendre à La Confluence pour rendre compte devant le Cercle des Sages. Leur serment est réaffirmé lors d'un rituel appelé le Rituel du Regard Partagé.
+Les Gardiens du Hall sont une institution chargée de protéger et de gérer le Hall, un lieu important à La Confluence. Ils sont composés de quatre membres qui sont responsables de la sécurité, de l'entretien et des activités dans le Hall. Chaque année, ils doivent se présenter devant le Cercle des Sages pour rendre compte de leurs actions.
 
 ## Chronologie
 
-**Tour 14: Lorsque les Gardiens du Hall reviennent à La Confluence, ils doivent passer par le Rituel du Regard Partagé pour renouveler leur serment. Ce rituel est un élément important de leur fonction.**
+**Tour 14: Les quatre Gardiens du Hall doivent revenir à La Confluence chaque année pour y accomplir un rituel et recevoir nourriture en échange de leur service.**
 
 ## 💬 Mentions avec contexte
 

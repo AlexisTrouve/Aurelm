@@ -524,6 +524,38 @@ def _build_entity_lookup(conn: sqlite3.Connection, civ_id: int) -> dict[str, dic
     return lookup
 
 
+def _wikify_item(text: str, entity_lookup: dict[str, dict]) -> str:
+    """Linkify text if it matches or contains a known entity name.
+
+    Uses relative path ../entities/{slug}.md (from knowledge/ pages).
+    """
+    text_stripped = text.strip()
+
+    # Exact match (case-insensitive)
+    if text_stripped.lower() in entity_lookup:
+        entity = entity_lookup[text_stripped.lower()]
+        slug = slugify(entity["canonical_name"])
+        return f"[{text_stripped}](../entities/{slug}.md)"
+
+    # Partial match: search for entity names inside the text (longest first to avoid conflicts)
+    result = text_stripped
+    already_linked: set[str] = set()
+    for name_lower in sorted(entity_lookup.keys(), key=len, reverse=True):
+        if name_lower in already_linked or len(name_lower) < 4:
+            continue
+        idx = result.lower().find(name_lower)
+        if idx >= 0:
+            entity = entity_lookup[name_lower]
+            slug = slugify(entity["canonical_name"])
+            found_text = result[idx : idx + len(name_lower)]
+            link = f"[{found_text}](../entities/{slug}.md)"
+            result = result[:idx] + link + result[idx + len(name_lower) :]
+            already_linked.add(name_lower)
+            break  # One entity link per item to keep output clean
+
+    return result
+
+
 def generate_tech_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
     """Generate technology index page + individual tech pages for a civilization.
 
@@ -792,10 +824,11 @@ def generate_resources_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
     """Generate resources knowledge base page for a civilization.
 
     Creates civilizations/{civ_slug}/knowledge/resources.md with:
-    - Resources by turn
-    - Resources by category (inferred from keywords)
+    - Resources by turn (with entity links)
+    - Resources by category (6 categories)
     """
     civ_slug = slugify(civ_name)
+    entity_lookup = _build_entity_lookup(conn, civ_id)
 
     # Query resources from turn_turns
     rows = conn.execute(
@@ -809,42 +842,64 @@ def generate_resources_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
     if not rows:
         return  # No resources to display
 
-    # Categorization keywords
-    categories = {
-        "Nourriture": ["viande", "poisson", "fruit", "légume", "céréale", "nourriture", "gibier", "baie"],
-        "Matériaux": ["bois", "pierre", "argile", "os", "silex", "bambou", "roseau"],
-        "Minéraux": ["cuivre", "bronze", "fer", "or", "argent", "métal", "minerai"],
+    # Categorization: ordered by priority (first match wins)
+    category_order = ["Nourriture", "Végétaux", "Faune", "Matériaux", "Minéraux", "Artisanat", "Autre"]
+    category_keywords: dict[str, list[str]] = {
+        "Nourriture": [
+            "viande", "poisson", "fruit", "légume", "céréale", "nourriture",
+            "gibier", "baie", "recolt", "pêch", "mets", "fumé", "fumee",
+            "saumon", "chair", "lait", "oeuf", "œuf", "miel",
+        ],
+        "Végétaux": [
+            "herbe", "graine", "tubercule", "fleur", "plante", "champignon",
+            "racine", "gingembre", "épice", "condiment", "algue", "bambou",
+            "roseau", "baie", "noix", "résine", "parfum",
+        ],
+        "Faune": [
+            "peau", "fourrure", "cuir", "plume", "écaille", "corne",
+            "griffe", "os", "nanton",
+        ],
+        "Matériaux": [
+            "bois", "pierre", "argile", "silex", "roche", "sable",
+            "gravier", "terre", "calcaire", "granit",
+        ],
+        "Minéraux": [
+            "cuivre", "bronze", "fer", "or", "argent", "métal", "minerai",
+            "cristal", "sel", "obsidienne",
+        ],
+        "Artisanat": [
+            "matériau travaillé", "matériaux travaillés", "matériau travaille",
+            "materiaux travaille", "matériaux pour", "materiaux pour",
+            "matériaux de", "materiaux de", "outil", "objet", "contenant", "tissu",
+        ],
     }
 
-    resource_by_category: dict[str, list[tuple[str, int]]] = {cat: [] for cat in categories}
-    resource_by_category["Autre"] = []
+    resource_by_category: dict[str, list[tuple[str, int]]] = {cat: [] for cat in category_order}
 
     lines = [
-        f"# Index des Ressources",
+        "# Index des Ressources",
         "",
         "## Par tour",
         "",
     ]
 
     # Chronological section
-    resources_by_turn = []
     for row in rows:
         resources = _parse_json_list(row["resources"])
         if not resources:
             continue
 
-        # Deduplicate
         resources = sorted(set(resources))
-        resources_by_turn.append((row["turn_number"], resources))
-
-        resource_list = ", ".join(resources)
+        linked_resources = [_wikify_item(r, entity_lookup) for r in resources]
+        resource_list = ", ".join(linked_resources)
         lines.append(f"**Tour {row['turn_number']}** : {resource_list}")
 
-        # Categorize
+        # Categorize (original text, not linked version)
         for res in resources:
             res_lower = res.lower()
             categorized = False
-            for cat, keywords in categories.items():
+            for cat in category_order[:-1]:  # skip "Autre"
+                keywords = category_keywords[cat]
                 if any(kw in res_lower for kw in keywords):
                     resource_by_category[cat].append((res, row["turn_number"]))
                     categorized = True
@@ -856,25 +911,30 @@ def generate_resources_page(conn: sqlite3.Connection, civ_id: int, civ_name: str
     lines.append("## Par catégorie")
     lines.append("")
 
-    # Category sections
     category_emojis = {
         "Nourriture": "🍖",
+        "Végétaux": "🌿",
+        "Faune": "🦌",
         "Matériaux": "🪨",
         "Minéraux": "⚒️",
+        "Artisanat": "🔨",
         "Autre": "📦",
     }
 
-    for cat, emoji in category_emojis.items():
-        if resource_by_category[cat]:
-            lines.append(f"### {emoji} {cat}")
-            lines.append("")
-            # Deduplicate resources in category
-            seen = set()
-            for res, turn_num in resource_by_category[cat]:
-                if res.lower() not in seen:
-                    seen.add(res.lower())
-                    lines.append(f"- {res} (Tour {turn_num})")
-            lines.append("")
+    for cat in category_order:
+        items = resource_by_category[cat]
+        if not items:
+            continue
+        emoji = category_emojis[cat]
+        lines.append(f"### {emoji} {cat}")
+        lines.append("")
+        seen: set[str] = set()
+        for res, turn_num in items:
+            if res.lower() not in seen:
+                seen.add(res.lower())
+                linked = _wikify_item(res, entity_lookup)
+                lines.append(f"- {linked} (Tour {turn_num})")
+        lines.append("")
 
     # Write page
     content = "\n".join(lines)
@@ -886,11 +946,14 @@ def generate_beliefs_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, 
     """Generate beliefs knowledge base page for a civilization.
 
     Creates civilizations/{civ_slug}/knowledge/beliefs.md with:
-    - Evolution (chronological by turn)
-    - Rituels développés (detected by keywords)
-    - Concepts spirituels (other beliefs)
+    - Castes & Groupes sociaux (from entity_entities directly — clean source)
+    - Rituels, Cosmologie, Valeurs, Autres (concise belief statements from turn_turns.beliefs)
+
+    Design: no per-turn chronological dump. Entity names (which have their own pages)
+    are excluded from thematic sections to avoid duplication.
     """
     civ_slug = slugify(civ_name)
+    entity_lookup = _build_entity_lookup(conn, civ_id)
 
     # Query beliefs from turn_turns
     rows = conn.execute(
@@ -901,64 +964,157 @@ def generate_beliefs_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, 
         (civ_id,)
     ).fetchall()
 
-    if not rows:
-        return  # No beliefs to display
+    # Query spiritual entities directly — clean, authoritative source
+    # Castes: always spiritual (social groups with cosmological role)
+    # Events: except diseases
+    # Institutions: only those with spiritual/ritual keywords in name
+    _SPIRITUAL_INST_KW = {
+        "esprit", "oracle", "sage", "autel", "rituel", "rite",
+        "gardien", "tribunal", "arbitre", "porteur", "ancetre", "ancêtre",
+    }
+    _DISEASE_KW = {"maladie", "épidémie", "epidemie"}
 
-    lines = [
-        f"# Système de Croyances",
-        "",
-        "## Évolution",
-        "",
-    ]
+    spiritual_entities = conn.execute(
+        """SELECT canonical_name, entity_type, first_seen_turn
+           FROM entity_entities
+           WHERE civ_id = ?
+           ORDER BY first_seen_turn""",
+        (civ_id,)
+    ).fetchall()
+    # Filter to only truly spiritual entities
+    figures: list[tuple[str, int]] = []
+    seen_fig: set[str] = set()
+    for e in spiritual_entities:
+        name = e["canonical_name"]
+        etype = e["entity_type"]
+        turn = e["first_seen_turn"] or 0
+        key = name.lower()
+        if key in seen_fig:
+            continue
+        name_lower = name.lower()
+        if etype == "caste":
+            figures.append((name, turn))
+            seen_fig.add(key)
+        elif etype == "event" and not any(kw in name_lower for kw in _DISEASE_KW):
+            figures.append((name, turn))
+            seen_fig.add(key)
+        elif etype == "institution" and any(kw in name_lower for kw in _SPIRITUAL_INST_KW):
+            figures.append((name, turn))
+            seen_fig.add(key)
 
-    ritual_keywords = {"rituel", "cérémonie", "offrande", "sacrifice", "célébration", "fête"}
-    rituals = []
-    concepts = []
+    # Noise: Discord meta, markdown artifacts, bold headers
+    _NOISE_BELIEF = re.compile(
+        r'Lootbox|Choix\s*:|Option libre|\*\*Option\s*\d|^##|^>\s|^-\s*$'
+        r'|^Organisation\s*:|^\*\*?\w.*\*\*?$',
+        re.IGNORECASE,
+    )
+    # Narrative sentence starters (case-insensitive: these words always signal narrative)
+    _NARRATIVE_START = re.compile(
+        r'^(Et |Mais |Parfois|Car |Or |Ainsi |En tant |'
+        r'Je |J\'|Tu |Vous |Il |Elle |Ils |Elles |'
+        r'D\'autres |D\'autant |Certain|Rare |'
+        r'Au son |A la |À la |Lors |Quand |Comme si |'
+        r'Ou |Telle |Que |Né |L\'un |'
+        r'\*|>|\[)',
+        re.IGNORECASE,
+    )
+    # Uppercase article starting a sentence = narrative (NOT lowercase = LLM belief phrase)
+    # e.g. "Les Premiers Ancêtres ont bâti..." (bad) vs "les esprits des ancêtres..." (good)
+    _UPPERCASE_ARTICLE_SENTENCE = re.compile(
+        r'^(Le |La |Les |L\'|Un |Une |Des |Du )'
+    )  # NO IGNORECASE — only matches when first letter is actually uppercase
 
-    # Chronological section
+    def _is_concise_belief(b: str) -> bool:
+        """True if item looks like a belief/concept, not a narrative fragment."""
+        b = b.strip()
+        if len(b) < 8 or len(b) > 70:
+            return False
+        if _NOISE_BELIEF.search(b):
+            return False
+        if b.endswith(":") or b.endswith("…"):
+            return False
+        if _NARRATIVE_START.match(b):
+            return False
+        # Uppercase article + more than 3 words = narrative sentence
+        # (lowercase article = LLM concept phrase, keep it)
+        if _UPPERCASE_ARTICLE_SENTENCE.match(b) and len(b.split()) > 3:
+            return False
+        # Reject 2nd person direct address
+        if " tu " in b.lower() or b.lower().startswith("tu "):
+            return False
+        # Reject 1st person conjugations (narrative voice)
+        if "m'ont" in b or " nous ferons" in b.lower() or " leur a " in b.lower():
+            return False
+        # Reject observational sentences ("X est important dans...", "sont importantes")
+        if re.search(r'\b(est important|sont important|a tendance|commence à|s\'en retrouve)', b, re.IGNORECASE):
+            return False
+        # Reject pure entity names — they have their own pages
+        if b.lower() in entity_lookup:
+            return False
+        # Also reject "le/la/les + entity_name" (article + entity)
+        b_stripped = re.sub(r'^(le |la |les |l\'|un |une |du |des )', '', b.lower()).strip()
+        if b_stripped in entity_lookup:
+            return False
+        return True
+
+    ritual_kw = {"rituel", "cérémonie", "offrande", "sacrifice", "célébration", "fête", "partage", "rite"}
+    cosmo_kw = {"esprit", "âme", "ame", "ciel", "mort", "ancêtre", "ancetre", "au-delà", "au-dela",
+                "cieux", "divin", "sacré", "sacre", "réincarnation", "reincarnation",
+                "esprits", "bénédiction", "benediction", "cosmos", "céleste", "celeste"}
+    values_kw = {"sacralité", "sacralite", "piété", "piete", "rôle", "role", "dialogue", "coutume",
+                 "famille", "coopération", "cooperation", "valoris", "mission", "loi",
+                 "exil", "respect", "parenté", "parente", "juridiction", "devoir", "honneur", "honorer"}
+
+    rituals: list[tuple[str, int]] = []
+    cosmo: list[tuple[str, int]] = []
+    values: list[tuple[str, int]] = []
+    others: list[tuple[str, int]] = []
+
     for row in rows:
         beliefs = _parse_json_list(row["beliefs"])
-        if not beliefs:
-            continue
-
-        # Deduplicate
-        beliefs = sorted(set(beliefs))
-
-        lines.append(f"**Tour {row['turn_number']}**")
         for belief in beliefs:
-            lines.append(f"- {belief}")
-
-            # Categorize
-            belief_lower = belief.lower()
-            if any(kw in belief_lower for kw in ritual_keywords):
+            belief = belief.strip()
+            if not _is_concise_belief(belief):
+                continue
+            b_lower = belief.lower()
+            if any(kw in b_lower for kw in ritual_kw):
                 rituals.append((belief, row["turn_number"]))
+            elif any(kw in b_lower for kw in cosmo_kw):
+                cosmo.append((belief, row["turn_number"]))
+            elif any(kw in b_lower for kw in values_kw):
+                values.append((belief, row["turn_number"]))
             else:
-                concepts.append((belief, row["turn_number"]))
+                others.append((belief, row["turn_number"]))
+
+    lines = ["# Système de Croyances", ""]
+
+    # Section 1: Figures vénérées — sourced from entity_entities (clean, authoritative)
+    if figures:
+        lines += ["## ✨ Figures & Entités vénérées", ""]
+        for name, turn in sorted(figures, key=lambda x: x[1]):
+            slug = slugify(name)
+            turn_str = f" *(Tour {turn})*" if turn else ""
+            lines.append(f"- [{name}](../entities/{slug}.md){turn_str}")
         lines.append("")
 
-    # Rituels section
-    if rituals:
-        lines.append("## Rituels développés")
+    def _section(title: str, emoji: str, items: list[tuple[str, int]]) -> None:
+        if not items:
+            return
+        lines.append(f"## {emoji} {title}")
         lines.append("")
-        seen = set()
-        for ritual, turn_num in rituals:
-            if ritual.lower() not in seen:
-                seen.add(ritual.lower())
-                lines.append(f"- {ritual} (Tour {turn_num})")
-        lines.append("")
-
-    # Concepts section
-    if concepts:
-        lines.append("## Concepts spirituels")
-        lines.append("")
-        seen = set()
-        for concept, turn_num in concepts:
-            if concept.lower() not in seen:
-                seen.add(concept.lower())
-                lines.append(f"- {concept} (Tour {turn_num})")
+        seen: set[str] = set()
+        for item, turn_num in sorted(items, key=lambda x: x[1]):
+            if item.lower() not in seen:
+                seen.add(item.lower())
+                linked = _wikify_item(item, entity_lookup)
+                lines.append(f"- {linked} *(Tour {turn_num})*")
         lines.append("")
 
-    # Write page
+    _section("Rituels & Pratiques", "🕯️", rituals)
+    _section("Cosmologie & Spiritualité", "🌌", cosmo)
+    _section("Valeurs & Normes sociales", "⚖️", values)
+    _section("Autres croyances", "📿", others)
+
     content = "\n".join(lines)
     out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
     _write_page(out_path / "beliefs.md", content)
@@ -2962,6 +3118,9 @@ def generate_wiki(
 
     finally:
         conn.close()
+
+    # Count actual files written (authoritative — covers all generators)
+    stats["pages_generated"] = sum(1 for _ in out.rglob("*.md"))
 
     return stats
 

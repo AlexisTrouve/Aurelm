@@ -2,14 +2,14 @@
 
 📅 **10/06/2025** | 📊 **10 segments** | 🎯 **4 nouvelles entités**
 
-> Le village de la Confluence est secoué par l'assassinat d'un membre de leur communauté, un cadavre retrouvé dans la nuit avec une blessure causée par le couteau utilisé pour évider les poissons de la confluence. La scène du crime a été découverte et des témoins ont identifié l'accusé, un sans-ciel qui avait une rixe connue avec la victime. Le Tribunal des mœurs doit maintenant statuer sur le cas et décider comment punir l'accusé.
+> Le village de la Confluence est en état d'alerte après le découverte du corps d'un ciel-clair assassiné avec un couteau. Le maître du jeu, responsable de la médiation dans le village, doit enquêter et trouver un moyen de juger le coupable sans preuve formelle. Les habitants sont divisés entre ceux qui accusent un certain individu sans-ciel, et ceux qui pensent que l'accusation est injustifiée. Dans le même temps, des rumeurs inquiétantes arrivent d'au-delà des montagnes, parlant de la découverte d'une galerie souterraine abandonnée et d'une potentielle menace pour les colonies sous-terrain.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Maladie des Antres`, `Gouffre Humide`, `Antre des échos`, `L'Appel de l'Abysse`
 - **Mentions totales** : 20
 - **Technologies** : 2
-- **Ressources** : 1
+- **Ressources** : 2
 - **Densité narrative** : 7 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -67,7 +67,7 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 - vallée
 - montagne
 - Gouffre Humide
-- galeries inconnues de Gouffre Humide
+- galeries souterraines de Gouffre Humide
 
 ### 🔧 Technologies
 
@@ -77,10 +77,17 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 ### 🌾 Ressources
 
 - poisson de la Confluence
+- lait de pierre (mystérieux)
 
 ### ✨ Croyances
 
-- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent
+- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches
+- Un cadavre de ciel-clair
+- La mort fait malheureusement partie du quotidien
+- Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utilisent leur grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent
+- Leurs anciens murmurent que la vallée a toujours récompensé ceux qui osent chercher au-delà des sentiers battus, et jamais cette vérité n'a été plus criante
+- En tant qu'Arbitre des Esprits, il est de mon devoir de descendre personnellement coordonner cette mission
+- Organisation : Quatre équipes de 6 personnes chacune - 3 Faucons Chasseurs, 2 Enfants des Échos armés, 1 Aile-Grise avec rhombes pour les rituels et communications
 
 ## 🏷️ Entités mentionnées
 

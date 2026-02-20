@@ -30,13 +30,13 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La Maison des Découvertes est une institution qui semble être associée à la recherche et à l'étude de diverses connaissances. Elle est mentionnée comme étant impliquée dans l'étude des techniques, des pigments et des couches de peinture. L'institution se trouve près de la confluence, là où l'eau chante.
+La Maison des Découvertes est une institution qui étudie et explore les connaissances et les techniques. Elle semble avoir un aspect spirituel, mais aussi un intérêt pour les aspects matériels de la vie. Sa demeure terrestre sera construite près de la confluence, où l'eau chante.
 
 ## Chronologie
 
-**Tour 11: Dans les visions du narrateur, il a vu l'arbre de toutes les possibilités dont les racines plongent dans l'argile vivante et les branches touchent les quatre vents. La Maison des Découvertes est associée à la construction d'une demeure terrestre pour cet arbre.**
+**Tour 11: Dans cette vision, on voit l'arbre de toutes les possibilités et la Maison des Découvertes est mentionnée comme étant liée à cet arbre. La demeure terrestre de la Maison des Découvertes sera construite près de la confluence.**
 
-**Tour 14: La Maison des Découvertes est chargée d'étudier les techniques, les pigments, les couches de peinture.**
+**Tour 14: La Maison des Découvertes travaille sur les techniques et les pigments, montrant son intérêt pour les aspects matériels de la vie. La Maison des Découvertes est en lien avec la vérité spirituelle et la vérité matérielle.**
 
 ## 💬 Mentions avec contexte
 

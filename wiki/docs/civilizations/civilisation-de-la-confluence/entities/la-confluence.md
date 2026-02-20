@@ -36,32 +36,28 @@ Tour 14  ████████████████████
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 7 tours
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 6 tours
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 6 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 5 tours
 - 🔵 **[Rhombes](rhombes.md)** (Technologies) — 5 tours
+- 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 5 tours
 
 ## Description
 
-La Confluence est une vallée montagneuse où deux rivières se rejoignent, créant un endroit fertile et propice à la vie. Elle abrite plusieurs villages et est le lieu de rencontre des différentes tribus. La Confluence offre des ressources naturelles importantes telles que des poissons, des mollusques et d'autres animaux, ainsi qu'une terre fertile pour cultiver. Les gens qui y vivent sont divisés en différentes factions, dont les Voix de l'Aurore, les Enfants du Courant et les Gardiens de la Confluence.
+La Confluence est un lieu de vie situé à la jonction de deux rivières cristallines dans une large vallée montagneuse. C'est un emplacement idéal pour que les membres de la tribu puissent se sentir en sécurité et prospérer. La Confluence offre des ressources naturelles abondantes, notamment de l'eau fraîche, des poissons et des terres fertiles. Les habitants de la vallée ont développé un mode de vie basé sur l'agriculture, la chasse et la pêche.
 
 ## Chronologie
 
-**Tour 2: Un groupe de survivants arrive à La Confluence, un endroit sécurisé où ils peuvent se installer et se reconstituer. Ils commencent à cultiver la terre et pêcher dans les rivières.**
+**Tour 2: La tribu arrive à la Confluence après une longue période de migration, épuisés mais déterminés à bâtir un nouveau foyer. Ils se installent le long des rivières et commencent à s'adapter à leur nouvelle vie.**
 
-**Tour 3: La tribu se déplace entre deux villages, l'un à la Confluence et l'autre à distance, pour éviter de fatiguer les terrains de chasse.**
+**Tour 3: Avec le temps, les membres de la tribu ont mieux utilisé leur territoire de chasse et établi un petit village temporaire, alternant entre celui-ci et d'autres emplacements pour ne pas épuiser les ressources. Les bêtes sont saignées et leur viande est fumée pour faire des réserves.**
 
-**Tour 6: Les gens qui vivent à La Confluence ont vu leur peuple grandir et prospérer. Ils ont développé une société complexe avec des institutions telles que le Tribunal de moeurs et les Voix de l'Aurore.**
+**Tour 6: La tribu s'est développée et prospère à la Confluence, offrant un endroit idéal pour que ses membres puissent se sentir en sécurité et se développer. Le peuple a appris à s'adapter au changement et à utiliser les ressources de la vallée.**
 
-**Tour 7: Les différentes factions de la vallée entrent en concurrence pour obtenir plus d'influence et de pouvoir dans la décision du peuple.**
+**Tour 7: L'émergence des Cliques dans la société de la Confluence conduit à des changements politiques, avec l'apparition de différents groupes tels que les Voix de l'Aurore, les Enfants du Courant et les Gardiens de la Confluence.**
 
-**Tour 9: Le peuple se divise et cherche à restaurer l'harmonie dans leur vie et dans la société. Les Voix de l'Aurore guident les explorations pour trouver des nouvelles ressources.**
+**Tour 8: Les processions rituelles se multiplient à la Confluence, créant une atmosphère festive mais également compétitive entre les différentes institutions de la vallée.**
 
-**Tour 10: La Confluence devient le lieu où se rencontrent les courants invisibles qui animent les différentes traditions du peuple.**
+**Tour 10: La Confluence est le point de rencontre des différents courants spirituels qui animent la société de la vallée, créant une atmosphère unique où les traditions se mélangent.**
 
-**Tour 11: Les rivières débordent à cause de la fonte des glaces, facilitant le transport de l'argile vive pour créer des cratères et des vases rituels.**
-
-**Tour 12: Un cadavre est découvert avec un couteau près du corps, ce qui suggère une mort suspecte.**
-
-**Tour 14: Une histoire d'exil se développe, où le narrateur réfléchit sur son rôle dans la vallée et la manière dont les différentes factions interagissent entre elles.**
+**Tour 11: La Confluence offre un environnement propice à l'agriculture et à la chasse, avec des rivières abondantes en eau fraîche. Les habitants utilisent l'argile vive pour façonner des cratères, des vases rituels et d'autres objets.**
 
 ## 💬 Mentions avec contexte
 

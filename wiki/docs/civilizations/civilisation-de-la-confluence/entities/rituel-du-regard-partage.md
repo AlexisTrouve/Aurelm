@@ -23,20 +23,20 @@ Tour 14  ████████████████████
 **Entites souvent mentionnees ensemble :**
 
 - 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 2 tours
-- 🔵 **[Voix de l'Aurore](voix-de-l-aurore.md)** (Castes) — 2 tours
 - 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 2 tours
 - 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 2 tours
 - 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 2 tours
+- 🔵 **[La confluence](la-confluence.md)** (Lieux) — 2 tours
 
 ## Description
 
-Le Rituel du Regard Partagé est un rituel qui utilise le contact visuel pour sceller les accords et échanges importants. Il est basé sur la mutation physique où les yeux des individus deviennent une palette de couleurs qui révèlent leur nature profonde. Ce rituel est utilisé dans divers contextes, notamment dans un rite annuel pour les Gardiens du Hall.
+Le Rituel du Regard Partagé est un événement dans lequel les participants se regardent pour sceller des accords et des échanges importants. Il utilise la couleur de leurs yeux, révélée après une transformation physique, comme langage silencieux mais profond.
 
 ## Chronologie
 
-**Tour 9: Ce tour décrit l'émergence du Rituel du Regard Partagé comme une nouvelle tradition qui rassemble les peuples à travers un langage silencieux mais profond.**
+**Tour 9: Les participants ont subi une transformation physique qui révèle leur sensibilité aux forces invisibles et fait apparaître des couleurs dans leurs yeux. Ce phénomène devient le fondement du Rituel du Regard Partagé, unifiant les peuples dans un langage profond.**
 
-**Tour 14: Dans ce tour, le Rituel du Regard Partagé est mentionné dans la description de l'obligation annuelle des Gardiens du Hall de revenir à La Confluence pour y participer.**
+**Tour 14: Le Rituel du Regard Partagé est utilisé par les Gardiens du Hall pour renouveler leur serment envers le Cercle des Sages à La Confluence.**
 
 ## 💬 Mentions avec contexte
 

@@ -19,11 +19,11 @@ Tour  9  ████████████████████  ← Pic
 
 ## Description
 
-Les Porteurs de Flamme sont des messagers issus principalement des Gardiens de la Confluence, choisis pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils transportent avec eux de petites braises dans des récipients en argile, relieant symboliquement tous les lieux sacrés. Leur rôle est d'accompagner les Enfants du Courant sur leurs nouvelles voies, offrant une reconnaissance et un prestige qui leur étaient jusqu'alors refusés. Les Porteurs de Flamme voyageront de feu en feu à travers les sentiers de la montagne.
+Les Porteurs de Flamme sont des messagers choisis parmi les Gardiens de la Confluence pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils transportent des petites braises dans des récipients en argile, symboliquement reliant tous les lieux sacrés. Ils voyagent de feu en feu à travers les sentiers de la montagne pour tisser ensemble les nouveaux lieux sacrés et les villages existants.
 
 ## Chronologie
 
-**Tour 9: Les Porteurs de Flamme sont choisis pour voyager de feu en feu à travers les sentiers de la montagne, reliant symboliquement tous les lieux sacrés. Ils transportent avec eux de petites braises dans des récipients en argile, inspirés par la chaleur des Cercles de Vigile. Cette nouvelle voie offrira aux Enfants du Courant une reconnaissance et un prestige qui leur étaient jusqu'alors refusés.**
+**Tour 9: Les Porteurs de Flamme sont désignés pour voyager de feu en feu à travers les sentiers de la montagne, reliant ainsi symboliquement tous les lieux sacrés. Ils sont choisis parmi les Gardiens de la Confluence et transportent des petites braies dans des récipients en argile.**
 
 ## 💬 Mentions avec contexte
 

@@ -2,7 +2,7 @@
 
 📅 **20/10/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> La tribu doit se démarquer en faisant fructifier l'éden qu'elle a reçu en héritage de ses ancêtres. Cela entraîne une concurrence féroce entre les hommes pour s'accaparer les femmes, conduisant à une exploitation des sans-ciel qui sont exclus au fil du temps. Les liens familiaux sont sacrés et la notion de famille est renforcée, mais cela conduit également à une forme d'exploitation des femmes qui deviennent propriété de leur mari. La généalogie d'une grande famille s'étend jusqu'à ceux qui les ont précédés, et perdre leur faveur signifie perdre leur protection.
+> La tribu de la Confluence est confrontée à un défi crucial : ils doivent faire fructifier la terre qui leur a été donnée par leurs ancêtres. Cela crée une concurrence féroce entre les hommes pour s'accaparer les femmes, ce qui entraîne la marginalisation des sans-ciel et renforce la notion de famille dans la tribu. Les enfants apprennent les leçons morales attendues d'eux à travers les histoires de leurs ancêtres. Dans cet environnement, les marginaux sont souvent chargés de fabriquer de nouveaux outils et armes plus perfectionnés, mais leur créativité est sous-exploitée.
 
 ## 📊 Statistiques du tour
 
@@ -53,14 +53,20 @@ Les esprits m'ont montré notre erreur : nous ne pouvons faire coexister sur la 
 ### 🌾 Ressources
 
 - nourriture recoltée
-- materiaux travaillés pour les outils
+- materiaux pour les outils
 
 ### ✨ Croyances
 
-- les esprits des ancêtres veillent sur la tribu
+- les esprits des ancêtres
+- le mariage sacré entre la terre et le ciel
+- la notion de famille renforcée
 - la sacralité des liens familiaux
-- les sans-ciel sont bénis d'une autre manière
-- l'eau échappe à l'union de la terre et du ciel
+- l'union des sans-ciel pour prospérer sur les eaux
+- Ou plutôt, celle des ancêtres
+- C'est le devoir sacré qui leur a été donné en même temps que la vie
+- Et de ce devoir sacré, il s'en empare, à chaque génération un peu plus
+- Les sans-ciel étant exclus au fil du temps
+- Puisqu'une fois conquise, la femme ne peut pas changer de partenaire du fait de la sacralité des liens familiaux
 
 ## 🏷️ Entités mentionnées
 
