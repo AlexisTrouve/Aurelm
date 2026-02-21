@@ -71,15 +71,16 @@ def _build_ollama_tools() -> list[dict]:
 
 def _run_tool(db_path: str, tool_name: str, tool_input: dict) -> str:
     """Execute a tool call against the DB."""
+    conn = sqlite3.connect(db_path)
     try:
-        conn = sqlite3.connect(db_path)
         conn.execute("PRAGMA foreign_keys = ON")
         result = dispatch_tool(conn, tool_name, tool_input)
-        conn.close()
         return result
     except Exception as exc:
         log.exception("Tool %s failed", tool_name)
         return f"Error executing {tool_name}: {exc}"
+    finally:
+        conn.close()
 
 
 class Agent:

@@ -315,9 +315,9 @@ def build_entity_profiles(
                 # Keep existing description if we didn't generate a new one
                 final_description = profile.description if profile.description else existing_description
             else:
-                # Full mode: replace everything
+                # Full mode: replace everything (but keep existing description if LLM returned empty)
                 history_json = json.dumps(profile.history, ensure_ascii=False) if profile.history else None
-                final_description = profile.description
+                final_description = profile.description if profile.description else existing_description
 
             conn.execute(
                 """UPDATE entity_entities

@@ -2387,9 +2387,9 @@ def generate_entity_page(
         turn_id_list = [t["turn_id"] for t in turn_ids]
         turn_placeholders = ",".join("?" * len(turn_id_list))
 
-        # Get co-occurring entities
+        # Get co-occurring entities (include civ_id for cross-civ link handling)
         cooccurring = conn.execute(
-            f"""SELECT e.id, e.canonical_name, e.entity_type,
+            f"""SELECT e.id, e.canonical_name, e.entity_type, e.civ_id,
                        COUNT(DISTINCT m.turn_id) as turns_together
                 FROM entity_mentions m
                 JOIN entity_entities e ON m.entity_id = e.id
@@ -2405,6 +2405,7 @@ def generate_entity_page(
         # Filter noise and resolve to primary names
         clean_cooccurrences = []
         seen_primary = set()
+        entity_civ_id = entity.get("civ_id")
         for co in cooccurring:
             if is_noise_entity(co["canonical_name"]):
                 continue
@@ -2416,6 +2417,7 @@ def generate_entity_page(
                 "name": primary_name,
                 "type": co["entity_type"],
                 "turns_together": co["turns_together"],
+                "same_civ": co["civ_id"] == entity_civ_id,
             })
 
         if clean_cooccurrences:
@@ -2427,12 +2429,18 @@ def generate_entity_page(
             ])
             for co in clean_cooccurrences[:5]:
                 co_name = _capitalize_entity(co["name"])
-                co_slug = slugify(co["name"])
                 co_type_label = _entity_type_label(co["type"])
-                lines.append(
-                    f"- 🔵 **[{co_name}]({co_slug}.md)** ({co_type_label}) — "
-                    f"{co['turns_together']} tours"
-                )
+                if co["same_civ"]:
+                    co_slug = slugify(co["name"])
+                    lines.append(
+                        f"- 🔵 **[{co_name}]({co_slug}.md)** ({co_type_label}) — "
+                        f"{co['turns_together']} tours"
+                    )
+                else:
+                    lines.append(
+                        f"- 🔵 **{co_name}** ({co_type_label}) — "
+                        f"{co['turns_together']} tours"
+                    )
             lines.append("")
 
     # Description

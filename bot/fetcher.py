@@ -61,13 +61,13 @@ async def fetch_and_store(
             attachments = json.dumps([a.url for a in message.attachments])
 
         try:
-            conn.execute(
+            cursor = conn.execute(
                 """INSERT OR IGNORE INTO turn_raw_messages
                    (discord_message_id, discord_channel_id, author_id, author_name, content, timestamp, attachments)
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (discord_msg_id, channel_id, author_id, author_name, content, timestamp, attachments),
             )
-            if conn.total_changes:
+            if cursor.rowcount > 0:
                 inserted += 1
         except sqlite3.IntegrityError:
             pass  # Duplicate, skip
