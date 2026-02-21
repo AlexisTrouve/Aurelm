@@ -134,10 +134,13 @@ class Agent:
     # ------------------------------------------------------------------ #
 
     async def _answer_anthropic(self, user_message: str) -> str:
+        import asyncio
+
         messages = [{"role": "user", "content": user_message}]
 
         for _round in range(MAX_TOOL_ROUNDS):
-            response = self._anthropic.messages.create(
+            response = await asyncio.to_thread(
+                self._anthropic.messages.create,
                 model="claude-sonnet-4-5-20250929",
                 max_tokens=4096,
                 system=self._claude_prompt,

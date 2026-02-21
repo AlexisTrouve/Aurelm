@@ -64,8 +64,13 @@ class AurelmBot(discord.Client):
                 reply = "Erreur interne. Veuillez reessayer."
 
         # Split long replies into chunks
-        for chunk in _split_message(reply):
-            await message.reply(chunk)
+        try:
+            for chunk in _split_message(reply):
+                await message.reply(chunk)
+        except discord.Forbidden:
+            log.warning("No permission to reply in %s", message.channel)
+        except discord.DiscordException:
+            log.exception("Failed to send reply")
 
 
 def _split_message(text: str) -> list[str]:

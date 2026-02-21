@@ -164,7 +164,7 @@ def load_directory(data_dir: str, db_path: str, channel_id: str = "file-import")
                 # Generate a stable fake discord_message_id from content hash
                 msg_id = _make_message_id(msg)
                 try:
-                    conn.execute(
+                    cursor = conn.execute(
                         """INSERT OR IGNORE INTO turn_raw_messages
                            (discord_message_id, discord_channel_id, author_id, author_name,
                             content, timestamp)
@@ -172,11 +172,11 @@ def load_directory(data_dir: str, db_path: str, channel_id: str = "file-import")
                         (msg_id, channel_id, _author_id(msg.author_name),
                          msg.author_name, msg.content, msg.timestamp),
                     )
-                    inserted += conn.total_changes  # track via side effect
+                    if cursor.rowcount > 0:
+                        inserted += 1
                 except Exception:
                     pass  # UNIQUE constraint — skip duplicates
         conn.commit()
-        inserted = conn.execute("SELECT count(*) FROM turn_raw_messages").fetchone()[0]
     finally:
         conn.close()
 
