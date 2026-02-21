@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { FRENCH_STOPWORDS, truncate } from "../helpers.js";
+import { escapeLike, FRENCH_STOPWORDS, truncate } from "../helpers.js";
 
 interface MatchedEntity {
   id: number;
@@ -66,12 +66,12 @@ export function sanityCheck(
   const matchedEntities: MatchedEntity[] = [];
 
   for (const term of searchTerms) {
-    const pattern = `%${term}%`;
+    const pattern = `%${escapeLike(term)}%`;
 
     // Search canonical names
     const byName = db.prepare(`
       SELECT e.id FROM entity_entities e
-      WHERE e.canonical_name LIKE ?
+      WHERE e.canonical_name LIKE ? ESCAPE '!'
       ${civId !== null ? "AND e.civ_id = ?" : ""}
     `).all(...(civId !== null ? [pattern, civId] : [pattern])) as Array<{ id: number }>;
 
@@ -81,7 +81,7 @@ export function sanityCheck(
     const byAlias = db.prepare(`
       SELECT a.entity_id AS id FROM entity_aliases a
       JOIN entity_entities e ON a.entity_id = e.id
-      WHERE a.alias LIKE ?
+      WHERE a.alias LIKE ? ESCAPE '!'
       ${civId !== null ? "AND e.civ_id = ?" : ""}
     `).all(...(civId !== null ? [pattern, civId] : [pattern])) as Array<{ id: number }>;
 

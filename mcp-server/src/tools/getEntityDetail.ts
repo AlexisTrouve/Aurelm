@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { truncate } from "../helpers.js";
+import { escapeLike, truncate } from "../helpers.js";
 
 interface EntityRow {
   id: number;
@@ -43,11 +43,12 @@ export function getEntityDetail(
     LEFT JOIN civ_civilizations c ON e.civ_id = c.id
     LEFT JOIN turn_turns ft ON e.first_seen_turn = ft.id
     LEFT JOIN turn_turns lt ON e.last_seen_turn = lt.id
-    WHERE (e.canonical_name LIKE ? OR e.id IN (
-      SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ?
+    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+      SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
     ))
   `;
-  const params: unknown[] = [`%${entityName}%`, `%${entityName}%`];
+  const escaped = escapeLike(entityName);
+  const params: unknown[] = [`%${escaped}%`, `%${escaped}%`];
 
   if (civId !== null) {
     entitySql += " AND e.civ_id = ?";

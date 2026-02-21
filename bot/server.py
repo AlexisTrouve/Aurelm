@@ -101,13 +101,12 @@ class BotServer:
     # ---------------------------------------------------------------------- #
 
     def _get_last_pipeline_run(self) -> dict | None:
+        conn = sqlite3.connect(self.config.db_path)
         try:
-            conn = sqlite3.connect(self.config.db_path)
             row = conn.execute(
                 "SELECT id, started_at, completed_at, status, messages_processed, turns_created, entities_extracted, error_message "
                 "FROM pipeline_runs ORDER BY id DESC LIMIT 1"
             ).fetchone()
-            conn.close()
             if not row:
                 return None
             return {
@@ -122,6 +121,8 @@ class BotServer:
             }
         except Exception:
             return None
+        finally:
+            conn.close()
 
     def _get_current_progress(self) -> dict:
         """Retrieve current pipeline progress from DB.
@@ -130,17 +131,15 @@ class BotServer:
             - If a pipeline run is in progress: {'status': 'running', 'run_id': ..., 'phases': [...]}
             - If no active run: {'status': 'idle'}
         """
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
         try:
-            conn = sqlite3.connect(self.config.db_path)
-            conn.row_factory = sqlite3.Row
-
             # Get the latest running pipeline run
             run_row = conn.execute(
                 "SELECT id, started_at FROM pipeline_runs WHERE status = 'running' ORDER BY id DESC LIMIT 1"
             ).fetchone()
 
             if not run_row:
-                conn.close()
                 return {"status": "idle"}
 
             run_id = run_row["id"]
@@ -154,8 +153,6 @@ class BotServer:
                    ORDER BY updated_at DESC""",
                 (run_id,),
             ).fetchall()
-
-            conn.close()
 
             phases = []
             for row in progress_rows:
@@ -180,3 +177,5 @@ class BotServer:
         except Exception as exc:
             log.exception("Failed to get progress")
             return {"status": "error", "error": str(exc)}
+        finally:
+            conn.close()

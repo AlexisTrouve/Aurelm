@@ -473,8 +473,12 @@ def _upsert_entity(conn, name: str, entity_type: str, civ_id: int, turn_id: int)
     if cache_key in _entity_cache:
         entity_id = _entity_cache[cache_key][0]
         conn.execute(
-            "UPDATE entity_entities SET last_seen_turn = ?, updated_at = ? WHERE id = ?",
-            (turn_id, datetime.now().isoformat(), entity_id),
+            """UPDATE entity_entities
+               SET last_seen_turn = MAX(last_seen_turn, ?),
+                   first_seen_turn = MIN(first_seen_turn, ?),
+                   updated_at = ?
+               WHERE id = ?""",
+            (turn_id, turn_id, datetime.now().isoformat(), entity_id),
         )
         return entity_id
 
@@ -489,16 +493,23 @@ def _upsert_entity(conn, name: str, entity_type: str, civ_id: int, turn_id: int)
             entity_id = row[0]
             stored_name = row[1]
             # Prefer Title Case: if new name has uppercase and stored doesn't, update display
+            now = datetime.now().isoformat()
             if _is_better_display_name(name, stored_name):
                 conn.execute(
-                    "UPDATE entity_entities SET canonical_name = ?, last_seen_turn = ?, updated_at = ? WHERE id = ?",
-                    (name, turn_id, datetime.now().isoformat(), entity_id),
+                    """UPDATE entity_entities
+                       SET canonical_name = ?, last_seen_turn = MAX(last_seen_turn, ?),
+                           first_seen_turn = MIN(first_seen_turn, ?), updated_at = ?
+                       WHERE id = ?""",
+                    (name, turn_id, turn_id, now, entity_id),
                 )
                 _entity_cache[cache_key] = (entity_id, name)
             else:
                 conn.execute(
-                    "UPDATE entity_entities SET last_seen_turn = ?, updated_at = ? WHERE id = ?",
-                    (turn_id, datetime.now().isoformat(), entity_id),
+                    """UPDATE entity_entities
+                       SET last_seen_turn = MAX(last_seen_turn, ?),
+                           first_seen_turn = MIN(first_seen_turn, ?), updated_at = ?
+                       WHERE id = ?""",
+                    (turn_id, turn_id, now, entity_id),
                 )
                 _entity_cache[cache_key] = (entity_id, stored_name)
             return entity_id

@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { truncate } from "../helpers.js";
+import { escapeLike, truncate } from "../helpers.js";
 
 interface EntityRow {
   id: number;
@@ -35,9 +35,10 @@ export function searchLore(
     FROM entity_entities e
     LEFT JOIN civ_civilizations c ON e.civ_id = c.id
     LEFT JOIN entity_aliases a ON a.entity_id = e.id
-    WHERE (e.canonical_name LIKE ? OR e.description LIKE ? OR a.alias LIKE ? OR e.history LIKE ?)
+    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
   `;
-  const params: unknown[] = [`%${query}%`, `%${query}%`, `%${query}%`, `%${query}%`];
+  const escaped = escapeLike(query);
+  const params: unknown[] = [`%${escaped}%`, `%${escaped}%`, `%${escaped}%`, `%${escaped}%`];
 
   if (civId !== null) {
     sql += " AND e.civ_id = ?";

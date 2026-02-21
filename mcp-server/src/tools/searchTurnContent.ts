@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { truncate } from "../helpers.js";
+import { escapeLike, truncate } from "../helpers.js";
 
 interface SegmentResult {
   turn_number: number;
@@ -20,9 +20,9 @@ export function searchTurnContent(
     FROM turn_segments s
     JOIN turn_turns t ON s.turn_id = t.id
     JOIN civ_civilizations c ON t.civ_id = c.id
-    WHERE s.content LIKE ?
+    WHERE s.content LIKE ? ESCAPE '!'
   `;
-  const params: unknown[] = [`%${query}%`];
+  const params: unknown[] = [`%${escapeLike(query)}%`];
 
   if (civId !== null) {
     sql += " AND t.civ_id = ?";
