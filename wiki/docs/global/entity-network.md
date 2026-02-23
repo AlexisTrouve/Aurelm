@@ -1,44 +1,43 @@
 # Réseau d'Entités
 
-## Hub central : La confluence (19 mentions)
+## Hub central : Faucons Chasseurs (9 mentions)
 
 ```
-La confluence (lieux)
-├─ Ailes-Grises (castes) — 7 tours ensemble
-├─ Enfants du Courant (castes) — 6 tours ensemble
-├─ Regards-Libres (castes) — 6 tours ensemble
-├─ Voix de l'Aurore (castes) — 5 tours ensemble
-└─ Rhombes (technologies) — 5 tours ensemble
+Faucons Chasseurs (castes)
+├─ Cercle des Sages (institutions) — 5 tours ensemble
+├─ Argile Vivante (technologies) — 5 tours ensemble
+├─ Ailes-Grises (castes) — 4 tours ensemble
+├─ Tribunal des Moeurs (institutions) — 4 tours ensemble
+└─ Loi du Sang et de la Bete (belief) — 4 tours ensemble
 ```
 
 ## Clusters par type
 
 ### Castes
 
-- Ailes-Grises ↔ La confluence (7 tours)
-- Ailes-Grises ↔ Enfants du Courant (6 tours)
-- Enfants du Courant ↔ La confluence (6 tours)
+- Faucons Chasseurs ↔ Argile Vivante (5 tours)
+- Faucons Chasseurs ↔ Cercle des Sages (5 tours)
+- Faucons Chasseurs ↔ Confluents (4 tours)
 
-### Lieux
+### Personnages
 
-- La confluence ↔ Ailes-Grises (7 tours)
-- La confluence ↔ Enfants du Courant (6 tours)
-- La confluence ↔ Regards-Libres (6 tours)
+- Arbitre des Esprits ↔ Cercle des Sages (2 tours)
+- Arbitre des Esprits ↔ Faucons Chasseurs (2 tours)
 
 ### Technologies
 
-- Rhombes ↔ La confluence (5 tours)
-- Rhombes ↔ Ailes-Grises (5 tours)
-- Rhombes ↔ Enfants du Courant (4 tours)
+- Argile Vivante ↔ Faucons Chasseurs (5 tours)
+- Argile Vivante ↔ Loi du Sang et de la Bete (4 tours)
+- Argile Vivante ↔ Caste de l'Air (3 tours)
 
 ### Institutions
 
-- Cercle des sages ↔ La confluence (4 tours)
-- Arbitre des Esprits ↔ Ailes-Grises (3 tours)
-- Tribunal des mœurs ↔ Ailes-Grises (3 tours)
+- Cercle des Sages ↔ Tribunal des Moeurs (5 tours)
+- Cercle des Sages ↔ Faucons Chasseurs (5 tours)
+- Tribunal des Moeurs ↔ Faucons Chasseurs (4 tours)
 
-### Evenements
+### Civilisations
 
-- Rituel du Regard Partagé ↔ Ailes-Grises (2 tours)
-- Rituel du Regard Partagé ↔ Enfants du Courant (2 tours)
-- Rituel du Regard Partagé ↔ La confluence (2 tours)
+- Confluents ↔ Faucons Chasseurs (4 tours)
+- Cheveux de Sang ↔ Caste de l'Air (3 tours)
+- Cheveux de Sang ↔ Faucons Chasseurs (3 tours)

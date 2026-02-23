@@ -1,16 +1,16 @@
 # Tour 14
 
-📅 **08/09/2025** | 📊 **177 segments** | 🎯 **19 nouvelles entités**
+📅 **08/09/2025** | 📊 **176 segments** | 🎯 **1 nouvelles entités**
 
-> La narration décrit l'intrigue autour de la Grande Fresque de Gouffre Humide, un monument sacré de la Civilisation de la Confluence. Les Ailes-Grises se sont rendues dans les halls sacrés pour méditer et comprendre les mystères de la fresque, qui contient des secrets importants sur l'histoire et la cosmologie de leur peuple. Les explorateurs ont découverte que les techniques utilisées pour créer la fresque dépassent tout ce dont est capable leur peuple, mais ils sont inspirés par son art. La fresque représente les Premiers Ancêtres avec des animaux mythiques, des géants et d'autres figures mystérieuses. Les Ailes-Grises essaient de comprendre le message caché derrière la fresque et son importance pour leur peuple.
+> Les Ailes-Grises continuent leur pèlerinage dans les halls sacrés de Gouffre Humide, méditant et étudiant la Grande Fresque. Ils y voient un avertissement des premiers ancêtres, qui ont utilisé des techniques inconnues pour la créer. Les Ailes-Grises interprètent les images en fonction de leurs propres croyances et traditions, mais il est clair que la Fresque représente une vision du monde complexe et mystérieuse.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Cheveux de Sang`, `Autels des Pionniers`, `Nanzagouet`, `Pouleheimos`, `Pupupasu`, `Siliaska`, `Tlazhuaneca`, `Gardiens du Hall`, `Premier Artefact`, `Salle du Conseil`
-- **Mentions totales** : 60
+- **Entités découvertes** : `Croyance en la Reincarnation`
+- **Mentions totales** : 10
 - **Technologies** : 2
-- **Ressources** : 3
-- **Densité narrative** : 141 narratifs, 24 choix, 11 conséquences
+- **Ressources** : 2
+- **Densité narrative** : 140 narratifs, 24 choix, 11 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
@@ -77,9 +77,6 @@ Ceux qui sont tombés dans les profondeurs ne pourront jamais recevoir le rite t
 À l'entrée de Gouffre Humide, nous érigeons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont gravés à jamais. Mais que ce ne soit pas le seul. Que chaque lieu où un explorateur, un chasseur, un artisan est tombé dans sa quête de connaissance reçoive son propre autel. De petits sanctuaires le long des routes et des rivières, où les voyageurs déposeront une offrande et recevront la protection de ceux qui sont partis avant eux.
 
 Que ces âmes, qui n'ont pu rejoindre le ciel, deviennent les gardiens des passages - veillant sur ceux qui empruntent les chemins dangereux, protégeant ceux qui osent chercher ce qui n'a jamais été trouvé.
-
-Jimmys G-OST
-Pillars of Eternity II: Deadfire [Soundtrack] 09 - Huana
 
 Le palanquin serpente lentement le long du chemin. Portés par six ailes grises, qui n'auront pas de plus grand honneur dans leur vie, tu descends dans la vallée. Le voyage est loin d'être confortable, les pistes de montagnes ne se prêtent guère à la promenade. Mais à l'exception de rare moment où tu as l'impression de descendre à la verticale, ce moyen de locomotion te laisse disponible pour la lecture.
 
@@ -490,107 +487,45 @@ __Choix : Siliaska - Ceux qui portent le regard libre__
 
 ### 🗺️ Géographie
 
-- péninsule battue par les vents et les tempêtes
-- terres rocailleuses
-- mer
+- Gouffre Humide
+- Péninsule battue par les vents et les tempêtes
 
 ### 🔧 Technologies
 
-- construction de bois
-- outils
+- Argile Vivante
+- Larmes du Ciel
 
 ### 🌾 Ressources
 
-- fleurs charnues
-- Nantons (viande et peau)
-- fruits de la mer
+- Nantons
+- Fleurs charnues
 
 ### ✨ Croyances
 
-- mission sacrée
-- réincarnation dans un autre monde
-- loi
-- exil des fauteurs de troubles
-- Essence divine
-- Choix : Testament sacré et énigme (Option libre)
-- La Fresque est à la fois testament sacré et énigme à déchiffrer
-- Les Premiers Ancêtres nous ont légué un avertissement, pas un dogme à suivre aveuglément
-- Que les Ailes-Grises continuent leur pèlerinage et leurs méditations dans les halls sacrés
-- La vérité spirituelle et la vérité matérielle sont deux faces d'un même mystère
+- Loi du Sang et de la Bete
+- Croyance en la Reincarnation
 
 ## 🏷️ Entités mentionnées
 
-**Ailes-Grises** (Castes) — 5 mentions
+**Croyance en la Reincarnation** (Belief) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Castes) — 4 mentions
+**Loi du Sang et de la Bete** (Belief) — 1 mentions
 
-**Passes-bien** (Castes) — 3 mentions
+**Caste de l'Air** (Castes) — 1 mentions
 
-**Sans ciel** (Castes) — 3 mentions
+**Faucons Chasseurs** (Castes) — 1 mentions
 
-**Cheveux de Sang** (Civilisations) — 3 mentions ⭐ *Première apparition*
+**Cheveux de Sang** (Civilisations) — 1 mentions
 
-**Autels des Pionniers** (Institutions) — 3 mentions ⭐ *Première apparition*
+**Confluents** (Civilisations) — 1 mentions
 
-**Maison des Découvertes** (Institutions) — 3 mentions
+**Nanzagouets** (Civilisations) — 1 mentions
 
-**Gouffre Humide** (Lieux) — 3 mentions
+**Cercle des Sages** (Institutions) — 1 mentions
 
-**La confluence** (Lieux) — 3 mentions
+**Tribunal des Moeurs** (Institutions) — 1 mentions
 
-**Enfants du Courant** (Castes) — 2 mentions
-
-**Enfants des échos** (Castes) — 2 mentions
-
-**Nanzagouet** (Civilisations) — 2 mentions ⭐ *Première apparition*
-
-**Regards-Libres** (Castes) — 1 mentions
-
-**Voix de l'Aurore** (Castes) — 1 mentions
-
-**Ciels-clairs** (Castes) — 1 mentions
-
-**Pouleheimos** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
-**Pupupasu** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
-**Siliaska** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
-**Tlazhuaneca** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
-**Rituel du Regard Partagé** (Evenements) — 1 mentions
-
-**Arbitre des Esprits** (Institutions) — 1 mentions
-
-**Gardiens du Hall** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Premier Artefact** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Salle du Conseil** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Cercle des sages** (Institutions) — 1 mentions
-
-**Hall des Serments** (Lieux) — 1 mentions ⭐ *Première apparition*
-
-**Foyer du savoir** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Glyphes du Gouffre** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Grande Fresque** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Grande Prospection** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Les Larmes du Ciel** (Technologies) — 1 mentions
-
-**Premiers Ancêtres** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Argile vivante** (Technologies) — 1 mentions
-
-**Chroniques de la Fresque** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Colliers de glyphes** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**La Fresque des Âges** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Argile Vivante** (Technologies) — 1 mentions
 
 ---
 
@@ -598,8 +533,6 @@ __Choix : Siliaska - Ceux qui portent le regard libre__
 
 ### Maître du Jeu
 
-Rithelgo
-Pillars of Eternity Soundtrack - Engwith
 Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide. La valse des hommes de foi est justifiée d'abord par l'importance des lieux. Ton peuple qui adore les ancêtres voit dans ces halls oubliés un peuple qui vous a précédé. Avec le temps, on les qualifient même de premier ancêtre, à la fois avec révérence, fierté, mais surtout inquiétude. Le secret de leur chute interroge et influe ton peuple qui se sait maintenant promis à pareil destin s'il ne parvient pas à élucider les causes de cette fin. Une seconde raison est que pour les savants de surface, les profondeurs sont comme une rivière. On s'y plonge volontiers, on accueille sa fraîcheur revigorante, pour le corps comme pour l'esprit, mais si l'on y reste trop longtemps, on étouffe. Aussi, l'interprétation des fresques des premiers ancêtres est un travail partagé. Les ciels clairs partagent leur conclusion avec leur successeur et se transmettent celle de ceux qui les ont précédés. On mémorise vers après vers, on oublie les moins pertinents et on ajoute les siens, comme un débat qui s'étend dans le temps. Les grands halls décorés deviennent rapidement une étape incontournable d'un pèlerinage que tous ceux qui veulent porter un regard libre doivent entreprendre.
 Éclairé simplement par des feux, ils méditent, observent, cherchent à comprendre les mystères que cachent ce chef d'œuvre. Cet avertissement ? Les techniques utilisées dépassent tout ce dont est capable ton peuple, mais l'inspire durablement. On retrouve longtemps dans toutes l'iconographie des tiens, l'influence et des références à la Grande Fresque de Gouffre Humide. Et les images sont nombreuses. Des animaux qui, pour certains, ont des ressemblances avec ceux que vous pouvez observer dans la vallée, mais dont la variété improbable excite les imaginations. Certains pensent qu'il s'agit de bêtes mythiques qui marchaient parmi les Premiers Ancêtres, d'autres qu'ils doivent exister de par le monde. Les Premiers Ancêtres se représentent marchands au milieu d'une terre luxuriante, presque paradisiaque. Certains pensent qu'il s'agit là d'une représentation de l'au-delà. Une vision d'où se trouve vos ancêtres, comme les Premiers, plutôt qu'une représentation du passé. On s'interroge si les Premiers Ancêtres l'ont rejoint volontairement pour la fonder, où s'ils ont été les premiers à la découvrir. C'est surtout la représentation de géants qui semblaient évoluer parmi eux qui interroge. Certains pensent qu'il s'agit d'êtres divins veillant à l'époque sur le monde. Ou la représentation qu'ils se faisaient eux-mêmes de leurs ancêtres. Une emphase est placée sur le soleil et ses cycles. Ils semblent décrire avec précision sa course dans le ciel et ses différentes phases. C'est toute une cosmologie qui est illustrée , faite de sphères et de spirales incompréhensible. Le soleil semble tenir ici une cour d'astres qui lui obéissent. Ils se croisent et se re-croisent. Certains y voient un dieu au sommet d'une complexe hiérarchie. L'importance du cycle est évidente. Le soleil en son centre, symbole de commencement et de retour éternel. Que ce soit dans les saisons, mais en allégorie, de la vie.
 Essence divine
@@ -652,8 +585,6 @@ Choix : Autels des Pionniers (Option libre)
 Ceux qui sont tombés dans les profondeurs ne pourront jamais recevoir le rite traditionnel. Leurs corps reposent dans les galeries qu'ils exploraient, hors d'atteinte des Ailes-Grises. Comme les Enfants des Échos qui deviennent pierre au terme de leur vie, ces pionniers sont devenus gardiens des mystères qu'ils cherchaient à percer.
 À l'entrée de Gouffre Humide, nous érigeons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont gravés à jamais. Mais que ce ne soit pas le seul. Que chaque lieu où un explorateur, un chasseur, un artisan est tombé dans sa quête de connaissance reçoive son propre autel. De petits sanctuaires le long des routes et des rivières, où les voyageurs déposeront une offrande et recevront la protection de ceux qui sont partis avant eux.
 Que ces âmes, qui n'ont pu rejoindre le ciel, deviennent les gardiens des passages - veillant sur ceux qui empruntent les chemins dangereux, protégeant ceux qui osent chercher ce qui n'a jamais été trouvé.
-Jimmys G-OST
-Pillars of Eternity II: Deadfire [Soundtrack] 09 - Huana
 Le palanquin serpente lentement le long du chemin. Portés par six ailes grises, qui n'auront pas de plus grand honneur dans leur vie, tu descends dans la vallée. Le voyage est loin d'être confortable, les pistes de montagnes ne se prêtent guère à la promenade. Mais à l'exception de rare moment où tu as l'impression de descendre à la verticale, ce moyen de locomotion te laisse disponible pour la lecture.
 Un art nouveau, né dans les profondeurs de Gouffre Humide, au cœur du Foyer du savoir. C'est la nécessité de consigner l'aspect mais aussi les interprétations donné à la Fresque des Âges qui a précipité sa mise au point. Les rumeurs veulent qu'au départ, ça n'ait été que la tentative par certains enfants des échos de représenter des éléments de la fresque, pour en assurer la conservation. Les enfants des échos ont l'habitude de travailler la pierre. Leur méthodes de constructions en plusieurs étapes obligent déjà les tailleurs de pierres à communiquer à travers leur travail leurs intentions à ceux qui vont les succéder comme les sculpteurs par exemple, pour éviter d'avoir à les détailler longuement à l'oral.
 On trouve un certain héritage de ces méthodes dans les idéoglyphes. Ils sont faits dans un mélange d'argile vivante et d'autres matériaux, utilisés dans un premier temps comme brouillons de gravure qui devaient immortaliser le Premier Artefact. Si ces gravures ne se sont montrées guère probantes dans la conservation de ce patrimoine, leurs ébauches se sont révélées particulièrement adaptées aux discussions des ailes grises sur des éléments particuliers, sans avoir à faire des aller-retours ou même descendre sous terre.

@@ -9,19 +9,16 @@
 
 ## Acquis en meme temps (Tour 6)
 
-- [filet de pêche lesté](filet-de-peche-leste.md)
-- [lance à la pointe polie](lance-a-la-pointe-polie.md)
-- [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md)
+- [outils de polissage](outils-de-polissage.md)
 
 ## Arbre chronologique
 
-**Tour 5** (precedent) : [pointes de flèches](pointes-de-fleches.md), [roches striées](roches-striees.md)
+**Tour 5** (precedent) : [Pointes de flèches](pointes-de-fleches.md)
 **Tour 6** (actuel) : **hameçons et casiers à poisson**
-**Tour 7** (suivant) : [rhombes en pierre](rhombes-en-pierre.md), [pipeau en bambou](pipeau-en-bambou.md)
+**Tour 7** (suivant) : [rhombes en pierre](rhombes-en-pierre.md)
 
 ## Meme categorie : Outils de peche
 
-- [filet de pêche lesté](filet-de-peche-leste.md) (Tour 6)
 - [outils pour évider les poissons de la Confluence](outils-pour-evider-les-poissons-de-la-confluence.md) (Tour 12)
 
 ## Extrait narratif

@@ -1,14 +1,14 @@
 # Tour 9
 
-📅 **15/01/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
+📅 **15/01/2025** | 📊 **11 segments** | 🎯 **1 nouvelles entités**
 
-> La civilisation de la Confluence est caractérisée par une symbiose entre l'artisanat et la nature. Les artefacts sont considérés comme des symboles de continuité et sont utilisés pour honorer les ancêtres. Les artisans sont divisés en deux groupes : les ciels clairs, qui produisent des outils rituels, et les ciels libres, qui semblent subir une mutation qui change la couleur de leurs yeux et de leurs cheveux. La population de la vallée cherche à trouver sa place dans la société, en fonction de son origine, de ses ancêtres et de son rôle dans la communauté. Cela conduit à des tensions entre les différentes castes et groupes sociaux.
+> La société de la Confluence est marquée par la création d'artefacts, objets qui reçoivent une vie propre grâce à l'intervention des artisans. Ces artefacts sont considérés comme symboles de continuité avec les ancêtres et sont souvent utilisés dans des autels pour attirer leur attention. Les deux peuples des villages, dont les uns ont un ciel clair et les autres ne connaissent pas ce phénomène, développent des arts différents en fonction de leurs particularités. Les artisans sans ciel se concentrent sur la création d'objets utiles au quotidien, tandis que ceux avec des ciels clairs créent des outils pour les rituels sacrés et la musique. Cependant, une nouvelle mutation, connue sous le nom de 'Touché par les ancêtres', commence à se propager chez les ciels libres, où leurs yeux prennent la couleur du ciel et leurs chevelures deviennent dorées.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Les Cercles de Vigile`, `Rituel du Regard Partagé`, `Porteurs de Flamme`, `Leg des ancêtres`
-- **Mentions totales** : 15
-- **Technologies** : 4
+- **Entités découvertes** : `Porteurs de Flamme`
+- **Mentions totales** : 10
+- **Technologies** : 2
 - **Ressources** : 1
 - **Densité narrative** : 8 narratifs, 3 choix, 0 conséquences
 
@@ -55,56 +55,45 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 
 ### 🗺️ Géographie
 
-- vallée
-- montagnes
-- rivières
-- plaines
+- Vallée
+- Montagnes
+- Gouffre Humide
 
 ### 🔧 Technologies
 
-- lance
-- cuillère
-- barreau de berceau
-- artefacts
+- Argile Vivante
+- Lance
 
 ### 🌾 Ressources
 
-- poissons des rivières
+- Pierres aux propriétés inconnues
 
 ### ✨ Croyances
 
+- Loi du Sang et de la Bête
 - Rituel du Regard Partagé
-- Ailes-Grises
-- Voix de l'Aurore
-- Cercles de Vigile
-- Antres des Échos
-- La nature est à la fois constante et changeante
-- Un arbre sortira de terre, étendra ses branches vers le ciel dans un acte désespéré qui ne pourra empêcher son destin qui est de pourrir
-- La branche devient lance, et transmise de génération en génération comme un leg des ancêtres, elle continuera de perdurer là où l'arbre qui l'a porté aura disparu
-- C'est la mission sacrée des artisans que de préserver la mémoire des ancêtres
-- Peut-être ce chiffre sera amené à grandir dans le futur pour préserver l'exceptionnalisme des artefacts, mais leur apparence elle …
 
 ## 🏷️ Entités mentionnées
 
-**Regards-Libres** (Castes) — 2 mentions
-
-**Voix de l'Aurore** (Castes) — 2 mentions
-
-**Sans ciel** (Castes) — 2 mentions
-
-**La confluence** (Lieux) — 2 mentions
-
-**Les Cercles de Vigile** (Technologies) — 2 mentions ⭐ *Première apparition*
+**Loi du Sang et de la Bete** (Belief) — 1 mentions
 
 **Ailes-Grises** (Castes) — 1 mentions
 
-**Enfants du Courant** (Castes) — 1 mentions
+**Caste de l'Air** (Castes) — 1 mentions
 
-**Rituel du Regard Partagé** (Evenements) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Castes) — 1 mentions
 
-**Porteurs de Flamme** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Porteurs de Flamme** (Castes) — 1 mentions ⭐ *Première apparition*
 
-**Leg des ancêtres** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Regards-Libres** (Creatures) — 1 mentions
+
+**Enfants du Courant** (Institutions) — 1 mentions
+
+**Gardiens de la Confluence** (Institutions) — 1 mentions
+
+**Voix de l'Aurore** (Institutions) — 1 mentions
+
+**Argile Vivante** (Technologies) — 1 mentions
 
 ---
 

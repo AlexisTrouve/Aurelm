@@ -117,6 +117,8 @@ def parse_format_b(text: str, source_file: str) -> list[ParsedMessage]:
             continue
 
         content = section[match.end():].strip()
+        # Remove YouTube embeds
+        content = _strip_youtube_embeds(content)
         # Remove horizontal rules
         content = re.sub(r"^---+\s*$", "", content, flags=re.MULTILINE).strip()
         if content:
@@ -206,33 +208,81 @@ def _extract_date_from_filename(filename: str) -> str | None:
     return None
 
 
-def _clean_format_a_content(content: str) -> str:
-    """Clean Discord-specific artifacts from Format A content."""
+def _strip_youtube_embeds(content: str) -> str:
+    """Remove YouTube embed blocks from Discord content.
+
+    Discord YouTube embeds follow a consistent pattern:
+        https://www.youtube.com/watch?v=...
+        YouTube                              <- always present
+        Artist Name                          <- short, no French punctuation
+        Track Title (optional)               <- short, often English/ALL CAPS
+
+    Strips the URL line, then consumes following lines that look like
+    YouTube metadata (short, no sentence-ending punctuation, non-French).
+    Stops at the first line that looks like narrative text or an empty line
+    after at least one metadata line was consumed.
+    """
     lines = content.splitlines()
     cleaned: list[str] = []
-    skip_youtube = False
+    in_youtube_block = False
+    meta_lines_seen = 0
 
     for line in lines:
         stripped = line.strip()
-        # Skip YouTube embeds
+
         if stripped.startswith("https://www.youtube.com") or stripped.startswith("https://youtu.be"):
-            skip_youtube = True
+            in_youtube_block = True
+            meta_lines_seen = 0
             continue
-        if skip_youtube and stripped in ("YouTube", "") or (skip_youtube and not stripped):
-            continue
-        if skip_youtube and stripped and stripped != "YouTube":
-            skip_youtube = False
-        # Skip "(modifié)" markers
+
+        if in_youtube_block:
+            # Empty lines within embed block are just padding — skip them
+            # but don't exit the block yet (metadata may follow)
+            if not stripped:
+                continue
+
+            # "YouTube" label — always skip (doesn't count toward limit)
+            if stripped == "YouTube":
+                continue
+
+            # Short line without French sentence markers = likely metadata
+            # (artist name, track title). Real narrative has periods, commas,
+            # accented chars in longer sentences.
+            # Allow up to 3 metadata lines after "YouTube" (artist, title, extra)
+            is_meta = (
+                len(stripped) < 100
+                and not stripped.endswith(".")
+                and not stripped.endswith("!")
+                and not stripped.endswith("?")
+                and meta_lines_seen < 3
+            )
+
+            if is_meta:
+                meta_lines_seen += 1
+                continue
+            else:
+                # Looks like narrative — stop skipping
+                in_youtube_block = False
+
+        cleaned.append(line)
+
+    return "\n".join(cleaned)
+
+
+def _clean_format_a_content(content: str) -> str:
+    """Clean Discord-specific artifacts from Format A content."""
+    content = _strip_youtube_embeds(content)
+
+    lines = content.splitlines()
+    cleaned: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
         if stripped == "(modifié)":
-            continue
-        # Skip standalone YouTube metadata lines
-        if skip_youtube:
-            skip_youtube = False
             continue
         cleaned.append(line)
 
     result = "\n".join(cleaned).strip()
-    # Remove timestamp markers like [04:10] or [00:10]
     result = re.sub(r"^\[[\d:]+\]\s*", "", result, flags=re.MULTILINE)
     return result.strip()
 

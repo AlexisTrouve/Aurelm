@@ -6,86 +6,34 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 6 |
-| **Tours actifs** | 12-14 (3 tours) |
-| **Pic d'activite** | Tour 14 (3 mentions) |
-| **Moyenne** | 2.0 mentions/tour |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 12-12 (1 tours) |
+| **Pic d'activite** | Tour 12 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour 12  ██████              
-Tour 13  ██████              
-Tour 14  ████████████████████  ← Pic
+Tour 12  ████████████████████  ← Pic
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 3 tours
-- 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 3 tours
-- 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 2 tours
-- 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 2 tours
-- 🔵 **[Faucons Chasseurs](faucons-chasseurs.md)** (Castes) — 2 tours
 
 ## Description
 
-L'antre des échos est une galerie souterraine mature qui facilite le trafic piéton entre la confluence et Gouffre Humide. Elle a été construite pour accélérer les échanges vitaux entre les villages aux sorties des galeries et les colonies en profondeur. Cette antre présente une importance cruciale pour l'auto-suffisance de ces dernières, car elle leur permet d'accéder à des ressources essentielles comme le poisson de la confluence. Si la maladie des Antres peut se développer si les réserves ne sont pas régulières.
+Le Gouffre Humide est une antre des échos, un lieu mature qui joue un rôle important pour les colonies situées dans les profondeurs. Il s'agit d'un endroit où l'on trouve de la nourriture, notamment du poisson de la confluence. Les habitants des profondeurs dépendent fortement de ce poisson pour éviter la maladie des Antres.
 
 ## Chronologie
 
-**Tour 12: La construction d'un escalier a été entreprise, couvrant chaque pas depuis la confluence jusqu'à Gouffre Humide. Cela accélère le trafic piéton entre les deux et est vital pour l'antre. Les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies.**
-
-**Tour 13: Les recherches du groupe disparu se déroulent dans les profondeurs de Gouffre Humide, où même les ailes grises peinent à maintenir un masque de sérénité. Les enfants des échos manipulent nerveusement leurs armes de fortune.**
-
-**Tour 14: Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide, que ton peuple voit comme le peuple qui vous a précédé et dont la chute est un secret interrogeant.**
-
-**Tour 12: L'antre facilite désormais les échanges entre les villages aux sorties des galeries et les colonies en profondeur. Les difficultés respiratoires liées à la maladie des Antres sont réduites, grâce à l'accès régulier au poisson de la confluence.**
+**Tour 12: Les antres ont construit un escalier qui relie le Gouffre Humide à la surface, facilitant ainsi les échanges avec les villages aux sorties des galeries. Les échanges sont vitaux pour l'antre et permettent d'éviter la maladie des Antres en cas de manque de poisson.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 12**
 > "Gouffre Humide"
 >
-> Contexte : ant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont cou...
-
-**Tour 13**
-> "Gouffre Humide"
->
-> Contexte : onnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes g...
-
-**Tour 14**
-> "Gouffre Humide"
->
-> Contexte : iles grises se succèdent dans les halls sacrés de Gouffre Humide. La valse des hommes de foi est justifiée d'abord...
-
-**Tour 14**
-> "Gouffre humide"
->
-> Contexte : sibles soient malgré tout réaménagée et intégré à Gouffre humide
-Que les ruines deviennent un test aux plus courag...
-
-**Tour 14**
-> "gouffre humide"
->
-> Contexte : entends après cette décision guère plus parler de gouffre humide en plusieurs générations. C'est le temps qu'il fa...
+> Contexte : colonne la plus large et la plus profonde des douzes...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 12**
 
     > ...ravail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des di...
-
-    > ...ionnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer...
-
-    **Tour 13**
-
-    > ...Durgan's Battery
-    Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en...
-
-    **Tour 14**
-
-    > Rithelgo
-    Pillars of Eternity Soundtrack - Engwith
-    Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide. La valse des hommes de foi est justifiée d'abord par l'importance des lieux. Ton peuple qui adore les ancêtres voit dans ces halls oubliés un peuple qui vous a précédé. Avec le temps, on les qualifient même de premier ancêtre, à la fois avec révérence, fierté, mais surtout inquiétude. Le secret de leur chute interroge et influe ton peuple qui se sait maintenant promis à pareil destin s'il ne par...

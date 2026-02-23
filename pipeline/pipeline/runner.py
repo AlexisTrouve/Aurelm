@@ -25,7 +25,6 @@ from .loader import load_directory
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
-from .ner import EntityExtractor
 from .summarizer import summarize_turn, AuthorContent
 from .entity_profiler import build_entity_profiles
 from .alias_resolver import resolve_aliases
@@ -95,8 +94,7 @@ def run_pipeline(
     print(f"       ->{len(chunks)} turns detected")
 
     # Step 6: Process each turn
-    print("[6/9] Processing turns (classify -> extract facts -> NER -> summarize)...")
-    extractor = _init_ner()
+    print("[6/9] Processing turns (classify -> extract facts -> summarize)...")
     fact_extractor = FactExtractor() if use_llm else None
 
     conn = get_connection(db_path)
@@ -141,10 +139,9 @@ def run_pipeline(
                 )
                 stats["segments_created"] += 1
 
-            # Extract entities
-            if extractor:
-                entities = extractor.extract(turn_text)
-                for ent in entities:
+            # Extract entities from LLM results
+            if structured_facts and structured_facts.entities:
+                for ent in structured_facts.entities:
                     entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                     conn.execute(
                         """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
@@ -366,15 +363,6 @@ def _register_unload_atexit() -> None:
         _atexit_registered = True
 
 
-def _init_ner() -> EntityExtractor | None:
-    """Initialize the NER extractor, returning None if spaCy model not available."""
-    try:
-        return EntityExtractor()
-    except OSError:
-        print("       WARNING: spaCy model fr_core_news_lg not found -- skipping NER")
-        return None
-
-
 def _split_by_author(messages: list, gm_author_id: str) -> list[AuthorContent]:
     """Group consecutive messages by author role (GM vs player) for multi-call LLM."""
     groups: list[AuthorContent] = []
@@ -432,8 +420,12 @@ def _normalize_for_dedup(name: str) -> str:
     import re as _re
     import unicodedata as _ud
 
+    # Expand ligatures (not decomposed by NFKD)
+    text = name.replace("\u0153", "oe").replace("\u0152", "OE")  # œ/Œ
+    text = text.replace("\u00e6", "ae").replace("\u00c6", "AE")  # æ/Æ
+
     # Strip accents
-    nfkd = _ud.normalize("NFKD", name)
+    nfkd = _ud.normalize("NFKD", text)
     text = "".join(c for c in nfkd if not _ud.combining(c))
 
     # Lowercase + split on non-word chars
@@ -576,6 +568,7 @@ def _print_stats(stats: dict) -> None:
     if llm_stats.total() > 0:
         print(f"  LLM calls total:     {llm_stats.total()}")
         print(f"    fact extraction:   {counts['fact_extraction']}")
+        print(f"    entity extraction: {counts['entity_extraction']}")
         print(f"    summarization:     {counts['summarization']}")
         print(f"    entity profiling:  {counts['entity_profiling']}")
     print("=" * 40)
@@ -784,7 +777,6 @@ def run_pipeline_for_channels(
         "per_civ": {},
     }
 
-    extractor = _init_ner()
     fact_extractor = FactExtractor() if use_llm else None
 
     for civ_id, civ_name, player_name, channel_id in civs:
@@ -840,9 +832,9 @@ def run_pipeline_for_channels(
                     )
                     civ_stats["segments_created"] += 1
 
-                if extractor:
-                    entities = extractor.extract(turn_text)
-                    for ent in entities:
+                # Extract entities from LLM results
+                if structured_facts and structured_facts.entities:
+                    for ent in structured_facts.entities:
                         entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                         conn.execute(
                             """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)

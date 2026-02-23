@@ -1,28 +1,20 @@
 # Tour 1
 
-📅 **03/09/2024** | 📊 **11 segments** | 🎯 **0 nouvelles entités**
+📅 **03/09/2024** | 📊 **8 segments** | 🎯 **8 nouvelles entités**
 
-> La narration débute avec une référence au combat perdu d'un être surnaturel, qui décide de disséminer son pouvoir pour qu'il prospère par lui-même. Puis elle passe à la description du Premier Âge de la Civilisation de la Confluence, où les premiers souvenirs sont des paysages glacés et des plante qui perçoivent dans cette neige. Les hommes apparaissent ensuite, méfiants et perdus, mais ils sont aidés par un être non identifié qui leur montre comment survivre.
+> La narration débute avec le discours d'un être qui se présente comme ayant combattu sans succès, mais qui décide maintenant de partager son pouvoir avec les humains émergents. Les premiers souvenirs des joueurs s'inscrivent dans un paysage glacial, caractérisé par une neige jusqu'à l'horizon et un ciel terne. Le changement arrive lorsqu'apparaissent les premières plantes, suivies de la fonte de la neige, de la formation de rivières et d'un sol noirâtre émergeant. Les joueurs découvrent leur conscience comme petits mammifères, souffrant du manque de surprises dans leur environnement. Ils rencontrent des humains, méfiants et affamés, auxquels ils apprennent à survivre en leur enseignant diverses techniques pour chasser, pêcher ou trouver nourriture.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : aucune
-- **Mentions totales** : 0
-- **Technologies** : 2
-- **Ressources** : 2
-- **Densité narrative** : 8 narratifs, 1 choix, 0 conséquences
-
-## 🎵 Ambiance
-
-[YouTube](https://www.youtube.com/watch?v=jURi-bCBhKQ)
+- **Entités découvertes** : `Loi du Sang et de la Bete`, `Caste de l'Air`, `Faucons Chasseurs`, `Cheveux de Sang`, `Confluents`, `Nanzagouets`, `Blanc sur blanc`, `Argile Vivante`
+- **Mentions totales** : 8
+- **Technologies** : 1
+- **Ressources** : 0
+- **Densité narrative** : 5 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
-
-Geiita
-
-**Aux Origines**
 
 << Mon combat fut long, mais vain. Je me suis rendu à l'évidence.
 Maintenant, je dissémine ce qu'il me reste de pouvoir. Qu'il s'épanouisse par lui-même.
@@ -40,6 +32,7 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 ### ⚖️ Choix proposés
 
 - comment chasser le gibier
+- ,
 - comment pêcher le poisson de rivière
 - comment trouver des baies et des graines
 - autres [libre]
@@ -52,9 +45,6 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ### 🗺️ Géographie
 
-- paysage immobile
-- neige jusqu'à l'horizon
-- ciel terne et uniforme
 - rivière
 - cascade
 - guet succédé de rapides
@@ -62,19 +52,25 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ### 🔧 Technologies
 
-- outils
-- techniques
+- Argile Vivante
 
-### 🌾 Ressources
+## 🏷️ Entités mentionnées
 
-- nourriture recoltee
-- materiaux travailles
+**Loi du Sang et de la Bete** (Belief) — 1 mentions ⭐ *Première apparition*
 
-### ✨ Croyances
+**Caste de l'Air** (Castes) — 1 mentions ⭐ *Première apparition*
 
-- Et au-delà: un ciel terne et uniforme
-- Un sol noirâtre émerge comme d'un long sommeil, le ciel est crevé d'une lumière aveuglante
-- Et pour la première fois tu goûtes à la conscience
+**Faucons Chasseurs** (Castes) — 1 mentions ⭐ *Première apparition*
+
+**Cheveux de Sang** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Confluents** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Nanzagouets** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Blanc sur blanc** (Evenements) — 1 mentions ⭐ *Première apparition*
+
+**Argile Vivante** (Technologies) — 1 mentions ⭐ *Première apparition*
 
 ---
 
@@ -82,7 +78,7 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ### Maître du Jeu
 
-Geiita
+04:10
 Aux Origines
 << Mon combat fut long, mais vain. Je me suis rendu à l'évidence.
 Maintenant, je dissémine ce qu'il me reste de pouvoir. Qu'il s'épanouisse par lui-même.
@@ -95,7 +91,6 @@ comment chasser le gibier
 comment pêcher le poisson de rivière
 comment trouver des baies et des graines
 autres [libre]
-**Aux Origines**
 << Mon combat fut long, mais vain. Je me suis rendu à l'évidence.
 Maintenant, je dissémine ce qu'il me reste de pouvoir. Qu'il s'épanouisse par lui-même.
 Et un jour, peut-être, qu'il triomphe là où j'ai échoué>>

@@ -1,28 +1,22 @@
 # Tour 12
 
-📅 **10/06/2025** | 📊 **10 segments** | 🎯 **4 nouvelles entités**
+📅 **10/06/2025** | 📊 **8 segments** | 🎯 **2 nouvelles entités**
 
-> Le village de la Confluence est en état d'alerte après le découverte du corps d'un ciel-clair assassiné avec un couteau. Le maître du jeu, responsable de la médiation dans le village, doit enquêter et trouver un moyen de juger le coupable sans preuve formelle. Les habitants sont divisés entre ceux qui accusent un certain individu sans-ciel, et ceux qui pensent que l'accusation est injustifiée. Dans le même temps, des rumeurs inquiétantes arrivent d'au-delà des montagnes, parlant de la découverte d'une galerie souterraine abandonnée et d'une potentielle menace pour les colonies sous-terrain.
+> Le village de la Confluence est secoué par un meurtre, et le Maitre du Jeu est chargé de résoudre la situation. L'accusation pèse contre un sans-ciel, mais il n'y a pas de preuve formelle. Le Tribunal des mœurs doit donc décider comment punir l'assassin. Dans un autre contexte, le Maitre du Jeu est approché par des ailes grises qui lui rapportent des nouvelles inquiétantes concernant Gouffre Humide.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Maladie des Antres`, `Gouffre Humide`, `Antre des échos`, `L'Appel de l'Abysse`
-- **Mentions totales** : 20
+- **Entités découvertes** : `Assemblée des Chefs`, `Gouffre Humide`
+- **Mentions totales** : 9
 - **Technologies** : 2
 - **Ressources** : 2
-- **Densité narrative** : 7 narratifs, 3 choix, 0 conséquences
+- **Densité narrative** : 5 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
 
-Carolina Romero
-DETECTIVE CONAN - ORIGINAL SOUNDTRACK 011
-
 Un cri dans la nuit. Tu te demandes un instant si tu l'as rêvé. Mais une nouvelle plainte se laisse entendre. La pluie martèle les toits à un rythme nerveux, le vent hurle dans la vallée. Incapable de rester en place, tu quitte ta couche et t'avance sur le porche. Contrairement à la plupart des habitants, tu vis seul dans la hutte qu'ils t'ont construite. Aussi es-tu obligé d'interroger les curieux qui ont eux aussi été tirés de leur sommeil. Un éclair illumine la nuit. Pendant un instant, tu vois un attroupement. Tu rechignes un instant à mettre les pieds dans la boue, mais la curiosité l'emporte. Alors que tu approche, tu entends une dispute. Habitué à ton rôle de médiateur, tu te fais un chemin dans la foule. Ce que tu vois te glace le sang. Un cadavre de ciel-clair. La mort fait malheureusement partie du quotidien. Maladie, blessures provoquant des infections, chutes, malnutritions, les causes sont nombreuses. Mais pas celle-ci. Il te faut un nouveau roulement de tonnerre pour être sûr de ce que tu devines jusqu'alors. La poignée d'un couteau, vraisemblablement ceux que vous utilisez pour évider les poissons de la Confluence.
-
-Rithelgo
-Pillars of Eternity Soundtrack - Oldsong
 
 Marche après marche, tu grimpes le flanc de la montagne. C'est une forme de méditation que de les grimper les unes après les autres. Observer la pierre qui les forment, déjà couverte d'une patine qui lustre chacune d'entre elles. C'est le fruit d'un travail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pulmonaires. Douleur musculaire ou spasme et fatigues et des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes, rendant l'accouchement difficile. Certains pensent que les changements physiques chez les enfants des échos ont aussi pour cause cette distance avec les fleuves d'où viennent l'énergie qui fait vivre. Par exemple des jambes arqués, des fronts larges, et une petite taille caractéristique. Plus rarement, mais bien plus souvent que ceux de la surface, un développement intellectuel limité. Ces jeunes légèrement stupides sont souvent utilisés pour les tâches ingrates et physiques. Le poisson devient le seul moyen pour les enfants des échos de rester en connexion avec les fleuves et de récupérer cette énergie vitale qui leur manque. Avec le temps …
 
@@ -64,64 +58,42 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 
 ### 🗺️ Géographie
 
-- vallée
-- montagne
 - Gouffre Humide
-- galeries souterraines de Gouffre Humide
+- Confluence
+- Vallée
 
 ### 🔧 Technologies
 
+- Argile Vivante
 - outils pour évider les poissons de la Confluence
-- rhombes pour les rituels et communications
 
 ### 🌾 Ressources
 
 - poisson de la Confluence
-- lait de pierre (mystérieux)
+- Larmes du Ciel
 
 ### ✨ Croyances
 
-- utilisation des grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches
-- Un cadavre de ciel-clair
-- La mort fait malheureusement partie du quotidien
-- Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utilisent leur grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent
-- Leurs anciens murmurent que la vallée a toujours récompensé ceux qui osent chercher au-delà des sentiers battus, et jamais cette vérité n'a été plus criante
-- En tant qu'Arbitre des Esprits, il est de mon devoir de descendre personnellement coordonner cette mission
-- Organisation : Quatre équipes de 6 personnes chacune - 3 Faucons Chasseurs, 2 Enfants des Échos armés, 1 Aile-Grise avec rhombes pour les rituels et communications
+- Loi du Sang et de la Bete
+- rituels des Enfants des Échos
 
 ## 🏷️ Entités mentionnées
 
-**Ailes-Grises** (Castes) — 2 mentions
+**Enfants des Échos** (Civilisations) — 2 mentions
 
-**Ciels-clairs** (Castes) — 2 mentions
-
-**Enfants des échos** (Castes) — 2 mentions
-
-**La confluence** (Lieux) — 2 mentions
-
-**Enfants du Courant** (Castes) — 1 mentions
+**Ailes-Grises** (Castes) — 1 mentions
 
 **Faucons Chasseurs** (Castes) — 1 mentions
 
-**Passes-bien** (Castes) — 1 mentions
+**Passes-Bien** (Civilisations) — 1 mentions
 
-**Maladie des Antres** (Evenements) — 1 mentions ⭐ *Première apparition*
+**Assemblée des Chefs** (Institutions) — 1 mentions ⭐ *Première apparition*
 
-**Arbitre des Esprits** (Institutions) — 1 mentions
+**Cercle des Sages** (Institutions) — 1 mentions
 
-**Assemblée des Chefs** (Institutions) — 1 mentions
-
-**Tribunal des mœurs** (Institutions) — 1 mentions
+**Arbitre des Esprits** (Personnages) — 1 mentions
 
 **Gouffre Humide** (Lieux) — 1 mentions ⭐ *Première apparition*
-
-**Antre des échos** (Lieux) — 1 mentions ⭐ *Première apparition*
-
-**L'Appel de l'Abysse** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Lait de pierre** (Technologies) — 1 mentions
-
-**Rhombes** (Technologies) — 1 mentions
 
 ---
 
@@ -129,8 +101,6 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 
 ### Maître du Jeu
 
-Carolina Romero
-DETECTIVE CONAN - ORIGINAL SOUNDTRACK 011
 Un cri dans la nuit. Tu te demandes un instant si tu l'as rêvé. Mais une nouvelle plainte se laisse entendre. La pluie martèle les toits à un rythme nerveux, le vent hurle dans la vallée. Incapable de rester en place, tu quitte ta couche et t'avance sur le porche. Contrairement à la plupart des habitants, tu vis seul dans la hutte qu'ils t'ont construite. Aussi es-tu obligé d'interroger les curieux qui ont eux aussi été tirés de leur sommeil. Un éclair illumine la nuit. Pendant un instant, tu vois un attroupement. Tu rechignes un instant à mettre les pieds dans la boue, mais la curiosité l'emporte. Alors que tu approche, tu entends une dispute. Habitué à ton rôle de médiateur, tu te fais un chemin dans la foule. Ce que tu vois te glace le sang. Un cadavre de ciel-clair. La mort fait malheureusement partie du quotidien. Maladie, blessures provoquant des infections, chutes, malnutritions, les causes sont nombreuses. Mais pas celle-ci. Il te faut un nouveau roulement de tonnerre pour être sûr de ce que tu devines jusqu'alors. La poignée d'un couteau, vraisemblablement ceux que vous utilisez pour évider les poissons de la Confluence.
 Le silence atterré n'est brisé que par une femme, ciel-clair elle aussi, l'une des plus belles du village, qui frappe de ses poings le torse d'un homme, sans-ciel, dont le regard en biais fuit celui de son accusatrice. Elle affirme que c'est lui le coupable, même si après ton interrogatoire, elle reconnaît ne pas l'avoir vu directement. Plusieurs reprennent cependant son accusation, et l'accusé lui, quand il ne murmure pas au sujet d'un accident, se mure dans le mutisme. L'inimitié entre les deux aurait été connue de tous. Le couteau, un artefact passé de génération en génération parmi les enfants du courant aurait été un fruit de la discorde parmi d'autres. L'idée que l'un des tiens puisse ôter la vie sans nécessité te plonge dans la stupeur. Mais tu dois reprendre tes esprits. Le Tribunal des mœurs devra bientôt statuer sur la question et rien ne l'a préparé, dans les lois ou dans les traditions, pour la décision qu'il va devoir prendre.
 Le premier meurtre
@@ -138,8 +108,6 @@ Une vie pour une vie, il sera noyé aux aurores, punir ce genre d'agissement, c'
 L'exil. Il prendra ce qu'il peut porter et quittera le village aux aurores pour ne jamais y retourner. Une vie de trop a déjà été perdue. Ainsi la justice est faite.,
 Sans preuve formelle, impossible de le punir. Il va falloir interroger, reconstituer les faits et si jamais la vérité n'émerge pas, l'accepter. C'est ça être juste.,
 Autres [ libre ]
-Rithelgo
-Pillars of Eternity Soundtrack - Oldsong
 Marche après marche, tu grimpes le flanc de la montagne. C'est une forme de méditation que de les grimper les unes après les autres. Observer la pierre qui les forment, déjà couverte d'une patine qui lustre chacune d'entre elles. C'est le fruit d'un travail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pulmonaires. Douleur musculaire ou spasme et fatigues et des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes, rendant l'accouchement difficile. Certains pensent que les changements physiques chez les enfants des échos ont aussi pour cause cette distance avec les fleuves d'où viennent l'énergie qui fait vivre. Par exemple des jambes arqués, des fronts larges, et une petite taille caractéristique. Plus rarement, mais bien plus souvent que ceux de la surface, un développement intellectuel limité. Ces jeunes légèrement stupides sont souvent utilisés pour les tâches ingrates et physiques. Le poisson devient le seul moyen pour les enfants des échos de rester en connexion avec les fleuves et de récupérer cette énergie vitale qui leur manque. Avec le temps …
 Et on aime pas ceux d'la surface ……
 Les passes-biens gagnent une influence décisives sur les colonies sous-terraine, gagnant un monopole et exerçant un contrôle toujours plus direct sur les enfants des échos,

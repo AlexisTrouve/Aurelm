@@ -137,10 +137,12 @@ def test_parse_date_dd_mm_yyyy():
 
 
 def test_clean_format_a_removes_youtube():
-    content = "https://www.youtube.com/watch?v=abc\nYouTube\nArtist\nSong Title\n\nActual content"
+    content = "https://www.youtube.com/watch?v=abc\nYouTube\nArtist\nSong Title\nLes confluents vivent dans la vallee."
     cleaned = _clean_format_a_content(content)
     assert "youtube" not in cleaned.lower()
-    assert "Actual content" in cleaned
+    assert "Artist" not in cleaned
+    assert "Song Title" not in cleaned
+    assert "Les confluents" in cleaned
 
 
 def test_clean_format_a_removes_modified():

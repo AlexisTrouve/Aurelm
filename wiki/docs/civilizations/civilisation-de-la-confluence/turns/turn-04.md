@@ -1,13 +1,13 @@
 # Tour 4
 
-📅 **28/09/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
+📅 **28/09/2024** | 📊 **4 segments** | 🎯 **1 nouvelles entités**
 
-> Le Maitre du Jeu a rassemblé ses plus sages et les plus vifs d'esprits pour former le 'cercle des sages'. Il leur enseigne la manière de trouver les présages dans la nature et comment prendre des décisions importantes. Après avoir guidé leurs échanges, il annonce son départ, mais assure qu'il veillera sur eux en communiant avec les ancêtres. Il continue à influencer la tribus par le biais du cercle des sages, mais est surpris de constater que celui-ci est en crise due à une dispute entre deux hommes qui se disputent l'amour d'une femme.
+> La civilisation de la Confluence est en pleine croissance sous l'influence de l'oracle, qui forme un cercle des sages pour guider les décisions de la tribu. Lorsque l'oracle quitte la terre, il laisse derrière lui une nouvelle génération qui le considère comme une entité quasi divine appelée 'l'Oracle'. Le cercle des sages continue à exercer son influence sur la tribu, mais se heurte à un problème complexe concernant les relations amoureuses dans la communauté. Un membre du cercle est envoyé pour chercher l'oracle afin de trouver une solution à ce conflit.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : aucune
-- **Mentions totales** : 1
+- **Entités découvertes** : `Tribunal des Moeurs`
+- **Mentions totales** : 3
 - **Technologies** : 2
 - **Ressources** : 0
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
@@ -38,30 +38,25 @@ Je guide la tribu vers une nouvelle structure culturelle et institutionnel. Un h
 
 ### 🗺️ Géographie
 
-- la fourche dans la rivière
-- le sommet visible depuis la fourche
+- Gouffre Humide
+- La Fourche dans la Rivière
 
 ### 🔧 Technologies
 
-- la voix des cieux
-- comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles
+- Argile Vivante
+- La Voix des Cieux
 
 ### ✨ Croyances
 
-- le cercle des sages
-- l'Oracle
-- les ancêtres
-- la bénédiction des esprits
-- les valeurs communes
-- Tu t'entoures lentement de ceux que tu considères les plus vifs d'esprits, et les plus sages
-- A la surprise de certains, un "Sanciel" finit même par s'y intégrer
-- Les discussions se font tardives et tu prends souvent le rôle de médiateur, cherchant au maximum à guider leurs échanges pour créer une coutume de dialogue respectueux et productif qui puisse survivre à ton absence
-- Quand on t'interroge de quelle manière, tu leur réponds que tu seras en permanence en communion avec les ancêtres, à les guider comme ces derniers
-- A l'écart, tu ajoutes au cercle des sages que si jamais il venait un jour où leur sagesse venait à manquer, que les ancêtres restaient muet
+- Loi du Sang et de la Bete
+- Rituel de Fertilité
+- Coutume de Dialogue Respectueux
 
 ## 🏷️ Entités mentionnées
 
-**Cercle des sages** (Institutions) — 1 mentions
+**Cercle des Sages** (Institutions) — 1 mentions
+
+**Tribunal des Moeurs** (Institutions) — 1 mentions ⭐ *Première apparition*
 
 ---
 

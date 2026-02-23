@@ -1,15 +1,15 @@
 # Tour 3
 
-📅 **13/09/2024** | 📊 **4 segments** | 🎯 **2 nouvelles entités**
+📅 **13/09/2024** | 📊 **4 segments** | 🎯 **3 nouvelles entités**
 
-> Les saisons passent et les traditions de la tribu continuent à prendre forme. Les défunt sont emmenés aux sommets pour être déposés, et on croit que les oiseaux viennent récupérer leur âme pour l'emmener au ciel. La famille garde des mementos en mémoire de leurs ancêtres, qui sont considérés comme des sources de sagesse. Les anciens sont maintenant respectés et considérés comme des conseillers. Vous, vous êtes d'une certaine manière le plus ancien de la tribu et avez guidé les membres dans l'utilisation du territoire de chasse et la création de petits villages temporaires. La tribu se relève des épreuves qu'elle a traversées et surpasse même son nombre original.
+> La tribu de la Confluence continue à évoluer et à grandir sous ton influence. Les rites funéraires ont été modifiés, avec l'idée que les oiseaux récupèrent le mort pour l'emmener au ciel. La vénération des ancêtres s'est développée, et les anciens sont maintenant considérés comme une source de sagesse. Les membres de la tribu se montrent respectueux et obéissants envers toi, qui es le plus ancien du groupe. Tu as guidé la tribu pour utiliser leurs terrains de chasse de manière équitable, alternant entre différents sites saisonniers. La viande est fumée et conservée pour les périodes difficiles. Les membres de la tribu se sont multipliés et te considèrent désormais comme un leader influent.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Sans ciel`, `Cercle des sages`
-- **Mentions totales** : 3
-- **Technologies** : 2
-- **Ressources** : 2
+- **Entités découvertes** : `Parents`, `Cercle des Sages`, `Oracle de la tribu`
+- **Mentions totales** : 4
+- **Technologies** : 1
+- **Ressources** : 0
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -37,41 +37,27 @@ Je décide de forger une nouvelle structure pour la tribu. Je convoque les espri
 
 ### 🗺️ Géographie
 
-- crêtes adjacentes
-- territoire de chasse
-- village temporaire
-- confluence
+- Confluence
+- Sommet du territoire de la tribu
 
 ### 🔧 Technologies
 
-- rites de déposition des morts
-- mémentos en mémoire des aïeux
-
-### 🌾 Ressources
-
-- viande fumée
-- terres de chasse
+- Argile Vivante
 
 ### ✨ Croyances
 
-- croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel
-- adoption rayonnant des anciens comme source de savoir
-- piété filiale pour racheter une parcelle de la providence refusée à la naissance
-- De nouveaux rites voient le jour, où le défunt est emmené aux sommets des crêtes adjacentes pour y être déposé
-- Une croyance s'est développé que ce sont les oiseaux qui viennent récupérer morceau par morceau le mort pour l'emmener au ciel d'où il pourra observer et offrir leur sagesse
-- Là où le corps est absorbé par la terre, l'âme l'est elle par les cieux
-- Ceux des parents sont gardés par les enfants et ceux d'avant sont empilés sur des autels qui sont régulièrement visités pour y recevoir conseil de la part des ancêtres
-- D'autant plus ceux qui sont nés "sans ciel"
-- Ceux-là, abandonnés par le sort sont souvent rejetés et la seule manière qu'ils ont de se racheter est à travers la piété filiale
-- En membre respecté, parfois vénéré, tu as fini par te mêler de plus d'une manière à la tribus
+- Loi du Sang et de la Bete
+- Croyance que les oiseaux viennent récupérer morceau par morceau le mort pour l'emmener au ciel
 
 ## 🏷️ Entités mentionnées
 
-**Sans ciel** (Castes) — 1 mentions ⭐ *Première apparition*
+**Loi du Sang et de la Bete** (Belief) — 1 mentions
 
-**Cercle des sages** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Parents** (Castes) — 1 mentions ⭐ *Première apparition*
 
-**La confluence** (Lieux) — 1 mentions
+**Cercle des Sages** (Institutions) — 1 mentions ⭐ *Première apparition*
+
+**Oracle de la tribu** (Personnages) — 1 mentions ⭐ *Première apparition*
 
 ---
 

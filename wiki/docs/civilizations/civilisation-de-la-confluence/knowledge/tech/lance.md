@@ -1,4 +1,4 @@
-# lance
+# Lance
 
 *Technologie* -- Civilisation de la Confluence
 
@@ -7,24 +7,16 @@
 | **Acquisition** | Tour 9 |
 | **Categorie** | Outils de chasse |
 
-## Acquis en meme temps (Tour 9)
-
-- [cuillère](cuillere.md)
-- [barreau de berceau](barreau-de-berceau.md)
-- [artefacts](artefacts.md)
-
 ## Arbre chronologique
 
-**Tour 8** (precedent) : [rhombes](rhombes.md), [outils créés par les artisans](outils-crees-par-les-artisans.md)
-**Tour 9** (actuel) : **lance**
-**Tour 10** (suivant) : [argile vive](argile-vive.md), [roche braise](roche-braise.md), [lait de pierre](lait-de-pierre.md)
+**Tour 8** (precedent) : [rhombes](rhombes.md)
+**Tour 9** (actuel) : **Lance**
+**Tour 10** (suivant) : [Lait de Pierre](lait-de-pierre.md), [Roches Braise](roches-braise.md)
 
 ## Meme categorie : Outils de chasse
 
 - [gourdins](gourdins.md) (Tour 2)
 - [pieux](pieux.md) (Tour 2)
-- [lance à la pointe polie](lance-a-la-pointe-polie.md) (Tour 6)
-- [Faucons Chasseurs](faucons-chasseurs.md) (Tour 11)
 
 ## Extrait narratif
 

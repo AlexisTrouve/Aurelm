@@ -1,113 +1,113 @@
 # Index des Entites
 
+## Personnages
+
+- [**Arbitre des Esprits**](../civilizations/civilisation-de-la-confluence/entities/arbitre-des-esprits.md) -- Civilisation de la Confluence, 2 mentions, Tour 11 - Tour 12
+
+- [**Chef du Cercle des Sages**](../civilizations/civilisation-de-la-confluence/entities/chef-du-cercle-des-sages.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
+
+- [**Chef du Tribunal des Mœurs**](../civilizations/civilisation-de-la-confluence/entities/chef-du-tribunal-des-moeurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
+
+- [**Eux**](../civilizations/civilisation-de-la-confluence/entities/eux.md) -- Civilisation de la Confluence, 1 mentions, Tour 2
+
+- [**Oracle de la tribu**](../civilizations/civilisation-de-la-confluence/entities/oracle-de-la-tribu.md) -- Civilisation de la Confluence, 1 mentions, Tour 3
+
 ## Lieux
 
-- [**Gorge Profonde**](../civilizations/civilisation-de-la-confluence/entities/gorge-profonde.md) -- Civilisation de la Confluence, 2 mentions, Tour 10
+- [**Berges**](../civilizations/civilisation-de-la-confluence/entities/berges.md) -- Civilisation de la Confluence, 1 mentions, Tour 2
 
-- [**Gouffre Humide**](../civilizations/civilisation-de-la-confluence/entities/gouffre-humide.md) -- Civilisation de la Confluence, 6 mentions, Tour 12 - Tour 14 | *alias: Antre des échos*
+- [**Bois environnants**](../civilizations/civilisation-de-la-confluence/entities/bois-environnants.md) -- Civilisation de la Confluence, 1 mentions, Tour 2
 
-- [**Hall des Serments**](../civilizations/civilisation-de-la-confluence/entities/hall-des-serments.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Cieux**](../civilizations/civilisation-de-la-confluence/entities/cieux.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
 
-- [**La confluence**](../civilizations/civilisation-de-la-confluence/entities/la-confluence.md) -- Civilisation de la Confluence, 19 mentions, Tour 2 - Tour 14
+- [**Confluence**](../civilizations/civilisation-de-la-confluence/entities/confluence.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
 
-- [**Morsure-des-Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/morsure-des-ancetres.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: Gingembre sauvage, Gingembre sauvage*
+- [**Confluence de deux rivières cristallines**](../civilizations/civilisation-de-la-confluence/entities/confluence-de-deux-rivieres-cristallines.md) -- Civilisation de la Confluence, 1 mentions, Tour 2
 
-- [**Vallée des camps temporaires**](../civilizations/civilisation-de-la-confluence/entities/vallee-des-camps-temporaires.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 | *alias: La Vallée, La vallée*
+- [**Gorge Profonde**](../civilizations/civilisation-de-la-confluence/entities/gorge-profonde.md) -- Civilisation de la Confluence, 1 mentions, Tour 10
+
+- [**Gouffre Humide**](../civilizations/civilisation-de-la-confluence/entities/gouffre-humide.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
 
 ## Technologies
 
-- [**Argile vivante**](../civilizations/civilisation-de-la-confluence/entities/argile-vivante.md) -- Civilisation de la Confluence, 2 mentions, Tour 11 - Tour 14
+- [**Argile Vivante**](../civilizations/civilisation-de-la-confluence/entities/argile-vivante.md) -- Civilisation de la Confluence, 5 mentions, Tour 1 - Tour 14
 
-- [**Chroniques de la Fresque**](../civilizations/civilisation-de-la-confluence/entities/chroniques-de-la-fresque.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Fresques**](../civilizations/civilisation-de-la-confluence/entities/fresques.md) -- Civilisation de la Confluence, 1 mentions, Tour 13
 
-- [**Colliers de glyphes**](../civilizations/civilisation-de-la-confluence/entities/colliers-de-glyphes.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Foyer du savoir**](../civilizations/civilisation-de-la-confluence/entities/foyer-du-savoir.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Glyphes du Gouffre**](../civilizations/civilisation-de-la-confluence/entities/glyphes-du-gouffre.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Grande Fresque**](../civilizations/civilisation-de-la-confluence/entities/grande-fresque.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Grande Prospection**](../civilizations/civilisation-de-la-confluence/entities/grande-prospection.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**L'Appel de l'Abysse**](../civilizations/civilisation-de-la-confluence/entities/l-appel-de-l-abysse.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
-
-- [**La Bête**](../civilizations/civilisation-de-la-confluence/entities/la-bete.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
-
-- [**La Fresque des Âges**](../civilizations/civilisation-de-la-confluence/entities/la-fresque-des-ages.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Lait de pierre**](../civilizations/civilisation-de-la-confluence/entities/lait-de-pierre.md) -- Civilisation de la Confluence, 2 mentions, Tour 10 - Tour 12
-
-- [**Leg des ancêtres**](../civilizations/civilisation-de-la-confluence/entities/leg-des-ancetres.md) -- Civilisation de la Confluence, 1 mentions, Tour 9
-
-- [**Les Cercles de Vigile**](../civilizations/civilisation-de-la-confluence/entities/les-cercles-de-vigile.md) -- Civilisation de la Confluence, 2 mentions, Tour 9
-
-- [**Les Larmes du Ciel**](../civilizations/civilisation-de-la-confluence/entities/les-larmes-du-ciel.md) -- Civilisation de la Confluence, 2 mentions, Tour 6 - Tour 14
-
-- [**Lois du Sang**](../civilizations/civilisation-de-la-confluence/entities/lois-du-sang.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
-
-- [**Maîtrise des Profondeurs**](../civilizations/civilisation-de-la-confluence/entities/maitrise-des-profondeurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 13
-
-- [**Porteurs de Flamme**](../civilizations/civilisation-de-la-confluence/entities/porteurs-de-flamme.md) -- Civilisation de la Confluence, 1 mentions, Tour 9
-
-- [**Premiers Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/premiers-ancetres.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
-
-- [**Rhombes**](../civilizations/civilisation-de-la-confluence/entities/rhombes.md) -- Civilisation de la Confluence, 5 mentions, Tour 7 - Tour 12
-
-- [**Tribunal de moeurs**](../civilizations/civilisation-de-la-confluence/entities/tribunal-de-moeurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 8
+- [**Généalogie**](../civilizations/civilisation-de-la-confluence/entities/genealogie.md) -- Civilisation de la Confluence, 1 mentions, Tour 5
 
 ## Institutions
 
-- [**Arbitre des Esprits**](../civilizations/civilisation-de-la-confluence/entities/arbitre-des-esprits.md) -- Civilisation de la Confluence, 3 mentions, Tour 11 - Tour 14
+- [**Assemblée des Chefs**](../civilizations/civilisation-de-la-confluence/entities/assemblee-des-chefs.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
 
-- [**Assemblée des Chefs**](../civilizations/civilisation-de-la-confluence/entities/assemblee-des-chefs.md) -- Civilisation de la Confluence, 2 mentions, Tour 11 - Tour 12
+- [**Cercle des Sages**](../civilizations/civilisation-de-la-confluence/entities/cercle-des-sages.md) -- Civilisation de la Confluence, 8 mentions, Tour 3 - Tour 14
 
-- [**Autels des Pionniers**](../civilizations/civilisation-de-la-confluence/entities/autels-des-pionniers.md) -- Civilisation de la Confluence, 3 mentions, Tour 14
+- [**Confluence des Esprits**](../civilizations/civilisation-de-la-confluence/entities/confluence-des-esprits.md) -- Civilisation de la Confluence, 1 mentions, Tour 10
 
-- [**Cercle des sages**](../civilizations/civilisation-de-la-confluence/entities/cercle-des-sages.md) -- Civilisation de la Confluence, 5 mentions, Tour 3 - Tour 14
+- [**Enfants du Courant**](../civilizations/civilisation-de-la-confluence/entities/enfants-du-courant.md) -- Civilisation de la Confluence, 3 mentions, Tour 7 - Tour 9
 
-- [**Gardiens du Hall**](../civilizations/civilisation-de-la-confluence/entities/gardiens-du-hall.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Famille**](../civilizations/civilisation-de-la-confluence/entities/famille.md) -- Civilisation de la Confluence, 1 mentions, Tour 5
 
-- [**Maison des Découvertes**](../civilizations/civilisation-de-la-confluence/entities/maison-des-decouvertes.md) -- Civilisation de la Confluence, 4 mentions, Tour 11 - Tour 14
+- [**Gardiens de la Confluence**](../civilizations/civilisation-de-la-confluence/entities/gardiens-de-la-confluence.md) -- Civilisation de la Confluence, 3 mentions, Tour 7 - Tour 9
 
-- [**Premier Artefact**](../civilizations/civilisation-de-la-confluence/entities/premier-artefact.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Maison des Découvertes**](../civilizations/civilisation-de-la-confluence/entities/maison-des-decouvertes.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
 
-- [**Salle du Conseil**](../civilizations/civilisation-de-la-confluence/entities/salle-du-conseil.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Tribunal des Moeurs**](../civilizations/civilisation-de-la-confluence/entities/tribunal-des-moeurs.md) -- Civilisation de la Confluence, 5 mentions, Tour 4 - Tour 14
 
-- [**Tribunal des mœurs**](../civilizations/civilisation-de-la-confluence/entities/tribunal-des-moeurs.md) -- Civilisation de la Confluence, 3 mentions, Tour 7 - Tour 12
+- [**Voix de l'Aurore**](../civilizations/civilisation-de-la-confluence/entities/voix-de-l-aurore.md) -- Civilisation de la Confluence, 3 mentions, Tour 7 - Tour 9
 
 ## Civilisations
 
-- [**Cheveux de Sang**](../civilizations/civilisation-de-la-confluence/entities/cheveux-de-sang.md) -- Civilisation de la Confluence, 4 mentions, Tour 14 | *alias: Pupupasu, Pupupasu*
+- [**Aurore**](../civilizations/civilisation-de-la-confluence/entities/aurore.md) -- Civilisation de la Confluence, 1 mentions, Tour 8
 
-- [**Nanzagouet**](../civilizations/civilisation-de-la-confluence/entities/nanzagouet.md) -- Civilisation de la Confluence, 2 mentions, Tour 14
+- [**Cheveux de Sang**](../civilizations/civilisation-de-la-confluence/entities/cheveux-de-sang.md) -- Civilisation de la Confluence, 3 mentions, Tour 1 - Tour 14
 
-- [**Pouleheimos**](../civilizations/civilisation-de-la-confluence/entities/pouleheimos.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Confluents**](../civilizations/civilisation-de-la-confluence/entities/confluents.md) -- Civilisation de la Confluence, 7 mentions, Tour 1 - Tour 14 | *alias: Peuple des Eaux, Peuple des eaux*
 
-- [**Siliaska**](../civilizations/civilisation-de-la-confluence/entities/siliaska.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Enfants des Échos**](../civilizations/civilisation-de-la-confluence/entities/enfants-des-echos.md) -- Civilisation de la Confluence, 3 mentions, Tour 10 - Tour 12
 
-- [**Tlazhuaneca**](../civilizations/civilisation-de-la-confluence/entities/tlazhuaneca.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+- [**Nanzagouets**](../civilizations/civilisation-de-la-confluence/entities/nanzagouets.md) -- Civilisation de la Confluence, 3 mentions, Tour 1 - Tour 14
+
+- [**Passes-Bien**](../civilizations/civilisation-de-la-confluence/entities/passes-bien.md) -- Civilisation de la Confluence, 2 mentions, Tour 10 - Tour 12
+
+- [**Peuple du ciel clair**](../civilizations/civilisation-de-la-confluence/entities/peuple-du-ciel-clair.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
 
 ## Castes
 
-- [**Ailes-Grises**](../civilizations/civilisation-de-la-confluence/entities/ailes-grises.md) -- Civilisation de la Confluence, 20 mentions, Tour 7 - Tour 14 | *alias: Voix de l'Aurore, Voix de l'aurore*
+- [**Ailes-Grises**](../civilizations/civilisation-de-la-confluence/entities/ailes-grises.md) -- Civilisation de la Confluence, 5 mentions, Tour 7 - Tour 12
 
-- [**Ciels-clairs**](../civilizations/civilisation-de-la-confluence/entities/ciels-clairs.md) -- Civilisation de la Confluence, 4 mentions, Tour 11 - Tour 14
+- [**Caste de l'Air**](../civilizations/civilisation-de-la-confluence/entities/caste-de-l-air.md) -- Civilisation de la Confluence, 4 mentions, Tour 1 - Tour 14
 
-- [**Enfants des échos**](../civilizations/civilisation-de-la-confluence/entities/enfants-des-echos.md) -- Civilisation de la Confluence, 7 mentions, Tour 10 - Tour 14
+- [**Faucons Chasseurs**](../civilizations/civilisation-de-la-confluence/entities/faucons-chasseurs.md) -- Civilisation de la Confluence, 9 mentions, Tour 1 - Tour 14
 
-- [**Enfants du Courant**](../civilizations/civilisation-de-la-confluence/entities/enfants-du-courant.md) -- Civilisation de la Confluence, 7 mentions, Tour 7 - Tour 14
+- [**Parents**](../civilizations/civilisation-de-la-confluence/entities/parents.md) -- Civilisation de la Confluence, 1 mentions, Tour 3
 
-- [**Faucons Chasseurs**](../civilizations/civilisation-de-la-confluence/entities/faucons-chasseurs.md) -- Civilisation de la Confluence, 6 mentions, Tour 11 - Tour 14
+- [**Porteurs de Flamme**](../civilizations/civilisation-de-la-confluence/entities/porteurs-de-flamme.md) -- Civilisation de la Confluence, 1 mentions, Tour 9
 
-- [**Passes-bien**](../civilizations/civilisation-de-la-confluence/entities/passes-bien.md) -- Civilisation de la Confluence, 6 mentions, Tour 10 - Tour 14
+- [**Proclamateurs**](../civilizations/civilisation-de-la-confluence/entities/proclamateurs.md) -- Civilisation de la Confluence, 1 mentions, Tour 11
 
-- [**Regards-Libres**](../civilizations/civilisation-de-la-confluence/entities/regards-libres.md) -- Civilisation de la Confluence, 8 mentions, Tour 6 - Tour 14
+- [**Sans-Ciel**](../civilizations/civilisation-de-la-confluence/entities/sans-ciel.md) -- Civilisation de la Confluence, 2 mentions, Tour 5 - Tour 6
 
-- [**Sans ciel**](../civilizations/civilisation-de-la-confluence/entities/sans-ciel.md) -- Civilisation de la Confluence, 9 mentions, Tour 3 - Tour 14
+## Ressources
+
+- [**Larmes du Ciel**](../civilizations/civilisation-de-la-confluence/entities/larmes-du-ciel.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
+
+- [**Morsure-des-Ancêtres**](../civilizations/civilisation-de-la-confluence/entities/morsure-des-ancetres.md) -- Civilisation de la Confluence, 1 mentions, Tour 6
+
+- [**Nature**](../civilizations/civilisation-de-la-confluence/entities/nature.md) -- Civilisation de la Confluence, 1 mentions, Tour 2
+
+- [**Rivières**](../civilizations/civilisation-de-la-confluence/entities/rivieres.md) -- Civilisation de la Confluence, 1 mentions, Tour 5
+
+## Creatures
+
+- [**Regards-Libres**](../civilizations/civilisation-de-la-confluence/entities/regards-libres.md) -- Civilisation de la Confluence, 6 mentions, Tour 6 - Tour 11
 
 ## Evenements
 
-- [**Maladie des Antres**](../civilizations/civilisation-de-la-confluence/entities/maladie-des-antres.md) -- Civilisation de la Confluence, 1 mentions, Tour 12
+- [**Blanc sur blanc**](../civilizations/civilisation-de-la-confluence/entities/blanc-sur-blanc.md) -- Civilisation de la Confluence, 1 mentions, Tour 1
 
-- [**Rituel du Regard Partagé**](../civilizations/civilisation-de-la-confluence/entities/rituel-du-regard-partage.md) -- Civilisation de la Confluence, 2 mentions, Tour 9 - Tour 14
+## Belief
+
+- [**Croyance en la Reincarnation**](../civilizations/civilisation-de-la-confluence/entities/croyance-en-la-reincarnation.md) -- Civilisation de la Confluence, 1 mentions, Tour 14
+
+- [**Loi du Sang et de la Bete**](../civilizations/civilisation-de-la-confluence/entities/loi-du-sang-et-de-la-bete.md) -- Civilisation de la Confluence, 5 mentions, Tour 1 - Tour 14

@@ -9,10 +9,29 @@ import pytest
 
 from pipeline.db import init_db, get_connection, register_civilization
 from pipeline.loader import load_directory
-from pipeline.runner import run_pipeline
+from pipeline.runner import run_pipeline, _normalize_for_dedup
 
 
 CIVJDR_DIR = Path(__file__).resolve().parent.parent.parent.parent / "civjdr" / "Background"
+
+
+class TestNormalization:
+    """Test programmatic normalization (case + plural dedup)."""
+
+    def test_normalize_strips_plural_s(self):
+        assert _normalize_for_dedup("Faucons Chasseurs") == "faucon chasseur"
+
+    def test_normalize_singular_matches_plural(self):
+        assert _normalize_for_dedup("Faucon Chasseur") == _normalize_for_dedup("Faucons Chasseurs")
+
+    def test_normalize_case_insensitive(self):
+        assert _normalize_for_dedup("faucons chasseurs") == _normalize_for_dedup("Faucons Chasseurs")
+
+    def test_normalize_hyphenated(self):
+        assert _normalize_for_dedup("Ciels-clairs") == _normalize_for_dedup("Ciel-clair")
+
+    def test_normalize_autel_pluriel(self):
+        assert _normalize_for_dedup("Autels des Pionniers") == _normalize_for_dedup("Autel des Pionniers")
 
 
 class TestDBInit:
@@ -104,10 +123,9 @@ class TestFullPipeline:
             seg_count = conn.execute("SELECT count(*) FROM turn_segments").fetchone()[0]
             assert seg_count > 0
 
-            # Check entities exist (if spaCy available)
+            # Entity extraction requires LLM (--no-llm skips it)
+            # Just check the table exists and query doesn't crash
             entity_count = conn.execute("SELECT count(*) FROM entity_entities").fetchone()[0]
-            # NER might not run if spaCy model isn't installed
-            # So we just check it doesn't crash
 
             # Check pipeline run was recorded
             run = conn.execute(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 _counts: dict[str, int] = {
     "fact_extraction": 0,
+    "entity_extraction": 0,
     "summarization": 0,
     "entity_profiling": 0,
 }

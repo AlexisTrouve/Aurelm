@@ -2,13 +2,13 @@
 
 📅 **19/08/2025** | 📊 **2 segments** | 🎯 **1 nouvelles entités**
 
-> Les groupes de la surface se déplacent dans les entrailles de Gouffre Humide, à la recherche des disparus. Ils descendent dans les galeries souterraines, où ils découvrent des fresques et des artefacts anciens, mais aussi des centaines de squelettes abandonnés sans rite funéraire. Lorsque l'un d'eux appelle à l'aide en utilisant une rhombe, le groupe se rend compte que les disparus sont endormis et qu'il faut leur porter secours avant qu'ils ne meurent également.
+> Le Maitre du Jeu a répété ses instructions aux groupes qui l'ont rejoint, avant de les conduire vers la galerie souterraine de Gouffre Humide. Ils descendent dans les profondeurs, où ils découvrent des fresques anciennes sur les parois, qui représentent des bêtes et des hommes. Le sens de ces fresques est inconnu, mais elles sont différentes de celles trouvées dans certaines colonies souterraines. Le groupe continue sa descente et rencontre un lac souterrain qui les oblige à faire demi-tour. Ils découvrent ensuite une chambre secrète où ils trouvent des artefacts abandonnés, ainsi que des squelettes alignés sur leur dos. Les explorateurs comprennent alors qu'il y a eu une catastrophe ici et qu'il faudrait éviter de déranger les morts.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Maîtrise des Profondeurs`
-- **Mentions totales** : 4
-- **Technologies** : 4
+- **Entités découvertes** : `Fresques`
+- **Mentions totales** : 6
+- **Technologies** : 1
 - **Ressources** : 0
 - **Densité narrative** : 1 narratifs, 1 choix, 0 conséquences
 
@@ -20,8 +20,6 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 
 ### ⚖️ Choix proposés
 
-Rithelgo
-Pillars of Eternity: The White March Soundtrack - Durgan's Battery
 Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en place une méthode que tu as inculquée aux braves qui t'ont rejoints. Et finalement, ton discours s'épuise. Vous vous regardez longuement, et finalement, comme tu leur as promis, tu prends leur tête. Vous entrez dans la galerie et commencez à vous séparer comme anticipé. Vous vous engagez avec précaution. Les parois, bien que couvertes d'aspérité, restent étrangement consistantes. Un murmure à l'avant du groupe attire ton attention, ils se sont immobilisés. L'espace d'un instant, tu te tends avec anticipation, mais finalement on t'appelle. L'un d'eux brandit le flambeau qu'il tient d'une main et éclaire le mur, dévoilant des gravures et des peintures comme on en trouve dans certaines colonies souterraines. Leur couleur s'éloignent de la palette d'ocre et de noir. Vous reconnaissez des bêtes et des hommes, mais le sens de ces fresques vous éludent en majorité. Un sujet d'étude qui occupera longtemps les ailes grises dont la conclusion sera que cette structure est …
 Lootbox
 Un leg des ancêtres, qu'il convient de préserver et de vénérer. Un temple comme une gemme dans les profondeurs
@@ -45,30 +43,26 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 
 ### 🗺️ Géographie
 
-- galeries
-- profondeurs
+- Gouffre Humide
+- Profondeurs
 
 ### 🔧 Technologies
 
-- fresques
-- pigments
-- artefacts translucides
-- techniques de creusage
-
-### ✨ Croyances
-
-- Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée
-- Une fois nos hommes secourus, nous mènerons une investigation méthodique : tests avec animaux, cartographie des courants d'air par la fumée de petit feu de camp, étude des zones dangereuses
+- Argile Vivante
 
 ## 🏷️ Entités mentionnées
 
-**Ailes-Grises** (Castes) — 1 mentions
+**Caste de l'Air** (Castes) — 1 mentions
 
-**Enfants des échos** (Castes) — 1 mentions
+**Faucons Chasseurs** (Castes) — 1 mentions
 
-**Gouffre Humide** (Lieux) — 1 mentions
+**Cheveux de Sang** (Civilisations) — 1 mentions
 
-**Maîtrise des Profondeurs** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Confluents** (Civilisations) — 1 mentions
+
+**Nanzagouets** (Civilisations) — 1 mentions
+
+**Fresques** (Technologies) — 1 mentions ⭐ *Première apparition*
 
 ---
 
@@ -76,8 +70,6 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 
 ### Maître du Jeu
 
-Rithelgo
-Pillars of Eternity: The White March Soundtrack - Durgan's Battery
 Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en place une méthode que tu as inculquée aux braves qui t'ont rejoints. Et finalement, ton discours s'épuise. Vous vous regardez longuement, et finalement, comme tu leur as promis, tu prends leur tête. Vous entrez dans la galerie et commencez à vous séparer comme anticipé. Vous vous engagez avec précaution. Les parois, bien que couvertes d'aspérité, restent étrangement consistantes. Un murmure à l'avant du groupe attire ton attention, ils se sont immobilisés. L'espace d'un instant, tu te tends avec anticipation, mais finalement on t'appelle. L'un d'eux brandit le flambeau qu'il tient d'une main et éclaire le mur, dévoilant des gravures et des peintures comme on en trouve dans certaines colonies souterraines. Leur couleur s'éloignent de la palette d'ocre et de noir. Vous reconnaissez des bêtes et des hommes, mais le sens de ces fresques vous éludent en majorité. Un sujet d'étude qui occupera longtemps les ailes grises dont la conclusion sera que cette structure est …
 Lootbox
 Un leg des ancêtres, qu'il convient de préserver et de vénérer. Un temple comme une gemme dans les profondeurs

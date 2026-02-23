@@ -1,13 +1,13 @@
 # Tour 2
 
-📅 **06/09/2024** | 📊 **5 segments** | 🎯 **1 nouvelles entités**
+📅 **06/09/2024** | 📊 **5 segments** | 🎯 **5 nouvelles entités**
 
-> Les participants ont traversé une longue période de famine et de fatigue, mais ont finalement atteint un endroit idéal appelé la Confluence, où deux rivières cristallines se rencontrent dans une vallée large. La nourriture est abondante, et ils peuvent vivre et s'épanouir dans cet environnement favorable. Cependant, la mort demeure une partie intégrante de leur quotidien, ce qui suscite des questions et des spéculations sur ce qui se passe après la mort.
+> Après avoir promis aux membres de la civilisation de la Confluence un havre de paix, le Maitre du Jeu les a amenés à un lieu encaissé dans une large vallée, où deux rivières cristallines se rencontrent. Bien qu'ils soient épuisés et que la nourriture soit difficile à trouver, ils ont finalement pu s'installer et commencer à construire leur nouvelle vie. Cependant, la mort est toujours présente dans leur quotidien, ce qui les amène à se demander où vont ceux qui disparaissent.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `La confluence`
-- **Mentions totales** : 1
+- **Entités découvertes** : `Eux`, `Berges`, `Bois environnants`, `Confluence de deux rivières cristallines`, `Nature`
+- **Mentions totales** : 5
 - **Technologies** : 2
 - **Ressources** : 3
 - **Densité narrative** : 3 narratifs, 2 choix, 0 conséquences
@@ -38,8 +38,8 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ### 🗺️ Géographie
 
-- confluence de deux rivières cristallines
-- large vallée
+- Confluence des deux rivières cristallines
+- Vallée large
 
 ### 🔧 Technologies
 
@@ -54,20 +54,20 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ### ✨ Croyances
 
-- esprit s'élève et veille sur les vivants depuis le ciel
-- corps retourne à la terre, se mêlant à la nature
-- offrir en respect aux défunts des preuves de sagesses
-- Parfois la nature se fait prodigue
-- Parfois, la nourriture vient à manquer
-- La mort est partie prenante du quotidien
-- Une saison qui s'écoule sans la mort d'un nouveau né ou d'un chasseur un peu trop audacieux peut être célébrée
-- Je leur montre des techniques afin de perfectionner l'art de la chasse et à préserver leurs prises (vivantes ou mortes)
-- Je leur explique que l'esprit s'élève et veille sur les vivants depuis le ciel, offrant une part de leur sagesse aux nouveau nés
-- On doit ainsi offrir en respect aux défunts des preuves de sagesses
+- Loi du Sang et de la Bete
+- Loi de l'Esprit qui veille sur les vivants depuis le ciel
 
 ## 🏷️ Entités mentionnées
 
-**La confluence** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Eux** (Personnages) — 1 mentions ⭐ *Première apparition*
+
+**Berges** (Lieux) — 1 mentions ⭐ *Première apparition*
+
+**Bois environnants** (Lieux) — 1 mentions ⭐ *Première apparition*
+
+**Confluence de deux rivières cristallines** (Lieux) — 1 mentions ⭐ *Première apparition*
+
+**Nature** (Ressources) — 1 mentions ⭐ *Première apparition*
 
 ---
 

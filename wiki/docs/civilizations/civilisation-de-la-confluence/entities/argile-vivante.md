@@ -1,23 +1,26 @@
-# Argile vivante
+# Argile Vivante
 
 *Technologies* -- Civilisation de la Confluence
 
 !!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/argile-vive.md).
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/argile-vivante.md).
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 2 |
-| **Tours actifs** | 11-14 (4 tours) |
-| **Pic d'activite** | Tour 11 (1 mentions) |
+| **Mentions totales** | 5 |
+| **Tours actifs** | 1-14 (14 tours) |
+| **Pic d'activite** | Tour 1 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour 11  ████████████████████  ← Pic
+Tour  1  ████████████████████  ← Pic
+Tour  9  ████████████████████
+Tour 10  ████████████████████
+Tour 11  ████████████████████
 Tour 14  ████████████████████
 ```
 
@@ -25,39 +28,56 @@ Tour 14  ████████████████████
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **[Maison des Découvertes](maison-des-decouvertes.md)** (Institutions) — 2 tours
-- 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 2 tours
-- 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 2 tours
-- 🔵 **[Faucons Chasseurs](faucons-chasseurs.md)** (Castes) — 2 tours
-- 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 2 tours
+- 🔵 **Faucons Chasseurs** (Castes) — 5 tours
+- 🔵 **Loi du Sang et de la Bete** (Belief) — 4 tours
+- 🔵 **Caste de l'Air** (Castes) — 3 tours
+- 🔵 **Ailes-Grises** (Castes) — 2 tours
+- 🔵 **Regards-Libres** (Creatures) — 2 tours
 
 ## Description
 
-L'argile vivante est une technologie qui permet de créer des objets et des constructions à partir d'une substance argileuse vivante. Elle semble avoir des propriétés uniques, puisque l'on peut la trouver enracinée dans les racines de l'arbre de toutes les possibilités et qu'elle est associée à la création de demeures terrestres et d'autels.
+L'Argile Vivante est une technologie qui permet de créer des objets et des structures résistant à l'érosion et à la dégradation. Elle est composée d'une matière vivante capable de se remodeler et de s'adapter aux environnements. L'argile vivante est utilisée pour bâtir les demeures terrestres, comme la Maison des Découvertes, et pour ériger des autels en l'honneur des pionniers.
 
 ## Chronologie
 
-**Tour 11: Dans le Tour 11, l'argile vivante est décrite comme étant enracinée dans les racines de l'arbre de toutes les possibilités. Cette découverte inspire la création de la Maison des Découvertes.**
+**Tour 11: L'arbre de toutes les possibilités a ses racines dans l'argile vivante et est décrit comme une structure capable d'évoluer avec les saisons. La Maison des Découvertes sera construite près de la confluence, où l'eau chante.**
 
-- Turn 11 et Tour 14: L'arbre de toutes les possibilités est décrit comme ayant ses racines dans l'argile vivante, ce qui inspire la création d'une demeure terrestre.
-
-- Turn 11: La technologie argile vivante permet de bâtir une demeure terrestre près de la confluence, enracinée dans la nature.
-
-**Tour 14: Les Autels des Pionniers sont construits à l'entrée de Gouffre Humide et ailleurs pour honorer les morts. L'argile vivante est utilisée pour créer ces autels.**
+**Tour 14: L'Argile Vivante est utilisée pour créer les Autels des Pionniers, dont le premier est érigé à l'entrée du Gouffre Humide. Ces autels sont gravés avec les noms des pionniers qui ont disparu dans leur quête de connaissance.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 11**
-> "argile vivante"
+**Tour 1**
+> "Argile Vivante"
 >
-> Contexte : tes les possibilités. Ses racines plongent dans l'argile vivante, ses branches touchent les quatre vents. Chaque s...
+> Contexte : Argile Vivante...
+
+**Tour 9**
+> "Argile Vivante"
+>
+> Contexte : Argile Vivante...
+
+**Tour 10**
+> "Argile Vivante"
+>
+> Contexte : Argile Vivante...
+
+**Tour 11**
+> "Argile Vivante"
+>
+> Contexte : Argile Vivante...
 
 **Tour 14**
-> "argile vivante"
+> "Argile Vivante"
 >
-> Contexte : eons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont gravés à jamais. Mais que ce n...
+> Contexte : Argile Vivante...
 
 ??? note "Sources -- Passages originaux"
+
+    **Tour 1**
+
+    **Tour 9**
+
+    **Tour 10**
 
     **Tour 11**
 

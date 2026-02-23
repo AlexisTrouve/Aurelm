@@ -345,7 +345,7 @@ def _extractive_summary(text: str, civ_name: str | None = None) -> TurnSummary:
             continue
         if _RE_URL.match(stripped):
             continue
-        if stripped in ("YouTube", "youtube", "Geiita"):
+        if stripped in ("YouTube", "youtube"):
             continue
         if _RE_SOUNDTRACK.match(stripped):
             continue

@@ -1,6 +1,6 @@
 # Porteurs de Flamme
 
-*Technologies* -- Civilisation de la Confluence
+*Castes* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,18 +19,20 @@ Tour  9  ████████████████████  ← Pic
 
 ## Description
 
-Les Porteurs de Flamme sont des messagers choisis parmi les Gardiens de la Confluence pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils transportent des petites braises dans des récipients en argile, symboliquement reliant tous les lieux sacrés. Ils voyagent de feu en feu à travers les sentiers de la montagne pour tisser ensemble les nouveaux lieux sacrés et les villages existants.
+Les Porteurs de Flamme sont une caste issue des Gardiens de la Confluence, chargée de voyager entre les différents groupes pour tisser ensemble les lieux sacrés et les villages existants. Ils transportent des petites braises dans des récipients en argile, symbolisant ainsi l'union de tous les groupes. Les Porteurs de Flamme sont choisis pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils sont inspirés par la chaleur des Cercles de Vigile.
 
 ## Chronologie
 
-**Tour 9: Les Porteurs de Flamme sont désignés pour voyager de feu en feu à travers les sentiers de la montagne, reliant ainsi symboliquement tous les lieux sacrés. Ils sont choisis parmi les Gardiens de la Confluence et transportent des petites braies dans des récipients en argile.**
+**Tour 9: Les Enfants du Courant reçoivent une reconnaissance et un prestige supplémentaires grâce aux Porteurs de Flamme, qui voyageront de feu en feu à travers les sentiers de la montagne. Les Porteurs de Flamme seront les gardiens des secrets de la terre et deviendront les messagers entre les différents groupes.**
+
+**Tour 9 (suite): Pour tisser ensemble ces nouveaux lieux sacrés et nos villages existants, je désigne les Porteurs de Flamme.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 9**
 > "Porteurs de Flamme"
 >
-> Contexte : sacrés et nos villages existants, je désigne les Porteurs de Flamme, qui voyageront de feu en feu à travers les senti...
+> Contexte : messagers qui voyagent de feu en feu à travers les sentiers de la montagne...
 
 ??? note "Sources -- Passages originaux"
 

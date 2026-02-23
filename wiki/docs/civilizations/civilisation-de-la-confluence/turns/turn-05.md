@@ -1,15 +1,15 @@
 # Tour 5
 
-📅 **20/10/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
+📅 **20/10/2024** | 📊 **4 segments** | 🎯 **5 nouvelles entités**
 
-> La tribu de la Confluence est confrontée à un défi crucial : ils doivent faire fructifier la terre qui leur a été donnée par leurs ancêtres. Cela crée une concurrence féroce entre les hommes pour s'accaparer les femmes, ce qui entraîne la marginalisation des sans-ciel et renforce la notion de famille dans la tribu. Les enfants apprennent les leçons morales attendues d'eux à travers les histoires de leurs ancêtres. Dans cet environnement, les marginaux sont souvent chargés de fabriquer de nouveaux outils et armes plus perfectionnés, mais leur créativité est sous-exploitée.
+> Dans la civilisation de la Confluence, il est essentiel que la tribu croisse au sein de cette terre pour laquelle ils se sont sacrifiés. Cependant, une concurrence féroce entre les hommes pour s'accaparer les femmes a créé un système où les sans-ciel sont exclus et les femmes deviennent propriété de leur mari. Ce système renforce la notion de famille et la cohésion entre ses membres est vitale, car leurs liens ne sont pas seulement de parenté mais spirituelle. Les enfants apprennent en compagnie de leur mère les noms de leurs ancêtres et ce qu'ils ont accompli, ce qui leur enseigne des leçons morales et ce qui est attendu d'eux au sein de la tribu.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : aucune
-- **Mentions totales** : 1
+- **Entités découvertes** : `Sans-Ciel`, `Peuple des Eaux`, `Famille`, `Rivières`, `Généalogie`
+- **Mentions totales** : 9
 - **Technologies** : 2
-- **Ressources** : 2
+- **Ressources** : 0
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -38,39 +38,40 @@ Les esprits m'ont montré notre erreur : nous ne pouvons faire coexister sur la 
 
 ### 🗺️ Géographie
 
-- montagne
-- terre
-- ciel
-- nuages
-- rivières
-- confluents
+- Montagne
+- Confluents
+- Gouffre Humide
 
 ### 🔧 Technologies
 
-- pointes de flèches
-- roches striées
-
-### 🌾 Ressources
-
-- nourriture recoltée
-- materiaux pour les outils
+- Argile Vivante
+- Pointes de flèches
 
 ### ✨ Croyances
 
-- les esprits des ancêtres
-- le mariage sacré entre la terre et le ciel
-- la notion de famille renforcée
-- la sacralité des liens familiaux
-- l'union des sans-ciel pour prospérer sur les eaux
-- Ou plutôt, celle des ancêtres
-- C'est le devoir sacré qui leur a été donné en même temps que la vie
-- Et de ce devoir sacré, il s'en empare, à chaque génération un peu plus
-- Les sans-ciel étant exclus au fil du temps
-- Puisqu'une fois conquise, la femme ne peut pas changer de partenaire du fait de la sacralité des liens familiaux
+- Loi du Sang et de la Bête
+- Loi des Ancêtres
+- Rite de l'Union avec les Esprits
 
 ## 🏷️ Entités mentionnées
 
-**Sans ciel** (Castes) — 1 mentions
+**Faucons Chasseurs** (Castes) — 1 mentions
+
+**Sans-Ciel** (Castes) — 1 mentions ⭐ *Première apparition*
+
+**Confluents** (Civilisations) — 1 mentions
+
+**Peuple des Eaux** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Cercle des Sages** (Institutions) — 1 mentions
+
+**Famille** (Institutions) — 1 mentions ⭐ *Première apparition*
+
+**Tribunal des Moeurs** (Institutions) — 1 mentions
+
+**Rivières** (Ressources) — 1 mentions ⭐ *Première apparition*
+
+**Généalogie** (Technologies) — 1 mentions ⭐ *Première apparition*
 
 ---
 

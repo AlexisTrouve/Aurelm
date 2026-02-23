@@ -1,4 +1,4 @@
-# Cercle des sages
+# Cercle des Sages
 
 *Institutions* -- Civilisation de la Confluence
 
@@ -6,7 +6,7 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 5 |
+| **Mentions totales** | 8 |
 | **Tours actifs** | 3-14 (12 tours) |
 | **Pic d'activite** | Tour 3 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
@@ -16,8 +16,11 @@
 ```
 Tour  3  ████████████████████  ← Pic
 Tour  4  ████████████████████
+Tour  5  ████████████████████
+Tour  7  ████████████████████
 Tour  8  ████████████████████
 Tour 11  ████████████████████
+Tour 12  ████████████████████
 Tour 14  ████████████████████
 ```
 
@@ -25,54 +28,54 @@ Tour 14  ████████████████████
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **[La confluence](la-confluence.md)** (Lieux) — 4 tours
-- 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 3 tours
-- 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 3 tours
-- 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 3 tours
-- 🔵 **[Sans ciel](sans-ciel.md)** (Castes) — 3 tours
+- 🔵 **Tribunal des Moeurs** (Institutions) — 5 tours
+- 🔵 **Faucons Chasseurs** (Castes) — 5 tours
+- 🔵 **Ailes-Grises** (Castes) — 3 tours
+- 🔵 **Regards-Libres** (Creatures) — 3 tours
+- 🔵 **Loi du Sang et de la Bete** (Belief) — 3 tours
 
 ## Description
 
-Le Cercle des Sages est une institution qui rassemble les esprits les plus éclairés et les âmes les plus sages de la tribu. Il est chargé de garder le savoir et d'interpréter les signes du ciel. Le Cercle des Sages joue un rôle central dans l'orientation de la tribu, avec pour objectif de faire grandir la sagesse et la connaissance.
+Le Cercle des Sages est une institution qui rassemble les esprits les plus éclairés et les âmes les plus sages d'une tribu. Il a pour rôle de garder le savoir, d'interpréter les cieux et de guider la tribu dans ses décisions. Le Cercle des Sages est créé par un chef qui veut partager sa connaissance avec ses sujets.
 
 ## Chronologie
 
-**Tour 3: Le Cercle des Sages est créé par l'influence du protagoniste, qui en fait une institution gardienne du savoir et interprète des cieux. Il devient ainsi un pilier de la tribu.**
+**Tour 3: Le chef convoque les esprits les plus éclairés et les âmes les plus sages pour créer le Cercle des Sages, une institution qui gardera le savoir et interprétera les cieux.**
 
-**Tour 4: Le protagoniste assemble les membres du Cercle des Sages, cherchant à créer une coutume de dialogue respectueux et productif pour faire grandir leur pensée commune.**
+**Tour 4: Les discussions entre les membres du Cercle des Sages se font tardives, mais ils travaillent ensemble pour créer un dialogue respectueux et productif.**
 
-**Tour 8: Les processions rituelles se multiplient alors que le Cercle des Sages essaie de faire valoir sa juridiction sur les enfants du courant. Le protagoniste indique par présages à diverses institutions qu'elles doivent coopérer.**
+**Tour 5: Le Cercle des Sages tente de faire valoir sa juridiction sur les enfants du courant, mais il est contesté par d'autres institutions.**
 
-**Tour 11: Le Cercle des Sages devient le tronc solide et patient d'un arbre qui symbolise la tribu, chargé de porter en lui les traditions et de faire monter vers les branches les orientations nouvelles.**
+**Tour 11: Le Cercle des Sages devient le tronc solide et patient de l'arbre qui représente la tribu, portant en lui la sève des traditions et faisant monter vers les branches les orientations nouvelles.**
 
-**Tour 14: Les Gardiens du Hall doivent se présenter chaque année devant le Cercle des Sages pour renouveler leur serment par le Rituel du Regard Partagé.**
+- Turn 14: Chaque année, les quatre Gardiens du Hall doivent revenir à La Confluence pour rendre compte devant le Cercle des Sages.
 
 ## 💬 Mentions avec contexte
 
 **Tour 3**
-> "cercle des sages"
+> "Cercle des Sages"
 >
-> Contexte : e de ma connaissance. Ensemble, nous façonnons un cercle des sages, gardiens du savoir et interprètes des cieux. Ce...
+> Contexte : je convoque les esprits les plus éclairés et les âmes les plus sages...
 
 **Tour 4**
-> "cercle des sages"
+> "Cercle des Sages"
 >
-> Contexte : assembler ceux qui seront appelés à l'avenir "le cercle des sages". A la surprise de certains, un "Sanciel" finit m...
+> Contexte : Tu profites de cette émulation pour assembler ceux qui seront appelés à l'avenir 'le cercle des sages'...
+
+**Tour 5**
+> "Cercle des Sages"
+>
+> Contexte : Cercle des Sages...
+
+**Tour 7**
+> "Cercle des Sages"
+>
+> Contexte : Cercle des Sages...
 
 **Tour 8**
-> "cercle des sages"
->
-> Contexte : u as participé à établir entre en concurrence. Le cercle des sages essaye de faire valoir sa juridiction sur les enf...
-
-**Tour 11**
 > "Cercle des Sages"
 >
-> Contexte : rdonner ses forces selon la sagesse du vivant. Le Cercle des Sages devient le tronc - solide, patient, tourné vers l...
-
-**Tour 14**
-> "Cercle des Sages"
->
-> Contexte : venir à La Confluence** : rendre compte devant le Cercle des Sages, renouveler leur serment par le Rituel du Regard...
+> Contexte : Cercle des Sages...
 
 ??? note "Sources -- Passages originaux"
 
@@ -84,6 +87,12 @@ Le Cercle des Sages est une institution qui rassemble les esprits les plus écla
 
     > Tu t'entoures lentement de ceux que tu considères les plus vifs d'esprits, et les plus sages. Faire partie de ton entourage est rapidement un honneur pour lequel plus d'un rivalise. Tu profite de cette émulation pour assembler ceux qui seront appelés à l'avenir "le cercle des sages". A la surprise de certains, un "Sanciel" finit même par s'y intégrer. Les discussions se font tardives et tu prends souvent le rôle de médiateur, cherchant au maximum à guider leurs échanges pour créer une coutume de dialogue respectueux et productif qui puisse survivre à ton absence. Tu les guides et façonne leur pensée pour qu'elle se rapproche le plus de la tienne. Pour éviter qu'ils ne soien...
 
+    **Tour 5**
+
+    > ...Cercle des Sages...
+
+    **Tour 7**
+
     **Tour 8**
 
     > Au son des rhombes, les processions rituelles se multiplient alors que les nombreuses institutions que tu as participé à établir entre en concurrence. Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant. Les voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs. Les Gardiens de la confluence de par leur position estiment être indépendants de toutes les décisions des villageois. Anticipant le conflit, tu leur indique par voie de présages que …
@@ -91,6 +100,10 @@ Le Cercle des Sages est une institution qui rassemble les esprits les plus écla
     **Tour 11**
 
     > Troisième Révélation : L'Assemblée des Chefs et l'Arbitre des Esprits Les ancêtres m'ont révélé l'ordre caché derrière le chaos apparent. Comme l'arbre ne peut grandir sans que chaque partie connaisse sa fonction - les racines puisent, le tronc porte, les branches s'étendent, les feuilles respirent - notre peuple doit ordonner ses forces selon la sagesse du vivant. Le Cercle des Sages devient le tronc - solide, patient, tourné vers le ciel. Il porte en lui la sève des traditions et fait monter vers les branches les orientations nouvelles. De lui émaneront les grandes règles qui gouvernent notre vallée, comme de l'arbre émane la force qui nourrit chaque feuille. Mais un arbre sans branches ne peut toucher le monde. Ainsi naît l'Assemblée des Chefs - trois branches maîtresses qu...
+
+    **Tour 12**
+
+    > ...informé de la situation...
 
     **Tour 14**
 

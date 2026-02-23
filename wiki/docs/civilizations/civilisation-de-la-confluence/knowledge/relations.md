@@ -2,60 +2,69 @@
 
 Graphe textuel des relations pour **Civilisation de la Confluence**.
 
-## Allied With (2)
+## Allied With (7)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Tribunal de moeurs (technology) | --> | Voix de l'Aurore (caste) | - |
-| cercle des sages (institution) | --> | Voix de l'Aurore (caste) | - |
+| Chef de la Maison des Découvertes (person) | --> | Cercle des Sages (institution) | - |
+| Chef de la Maison des Découvertes (person) | --> | Chef du Tribunal des Mœurs (person) | - |
+| Enfants du Courant (institution) | --> | Ailes-Grises (caste) | - |
+| Enfants du Courant (institution) | --> | Gardiens de la Confluence (institution) | - |
+| Faucons Chasseurs (caste) | --> | Regards-Libres (creature) | - |
+| Porteurs de Flamme (caste) | --> | Enfants du Courant (institution) | - |
+| Regards-Libres (creature) | --> | Faucons Chasseurs (caste) | - |
 
 ## Controls (2)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Gardiens du Hall (institution) | --> | cercle des sages (institution) | - |
-| Voix de l'Aurore (caste) | --> | Gouffre Humide (place) | - |
+| Cercle des Sages (institution) | --> | Voix de l'Aurore (institution) | - |
+| Proclamateurs (caste) | --> | Chef du Tribunal des Mœurs (person) | - |
 
-## Located In (12)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Arbitre des Esprits (institution) | --> | Gouffre Humide (place) | - |
-| Autels des Pionniers (institution) | --> | Gouffre Humide (place) | - |
-| Gingembre sauvage (place) | --> | La Vallée (place) | - |
-| Gouffre Humide (place) | --> | La confluence (place) | - |
-| Grande Fresque (technology) | --> | Gouffre Humide (place) | - |
-| Hall des Serments (place) | --> | La confluence (place) | - |
-| Nanzagouet (civilization) | --> | Gouffre Humide (place) | - |
-| Rituel du Regard Partagé (event) | --> | La confluence (place) | - |
-| antre des échos (place) | --> | La confluence (place) | - |
-| colliers de glyphes (technology) | --> | Maison des Découvertes (institution) | - |
-| enfants des échos (caste) | --> | Gouffre Humide (place) | - |
-| la Fresque des Âges (technology) | --> | Gouffre Humide (place) | - |
-
-## Member Of (3)
+## Created By (3)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| L'Appel de l'Abysse (technology) | --> | enfants des échos (caste) | - |
-| La Vallée (place) | --> | La confluence (place) | - |
-| Rituel du Regard Partagé (event) | --> | Gardiens du Hall (institution) | - |
+| Enfants du Courant (institution) | --> | Porteurs de Flamme (caste) | - |
+| Faucons Chasseurs (caste) | --> | Assemblée des Chefs (institution) | - |
+| Gardiens de la Confluence (institution) | --> | Porteurs de Flamme (caste) | - |
 
-## Part Of (1)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Rituel du Regard Partagé (event) | --> | cercle des sages (institution) | - |
-
-## Trades With (2)
+## Located In (6)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Pouleheimos (civilization) | --> | Tlazhuaneca (civilization) | - |
-| Tlazhuaneca (civilization) | --> | Pouleheimos (civilization) | - |
+| Arbitre des Esprits (person) | --> | Gouffre Humide (place) | - |
+| Argile Vivante (technology) | --> | Chef de la Maison des Découvertes (person) | - |
+| Famille (institution) | --> | Oracle de la tribu (person) | - |
+| Larmes du Ciel (resource) | --> | Morsure-des-Ancêtres (resource) | - |
+| Maison des Découvertes (institution) | --> | Confluence (place) | - |
+| Regards-Libres (creature) | --> | Peuple des Eaux (civilization) | - |
 
-## Worships (1)
+## Member Of (5)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Passes-bien (caste) | --> | Voix de l'Aurore (caste) | - |
+| Ailes-Grises (caste) | --> | Oracle de la tribu (person) | - |
+| Chef du Cercle des Sages (person) | --> | Assemblée des Chefs (institution) | - |
+| Faucons Chasseurs (caste) | --> | Enfants des Échos (civilization) | - |
+| Parents (caste) | --> | Famille (institution) | - |
+| Porteurs de Flamme (caste) | --> | Gardiens de la Confluence (institution) | - |
+
+## Part Of (2)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Chef de la Maison des Découvertes (person) | --> | Assemblée des Chefs (institution) | - |
+| Sans-Ciel (caste) | --> | Oracle de la tribu (person) | - |
+
+## Produces (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Gouffre Humide (place) | --> | Confluence (place) | - |
+
+## Trades With (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Sans-Ciel (caste) | --> | Cieux (place) | - |

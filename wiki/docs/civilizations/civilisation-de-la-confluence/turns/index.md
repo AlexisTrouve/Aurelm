@@ -4,84 +4,84 @@
 
 ## [Tour 1](turn-01.md)
 
-*03/09/2024* | 0 entités mentionnées
+*03/09/2024* | 8 entités mentionnées
 
-> La Civilisation de la Confluence commence à naître dans un monde glacial et hostile, où les premières plantes émergent de la neige et où des hommes pe...
+> La Civilisation de la Confluence émerge dans un monde glacial, où les premiers humains apparaissent après une longue période de stase. Ils doivent app...
 
 ## [Tour 2](turn-02.md)
 
-*06/09/2024* | 1 entités mentionnées
+*06/09/2024* | 5 entités mentionnées
 
-> La civilisation de la Confluence a été déplacée vers un endroit ensoleillé où ils ont trouvé des ressources et peuvent maintenant s'installer pour une...
+> La civilisation de la Confluence a été amenée à un havre de paix après une longue et ardue migration, où ils ont dû lutter contre la faim et la fatigu...
 
 ## [Tour 3](turn-03.md)
 
-*13/09/2024* | 3 entités mentionnées
+*13/09/2024* | 4 entités mentionnées
 
-> La tribu de la Confluence continue à évoluer, avec les anciens étant considérés comme des sources de sagesse et les membres se montrant plus respectue...
+> La tribu de la Confluence a connu une saison de croissance, grâce à ta guidance. Les membres ont appris à gérer leurs ressources et leur territoire de...
 
 ## [Tour 4](turn-04.md)
 
-*28/09/2024* | 1 entités mentionnées
+*28/09/2024* | 3 entités mentionnées
 
-> Le Maitre du Jeu a rassemblé son entourage, les 'cercle des sages', pour former une coutume de dialogue respectueux et productif avant de partir. Il l...
+> La civilisation de la Confluence se développe sous l'influence de 'l'Oracle', qui forme un cercle des sages pour guider la tribu. Lorsque l'Oracle qui...
 
 ## [Tour 5](turn-05.md)
 
-*20/10/2024* | 1 entités mentionnées
+*20/10/2024* | 9 entités mentionnées
 
-> La tribu de la Confluence doit croître et faire fructifier la terre qu'ils ont sacrifiée, créant ainsi une concurrence féroce entre les hommes pour s'...
+> La tribu de la Confluence doit croître et faire fructifier son terre, mais une concurrence féroce entre les hommes pour s'accaparer les femmes crée un...
 
 ## [Tour 6](turn-06.md)
 
-*28/10/2024* | 8 entités mentionnées
+*28/10/2024* | 9 entités mentionnées
 
-> Le village de la Confluence a connu des changements après l'arrivée d'un groupe de survivants qui ont guidé le peuple jusqu'à un endroit idéal pour pr...
+> La civilisation de la Confluence a prospéré grâce à son emplacement idéal près de la confluence de deux rivières, offrant une terre fertile et des res...
 
 ## [Tour 7](turn-07.md)
 
-*09/11/2024* | 7 entités mentionnées
+*09/11/2024* | 6 entités mentionnées
 
-> Les groupes de Regards-Libres deviennent une vision courante dans le village et inspirent les artisans. Les Ailes-Grises, des dresseurs de regards-lib...
+> Les Regards-Libres deviennent une inspiration pour la tribu et les artisans, tandis que les Ailes-Grises prennent un rôle de plus en plus important da...
 
 ## [Tour 8](turn-08.md)
 
-*07/12/2024* | 8 entités mentionnées
+*07/12/2024* | 9 entités mentionnées
 
-> La civilisation de la Confluence connaît un essor culturel avec l'émergence de nouvelles formes d'héritage des idées et des conflits entre différentes...
+> La civilisation de la Confluence connaît un changement important avec l'émergence de nouvelles manières de transmettre des idées entre générations. Le...
 
 ## [Tour 9](turn-09.md)
 
 *15/01/2025* | 10 entités mentionnées
 
-> La civilisation de la Confluence est marquée par l'importance des artefacts et de l'artisanat. Les artisans sont respectés et recherchent de nouvelles...
+> Les artisans de la Confluence créent des objets qui deviennent des artefacts, symboles de continuité avec les ancêtres. Les deux peuples des villages ...
 
 ## [Tour 10](turn-10.md)
 
 *20/03/2025* | 7 entités mentionnées
 
-> La civilisation de la Confluence se développe dans les grottes profondes de la vallée. Les enfants des échos créent une société souterraine où ils faç...
+> Vous continuez votre visite à la Civilisation de la Confluence, observant les changements et les progrès des peuples de la vallée. Le joueur définit s...
 
 ## [Tour 11](turn-11.md)
 
-*22/05/2025* | 19 entités mentionnées
+*22/05/2025* | 12 entités mentionnées
 
-> Les travailleurs sans-ciels construisent de nouveaux bâtiments dans la vallée, notamment un temple majestueux pour honorer les ancêtres. Le joueur Rub...
+> La civilisation de la Confluence s'active après l'hiver, avec de nombreux chantiers en cours pour construire réserves et améliorer leur mode de vie. L...
 
 ## [Tour 12](turn-12.md)
 
-*10/06/2025* | 16 entités mentionnées
+*10/06/2025* | 8 entités mentionnées
 
-> Le village de la Confluence est secoué par le premier meurtre connu, et il faut trouver un moyen de juger le coupable sans preuve formelle. De plus, d...
+> Un meurtre a eu lieu dans le village de la Confluence, et le Tribunal des mœurs doit décider de la punition. Le Maitre du Jeu grimpe les marches de Go...
 
 ## [Tour 13](turn-13.md)
 
-*19/08/2025* | 4 entités mentionnées
+*19/08/2025* | 6 entités mentionnées
 
-> La civilisation de la Confluence affronte une situation critique en profondeur, où plusieurs groupes sont disparus et d'autres rencontrent des difficu...
+> Le groupe d'explorateurs se dirige vers la galerie souterraine de Gouffre Humide pour retrouver le groupe disparu. Ils découvrent des fresques ancienn...
 
 ## [Tour 14](turn-14.md)
 
-*08/09/2025* | 36 entités mentionnées
+*08/09/2025* | 10 entités mentionnées
 
-> Les Ailes-Grises de la Civilisation de la Confluence se sont rendues dans les halls sacrés de Gouffre Humide pour méditer et comprendre les mystères d...
+> La Fresque de Gouffre Humide continue à susciter une profonde fascination et interrogation chez les Ailes-Grises, qui cherchent à comprendre son signi...

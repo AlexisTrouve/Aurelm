@@ -1,23 +1,20 @@
 # Tour 10
 
-📅 **20/03/2025** | 📊 **11 segments** | 🎯 **4 nouvelles entités**
+📅 **20/03/2025** | 📊 **10 segments** | 🎯 **4 nouvelles entités**
 
-> Le Maitre du Jeu explore les grottes profondes de la vallée, remarquant le développement rapide de la civilisation de la Confluence. Les enfants des échos s'installent dans les cavernes, façonnant la pierre et découvrant de nouvelles ressources comme l'argile vive, le lait de pierre et la roche braise. Le Maitre du Jeu est impressionné par leur ingéniosité et leur capacité à survivre dans un environnement hostile.
+> Vous arrivez dans une nouvelle colonie, Gorge Profonde, où vous découvrez un labyrinthe de conduits et de grottes profondes. Les enfants des échos y travaillent pour transformer la roche et y insuffler leur esprit. Vous rencontrez un vieil homme aveugle qui habite là-bas et il vous invite à boire une infusion amère qu'ils affectionnent tant. Vous entendez parler de trois substances uniques qui se trouvent uniquement ici : l'argile vive, le lait de pierre et la roche braise.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Gorge Profonde`, `Passes-bien`, `Enfants des échos`, `Lait de pierre`
-- **Mentions totales** : 10
+- **Entités découvertes** : `Enfants des Échos`, `Passes-Bien`, `Confluence des Esprits`, `Gorge Profonde`
+- **Mentions totales** : 7
 - **Technologies** : 3
-- **Ressources** : 2
-- **Densité narrative** : 8 narratifs, 2 choix, 0 conséquences
+- **Ressources** : 1
+- **Densité narrative** : 7 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
-
-Bartosz Pokrywka - Topic
-The Adventure Begins
 
 Et maintenant tu t'enfonces dans la Gorge Profonde. Une "nouvelle" colonie qui se jette dans les entrailles de la terre. Ces quelques grottes et passages escarpés se sont révélés être un véritable labyrinthe de conduits connectés entre eux et de grottes profondes. Le village à son entrée n'est guère développé pour l'instant. Il faut dire que beaucoup de fils des échos sont venus ici pour justement échapper à l'animation de la basse vallée. C'est un trait que tu retrouves beaucoup chez eux. Ce manque de patience avec les leurs. Ce besoin d'isolement. Tout juste t'as-t-on offert un fagots de bois pour que tu puisses te constituer un flambeau de fortune et te voilà à avancer précautionneusement, et descendre (la première fois en un certain temps). Ici, les marchés n'ont pas la patine lisse que les anciennes colonies peuvent avoir. Ce n'est pas forcément à ton déplaisir, elles n'en sont que moins glissantes. Le temps passe différemment sous terre. Les sons sont étouffés, et on ne voit qu'à quelques mètres. Parfois tu te demandes si c'est cela que d'être mort. Il ne reste plus que tes songes, le bruit de ta respiration, les battements de ton cœur. Tu trouves pendant un instant la paix que tu retrouves dans tes méditations dans les pics.
 
@@ -67,48 +64,38 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 ### 🗺️ Géographie
 
 - Gorge Profonde
-- vallée
-- montagne
+- Vallée
+- Confluence des Rivières
 
 ### 🔧 Technologies
 
-- argile vive
-- roche braise
-- lait de pierre
+- Argile Vivante
+- Lait de Pierre
+- Roches Braise
 
 ### 🌾 Ressources
 
-- bois
-- pierreries
+- Argile Vive
 
 ### ✨ Croyances
 
-- Confluence des Esprits
-- Confluence des Biens
-- Confluence des Formes
-- Tout juste t'as-t-on offert un fagots de bois pour que tu puisses te constituer un flambeau de fortune et te voilà à avancer précautionneusement, et descendre (la première fois en un certain temps)
-- Parfois tu te demandes si c'est cela que d'être mort
-- Ils amènent au chaos de la nature, la grâce de l'homme en façonnant de leur main ce que la géologie a mis des éternités à créer et le transforment, comme s'ils en modifiait l'âme elle-même
-- C'est toujours un grand contraste de voir le fracas entre l'esprit de l'homme et la puissance de la nature
-- D'ici quelques décennies, cet endroit accueillera des ailes grises qui consacreront Gorge Profonde
-- Plus proche du dortoir que du faste de certaines Antres des échos consacrés depuis quelques générations maintenant
-- Il t'invite à boire une infusion amer absolument infecte qu'ils affectionnent tant sous terre
+- Loi du Sang et de la Bête
 
 ## 🏷️ Entités mentionnées
 
-**Ailes-Grises** (Castes) — 2 mentions
+**Ailes-Grises** (Castes) — 1 mentions
 
-**Gorge Profonde** (Lieux) — 2 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Castes) — 1 mentions
 
-**La confluence** (Lieux) — 2 mentions
+**Enfants des Échos** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Passes-bien** (Castes) — 1 mentions ⭐ *Première apparition*
+**Passes-Bien** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Enfants des échos** (Castes) — 1 mentions ⭐ *Première apparition*
+**Confluence des Esprits** (Institutions) — 1 mentions ⭐ *Première apparition*
 
-**Lait de pierre** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Gorge Profonde** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Rhombes** (Technologies) — 1 mentions
+**Argile Vivante** (Technologies) — 1 mentions
 
 ---
 
@@ -116,8 +103,6 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 
 ### Maître du Jeu
 
-Bartosz Pokrywka - Topic
-The Adventure Begins
 Il y a parmi les peuples de la vallée la rumeur d'un esprit qui vivrait haut dans les montagnes. Une sorte de gardien qui veillerait sur ce peuple. Observant leurs actions, les jugeant et parfois, leur accordant sa faveur. On le nomme le premier ancêtre. Une sorte de divinité tutélaire vers qui, parfois, on se tourne quand la pêche est mauvaise, quand le temps est maussade mais aussi pour guérir un enfant malade, ou un mal de dos. Tantôt bienveillant, tantôt colérique, il est à la fois craint mais considéré comme juste. Certains se sentent épiés, et agissent en conséquence pour ne pas attirer sa vengeance. Si on demandait à un enfant du ciel ce qu'il en pense, il laisserait certainement échapper un ricanement caractéristiques. Les croyances du peuple du courant sont sujet de moquerie pour ceux qui parlent aux ancêtres. Toi, tu te demandes de qui il peut s'agir. En tout cas, si tu avais la moitié du temps qu'il lui faut pour accomplir tout ce qu'on lui attribue, tu l'utiliserais à quelque chose de plus utile que de réparer une porte qui grince ou retrouver un clou d'oreil perdu. Tu es en plein milieu de ta visite annuelle, ou presque. Tu essaye de venir visiter les tiens à intervalle régulier pour observer leur progression. Plus personne ne te reconnais et tu préfères cet anonymat. On ne se questionne guère en voyant un ermite errant. Et comme à ton habitude, tu es positivement impressionné des changements que tu observes. Mais tu commences à t'interroger sur la régularité de tes expéditions. A chaque fois que tu descends dans la vallée, tu découvre un nouveau village, une nouvelle coutume.
 Une histoire d'exil
 Ce n'est qu'avec cette distance que tu peux mesurer le progrès,

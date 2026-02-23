@@ -1,9 +1,10 @@
-"""Tests for the structured fact extractor."""
+"""Tests for the structured fact and entity extractor."""
 
 import json
 import pytest
 from unittest.mock import patch, MagicMock
 from pipeline.fact_extractor import FactExtractor, StructuredFacts
+from pipeline.entity_filter import ExtractedEntity
 
 
 def _mock_llm_response(body: dict) -> MagicMock:
@@ -386,27 +387,122 @@ class TestLLMOutputTypeValidation:
 
 
 class TestNumPredictSufficient:
-    """Bug B: num_predict=500 is too low for a 4-list JSON response.
-    Verify the request uses at least 1000 tokens.
-    """
+    """Verify the request uses enough tokens for the full JSON response."""
 
-    def test_num_predict_at_least_1000(self):
-        """Fact extractor must request enough tokens to complete the JSON."""
+    def test_num_predict_sufficient_per_call(self):
+        """Fact extractor LLM calls must request enough tokens.
+
+        Call 1 (facts+entities): >= 1500 tokens
+        Call 2 (entities only): >= 500 tokens
+        """
         extractor = FactExtractor()
         segments = [{"segment_type": "narrative", "content": "Some text."}]
-        captured = {}
+        all_options: list = []
 
         def capture_post(url, json=None, **kwargs):
-            captured["options"] = json.get("options", {})
+            all_options.append(json.get("options", {}))
             return _mock_llm_response({
-                "technologies": [], "resources": [], "beliefs": [], "geography": []
+                "technologies": [], "resources": [], "beliefs": [],
+                "geography": [], "entities": []
             })
 
         with patch.object(extractor.client, "post", side_effect=capture_post):
             extractor.extract_facts(segments)
 
-        num_predict = captured.get("options", {}).get("num_predict", 0)
-        assert num_predict >= 1000, (
-            f"num_predict={num_predict} is too low -- JSON with 4 lists can easily "
-            f"exceed 500 tokens and be silently truncated"
+        assert len(all_options) == 2, f"Expected 2 LLM calls, got {len(all_options)}"
+        assert all_options[0].get("num_predict", 0) >= 1500, (
+            f"Call 1 num_predict={all_options[0].get('num_predict')} too low for facts+entities"
         )
+        assert all_options[1].get("num_predict", 0) >= 1000, (
+            f"Call 2 num_predict={all_options[1].get('num_predict')} too low for entities-only"
+        )
+
+
+class TestEntityExtraction:
+    """Test LLM entity extraction via mock."""
+
+    def _extract_with_mock(self, body: dict) -> StructuredFacts:
+        extractor = FactExtractor()
+        segments = [{"segment_type": "narrative", "content": "Some game text."}]
+        with patch.object(extractor.client, "post", return_value=_mock_llm_response(body)):
+            return extractor.extract_facts(segments)
+
+    def test_entities_extracted_from_llm(self):
+        """LLM returns entities -- should parse into ExtractedEntity list."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": [
+                {"name": "Nanzagouets", "type": "civilization", "context": "Les Nanzagouets arrivent"},
+                {"name": "Argile Vivante", "type": "technology", "context": "L'Argile Vivante durcit"},
+            ]
+        })
+        assert len(facts.entities) == 2
+        names = [e.text for e in facts.entities]
+        assert "Nanzagouets" in names
+        assert "Argile Vivante" in names
+        assert all(isinstance(e, ExtractedEntity) for e in facts.entities)
+
+    def test_noise_entities_filtered(self):
+        """Noise entities from LLM should be filtered out."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": [
+                {"name": "Nanzagouets", "type": "civilization", "context": "..."},
+                {"name": "village", "type": "place", "context": "..."},  # noise
+                {"name": "**bold**", "type": "person", "context": "..."},  # noise
+            ]
+        })
+        names = [e.text for e in facts.entities]
+        assert "Nanzagouets" in names
+        assert "village" not in names
+        assert "**bold**" not in names
+
+    def test_invalid_entity_types_rejected(self):
+        """Entities with invalid types should be rejected."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": [
+                {"name": "Something", "type": "invalid_type", "context": "..."},
+                {"name": "Nanzagouets", "type": "civilization", "context": "..."},
+            ]
+        })
+        assert len(facts.entities) == 1
+        assert facts.entities[0].text == "Nanzagouets"
+
+    def test_entity_deduplication(self):
+        """Duplicate entities should be deduplicated."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": [
+                {"name": "Nanzagouets", "type": "civilization", "context": "first"},
+                {"name": "Nanzagouets", "type": "civilization", "context": "second"},
+            ]
+        })
+        assert len(facts.entities) == 1
+
+    def test_empty_entities_field(self):
+        """Missing or empty entities field should return empty list."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+        })
+        assert facts.entities == []
+
+    def test_malformed_entity_entries_skipped(self):
+        """Non-dict entries in entities list should be skipped."""
+        facts = self._extract_with_mock({
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": [
+                "just a string",
+                42,
+                None,
+                {"name": "Nanzagouets", "type": "civilization", "context": "..."},
+            ]
+        })
+        assert len(facts.entities) == 1
+
+    def test_no_entities_when_no_llm(self):
+        """With invalid Ollama URL, entities should be empty."""
+        extractor = FactExtractor(ollama_base_url="http://invalid:99999")
+        segments = [{"segment_type": "narrative", "content": "Some text"}]
+        facts = extractor.extract_facts(segments)
+        assert facts.entities == []

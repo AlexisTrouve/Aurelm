@@ -1,22 +1,24 @@
 """
-Structured fact extractor for game turns.
+Structured fact and entity extractor for game turns.
 
-Extracts specific categories of information from turn segments:
+Extracts from turn segments via a single LLM call:
 - Technologies/tools discovered
 - Resources mentioned
 - Beliefs/rituals/social systems
 - Geography/environment
-- Media links (YouTube, images)
-- Choices proposed by the GM
+- Named entities (persons, places, technologies, institutions, etc.)
+- Media links (YouTube, images) — regex-based
+- Choices proposed by the GM — pattern-based
 """
 
 import json
 import re
 from typing import Dict, List, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import httpx
 
 from . import llm_stats
+from .entity_filter import ExtractedEntity, is_noise_entity, VALID_ENTITY_TYPES
 
 
 @dataclass
@@ -28,10 +30,11 @@ class StructuredFacts:
     beliefs: List[str]
     geography: List[str]
     choices_proposed: List[str]
+    entities: List[ExtractedEntity] = field(default_factory=list)
 
 
 class FactExtractor:
-    """Extracts structured facts from turn segments using LLM and patterns."""
+    """Extracts structured facts and entities from turn segments using LLM."""
 
     def __init__(self, ollama_base_url: str = "http://localhost:11434", model: str = "llama3.1:8b"):
         """
@@ -52,12 +55,10 @@ class FactExtractor:
         entity_lookup: Optional[Dict[str, Dict]] = None,
     ) -> StructuredFacts:
         """
-        Extract structured facts from turn segments.
+        Extract structured facts and entities from turn segments.
 
-        Uses two passes:
-        1. LLM pass  — semantic understanding
-        2. Pattern pass — keyword lists + known entity names (catches what LLM misses)
-        Results are merged and deduplicated.
+        Single LLM call extracts facts + entities together.
+        Entity-based pattern pass adds known entities from DB.
 
         Args:
             segments: List of segment dicts with 'segment_type' and 'content'
@@ -88,16 +89,20 @@ class FactExtractor:
                 resources=[],
                 beliefs=[],
                 geography=[],
-                choices_proposed=choices_proposed
+                choices_proposed=choices_proposed,
+                entities=[],
             )
 
-        # Pass 1: LLM extraction
-        llm_facts = self._llm_extract_facts(relevant_text)
+        # LLM call 1: facts + entities together
+        llm_result = self._llm_extract_facts_and_entities(relevant_text)
 
-        # Pass 2: pattern + entity-based extraction
+        # LLM call 2: dedicated entity extraction (catches what call 1 missed)
+        dedicated_entities = self._llm_extract_entities_only(relevant_text)
+
+        # Pattern pass: known entity names from DB
         pattern_facts = self._pattern_extract_facts(relevant_text, entity_lookup or {})
 
-        # Merge: LLM ∪ patterns, case-insensitive dedup
+        # Merge facts: LLM + patterns, case-insensitive dedup
         def merge(a: List[str], b: List[str]) -> List[str]:
             seen: set = set()
             result: List[str] = []
@@ -108,13 +113,25 @@ class FactExtractor:
                     result.append(item.strip())
             return result
 
+        # Merge entities: LLM call 1 + call 2 + pattern pass, dedup by name|type
+        llm_entities = llm_result.get("entities", [])
+        pattern_entities = pattern_facts.get("entities", [])
+        seen_entities: set = set()
+        merged_entities: List[ExtractedEntity] = []
+        for ent in llm_entities + dedicated_entities + pattern_entities:
+            key = f"{ent.text.lower()}|{ent.label}"
+            if key not in seen_entities:
+                seen_entities.add(key)
+                merged_entities.append(ent)
+
         return StructuredFacts(
             media_links=media_links,
-            technologies=merge(llm_facts.get("technologies", []), pattern_facts.get("technologies", [])),
-            resources=merge(llm_facts.get("resources", []), pattern_facts.get("resources", [])),
-            beliefs=merge(llm_facts.get("beliefs", []), pattern_facts.get("beliefs", [])),
-            geography=merge(llm_facts.get("geography", []), pattern_facts.get("geography", [])),
+            technologies=merge(llm_result.get("technologies", []), pattern_facts.get("technologies", [])),
+            resources=merge(llm_result.get("resources", []), pattern_facts.get("resources", [])),
+            beliefs=merge(llm_result.get("beliefs", []), pattern_facts.get("beliefs", [])),
+            geography=merge(llm_result.get("geography", []), pattern_facts.get("geography", [])),
             choices_proposed=choices_proposed,
+            entities=merged_entities,
         )
 
     def _extract_media_links(self, raw_content: str) -> List[Dict[str, str]]:
@@ -216,28 +233,120 @@ class FactExtractor:
             return result
         return []
 
-    def _llm_extract_facts(self, text: str) -> Dict[str, List[str]]:
-        """Use LLM to extract technologies, resources, beliefs, and geography."""
+    @staticmethod
+    def _coerce_entity_list(val: Any) -> List[ExtractedEntity]:
+        """Coerce LLM entity output to List[ExtractedEntity].
 
-        prompt = f"""Tu es un assistant qui extrait des faits structurés d'un tour de jeu de civilisation.
+        Expected format: [{"name": "...", "type": "...", "context": "..."}]
+        Filters noise and validates types.
+        """
+        if not isinstance(val, list):
+            return []
+
+        entities: List[ExtractedEntity] = []
+        seen: set = set()
+
+        for item in val:
+            if not isinstance(item, dict):
+                continue
+
+            name = str(item.get("name", "")).strip()
+            etype = str(item.get("type", "")).strip().lower()
+            context = str(item.get("context", "")).strip()
+
+            if not name or not etype:
+                continue
+
+            # Strip leading French articles for cleaner canonical names
+            # "Le Cheveux de Sang" -> "Cheveux de Sang"
+            # "La Caste de l'Air" -> "Caste de l'Air"
+            name = re.sub(
+                r"^(?:les?\s+|la\s+|l')",
+                "",
+                name,
+                flags=re.IGNORECASE,
+            ).strip()
+            # Re-capitalize first letter after stripping
+            if name and name[0].islower():
+                name = name[0].upper() + name[1:]
+
+            if not name:
+                continue
+
+            # Validate entity type
+            if etype not in VALID_ENTITY_TYPES:
+                continue
+
+            # Filter noise
+            if is_noise_entity(name):
+                continue
+
+            # Dedup by name|type
+            dedup_key = f"{name.lower()}|{etype}"
+            if dedup_key in seen:
+                continue
+            seen.add(dedup_key)
+
+            entities.append(ExtractedEntity(
+                text=name,
+                label=etype,
+                context=context[:200] if context else "",
+            ))
+
+        return entities
+
+    def _llm_extract_facts_and_entities(self, text: str) -> Dict[str, Any]:
+        """Use LLM to extract facts and entities in a single call."""
+
+        prompt = f"""Tu es un assistant qui extrait des faits structures et des entites nommees d'un tour de jeu de civilisation.
 
 Texte du tour :
 {text}
 
-Extrais les informations suivantes et retourne UNIQUEMENT un objet JSON valide (pas de texte avant ou après) :
+Retourne UNIQUEMENT un objet JSON valide (pas de texte avant ou apres) :
 
 {{
-  "technologies": ["outils, techniques ou savoirs ACTIVEMENT developpes, fabriques ou adoptes par la civilisation"],
-  "resources": ["ressources naturelles ACTIVEMENT exploitees ou utilisees (nourriture recoltee, materiaux travailles, etc.)"],
-  "beliefs": ["croyances, rituels, systemes sociaux, ou institutions mentionnes"],
-  "geography": ["lieux, caracteristiques geographiques, ou environnements decrits"]
+  "technologies": ["outils, techniques ou savoirs ACTIVEMENT developpes ou adoptes"],
+  "resources": ["ressources naturelles ACTIVEMENT exploitees ou utilisees"],
+  "beliefs": ["croyances, rituels, systemes sociaux mentionnes"],
+  "geography": ["lieux specifiques ou caracteristiques geographiques nommees"],
+  "entities": [
+    {{"name": "Nom exact", "type": "person|place|technology|institution|resource|creature|event|civilization|caste|belief", "context": "phrase courte du texte"}}
+  ]
 }}
 
-Regles :
-- Sois specifique et concret (ex: "gourdins", "pieux", pas juste "outils")
-- technologies : UNIQUEMENT ce que la civilisation a cree, fabrique, appris a faire ou adopte comme pratique. PAS les substances/materiaux juste observes ou mentionnes en passant.
-- resources : UNIQUEMENT ce qui est recolte, exploite ou utilise. PAS les elements naturels juste observes sans exploitation.
-- Utilise les termes exacts du texte quand possible
+Regles pour les faits :
+- Sois specifique (ex: "gourdins", "pieux", pas "outils")
+- technologies : UNIQUEMENT ce qui a ete cree, fabrique ou adopte. PAS les materiaux juste observes.
+- resources : UNIQUEMENT ce qui est recolte ou exploite. PAS les elements naturels juste mentionnes.
+
+Regles STRICTES pour les entites :
+- Extraire les noms propres, termes specifiques au jeu, et concepts nommes importants.
+- Inclure les noms composes meme si les mots individuels sont courants (ex: "Argile Vivante" = technologie du jeu).
+- Inclure les castes, institutions, lieux nommes, peuples, technologies meme s'ils utilisent des mots francais courants.
+
+Guide de typage :
+- civilization = un PEUPLE entier (ex: "Nanzagouets", "Confluents", "Cheveux de Sang")
+- caste = un sous-groupe social au sein d'un peuple (ex: "Faucons Chasseurs", "Caste de l'Air")
+- institution = une organisation, assemblee, tribunal (ex: "Cercle des Sages", "Tribunal des Moeurs")
+- belief = une loi, un rite, une croyance, un systeme social (ex: "Loi du Sang et de la Bete")
+- technology = un savoir-faire, une invention (ex: "Argile Vivante")
+- place = un lieu nomme (ex: "Gouffre Humide")
+- person = un individu nomme
+- creature = un animal ou etre specifique
+- resource = une ressource nommee (ex: "Larmes du Ciel")
+- event = un evenement historique nomme
+
+MAUVAIS exemples (NE PAS extraire) :
+  "le ciel", "la terre", "les oiseaux", "la tribu", "le village", "les anciens",
+  "les chasseurs", "la femme", "l'homme", "peuple", "les rites", "l'eau",
+  "les saisons", "equipe 1", "l'equipe 4", "la vallee", "le peuple des eaux",
+  "observation", "amelioration"
+
+NE PAS extraire les descriptions ou phrases generiques : "ceux qui vivent pres de la riviere", "le peuple des eaux".
+NE PAS extraire les metadonnees de musique/soundtrack (noms anglais de morceaux ou artistes).
+Principe : si ca designe quelque chose de NOMME et SPECIFIQUE dans le jeu (lieu, groupe, technologie, personne, caste), c'est une entite. Si c'est un mot generique, une description, ou une phrase, ce n'est PAS une entite.
+
 - Si une categorie est vide, retourne une liste vide []
 - Retourne UNIQUEMENT le JSON, rien d'autre"""
 
@@ -250,8 +359,8 @@ Regles :
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.1,  # Low temperature for factual extraction
-                        "num_predict": 1024
+                        "temperature": 0.1,
+                        "num_predict": 1500,
                     }
                 }
             )
@@ -265,62 +374,98 @@ Regles :
             if json_match:
                 facts = json.loads(json_match.group(0))
 
-                # Validate and coerce all fields to List[str]
                 return {
                     "technologies": self._coerce_list(facts.get("technologies")),
                     "resources": self._coerce_list(facts.get("resources")),
                     "beliefs": self._coerce_list(facts.get("beliefs")),
                     "geography": self._coerce_list(facts.get("geography")),
+                    "entities": self._coerce_entity_list(facts.get("entities")),
                 }
             else:
                 print(f"Warning: LLM response not valid JSON: {response_text[:200]}")
-                return {"technologies": [], "resources": [], "beliefs": [], "geography": []}
+                return {"technologies": [], "resources": [], "beliefs": [], "geography": [], "entities": []}
 
         except Exception as e:
             print(f"Error during LLM fact extraction: {e}")
-            return {"technologies": [], "resources": [], "beliefs": [], "geography": []}
+            return {"technologies": [], "resources": [], "beliefs": [], "geography": [], "entities": []}
 
-    # --- keyword lists for pattern pass ---
+    def _llm_extract_entities_only(self, text: str) -> List[ExtractedEntity]:
+        """Dedicated LLM call for entity extraction only.
 
-    _BELIEF_KEYWORDS = [
-        "esprit", "âme", "ame", "ancêtre", "ancetre", "sacré", "sacre",
-        "rituel", "cérémonie", "ceremonie", "offrande", "sacrifice",
-        "oracle", "bénédiction", "benediction", "piété", "piete",
-        "sacralité", "sacralite", "foi", "vénérer", "venerer", "prier",
-        "divin", "cosmologie", "cosmologique", "céleste", "celeste",
-        "au-delà", "au-dela", "ciel", "mort", "défunt", "defunt",
-        "croyance", "croire", "tradition", "coutume", "tabou",
-        "totem", "chamane", "shaman", "prophétie", "prophetie",
-        "réincarnation", "reincarnation", "âmes", "esprits",
-        "loi du sang", "lois du sang",
-    ]
+        Simpler prompt focused solely on finding named entities,
+        catches what the combined facts+entities call tends to miss.
+        """
+        prompt = f"""Liste TOUTES les entites nommees dans ce texte de jeu de civilisation.
 
-    _RESOURCE_KEYWORDS = [
-        "récolte", "recolte", "pêche", "peche", "chasse", "cueillette",
-        "culture", "cultive", "extrait", "exploite", "stocke",
-        "nourriture", "viande", "poisson", "baie", "graine", "tubercule",
-        "herbe", "plante", "bois", "pierre", "argile", "silex",
-        "gingembre", "fleur", "champignon", "résine", "resine",
-        "fourrure", "peau", "cuir", "os", "griffe", "corne",
-        "cuivre", "bronze", "fer", "minerai", "sel",
-    ]
+Texte :
+{text}
+
+Retourne UNIQUEMENT un JSON : {{"entities": [{{"name": "Nom exact", "type": "person|place|technology|institution|resource|creature|event|civilization|caste|belief", "context": "phrase courte"}}]}}
+
+Quoi extraire :
+- Noms propres de groupes, castes, institutions, civilisations, lieux, technologies, personnes, lois, croyances.
+- Noms composes specifiques au jeu : "Argile Vivante" (technology), "Cheveux de Sang" (civilization), "Caste de l'Air" (caste), "Loi du Sang et de la Bete" (belief).
+
+Guide de typage :
+- civilization = un PEUPLE entier (ex: "Nanzagouets", "Confluents")
+- caste = un sous-groupe social (ex: "Faucons Chasseurs", "Caste de l'Air")
+- institution = une organisation, assemblee (ex: "Cercle des Sages")
+- belief = une loi, un rite, une croyance (ex: "Loi du Sang et de la Bete")
+- technology = un savoir-faire, une invention (ex: "Argile Vivante")
+
+NE PAS extraire :
+- Mots generiques : "l'eau", "le village", "la vallee", "les anciens", "le peuple".
+- Metadonnees de musique/soundtrack.
+- Si tu hesites entre un nom propre et une description generique, NE PAS l'extraire.
+
+Retourne UNIQUEMENT le JSON."""
+
+        try:
+            llm_stats.increment("entity_extraction")
+            response = self.client.post(
+                f"{self.ollama_base_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,
+                        "num_predict": 1500,
+                    }
+                }
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            response_text = result.get("response", "").strip()
+
+            json_match = re.search(r'\{[\s\S]*\}', response_text)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                return self._coerce_entity_list(data.get("entities"))
+            else:
+                return []
+
+        except Exception as e:
+            print(f"Error during dedicated entity extraction: {e}")
+            return []
 
     def _pattern_extract_facts(
         self, text: str, entity_lookup: Dict[str, Dict]
-    ) -> Dict[str, List[str]]:
-        """Pattern-based extraction: keyword lists + known entity names.
+    ) -> Dict[str, Any]:
+        """Pattern-based extraction: known entity names from DB.
 
-        Complements LLM extraction — catches entities the LLM ignored and
-        beliefs signalled by spiritual/social keywords.
+        Complements LLM extraction -- catches known entities the LLM missed.
+        Also returns entity mentions for known entities found in text.
         """
         technologies: List[str] = []
         resources: List[str] = []
         beliefs: List[str] = []
         geography: List[str] = []
+        found_entities: List[ExtractedEntity] = []
 
         text_lower = text.lower()
 
-        # --- Entity-based pass ---
         # If a known entity name appears in the text, add it to the right bucket
         ENTITY_TYPE_TO_BUCKET: Dict[str, List[str]] = {
             "technology": technologies,
@@ -333,33 +478,27 @@ Regles :
         for name_lower, entity in entity_lookup.items():
             if len(name_lower) < 4:
                 continue  # skip very short names (noise risk)
-            bucket = ENTITY_TYPE_TO_BUCKET.get(entity.get("entity_type", ""), None)
-            if bucket is None:
+            if name_lower not in text_lower:
                 continue
-            if name_lower in text_lower:
-                bucket.append(entity["canonical_name"])
 
-        # --- Keyword pass for beliefs ---
-        sentences = re.split(r'[.!?\n]', text)
-        for sentence in sentences:
-            s_lower = sentence.lower().strip()
-            if not s_lower:
-                continue
-            if any(kw in s_lower for kw in self._BELIEF_KEYWORDS):
-                clean = sentence.strip()
-                if clean and len(clean) > 10:
-                    beliefs.append(clean)
+            etype = entity.get("entity_type", "")
+            canonical = entity["canonical_name"]
 
-        # Resource keyword pass: intentionally disabled.
-        # Sentence-level keyword matching produces too much noise (narrative sentences
-        # containing "pêche" or "rivière" are not resource entries).
-        # The LLM pass already handles resources well enough.
+            bucket = ENTITY_TYPE_TO_BUCKET.get(etype, None)
+            if bucket is not None:
+                bucket.append(canonical)
+
+            # Also emit as entity mention so it gets recorded
+            found_entities.append(ExtractedEntity(
+                text=canonical, label=etype, context="",
+            ))
 
         return {
             "technologies": technologies,
             "resources": resources,
             "beliefs": beliefs,
             "geography": geography,
+            "entities": found_entities,
         }
 
     def close(self):

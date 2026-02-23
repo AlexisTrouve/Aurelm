@@ -13,16 +13,14 @@
 
 ## Arbre chronologique
 
-**Tour 1** (precedent) : [outils](outils.md), [techniques](techniques.md)
+**Tour 1** (precedent) : [Argile Vivante](argile-vivante.md)
 **Tour 2** (actuel) : **gourdins**
-**Tour 3** (suivant) : [rites de déposition des morts](rites-de-deposition-des-morts.md), [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md)
+**Tour 4** (suivant) : [La Voix des Cieux](la-voix-des-cieux.md)
 
 ## Meme categorie : Outils de chasse
 
 - [pieux](pieux.md) (Tour 2)
-- [lance à la pointe polie](lance-a-la-pointe-polie.md) (Tour 6)
-- [lance](lance.md) (Tour 9)
-- [Faucons Chasseurs](faucons-chasseurs.md) (Tour 11)
+- [Lance](lance.md) (Tour 9)
 
 ## Extrait narratif
 

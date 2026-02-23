@@ -1,26 +1,20 @@
 # Tour 6
 
-📅 **28/10/2024** | 📊 **8 segments** | 🎯 **6 nouvelles entités**
+📅 **28/10/2024** | 📊 **6 segments** | 🎯 **6 nouvelles entités**
 
-> Le village de la Confluence, établi à la confluence de deux fleuves dans une vallée montagneuse, a connu des changements importants depuis l'arrivée d'un groupe de survivants qui ont guidé le peuple jusqu'à cet endroit idéal. Le village a grandi et est devenu un centre prospère, avec une alimentation variée et riche, incluant légumes sauvages, gibiers, poisson, serpents d'eau et herbes parfumées. Les villageois ont développé une relation symbiotique avec des animaux qui vivaient déjà dans la vallée avant leur arrivée, dont ils sont en train de domestiquer.
+> Depuis l'arrivée de la tribu dans la Vallée, le village a grandi en faisant feu de tout bois. Les habitants ont développé une relation symbiotique avec les animaux qui vivaient déjà dans la vallée, notamment des gibiers et des poissons. La tribu est devenue omnivore, consommant des légumes sauvages, des baies, des tubercules, du poisson gras, des gibiers et quelques herbes pour parfumer les plats. Cependant, la nourriture peut paraître manquer d'imagination et le régime alimentaire semble peu évolué.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Regards-Libres`, `Gingembre sauvage`, `La Vallée`, `Morsure-des-Ancêtres`, `Vallée des camps temporaires`, `Les Larmes du Ciel`
+- **Entités découvertes** : `Peuple du ciel clair`, `Regards-Libres`, `Cieux`, `Confluence`, `Larmes du Ciel`, `Morsure-des-Ancêtres`
 - **Mentions totales** : 9
-- **Technologies** : 4
-- **Ressources** : 6
-- **Densité narrative** : 6 narratifs, 2 choix, 0 conséquences
-
-## 🎵 Ambiance
-
-[YouTube](https://www.youtube.com/watch?v=8U1VjMnY0nA)
+- **Technologies** : 2
+- **Ressources** : 4
+- **Densité narrative** : 4 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
-
-**Le Village**
 
 Un jour, tu te réveille, les visages ont changé, mais pas le paysage. Tu te réchauffes auprès du feu. On te sers une infusion dans une branche évidé. Tu regardes le village autour de toi et t'interroge. Tu ne saurais exactement dire comment ce changement s'est opéré. Tu te rappelles avoir guidé ton peuple jusqu'à la confluence de ces deux fleuves, dans cette vallée montagneuse, un endroit où il pourrait prospérer. Du petit groupe de survivants, tu l'as vu grandir en faisant feu de tout bois. La Vallée a offert ses largesses aux tiens, et la Confluence, la sécurité. Un emplacement idéal, deux puissantes rivières joignent leurs forces, l'un bleu azur et l'autre vert, leur cru fréquent alimentant une terre fertile, d'une eau poissonneuse où le gibier vient se désaltérer. En quelques générations, rien n'a changé dans tout ça, sinon le village. D'abord un des multiples campements utilisés par les tiens, plus difficile d'accès mais offrant une certaine paix de l'esprit, le seul accès ne traversant pas les rivières étant protégées en amont par un plateau rocailleux. Ce n'est pas tant la fierté de tes artisans plutôt que la difficulté d'établir un atelier improvisé qui a renforcé cet emplacement. La complexité des nouveaux outils et les techniques de polissage nécessitent de préparer les roches striés sur lesquels ils sont travaillés. Du filet de pêche lesté, à la lance à la pointe polie, aux serpes grossières taillées dans des os en passant par les délicats hameçons et casiers à poisson.
 
@@ -46,57 +40,46 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 ### 🗺️ Géographie
 
-- Vallée montagneuse
+- La Vallée
 - Confluence des deux fleuves
-- Plateau rocailleux en amont
-- Rivières bleues azur et vertes
+- Plateau rocailleux
 
 ### 🔧 Technologies
 
-- filet de pêche lesté
-- lance à la pointe polie
-- serpes grossières taillées dans des os
+- outils de polissage
 - hameçons et casiers à poisson
 
 ### 🌾 Ressources
 
 - poissons gras de la rivière
-- gibiers
 - baies
 - tubercules
-- herbes pour parfumer le tout
-- Gingembre sauvage (Morsure-des-Ancêtres)
+- herbes pour parfumer
 
 ### ✨ Croyances
 
-- croyance dans les anciens et leur force
-- importance de partager 'Les Larmes du Ciel' lors des nouvelles lunes
-- D'abord un des multiples campements utilisés par les tiens, plus difficile d'accès mais offrant une certaine paix de l'esprit, le seul accès ne traversant pas les rivières étant protégées en amont par un plateau rocailleux
-- Du filet de pêche lesté, à la lance à la pointe polie, aux serpes grossières taillées dans des os en passant par les délicats hameçons et casiers à poisson
-- Les sans-ciels, cultivant la rivière et échangeant avec ceux des cieux qui leur fournissent outils mais aussi viandes et plantes
-- Rare sont ceux à avoir vu l'Oracle de leur vie, encore moins, son visage
-- Farouche dans un premier temps, ils ont fini par aller au-delà de leur instinct et se rapprocher de l'homme
-- Tu es persuadé que cette galette avait déjà le même goût la dernière fois que tu es venu à la Confluence
-- Le peuple du ciel clair, voyant cet avantage, a commencé à les utiliser pour repérer les mouvements des troupeaux
-- Cette intelligence, au-delà de leur rôle d'éclaireur, laisse entrevoir d'autres possibilités Dans les zones humides de la vallée pousse la "Morsure-des-Ancêtres" (Gingembre sauvage), une racine au goût mordant dont la chaleur et l'arôme en font un ingrédient recherché
+- Loi du Sang et de la Bête
+- croyance en l'Oracle de leur vie
 
 ## 🏷️ Entités mentionnées
 
-**La confluence** (Lieux) — 2 mentions
+**Sans-Ciel** (Castes) — 1 mentions
 
-**Regards-Libres** (Castes) — 1 mentions ⭐ *Première apparition*
+**Confluents** (Civilisations) — 1 mentions
 
-**Sans ciel** (Castes) — 1 mentions
+**Peuple des Eaux** (Civilisations) — 1 mentions
 
-**Gingembre sauvage** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Peuple du ciel clair** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**La Vallée** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Regards-Libres** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Morsure-des-Ancêtres** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Cieux** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Vallée des camps temporaires** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Confluence** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Les Larmes du Ciel** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Larmes du Ciel** (Ressources) — 1 mentions ⭐ *Première apparition*
+
+**Morsure-des-Ancêtres** (Ressources) — 1 mentions ⭐ *Première apparition*
 
 ---
 
@@ -104,7 +87,6 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 ### Maître du Jeu
 
-**Le Village**
 Un jour, tu te réveille, les visages ont changé, mais pas le paysage. Tu te réchauffes auprès du feu. On te sers une infusion dans une branche évidé. Tu regardes le village autour de toi et t'interroge. Tu ne saurais exactement dire comment ce changement s'est opéré. Tu te rappelles avoir guidé ton peuple jusqu'à la confluence de ces deux fleuves, dans cette vallée montagneuse, un endroit où il pourrait prospérer. Du petit groupe de survivants, tu l'as vu grandir en faisant feu de tout bois. La Vallée a offert ses largesses aux tiens, et la Confluence, la sécurité. Un emplacement idéal, deux puissantes rivières joignent leurs forces, l'un bleu azur et l'autre vert, leur cru fréquent alimentant une terre fertile, d'une eau poissonneuse où le gibier vient se désaltérer. En quelques générations, rien n'a changé dans tout ça, sinon le village. D'abord un des multiples campements utilisés par les tiens, plus difficile d'accès mais offrant une certaine paix de l'esprit, le seul accès ne traversant pas les rivières étant protégées en amont par un plateau rocailleux. Ce n'est pas tant la fierté de tes artisans plutôt que la difficulté d'établir un atelier improvisé qui a renforcé cet emplacement. La complexité des nouveaux outils et les techniques de polissage nécessitent de préparer les roches striés sur lesquels ils sont travaillés. Du filet de pêche lesté, à la lance à la pointe polie, aux serpes grossières taillées dans des os en passant par les délicats hameçons et casiers à poisson.
 Il demeure tout du long de la Vallée des camps temporaires, tantôt pour la chasse, tantôt pour la cueillette, tantôt pour la pêche, mais tous finissent par revenir au village. Ou plutôt les villages. L'un, à la confluence, l'autre, plus bas, sur des pilotis. Les deux se voulant complémentaires sans se mélanger. Les sans-ciels, cultivant la rivière et échangeant avec ceux des cieux qui leur fournissent outils mais aussi viandes et plantes. Anonyme, tu avance parmi les constructions rudimentaires mais permanentes. Personne ici ne te reconnaît. Rare sont ceux à avoir vu l'Oracle de leur vie, encore moins, son visage. Tu arrives au bord de l'eau et vois un groupe de villageois en train de faire cuire des poissons. Près d'eux, des animaux que tu reconnais et qui observent ces mêmes villageois avec attention. Ils vivaient dans la Vallée avant votre arrivée. Farouche dans un premier temps, ils ont fini par aller au-delà de leur instinct et se rapprocher de l'homme.
 **Un début de domestication**

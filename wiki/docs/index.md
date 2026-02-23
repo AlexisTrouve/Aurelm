@@ -6,7 +6,7 @@ Bienvenue sur le wiki automatise du monde d'Aurelm. Ce wiki est genere a partir 
 
 | Tours | Entites | Mentions | Technologies | Ressources |
 |-------|---------|----------|--------------|------------|
-| **14** | **55** | **162** | **35** | **32** |
+| **14** | **50** | **110** | **26** | **14** |
 
 ## Activite par mois
 
@@ -31,24 +31,24 @@ Jan 2026     █████                1 tours
 
 ## Top 10 Entites (par mentions)
 
-1. **La confluence** (place) ████████████████████ 19 mentions
-2. **Ailes-Grises** (caste) ██████████████       14 mentions
-3. **Sans ciel** (caste) █████████            9 mentions
-4. **Regards-Libres** (caste) ████████             8 mentions
-5. **Enfants du Courant** (caste) ███████              7 mentions
-6. **Enfants des échos** (caste) ███████              7 mentions
-7. **Voix de l'Aurore** (caste) ██████               6 mentions
-8. **Passes-bien** (caste) ██████               6 mentions
-9. **Faucons Chasseurs** (caste) ██████               6 mentions
-10. **Cercle des sages** (institution) █████                5 mentions
+1. **Faucons Chasseurs** (caste) ████████████████████ 9 mentions
+2. **Cercle des Sages** (institution) █████████████████    8 mentions
+3. **Regards-Libres** (creature) █████████████        6 mentions
+4. **Confluents** (civilization) ███████████          5 mentions
+5. **Loi du Sang et de la Bete** (belief) ███████████          5 mentions
+6. **Argile Vivante** (technology) ███████████          5 mentions
+7. **Tribunal des Moeurs** (institution) ███████████          5 mentions
+8. **Ailes-Grises** (caste) ███████████          5 mentions
+9. **Caste de l'Air** (caste) ████████             4 mentions
+10. **Nanzagouets** (civilization) ██████               3 mentions
 
 ## Derniers tours
 
-- **[Tour 14](civilizations/civilisation-de-la-confluence/turns/turn-14.md)** — *08/09/2025* — Les Ailes-Grises de la Civilisation de la Confluence se sont rendues dans les halls sacrés de Gouffr...
-- **[Tour 13](civilizations/civilisation-de-la-confluence/turns/turn-13.md)** — *19/08/2025* — La civilisation de la Confluence affronte une situation critique en profondeur, où plusieurs groupes...
-- **[Tour 12](civilizations/civilisation-de-la-confluence/turns/turn-12.md)** — *10/06/2025* — Le village de la Confluence est secoué par le premier meurtre connu, et il faut trouver un moyen de ...
-- **[Tour 11](civilizations/civilisation-de-la-confluence/turns/turn-11.md)** — *22/05/2025* — Les travailleurs sans-ciels construisent de nouveaux bâtiments dans la vallée, notamment un temple m...
-- **[Tour 10](civilizations/civilisation-de-la-confluence/turns/turn-10.md)** — *20/03/2025* — La civilisation de la Confluence se développe dans les grottes profondes de la vallée. Les enfants d...
+- **[Tour 14](civilizations/civilisation-de-la-confluence/turns/turn-14.md)** — *08/09/2025* — La Fresque de Gouffre Humide continue à susciter une profonde fascination et interrogation chez les ...
+- **[Tour 13](civilizations/civilisation-de-la-confluence/turns/turn-13.md)** — *19/08/2025* — Le groupe d'explorateurs se dirige vers la galerie souterraine de Gouffre Humide pour retrouver le g...
+- **[Tour 12](civilizations/civilisation-de-la-confluence/turns/turn-12.md)** — *10/06/2025* — Un meurtre a eu lieu dans le village de la Confluence, et le Tribunal des mœurs doit décider de la p...
+- **[Tour 11](civilizations/civilisation-de-la-confluence/turns/turn-11.md)** — *22/05/2025* — La civilisation de la Confluence s'active après l'hiver, avec de nombreux chantiers en cours pour co...
+- **[Tour 10](civilizations/civilisation-de-la-confluence/turns/turn-10.md)** — *20/03/2025* — Vous continuez votre visite à la Civilisation de la Confluence, observant les changements et les pro...
 
 ## Navigation rapide
 
@@ -59,4 +59,4 @@ Jan 2026     █████                1 tours
 
 ---
 
-*Derniere mise a jour : 20/02/2026 19:20*
+*Derniere mise a jour : 23/02/2026 12:03*

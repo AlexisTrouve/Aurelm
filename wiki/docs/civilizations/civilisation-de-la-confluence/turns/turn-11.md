@@ -1,23 +1,20 @@
 # Tour 11
 
-📅 **22/05/2025** | 📊 **9 segments** | 🎯 **8 nouvelles entités**
+📅 **22/05/2025** | 📊 **8 segments** | 🎯 **5 nouvelles entités**
 
-> Les travailleurs sans-ciels de la Civilisation de la Confluence se remettent en marche après l'hiver. Ils sont occupés à construire plusieurs nouveaux bâtiments dans la vallée, dont un temple majestueux pour honorer les ancêtres et accumuler des artefacts. Le processus de construction est rigoureux, avec différentes castes travaillant ensemble : les explorateurs découvrent les cavités, les tailleurs de pierre les percent, les égalisateurs les délimitent, les dessinateurs préparent les décorations, et les sculpteurs les terminent. Les travailleurs sans-ciels utilisent l'argile vive pour construire ces bâtiments, qui seront importants pour la communauté.
+> La saison des pluies arrive dans la vallée de la Confluence, apportant un regain d'activité aux chantiers. Les enfants des échos travaillent ensemble à différents niveaux de profondeur pour creuser les Antres et améliorer leur mode de vie. Ils utilisent l'argile vive pour construire des structures qui résisteront aux générations, et cette ressource est essentielle à leur survie. Les passe-biens fournissent ces biens grâce au troc, offrande ou partage, selon la politique adoptée par chaque caste.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Faucons Chasseurs`, `Ciels-clairs`, `Arbitre des Esprits`, `Assemblée des Chefs`, `Maison des Découvertes`, `Lois du Sang`, `Argile vivante`, `La Bête`
-- **Mentions totales** : 21
+- **Entités découvertes** : `Proclamateurs`, `Maison des Découvertes`, `Arbitre des Esprits`, `Chef du Cercle des Sages`, `Chef du Tribunal des Mœurs`
+- **Mentions totales** : 13
 - **Technologies** : 2
-- **Ressources** : 6
-- **Densité narrative** : 7 narratifs, 2 choix, 0 conséquences
+- **Ressources** : 0
+- **Densité narrative** : 6 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
-
-Bartosz Pokrywka - Topic
-Afterwards
 
 Le premier meurtre Choix : Loi du Sang et de la Bête (option libre) Face à cette scène qui glace le sang, je sens la colère monter dans la foule, les accusations qui fusent, la suspicion qui divise déjà nos peuples. Cette nuit d'orage ne doit pas devenir celle de notre fracture. Je m'avance dans le cercle et lève la main pour apaiser les voix. Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle. Nous ne pouvons nous contenter de la vengeance aveugle ni de l'indécision paralysante. Que naissent dès cette nuit les Faucons Chasseurs ! Je désigne parmi les ciels-clairs ceux dont le courage, la force et la droiture sont reconnus de tous. L'Assemblée des Chefs les guidera, mais leur mission commence maintenant : rassembler chaque indice, interroger chaque témoin avec l'aide des Regards-Libres, reconstituer la vérité de cette nuit funeste. Car avant de juger, nous devons savoir. Et ils devront aussi capturer dans nos montagnes une bête sacrée - car si la culpabilité est établie, seule l'épreuve de l'arène révélera si les ancêtres protègent encore l'accusé. Le Tribunal des Mœurs doit évoluer pour ce défi sans précédent. J'y nomme des Proclamateurs selon la droiture de leur cœur - ils appliqueront les Lois du Sang et de la Bête que je révèle maintenant : quand une vie est ôtée sans cause juste, l'enquête doit établir la vérité, puis l'épreuve de l'arène trancher ce que les hommes ne peuvent. Si l'accusé survit au combat contre la bête, c'est que les ancêtres le protègent encore - il demeurera parmi nous. Sinon, justice aura été rendue. Près de la confluence, nous aménagerons rapidement cette arène où la volonté des esprits se révélera. Ainsi cette nuit de violence devient fondation de notre justice : ni vengeance ni faiblesse, mais la vérité révélée par l'enquête et confirmée par l'épreuve. Que chacun regagne son foyer - les Faucons commencent leur travail dès l'aube.
 
@@ -61,77 +58,42 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 
 ### 🗺️ Géographie
 
-- confluence
-- rivière bleue
-- huttes chaudes
-- montagnes
+- Confluence des Échanges
+- Gouffre Humide
+- Foyer Eternel
 
 ### 🔧 Technologies
 
-- Regards-Libres
-- Faucons Chasseurs
-
-### 🌾 Ressources
-
-- argile vivante
-- poisson
-- légumes
-- pierre
-- bois
-- mets savoureux
+- Argile Vivante
+- Regard-Libre
 
 ### ✨ Croyances
 
 - Loi du Sang et de la Bête
-- Tribunal des Mœurs
-- Arbitre des Esprits
-- Cercle des Sages
-- Assemblée des Chefs
-- Le premier meurtre Choix : Loi du Sang et de la Bête (option libre) Face à cette scène qui glace le sang, je sens la colère monter dans la foule, les accusations qui fusent, la suspicion qui divise déjà nos peuples
-- Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle
-- Je désigne parmi les ciels-clairs ceux dont le courage, la force et la droiture sont reconnus de tous
-- Et ils devront aussi capturer dans nos montagnes une bête sacrée - car si la culpabilité est établie, seule l'épreuve de l'arène révélera si les ancêtres protègent encore l'accusé
-- J'y nomme des Proclamateurs selon la droiture de leur cœur - ils appliqueront les Lois du Sang et de la Bête que je révèle maintenant : quand une vie est ôtée sans cause juste, l'enquête doit établir la vérité, puis l'épreuve de l'arène trancher ce que les hommes ne peuvent
 
 ## 🏷️ Entités mentionnées
 
-**La confluence** (Lieux) — 3 mentions
+**Loi du Sang et de la Bete** (Belief) — 1 mentions
 
-**Ailes-Grises** (Castes) — 1 mentions
+**Faucons Chasseurs** (Castes) — 1 mentions
 
-**Enfants du Courant** (Castes) — 1 mentions
+**Proclamateurs** (Castes) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Castes) — 1 mentions ⭐ *Première apparition*
+**Regards-Libres** (Creatures) — 1 mentions
 
-**Passes-bien** (Castes) — 1 mentions
-
-**Regards-Libres** (Castes) — 1 mentions
-
-**Voix de l'Aurore** (Castes) — 1 mentions
-
-**Ciels-clairs** (Castes) — 1 mentions ⭐ *Première apparition*
-
-**Enfants des échos** (Castes) — 1 mentions
-
-**Sans ciel** (Castes) — 1 mentions
-
-**Arbitre des Esprits** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Assemblée des Chefs** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Institutions) — 1 mentions
 
 **Maison des Découvertes** (Institutions) — 1 mentions ⭐ *Première apparition*
 
-**Cercle des sages** (Institutions) — 1 mentions
+**Tribunal des Moeurs** (Institutions) — 1 mentions
 
-**Tribunal des mœurs** (Institutions) — 1 mentions
+**Arbitre des Esprits** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**Lois du Sang** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Chef du Cercle des Sages** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**Argile vivante** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Chef du Tribunal des Mœurs** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**La Bête** (Technologies) — 1 mentions ⭐ *Première apparition*
-
-**Rhombes** (Technologies) — 1 mentions
+**Argile Vivante** (Technologies) — 1 mentions
 
 ---
 
@@ -139,8 +101,6 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 
 ### Maître du Jeu
 
-Bartosz Pokrywka - Topic
-Afterwards
 L'air est froid, tes jambes repliés sous toi pour profiter de ta chaleur corporel. Tu regrettes de ne pas avoir récupéré l'une de ces pierres que les enfants des échos utilisent pour se garder au chaud pendant leur longue journée de travail. Des roches qu'ils mettent dans le feu la nuit et qu'ils placent ensuite dans les replis de leur tunique. Tu reviens d'une inspection dans l'une des nouvelles Antres, satisfait de voir que l'organisation y est maintenant rigoureuse. D'abord les explorateurs découvrent une caverne, puis les tailleurs de pierre viennent percer les cavités et les délimitent à l'aide de burin en pierre et de maillets en bois. Viennent ensuite les égalisateurs qui retravaillent la surface, soit par friction, soit en la couvrant d'argile vive. Viennent ensuite les dessinateurs qui préparent à l'aide des plans établis par l'Antre dont ils sont venus, les décorations et autres bas reliefs. C'est ensuite aux sculpteurs de venir, avec leur lourds ciseaux de bois au dents d'obsidienne. Ils sont parfois relevés par des peintres qui viennent colorer les murs de toutes les nuances d'ocre qu'ils ont à leur disposition. Quand on t'en avait parlé, tu avais imaginé que les groupes venait et partait en se relayant, mais tu as pu observer que ce n'était pas le cas. Ils travaillent tous conjointement, chacun à différents niveaux de profondeur, toujours suivis de près par leur successeur. Seul les roches trop durs pour vos outils finissent par arrêter les travaux d'aménagements et motivent la recherche d'une nouvelle antre. Mais les enfants des échos sont têtus et ont tendances à s'acharner aussi longtemps que possible avant de s'y résoudre. Ravitaillé depuis l'extérieur par les nombreux passe-bien qui recherchent leur fameuse argile vive. Ces échanges sont basés sur …
 Vous avez dit commerce ?
 le troc : ils négocient avec les passe-biens pour obtenir la plus grande quantités de biens en échanges de ceux qu'ils ont à offrir,

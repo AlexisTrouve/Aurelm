@@ -6,55 +6,33 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 2 |
-| **Tours actifs** | 11-12 (2 tours) |
-| **Pic d'activite** | Tour 11 (1 mentions) |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 12-12 (1 tours) |
+| **Pic d'activite** | Tour 12 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour 11  ████████████████████  ← Pic
-Tour 12  ████████████████████
+Tour 12  ████████████████████  ← Pic
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **[Arbitre des Esprits](arbitre-des-esprits.md)** (Institutions) — 2 tours
-- 🔵 **[Ciels-clairs](ciels-clairs.md)** (Castes) — 2 tours
-- 🔵 **[Faucons Chasseurs](faucons-chasseurs.md)** (Castes) — 2 tours
-- 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 2 tours
-- 🔵 **[Passes-bien](passes-bien.md)** (Castes) — 2 tours
 
 ## Description
 
-L'Assemblée des Chefs est une institution qui guide et soutient les actions de la nouvelle formation : les Faucons Chasseurs. Elle semble jouer un rôle crucial dans l'enquête sur le traumatisme vécu par le groupe.
+L'Assemblée des Chefs est un organisme de décision qui regroupe les chefs des différentes factions ou tribus d'une civilisation. Elle joue un rôle crucial dans la prise de décision collective, notamment en cas de situations critiques comme l'exploration des galeries souterraines. L'Assemblée des Chefs est composée de représentants choisis par leurs respectives fractions pour prendre des décisions importantes.
 
 ## Chronologie
 
-**Tour 11: L'Assemblée des Chefs est mentionnée comme celle qui guidera les Faucons Chasseurs dans leur mission d'enquêter et de rassembler des indices. Elle est également responsable de l'épreuve de l'arène pour déterminer la culpabilité.**
-
-**Tour 12: L'Assemblée des Chefs est informée de la situation par rapport à la recherche des disparus et les décisions prises par le groupe en conséquence.**
+**Tour 12: L'Assemblée des Chefs joue un rôle significatif dans l'orientation stratégique de l'expédition, en influençant les décisions sur les prochaines étapes et les risques acceptés.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 11**
-> "Assemblée des Chefs"
->
-> Contexte : la force et la droiture sont reconnus de tous. L'Assemblée des Chefs les guidera, mais leur mission commence maintenan...
 
 **Tour 12**
 > "Assemblée des Chefs"
 >
-> Contexte : asses-bien, provisions pour plusieurs semaines. L'Assemblée des Chefs est informée de la situation. Objectif : Retrouve...
+> Contexte : Assemblée des Chefs...
 
 ??? note "Sources -- Passages originaux"
-
-    **Tour 11**
-
-    > ...fracture. Je m'avance dans le cercle et lève la main pour apaiser les voix. Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle. Nous ne pouvons nous contenter de la vengeance aveugle ni de l'indécision paralysante. Que naissent dès cette nuit les Faucons Chasseurs ! Je désigne parmi les ciels-clairs ceux dont le courage, la force et la droiture sont reconnus de tous. L'Assemblée des Chefs les guidera, mais leur mission commence maintenant : rassembler chaque indice, interroger chaque témoin avec l'aide des Regards-Libres, reconstituer la vérité de cette nuit funeste. Car avant de juger, nous devons savoir. Et ils devront aussi capturer dans nos montagnes une bête sacrée - car si la culpabilité est établie, seule l'épreuve de l'arène révélera si les ancêtres protègent encore l'accu...
 
     **Tour 12**
 

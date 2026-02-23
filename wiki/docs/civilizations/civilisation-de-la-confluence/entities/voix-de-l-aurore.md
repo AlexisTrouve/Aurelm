@@ -1,6 +1,6 @@
 # Voix de l'Aurore
 
-*Castes* -- Civilisation de la Confluence
+*Institutions* -- Civilisation de la Confluence
 
 !!! info "Technologie active"
     Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/la-voix-des-cieux.md).
@@ -9,71 +9,57 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 6 |
-| **Tours actifs** | 7-14 (8 tours) |
-| **Pic d'activite** | Tour 9 (2 mentions) |
-| **Moyenne** | 1.2 mentions/tour |
+| **Mentions totales** | 3 |
+| **Tours actifs** | 7-9 (3 tours) |
+| **Pic d'activite** | Tour 7 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  7  ██████████          
-Tour  8  ██████████          
-Tour  9  ████████████████████  ← Pic
-Tour 11  ██████████          
-Tour 14  ██████████          
+Tour  7  ████████████████████  ← Pic
+Tour  8  ████████████████████
+Tour  9  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **[Enfants du Courant](enfants-du-courant.md)** (Castes) — 5 tours
-- 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 5 tours
-- 🔵 **[Regards-Libres](regards-libres.md)** (Castes) — 5 tours
-- 🔵 **[La confluence](la-confluence.md)** (Lieux) — 5 tours
-- 🔵 **[Rhombes](rhombes.md)** (Technologies) — 3 tours
+- 🔵 **Gardiens de la Confluence** (Institutions) — 3 tours
+- 🔵 **Ailes-Grises** (Castes) — 3 tours
+- 🔵 **Regards-Libres** (Creatures) — 3 tours
+- 🔵 **Enfants du Courant** (Institutions) — 2 tours
+- 🔵 **Cercle des Sages** (Institutions) — 2 tours
 
 ## Description
 
-La caste des Voix de l'Aurore est une institution qui défend la primauté des anciennes lois et des rituels sacrés. Elle est dirigée par les Ailes-Grises et joue un rôle important dans la préservation des traditions ancestrales du peuple du ciel.
+Les Voix de l'Aurore sont une institution dirigée par les Ailes-Grises, qui défendent la primauté des anciennes lois et des rituels sacrés. Ils jouent un rôle important dans la société du peuple du ciel, en particulier lorsqu'il s'agit de définir les normes et les traditions.
 
 ## Chronologie
 
-**Tour 7: Les Voix de l'Aurore sont mentionnées comme une des institutions émergentes qui défendent la primauté des anciennes lois et des rituels sacrés. Ils sont dirigés par les Ailes-Grises.**
+**Tour 7: Les Voix de l'Aurore sont créés, dirigés par les Ailes-Grises, qui défendent la primauté des anciennes lois et des rituels sacrés. Ils représentent une force conservatrice dans la société.**
 
-**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, ce qui suggère que leur rôle est de garantir la conformité aux anciennes lois et rituels.**
+**Tour 8: Les Voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs, ce qui montre leur volonté de maintenir le statu quo et leurs relations avec les autres institutions.**
 
-**Tour 14: La caste des Voix de l'Aurore souhaite interdire l'accès aux ruines à d'autres que les ciels clairs venus en pèlerinage, ce qui montre leur intérêt pour la préservation des traditions ancestrales.**
+**Tour 9: Tu utilises les Voix de l'Aurore pour guider les explorations des enfants du ciel, en utilisant ces voix comme guide spirituel.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 7**
 > "Voix de l'Aurore"
 >
-> Contexte : ciété, transformant la structure du conseil : Les Voix de l'Aurore : dirigés par les Ailes-Grises, ils défendent la...
+> Contexte : Les Voix de l'Aurore : dirigés par les Ailes-Grises, ils défendent la primauté des anciennes lois et des rituels sacrés...
 
 **Tour 8**
-> "voix de l'Aurore"
+> "Voix de l'Aurore"
 >
-> Contexte : ir sa juridiction sur les enfants du courant. Les voix de l'Aurore veulent valider chacune des décisions du Tribunal...
-
-**Tour 9**
-> "voix de l'Aurore"
->
-> Contexte : rise des tiens sur leurs environs. Tu utilise les voix de l'Aurore pour guider leur explorations :
-**Une nouvelle f...
+> Contexte : Voix de l'Aurore...
 
 **Tour 9**
 > "Voix de l'Aurore"
 >
-> Contexte : iendront des extensions naturelles du domaine des Voix de l'Aurore, qui y trouveront de nouveaux lieux pour partager...
-
-**Tour 11**
-> "voix de l'Aurore"
->
-> Contexte : çoit en retour. La part du lion étant réservé aux voix de l'Aurore, qui la dédie aux ancêtres,
-le partage : les pass...
+> Contexte : partagent leur sagesse et leurs rites...
 
 ??? note "Sources -- Passages originaux"
 
@@ -88,22 +74,3 @@ le partage : les pass...
     **Tour 9**
 
     > ...rchent-ils de nouvelles manières d'exister, de restaurer l'harmonie dans leur vie et dans la société. Un artisan cherche une nouvelle matière à travailler que nul autre ne proposera. Un pécheur cherche dans d'autres rivières des poissons qu'on ne trouve pas à la confluence. Guidé par les yeux acérés des Regards-libres, ils étendent sans cesse l'emprise des tiens sur leurs environs. Tu utilise les voix de l'Aurore pour guider leur explorations :
-
-    **Tour 11**
-
-    > ...argile vive. Ces échanges sont basés sur …
-    Vous avez dit commerce ?
-    le troc : ils négocient avec les passe-biens pour obtenir la plus grande quantités de biens en échanges de ceux qu'ils ont à offrir,
-    l'offrande : les passes-bien sont un relais, la totalité des biens qu'ils échangent sont le fruit de dons. Plus la caste est prestigieuse, plus on reçoit en retour. La part du lion étant réservé aux voix de l'Aurore, qui la dédie aux ancêtres,
-    le partage : les passes-bien reçoivent ce que les gens ont en trop et se dédient à leur fournir ce dont ils manquent. C'est leur devoir et leur privilège que de faire l'arbitrage des besoins dans cette société qui manque encore de tout,
-    Autres [ libre ],
-
-    **Tour 14**
-
-    > ...plus important que ce les tiens ne soient capable de retirer. Un échec mordant pour les tiens qui cherchaient à satisfaire tes exigences. Et aussi pour toi, car tes ordres ont directement causé la perte de ceux qui te faisaient confiance. Tu décides …
-    une cité dans la cité
-    D'interdire l'accès aux ruines à d'autres que les ciels clairs venus en pèlerinage. Le monopole de son accès est réservé à la voix de l'Aurore
-    D'ordonner que les parties accessibles soient malgré tout réaménagée et intégré à Gouffre humide
-    Que les ruines deviennent un test aux plus courageux et aux plus inventifs. Un endroit où l'on s'enfonce pour devenir un héros, ou mourir en essayant
-    Autres [ libre ]
-    Tu n'entends après cette décision guère plus parler de gouffre humide en plusieurs générations. C'est le temps qu'il faut au tient pour...
