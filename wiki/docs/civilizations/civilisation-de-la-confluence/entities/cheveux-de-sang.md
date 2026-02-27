@@ -1,21 +1,21 @@
 # Cheveux de Sang
 
-*Civilisations* -- Civilisation de la Confluence
+*Creatures* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
 | **Mentions totales** | 3 |
-| **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
+| **Tours actifs** | 8-14 (7 tours) |
+| **Pic d'activite** | Tour 8 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour 13  ████████████████████
+Tour  8  ████████████████████  ← Pic
+Tour 12  ████████████████████
 Tour 14  ████████████████████
 ```
 
@@ -23,44 +23,49 @@ Tour 14  ████████████████████
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Caste de l'Air** (Castes) — 3 tours
-- 🔵 **Faucons Chasseurs** (Castes) — 3 tours
-- 🔵 **Confluents** (Civilisations) — 3 tours
-- 🔵 **Nanzagouets** (Civilisations) — 3 tours
-- 🔵 **Argile Vivante** (Technologies) — 2 tours
+- 🔵 **Faucons Chasseurs** (Creatures) — 3 tours
+- 🔵 **Cercle des Sages** (Civilisations) — 3 tours
+- 🔵 **Gouffre Humide** (Lieux) — 3 tours
+- 🔵 **Argile Vivante** (Ressources) — 2 tours
 
 ## Description
 
-La civilisation des Cheveux de Sang est une entité étrangère qui possède des cheveux rouges comme un soleil couchant. Elle n'est pas associée aux ancêtres, ni à la langue, ni aux intentions du peuple en question. Ils sont considérés comme l'Autre, ce que l'on ne comprend pas.
+Les Cheveux de Sang sont une créature décrite comme ayant des cheveux rouges comme un soleil qui se couche. Ils semblent être un peuple ou une entité étrangère, inconnue des Gardiens de la Confluence et des autres habitants du monde.
 
 ## Chronologie
 
-**Tour 14: Les Premiers Ancêtres ont laissé un avertissement dans la pierre, soulignant les dangers de l'ignorance face à l'inconnu. Cet avertissement est mentionné en lien avec l'apparition des Cheveux de Sang.**
+**Tour 8: Aucune mention spécifique des Cheveux de Sang**
+
+**Tour 12: Aucune mention spécifique des Cheveux de Sang**
+
+**Tour 14: Les Cheveux de Sang sont décrits comme un peuple étranger aux intentions mystérieuses. Les Premiers Ancêtres ont laissé un avertissement gravé dans la pierre pour les prévenir d'ignorer l'inconnu.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 1**
+**Tour 8**
 > "Cheveux de Sang"
 >
-> Contexte : peuple entier...
+> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
-**Tour 13**
+**Tour 12**
 > "Cheveux de Sang"
 >
-> Contexte : Cheveux de Sang...
+> Contexte : un cadavre de ciel-clair...
 
 **Tour 14**
 > "Cheveux de Sang"
 >
-> Contexte : un autre peuple...
+> Contexte : peuple qui a construit la bateau...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 1**
+    **Tour 8**
 
-    > ...peuple entier...
+    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
-    **Tour 13**
+    **Tour 12**
+
+    > ...un cadavre de ciel-clair...
 
     **Tour 14**
 

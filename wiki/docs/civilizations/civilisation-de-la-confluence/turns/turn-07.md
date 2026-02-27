@@ -2,14 +2,14 @@
 
 📅 **09/11/2024** | 📊 **7 segments** | 🎯 **4 nouvelles entités**
 
-> La présence des Regards-Libres a inspiré les artisans à couvrir leurs productions avec leur représentation, ce qui est devenu une vision courante autour du village. Les habitants trouvent dans l'animal des qualités qu'ils cherchent à émuler, telles que la patience et la curiosité. Les Ailes-Grises, qui sont des dresseurs de Regards-Libres, ont également pris un rôle de plus en plus important dans le fonctionnement de la société. Ils guident les groupes de chasseurs et de pêcheurs vers leurs proies, ainsi que les cueilleurs vers des buissons de baies insoupçonnés. Avec le temps, ils sont devenus des membres importants de la tribu.
+> Le village de la Confluence est transformé par l'arrivée des Regards-Libres, qui inspirent les artisans à créer des œuvres reflétant leur personnalité. Les villageois trouvent en eux des qualités qu'ils cherchent à adopter, telles que la patience et la curiosité. Parallèlement, les Ailes-Grises se développent en tant que guideurs de chasse, de pêche et d'exploration, mais également dans le domaine spirituel, aidant les âmes des mourants à rejoindre l'au-delà.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Enfants du Courant`, `Ailes-Grises`, `Gardiens de la Confluence`, `Voix de l'Aurore`
-- **Mentions totales** : 7
-- **Technologies** : 2
-- **Ressources** : 1
+- **Entités découvertes** : `Ailes-Grises`, `Enfants du Courant`, `Gardiens de la Confluence`, `Voix de l'Aurore`
+- **Mentions totales** : 6
+- **Technologies** : 1
+- **Ressources** : 0
 - **Densité narrative** : 4 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -43,37 +43,28 @@ Les rhombes en pierre deviennent les instruments sacrés. Les artisans découvre
 
 ## 🔍 Découvertes
 
-### 🗺️ Géographie
-
-- vallée
-
 ### 🔧 Technologies
 
 - rhombes en pierre
-- Argile Vivante
-
-### 🌾 Ressources
-
-- baies
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- primauté des anciennes lois et des rituels sacrés
+- anciennes lois
+- rituels sacrés
 
 ## 🏷️ Entités mentionnées
 
-**Enfants du Courant** (Institutions) — 2 mentions ⭐ *Première apparition*
-
 **Ailes-Grises** (Castes) — 1 mentions ⭐ *Première apparition*
 
+**Cercle des Sages** (Civilisations) — 1 mentions
+
+**Enfants du Courant** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Gardiens de la Confluence** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
+**Voix de l'Aurore** (Civilisations) — 1 mentions ⭐ *Première apparition*
+
 **Regards-Libres** (Creatures) — 1 mentions
-
-**Cercle des Sages** (Institutions) — 1 mentions
-
-**Gardiens de la Confluence** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Voix de l'Aurore** (Institutions) — 1 mentions ⭐ *Première apparition*
 
 ---
 

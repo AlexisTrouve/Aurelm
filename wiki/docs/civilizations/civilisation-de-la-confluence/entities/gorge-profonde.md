@@ -17,14 +17,6 @@
 Tour 10  ████████████████████  ← Pic
 ```
 
-## Description
-
-La Gorge Profonde est une colonie située dans les entrailles de la terre, constituée de grottes et de passages escarpés. Il s'agit d'un véritable labyrinthe de conduits connectés entre eux et de grottes profondes. La colonie a été créée par des individus qui cherchaient à échapper à l'animation de la basse vallée.
-
-## Chronologie
-
-**Tour 10: Le labyrinthe de conduits et de grottes profondes constitue un véritable défi pour les personnages.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 10**

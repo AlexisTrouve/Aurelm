@@ -1,6 +1,6 @@
 # Premiers Ancêtres
 
-*Technologies* -- Civilisation de la Confluence
+*Evenements* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -17,20 +17,12 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-Les premiers ancêtres sont une technologie utilisée pour interpréter les fresques qui ornent les grands halls décorés. Ces fresques sont considérées comme des preuves de l'existence d'un destin promis au peuple, et la compréhension de ces images est cruciale pour le peuple en ce tour. Les savants partagent leurs interprétations avec leur successeur, ajoutant ainsi à la connaissance collective.
-
-## Chronologie
-
-**Tour 14: Les savants se plongent dans l'étude des fresques des premiers ancêtres, mais risquent d'étouffer si elles restent trop longtemps en profondeur. L'interprétation de ces images est un travail partagé entre les générations.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Premiers Ancêtres"
 >
-> Contexte : 'agit de bêtes mythiques qui marchaient parmi les Premiers Ancêtres, d'autres qu'ils doivent exister de par le monde....
+> Contexte : Premiers Ancêtres...
 
 ??? note "Sources -- Passages originaux"
 

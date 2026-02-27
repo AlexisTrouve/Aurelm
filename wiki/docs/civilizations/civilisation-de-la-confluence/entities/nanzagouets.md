@@ -6,48 +6,26 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 3 |
-| **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 14-14 (1 tours) |
+| **Pic d'activite** | Tour 14 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour 13  ████████████████████
-Tour 14  ████████████████████
+Tour 14  ████████████████████  ← Pic
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **Caste de l'Air** (Castes) — 3 tours
-- 🔵 **Faucons Chasseurs** (Castes) — 3 tours
-- 🔵 **Cheveux de Sang** (Civilisations) — 3 tours
-- 🔵 **Confluents** (Civilisations) — 3 tours
-- 🔵 **Argile Vivante** (Technologies) — 2 tours
 
 ## Description
 
-La civilisation des Nanzagouets est située sur une péninsule qui subit les influences des vents et des tempêtes. Leur territoire est principalement composé de rochers avec peu de végétation, excepté certaines fleurs résistant à la sécheresse. Ils ont domestiqué un petit animal appelé Nanton pour sa viande et ses peaux épaisse, mais leur cœur se trouve dans la mer.
+Les Nanzagouets sont une civilisation qui vit sur une péninsule battue par les vents et les tempêtes. Ils ont domestiqué le Nanton, un petit animal vivant en troupeau, pour sa viande et sa peau épaisse. Leur cœur se trouve dans la mer malgré leurs côtes rocailleuses et traîtresses.
 
 ## Chronologie
 
-**Tour 14: On découvre que les Nanzagouets vivent sur une péninsule rocailleuse où ils ont domestiqué un animal appelé Nanton. Leur territoire est difficile d'accès, mais c'est leur lien avec la mer qui semble être important pour eux.**
+**Tour 14: Les Nantons sont domestiqués pour leur viande et leur peau épaisse, mais c'est la mer qui est le cœur des Nanzagouets malgré leurs côtes difficiles.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 1**
-> "Nanzagouets"
->
-> Contexte : peuple entier...
-
-**Tour 13**
-> "Nanzagouets"
->
-> Contexte : Nanzagouets...
 
 **Tour 14**
 > "Nanzagouets"
@@ -55,12 +33,6 @@ La civilisation des Nanzagouets est située sur une péninsule qui subit les inf
 > Contexte : peuple marin...
 
 ??? note "Sources -- Passages originaux"
-
-    **Tour 1**
-
-    > ...peuple entier...
-
-    **Tour 13**
 
     **Tour 14**
 

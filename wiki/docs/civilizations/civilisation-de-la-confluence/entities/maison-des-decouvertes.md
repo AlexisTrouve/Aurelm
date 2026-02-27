@@ -19,18 +19,18 @@ Tour 11  ████████████████████  ← Pic
 
 ## Description
 
-La Maison des Découvertes est une institution qui servira de demeure terrestre à l'arbre de toutes les possibilités. Elle sera construite près de la confluence, là où l'eau chante, et sera constituée d'un grand cercle de pierre, d'argile et de bois, miroir de la voûte céleste. Cette institution symbolise la diversité et la force éternelle de l'arbre.
+La Maison des Découvertes est une institution qui représente l'arbre de toutes les possibilités, symbole de la diversité et de la force éternelle. Elle est associée à la confluence, où l'eau chante. Sa demeure terrestre est un grand cercle de pierre, d'argile et de bois.
 
 ## Chronologie
 
-**Tour 11: Le narrateur décrit le grand cercle de pierre, d'argile et de bois qui sera construit pour abriter l'arbre, un miroir de la voûte céleste.**
+**Tour 11: Dans les visions du narrateur, il a vu l'arbre de toutes les possibilités, dont la Maison des Découvertes est la demeure terrestre. La maison sera bâtie près de la confluence.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 11**
 > "Maison des Découvertes"
 >
-> Contexte : La demeure terrestre près de la confluence, là où l'eau chante...
+> Contexte : la maison où les artisans travaillent...
 
 ??? note "Sources -- Passages originaux"
 

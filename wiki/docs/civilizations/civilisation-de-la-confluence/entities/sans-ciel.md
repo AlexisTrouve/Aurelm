@@ -1,4 +1,4 @@
-# Sans-Ciel
+# Sans-ciel
 
 *Castes* -- Civilisation de la Confluence
 
@@ -6,8 +6,8 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 2 |
-| **Tours actifs** | 5-6 (2 tours) |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 5-5 (1 tours) |
 | **Pic d'activite** | Tour 5 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
@@ -15,43 +15,27 @@
 
 ```
 Tour  5  ████████████████████  ← Pic
-Tour  6  ████████████████████
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **Confluents** (Civilisations) — 2 tours
 
 ## Description
 
-Les sans-ciel sont une caste qui est progressivement exclusse de la tribu, ils sont responsables de l'agriculture et échangent avec les villageois des cieux pour obtenir outils, viandes et plantes.
+Les sans-ciel sont une caste qui est progressivement exclue de la tribu. Ils n'ont pas les mêmes droits et privilèges que les autres membres de la société. Cette exclusion se fait au fil du temps, avec une concurrence féroce pour s'accaparer les femmes.
 
 ## Chronologie
 
-**Tour 5: La concurrence entre les hommes pour s'accaparer les femmes devient féroce, les sans-ciel étant exclus du processus. Les hommes ont jusqu'à trois femmes sous leur tente.**
+**Tour 1: La parole des ancêtres est transmise aux hommes, et ils doivent faire fructifier la terre pour laquelle les ancêtres se sont sacrifiés. La concurrence entre les hommes devient féroce pour s'accaparer les femmes, et les sans-ciel sont déjà exclus de la tribu.**
 
-**Tour 6: Les sans-ciel cultivent la rivière et échangent avec ceux des cieux qui leur fournissent outils mais aussi viandes et plantes.**
+**Tour 5: La concurrence entre les hommes pour s'accaparer les femmes devient féroce, et les sans-ciel sont progressivement exclus de la tribu. Un homme peut avoir jusqu'à trois femmes sous sa tente, qui deviennent ainsi sa propriété. Les sans-ciel ne disposent pas de défenses face à cette exclusion.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 5**
-> "Sans-Ciel"
+> "Sans-ciel"
 >
-> Contexte : les sans-ciel étant exclus au fil du temps...
-
-**Tour 6**
-> "Sans-ciels"
->
-> Contexte : Sans-ciels...
+> Contexte : ils sont exclus au fil du temps...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 5**
 
     > ...tôt transmet ta parole. Ou plutôt, celle des ancêtres. La tribu doit croître au sein de cette terre pour laquelle ils se sont sacrifiés. Ils doivent faire fructifier cet eden. C'est le devoir sacré qui leur a été donné en même temps que la vie. Et de ce devoir sacré, il s'en empare, à chaque génération un peu plus. La concurrence se faisant féroce entre les hommes pour s'accaparer les femmes. Les sans-ciel étant exclus au fil du temps. Un jour, il n'est plus rare de voir un homme avoir 3 femmes sous sa tente. Puisqu'une fois conquise, la femme ne peut pas changer de partenaire du fait de la sacralité des liens familiaux. D'une certaine manière, elles deviennent propriété de leur mari. Mais elles ne sont pas non plus sans défense. Un mari qui ne subvient pas à leur besoin - matériel comme sentimenta...
-
-    **Tour 6**
-
-    > Il demeure tout du long de la Vallée des camps temporaires, tantôt pour la chasse, tantôt pour la cueillette, tantôt pour la pêche, mais tous finissent par revenir au village. Ou plutôt les villages. L'un, à la confluence, l'autre, plus bas, sur des pilotis. Les deux se voulant complémentaires sans se mélanger. Les sans-ciels, cultivant la rivière et échangeant avec ceux des cieux qui leur fournissent outils mais aussi viandes et plantes. Anonyme, tu avance parmi les constructions rudimentaires mais permanentes. Personne ici ne te reconnaît. Rare sont ceux à avoir vu l'Oracle de leur vie, encore moins, son visage. Tu arrives au bord de l'eau et vois un groupe de villageois en train de faire cuire des poissons. Près d'...

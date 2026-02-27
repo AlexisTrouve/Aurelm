@@ -6,10 +6,10 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 3 |
+| **Mentions totales** | 1 |
 | **Tours actifs** | 14-14 (1 tours) |
-| **Pic d'activite** | Tour 14 (3 mentions) |
-| **Moyenne** | 3.0 mentions/tour |
+| **Pic d'activite** | Tour 14 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
@@ -17,38 +17,15 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-Les Autels des Pionniers sont une institution qui consiste en de petits sanctuaires érigés à l'entrée de différents lieux, tels que le Gouffre Humide. Ils servent de stèles pour les explorateurs, chasseurs et artisans morts dans leur quête de connaissance. Les voyageurs peuvent y déposer des offrandes et recevoir la protection des pionniers qui sont partis avant eux.
-
-## Chronologie
-
-**Tour 14: De petits sanctuaires sont érigés le long des routes et des rivières, permettant aux voyageurs de déposer des offrandes et de recevoir la protection des pionniers.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Autels des Pionniers"
 >
-> Contexte : us ferons de même.
-Autels des Pionniers
-Choix : Autels des Pionniers (Option libre)
-Ceux qui sont tombés dans les pro...
-
-**Tour 14**
-> "Autel des Pionniers"
->
-> Contexte : ntrée de Gouffre Humide, nous érigeons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont g...
-
-**Tour 14**
-> "Autel des Pionniers"
->
-> Contexte : murerie, les réserves, la Salle du Conseil, et un Autel des Pionniers. À son sommet, une tour de guet sur pilotis où ve...
+> Contexte : Autels des Pionniers...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 14**
 
     > Autels des Pionniers
-
-    > À l'entrée de Gouffre Humide, nous érigeons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont gravés à jamais. Mais que ce ne soit pas le seul. Que chaque lieu où un explorateur, un chasseur, un artisan est tombé dans sa quête de connaissance reçoive son propre autel. De petits sanctuaires le long des routes et des rivières, où les voyageurs déposeront une offrande et recevront la protection de ceux qui sont partis avant eux.

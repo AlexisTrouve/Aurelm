@@ -1,4 +1,4 @@
-# hameçons et casiers à poisson
+# Hameçons et casiers à poisson
 
 *Technologie* -- Civilisation de la Confluence
 
@@ -6,20 +6,18 @@
 |---|---|
 | **Acquisition** | Tour 6 |
 | **Categorie** | Outils de peche |
+| **Fiche narrative** | [Voir la page entite](../../entities/hamecons-et-casiers-a-poisson.md) |
 
 ## Acquis en meme temps (Tour 6)
 
-- [outils de polissage](outils-de-polissage.md)
+- [Larmes du Ciel](larmes-du-ciel.md)
+- [Lances](lances.md)
 
 ## Arbre chronologique
 
 **Tour 5** (precedent) : [Pointes de flèches](pointes-de-fleches.md)
-**Tour 6** (actuel) : **hameçons et casiers à poisson**
-**Tour 7** (suivant) : [rhombes en pierre](rhombes-en-pierre.md)
-
-## Meme categorie : Outils de peche
-
-- [outils pour évider les poissons de la Confluence](outils-pour-evider-les-poissons-de-la-confluence.md) (Tour 12)
+**Tour 6** (actuel) : **Hameçons et casiers à poisson**
+**Tour 7** (suivant) : [Rhombes](rhombes.md)
 
 ## Extrait narratif
 

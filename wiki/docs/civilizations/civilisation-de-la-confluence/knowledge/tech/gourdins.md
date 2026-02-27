@@ -15,7 +15,7 @@
 
 **Tour 1** (precedent) : [Argile Vivante](argile-vivante.md)
 **Tour 2** (actuel) : **gourdins**
-**Tour 4** (suivant) : [La Voix des Cieux](la-voix-des-cieux.md)
+**Tour 4** (suivant) : [la voix des cieux](la-voix-des-cieux.md)
 
 ## Meme categorie : Outils de chasse
 

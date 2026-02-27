@@ -1,4 +1,4 @@
-# Lait de pierre
+# Lait de Pierre
 
 *Technologies* -- Civilisation de la Confluence
 
@@ -25,34 +25,23 @@ Tour 12  ████████████████████
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **[Enfants des échos](enfants-des-echos.md)** (Castes) — 2 tours
-- 🔵 **[Passes-bien](passes-bien.md)** (Castes) — 2 tours
-- 🔵 **[Ailes-Grises](ailes-grises.md)** (Castes) — 2 tours
-- 🔵 **[Rhombes](rhombes.md)** (Technologies) — 2 tours
-- 🔵 **[La confluence](la-confluence.md)** (Lieux) — 2 tours
-
-## Description
-
-Le lait de pierre est une substance laiteuse qui s'écoule des murs de certaines cavernes, utilisée pour ses propriétés médicinales. Il s'agit d'une technologie naturelle présente dans l'environnement souterrain.
-
-## Chronologie
-
-**Tour 10: Le lait de pierre est mentionné comme une substance utilisée pour ses propriétés médicinales, qui peut être trouvée dans certaines cavernes. Les personnages sont attirés par ce lieu car ils ont entendu parler de quelque chose qu'on ne trouve qu'ici.**
-
-**Tour 12: Les Enfants des Échos cherchent à explorer les galeries les plus reculées pour trouver le lait de pierre, qui est censé avoir des vertus curatives. Les légendes parlent du lait de pierre comme d'une substance mystérieuse avec des propriétés inconnues.**
+- 🔵 **Rhombes** (Technologies) — 2 tours
+- 🔵 **Confluence** (Lieux) — 2 tours
+- 🔵 **Ailes-Grises** (Personnages) — 2 tours
+- 🔵 **Passes-bien** (Castes) — 2 tours
+- 🔵 **Enfants des Échos** (Castes) — 2 tours
 
 ## 💬 Mentions avec contexte
 
 **Tour 10**
-> "lait de pierre"
+> "Lait de Pierre"
 >
-> Contexte : l'air, parfait pour les façonneurs de pierre.,
-le lait de pierre, une substance laiteux suintant des murs de certa...
+> Contexte : Lait de Pierre...
 
 **Tour 12**
-> "lait de pierre"
+> "Lait de Pierre"
 >
-> Contexte : e détermination nouvelle. Les légendes parlent du lait de pierre aux vertus curatives, mais d'autres murmures évoq...
+> Contexte : Lait de Pierre...
 
 ??? note "Sources -- Passages originaux"
 

@@ -19,23 +19,21 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-La croyance en la réincarnation est une conviction spirituelle selon laquelle les êtres humains sont destinés à vivre plusieurs vies, et que l'âme continue d'exister après la mort du corps physique. Cette croyance joue un rôle central dans de nombreuses cultures religieuses, offrant ainsi un sens au cycle de la vie et de la mort. Elle est souvent associée à l'idée selon laquelle les expériences et les actes commis pendant une vie influencent le destin futur.
+La Croyance en la Reincarnation est une croyance selon laquelle les âmes sont réincarnées dans un autre monde après la mort. Cette croyance joue un rôle important dans la compréhension de l'existence et de la destinée des individus. Elle est souvent liée à d'autres croyances religieuses ou spirituelles.
 
 ## Chronologie
 
-**Tour 1: La croyance en la réincarnation commence à être discutée dans les cercles religieux, avec des théologiens s'intéressant au sujet.**
-
-**Tour 5: Une grande fête a lieu pour commémorer la croyance en la réincarnation, symbolisant l'union avec l'âme et son passage à une nouvelle vie.**
+**Tour 14: La Croyance en la Reincarnation est mentionnée comme un aspect clé de la compréhension du monde dans lequel les personnages vivent. Cette croyance est liée à l'idée que les âmes sont réincarnées après la mort, influençant ainsi les décisions et actions des individus.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Croyance en la Reincarnation"
 >
-> Contexte : la croyance en la reincarnation...
+> Contexte : la croyance que les âmes sont réincarnées dans un autre monde...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 14**
 
-    > ...la croyance en la reincarnation...
+    > ...la croyance que les âmes sont réincarnées dans un autre monde...

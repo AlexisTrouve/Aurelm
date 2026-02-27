@@ -16,13 +16,16 @@
 ## Meme categorie : Autre
 
 - [Argile Vivante](argile-vivante.md) (Tour 1)
-- [La Voix des Cieux](la-voix-des-cieux.md) (Tour 4)
-- [Pointes de flèches](pointes-de-fleches.md) (Tour 5)
-- [outils de polissage](outils-de-polissage.md) (Tour 6)
+- [la voix des cieux](la-voix-des-cieux.md) (Tour 4)
+- [outils et techniques de chasse émergent](outils-et-techniques-de-chasse-emergent.md) (Tour 5)
+- [savoir des cycles de reproduction se transmet](savoir-des-cycles-de-reproduction-se-transmet.md) (Tour 5)
+- [nouvelles armes plus perfectionnées](nouvelles-armes-plus-perfectionnees.md) (Tour 5)
+- [outils](outils.md) (Tour 6)
+- [techniques de polissage](techniques-de-polissage.md) (Tour 6)
 - [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)
 - [rhombes](rhombes.md) (Tour 8)
 - [Lait de Pierre](lait-de-pierre.md) (Tour 10)
-- [Roches Braise](roches-braise.md) (Tour 10)
+- [Roche Braise](roche-braise.md) (Tour 10)
 - [Regard-Libre](regard-libre.md) (Tour 11)
 
 ## Extrait narratif

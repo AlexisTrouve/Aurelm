@@ -1,7 +1,8 @@
-"""Entity noise filtering — rejects false-positive entity names.
+"""Entity noise filtering — rejects structurally broken extractions.
 
-Catches: soundtrack metadata, choice labels, narrative fragments,
-generic French words, markdown artifacts, truncated extractions.
+Catches only STRUCTURAL noise: URLs, markdown artifacts, multiline strings,
+truncated extractions, pure numbers. NO word lists — the LLM prompt handles
+content-level filtering.
 """
 
 from __future__ import annotations
@@ -26,62 +27,6 @@ VALID_ENTITY_TYPES = {
 }
 
 
-# ============================================================
-# NOISE FILTERING
-# ============================================================
-
-# Known noise entity names from spaCy general model
-# Stored WITHOUT accents — comparison uses _strip_accents() for robustness
-_NOISE_NAMES = {
-    # Soundtrack / YouTube metadata (platform-level noise)
-    "youtube",
-    # Generic French words — too short or ambiguous to be proper names
-    "blanc", "hier", "rare", "but", "si", "message",
-    "autre", "autres", "mienne", "toutes",
-    "hall", "halls", "cercle", "cercles", "antre", "antres",
-    "biens", "formes", "couche",
-    "methode", "organisation", "amelioration", "conseil", "acquisitions",
-    "observer", "transporter", "posseder", "ramassez",
-    "village", "vallee", "oracle", "tribunal",
-    "premier", "premiers", "esprits", "lances", "sculptures",
-    "feux", "foyer", "sel", "echanges",
-    "l'autre", "le sel", "l'antre",
-    # Generic French fragments (article + noun, truncated phrases)
-    "chef du", "gardiens de",
-    # Generic people/roles (not proper names in any game)
-    "homme", "femme", "mari", "enfant", "enfants", "jeune", "jeunes",
-    "ancien", "anciens", "individu", "individus", "defunt", "defunte",
-    "chasseur", "chasseurs", "pecheur", "pecheurs", "artisan", "artisans",
-    "guerrier", "guerriers", "guerriere", "guerrieres",
-    "chef", "chefs", "ancetre", "ancetres", "aine", "aines",
-    "mere", "pere", "frere", "soeur", "fils", "fille",
-    "l'homme", "la femme", "le mari", "la tribu", "le clan",
-    "les anciens", "les ancetres", "les jeunes", "les individus",
-    "les chasseurs", "les pecheurs", "les artisans",
-    "le defunt", "la defunte",
-    # Generic nature/world words (exist in any French text)
-    "ciel", "terre", "soleil", "lune", "etoile", "etoiles",
-    "riviere", "montagne", "foret", "mer", "ocean", "lac",
-    "oiseau", "oiseaux", "animal", "animaux", "poisson", "poissons",
-    "arbre", "arbres", "plante", "plantes", "pierre", "pierres",
-    "le ciel", "la terre", "le soleil", "la lune",
-    "les oiseaux", "les animaux",
-    # Generic social/abstract concepts
-    "tribu", "clan", "peuple", "civilisation", "societe", "communaute",
-    "rite", "rites", "tradition", "traditions", "coutume", "coutumes",
-    "saison", "saisons", "guerre", "paix", "mort", "vie",
-    "les saisons", "les rites",
-}
-
-# Substrings in entity names that signal noise
-_NOISE_SUBSTRINGS = {
-    "Choix", "Option", "option libre",
-    "Pillar", "Soundtrack", "DETECTIVE", "Topic",
-    "Tu es ", "Tu t'", "Et maintenant", "Puis tu",
-    "Everybody wants", "The end of", "The Adventure",
-    "L'air est froid", "Tu t'entoures", "Tu t'avance",
-}
-
 # Regex for structural noise patterns
 _NOISE_PATTERN = re.compile(
     r"^("
@@ -99,25 +44,8 @@ _NOISE_PATTERN = re.compile(
 # Truncated entities ending with a preposition
 _RE_TRAILING_PREP = re.compile(r"\b(de|du|des|de la|de l')\s*$", re.IGNORECASE)
 
-# Sentence-like fragments containing conjugated verbs
-_RE_VERB_FRAGMENT = re.compile(r"\b(est|sont|fut|sera|etait|était)\b", re.IGNORECASE)
-
-# Starts with determinants that signal NER noise (not proper names)
-_RE_DET_START = re.compile(r"^(Que|Ces|Cet|Cette|Un |Une |Des )\s?")
-
 # Starts with common article then nothing useful
 _RE_ARTICLE_ONLY = re.compile(r"^(Le|La|Les|Un|Une|Des|Du|De)\s*$", re.IGNORECASE)
-
-# "article + single word" = almost always generic (e.g. "le ciel", "la tribu")
-# Real game entities are multi-word proper names (e.g. "Cercle des Sages")
-_RE_ARTICLE_PLUS_ONE = re.compile(
-    r"^(le|la|les|l'|un|une|des|du)\s+\w+$", re.IGNORECASE
-)
-
-# Game mechanic artifacts: "équipe(s) N", "groupe N"
-_RE_GAME_MECHANIC = re.compile(
-    r"^(l')?(equipe|groupe|option|choix)\s*\d*$", re.IGNORECASE
-)
 
 
 def _strip_accents(text: str) -> str:
@@ -130,16 +58,13 @@ def _strip_accents(text: str) -> str:
 
 
 def is_noise_entity(name: str) -> bool:
-    """Check if an entity name is noise rather than a real game entity.
+    """Check if an entity name is structurally broken.
 
-    Catches: soundtrack metadata, choice labels, narrative fragments,
-    generic French words, markdown artifacts, truncated extractions.
+    Only rejects structural problems: URLs, markdown, multiline,
+    truncated strings, pure numbers. Content-level filtering is
+    the LLM prompt's job.
     """
-    # Accent-insensitive match on known noise names (all stored lowercase)
-    if _strip_accents(name).lower() in _NOISE_NAMES:
-        return True
-
-    # Structural patterns
+    # Structural patterns (URLs, markdown, too short, numbers)
     if _NOISE_PATTERN.match(name):
         return True
 
@@ -151,11 +76,7 @@ def is_noise_entity(name: str) -> bool:
     if "\n" in name:
         return True
 
-    # Noise substrings
-    if any(noise in name for noise in _NOISE_SUBSTRINGS):
-        return True
-
-    # Too long = almost certainly noise (real entity names are short)
+    # Too long = almost certainly noise
     if len(name) > 50:
         return True
 
@@ -171,68 +92,24 @@ def is_noise_entity(name: str) -> bool:
     if not any(c.isalpha() for c in name):
         return True
 
-    # Article-only strings
+    # Article-only strings ("Le", "La", "Des")
     if _RE_ARTICLE_ONLY.match(name):
         return True
 
-    # "article + single lowercase word" (e.g. "le ciel", "la tribu") -- too generic
-    # But allow "la Confluence", "le Confluent" (article + capitalized word = proper noun)
-    name_no_accents = _strip_accents(name).lower()
-    if _RE_ARTICLE_PLUS_ONE.match(name_no_accents):
-        # Check original name: if word after article is capitalized, it's likely a proper noun
-        parts = name.split(None, 1)
-        if len(parts) == 2 and not parts[1][0].isupper():
-            return True
-
-    # Game mechanic artifacts (e.g. "équipe 1", "groupe 3")
-    if _RE_GAME_MECHANIC.match(name_no_accents):
-        return True
-
-    # Truncated entities ending with preposition
+    # Truncated entities ending with preposition ("Cercle des", "Maison de")
     if _RE_TRAILING_PREP.search(name):
-        return True
-
-    # Sentence fragments with conjugated verbs
-    if _RE_VERB_FRAGMENT.search(name):
-        return True
-
-    # Starts with noise determinants
-    if _RE_DET_START.match(name):
-        return True
-
-    # English text (indicates soundtrack/YouTube metadata)
-    english_words = {"the", "of", "and", "is", "in", "to", "for", "with", "wants", "write", "near", "begins"}
-    words_lower = {w.lower() for w in name.split()}
-    if len(words_lower & english_words) >= 2:
         return True
 
     # Contains colon = likely a label or truncated heading
     if ":" in name:
         return True
 
-    # Contains "cette/ce/cet" = sentence fragment, not proper name
-    if re.search(r"\b(cette|cet)\b", name, re.IGNORECASE):
+    # Too many words = sentence fragment, not an entity name
+    if len(name.split()) > 5:
         return True
 
-    # Descriptive phrases: past participle + preposition pattern
-    # e.g. "Feux allumes sur les tours", "Dents fichees dans la roche"
-    if re.search(r"\b\w+e[es]?\s+(sur|dans|sous|vers|entre|parmi|contre)\b", name_no_accents):
+    # Ends with sentence-ending punctuation = full sentence, not a name
+    if name.rstrip().endswith((".","!","?")):
         return True
-
-    # Possessive fragment: "X de leur/son/sa/ses Y" = sentence fragment, not entity name
-    if re.search(r"\b(de leur|de son|de sa|de ses|de notre|de votre)\b", name_no_accents):
-        return True
-
-    # Activity/gerund phrases: "l'etude de", "la pratique de", etc.
-    if re.search(r"^l'(etude|pratique|recherche|exploration|observation|utilisation)\b", name_no_accents):
-        return True
-
-    # Single common word (no article, no compound) -- too generic
-    if re.match(r"^\w+$", name_no_accents) and len(name_no_accents) <= 12:
-        # Single words under 12 chars are almost always generic French nouns
-        # Real game entities are multi-word or distinctive names (e.g. "Nanzagouets")
-        # Allow words with uppercase in the original (likely proper nouns)
-        if name[0].islower():
-            return True
 
     return False

@@ -1,6 +1,6 @@
 # Hall des Serments
 
-*Lieux* -- Civilisation de la Confluence
+*Institutions* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -17,20 +17,12 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-Le Hall des Serments est un lieu où les individus peuvent servir dans la fonction de serment, il s'agit d'un rôle important pour obtenir certains avantages ou privilèges. Cette entité semble jouer un rôle dans l'accès à la Confluence et les castes.
-
-## Chronologie
-
-**Tour 14: Le Hall des Serments ne joue pas un rôle actif dans les événements décrits, mais il est mentionné comme une opportunité de carrière ou d'avancement social.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Hall des Serments"
 >
-> Contexte : luence, s'élever dans sa caste, ou servir dans un Hall des Serments trouvera utile de maîtriser les Glyphes du Gouffr...
+> Contexte : Hall des Serments...
 
 ??? note "Sources -- Passages originaux"
 

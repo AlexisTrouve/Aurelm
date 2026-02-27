@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from .chunker import TurnChunk
 from .classifier import ClassifiedSegment
-from .ner import ExtractedEntity
+from .entity_filter import ExtractedEntity
 from .summarizer import TurnSummary
 
 

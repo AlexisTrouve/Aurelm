@@ -17,22 +17,12 @@
 Tour 12  ████████████████████  ← Pic
 ```
 
-## Description
-
-La maladie des Antres est une condition médicale qui affecte les habitants d'antres souterrains lorsqu'ils sont privés de contact avec l'énergie provenant des fleuves. Cette maladie se manifeste par des difficultés respiratoires, des infections pulmonaires, des douleurs musculaires et osseuses, notamment chez les femmes enceintes.
-
-## Chronologie
-
-**Tour 5: Pas de résumé disponible**
-
-**Tour 12: La maladie des Antres commence à apparaître dans les antres après quelques semaines sans poisson de la confluence. Les habitants commencent à développer des difficultés respiratoires et des infections pulmonaires. La douleur musculaire, le spasme et la fatigue sont également signalés, ainsi que des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 12**
-> "maladie des Antres"
+> "Maladie des Antres"
 >
-> Contexte : itants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pul...
+> Contexte : Maladie des Antres...
 
 ??? note "Sources -- Passages originaux"
 

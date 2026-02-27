@@ -2,14 +2,14 @@
 
 📅 **22/05/2025** | 📊 **8 segments** | 🎯 **5 nouvelles entités**
 
-> La saison des pluies arrive dans la vallée de la Confluence, apportant un regain d'activité aux chantiers. Les enfants des échos travaillent ensemble à différents niveaux de profondeur pour creuser les Antres et améliorer leur mode de vie. Ils utilisent l'argile vive pour construire des structures qui résisteront aux générations, et cette ressource est essentielle à leur survie. Les passe-biens fournissent ces biens grâce au troc, offrande ou partage, selon la politique adoptée par chaque caste.
+> La civilisation de la Confluence continue à prospérer grâce aux travaux d'aménagement des nouvelles Antres. Les enfants des échos travaillent conjointement pour améliorer les antres, qui sont maintenant rigoureusement organisées. De plus, le peuple travailleur se remet en marche après l'hiver et les chantiers sont nombreux. Les réserves de biens sont importantes cette année, grâce à la politique de constructions de réserves. Le projet de construction d'un premier bâtiment est prévu pour cette année, avec un temple majestueux pour accumuler des artefacts et vénérer les ancêtres, une maison des castes où les différentes castes peuvent se rencontrer et décider ensemble de leur futur, et un hall des passages pour les passes-bien.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Proclamateurs`, `Maison des Découvertes`, `Arbitre des Esprits`, `Chef du Cercle des Sages`, `Chef du Tribunal des Mœurs`
-- **Mentions totales** : 13
+- **Entités découvertes** : `Loi du Sang et de la Bête`, `Assemblée des Chefs`, `Maison des Découvertes`, `Arbitre des Esprits`, `Premier Meurtrier`
+- **Mentions totales** : 7
 - **Technologies** : 2
-- **Ressources** : 0
+- **Ressources** : 2
 - **Densité narrative** : 6 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -58,42 +58,40 @@ Et moi, que deviens-je dans cette croissance ? Je ne suis plus l'Oracle lointain
 
 ### 🗺️ Géographie
 
-- Confluence des Échanges
-- Gouffre Humide
-- Foyer Eternel
+- La Confluence
+- Les Montagnes
 
 ### 🔧 Technologies
 
+- Regards-Libres
+- Arène
+
+### 🌾 Ressources
+
 - Argile Vivante
-- Regard-Libre
+- Pierres de la Rivière
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bête
+- Lois du Sang et de la Bête
+- Confluence des Échanges
+- Maison des Découvertes
 
 ## 🏷️ Entités mentionnées
 
-**Loi du Sang et de la Bete** (Belief) — 1 mentions
+**Loi du Sang et de la Bête** (Belief) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Proclamateurs** (Castes) — 1 mentions ⭐ *Première apparition*
-
-**Regards-Libres** (Creatures) — 1 mentions
-
-**Cercle des Sages** (Institutions) — 1 mentions
+**Assemblée des Chefs** (Institutions) — 1 mentions ⭐ *Première apparition*
 
 **Maison des Découvertes** (Institutions) — 1 mentions ⭐ *Première apparition*
 
-**Tribunal des Moeurs** (Institutions) — 1 mentions
+**Tribunal de moeurs** (Institutions) — 1 mentions
 
 **Arbitre des Esprits** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**Chef du Cercle des Sages** (Personnages) — 1 mentions ⭐ *Première apparition*
-
-**Chef du Tribunal des Mœurs** (Personnages) — 1 mentions ⭐ *Première apparition*
-
-**Argile Vivante** (Technologies) — 1 mentions
+**Premier Meurtrier** (Personnages) — 1 mentions ⭐ *Première apparition*
 
 ---
 

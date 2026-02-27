@@ -2,6 +2,9 @@
 
 *Technologies* -- Civilisation de la Confluence
 
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/grande-fresque.md).
+
 ## 📊 Vue d'ensemble
 
 | | |
@@ -17,20 +20,12 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-La Grande Fresque est un chef-d'œuvre de technologie qui dépassait les capacités techniques du peuple. Il s'agit d'une série d'images et de symboles qui inspirent durablement le peuple. La Grande Fresque se trouve dans Gouffre Humide.
-
-## Chronologie
-
-**Tour 14: Ceux qui veulent porter un regard libre méditent, observent et cherchent à comprendre les mystères que cachent la Grande Fresque. Les techniques utilisées dépassent tout ce dont est capable le peuple, mais l'inspire durablement.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Grande Fresque"
 >
-> Contexte : hie des tiens, l'influence et des références à la Grande Fresque de Gouffre Humide. Et les images sont nombreuses....
+> Contexte : Grande Fresque...
 
 ??? note "Sources -- Passages originaux"
 

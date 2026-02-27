@@ -6,24 +6,25 @@
 |---|---|
 | **Acquisition** | Tour 7 |
 | **Categorie** | Autre |
+| **Fiche narrative** | [Voir la page entite](../../entities/rhombes.md) |
 
 ## Arbre chronologique
 
-**Tour 6** (precedent) : [outils de polissage](outils-de-polissage.md), [hameçons et casiers à poisson](hamecons-et-casiers-a-poisson.md)
+**Tour 2** (precedent) : [inventions/savoir-faire adoptes](inventions-savoir-faire-adoptes.md)
 **Tour 7** (actuel) : **rhombes en pierre**
-**Tour 8** (suivant) : [rhombes](rhombes.md)
+**Tour 9** (suivant) : [artisanat](artisanat.md)
 
 ## Meme categorie : Autre
 
-- [Argile Vivante](argile-vivante.md) (Tour 1)
-- [La Voix des Cieux](la-voix-des-cieux.md) (Tour 4)
-- [Pointes de flèches](pointes-de-fleches.md) (Tour 5)
-- [outils de polissage](outils-de-polissage.md) (Tour 6)
-- [rhombes](rhombes.md) (Tour 8)
-- [Lait de Pierre](lait-de-pierre.md) (Tour 10)
-- [Roches Braise](roches-braise.md) (Tour 10)
-- [Regard-Libre](regard-libre.md) (Tour 11)
-- [Larmes du Ciel](larmes-du-ciel.md) (Tour 14)
+- [inventions/savoir-faire adoptes](inventions-savoir-faire-adoptes.md) (Tour 2)
+- [argile vive](argile-vive.md) (Tour 10)
+- [roche braise](roche-braise.md) (Tour 10)
+- [lait de pierre](lait-de-pierre.md) (Tour 10)
+- [Regards-Libres](regards-libres.md) (Tour 11)
+- [Arène](arene.md) (Tour 11)
+- [pigments](pigments.md) (Tour 13)
+- [artefacts translucides](artefacts-translucides.md) (Tour 13)
+- [techniques de creusage](techniques-de-creusage.md) (Tour 13)
 
 ## Extrait narratif
 

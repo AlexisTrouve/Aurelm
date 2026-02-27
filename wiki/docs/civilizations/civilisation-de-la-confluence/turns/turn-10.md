@@ -2,14 +2,14 @@
 
 📅 **20/03/2025** | 📊 **10 segments** | 🎯 **4 nouvelles entités**
 
-> Vous arrivez dans une nouvelle colonie, Gorge Profonde, où vous découvrez un labyrinthe de conduits et de grottes profondes. Les enfants des échos y travaillent pour transformer la roche et y insuffler leur esprit. Vous rencontrez un vieil homme aveugle qui habite là-bas et il vous invite à boire une infusion amère qu'ils affectionnent tant. Vous entendez parler de trois substances uniques qui se trouvent uniquement ici : l'argile vive, le lait de pierre et la roche braise.
+> L'ermite est revenu visiter les siens après avoir observé des changements et des progrès au sein de la colonie. Il a traversé le village, a vu l'abri du vigile, et a continué vers la Gorge Profonde où il a constaté les efforts pour transformer la roche en utilisant une technique unique à cette civilisation. L'ermite s'est approché d'un vieil homme aveugle qui lui a proposé de boire une infusion amer, et ils ont parlé de l'argile vive, du lait de pierre et de la roche braise, des ressources uniques trouvées dans cette région.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Enfants des Échos`, `Passes-Bien`, `Confluence des Esprits`, `Gorge Profonde`
-- **Mentions totales** : 7
+- **Entités découvertes** : `Confluence des Esprits`, `Enfants des courants`, `Enfants des échos`, `Passes-bien`
+- **Mentions totales** : 9
 - **Technologies** : 3
-- **Ressources** : 1
+- **Ressources** : 3
 - **Densité narrative** : 7 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -64,38 +64,40 @@ Et on n'aime pas ceux d'la surface Parmi les merveilles que recèlent les entrai
 ### 🗺️ Géographie
 
 - Gorge Profonde
-- Vallée
-- Confluence des Rivières
+- vallée
+- Antre des échos
 
 ### 🔧 Technologies
 
-- Argile Vivante
-- Lait de Pierre
-- Roches Braise
+- argile vive
+- roche braise
+- lait de pierre
 
 ### 🌾 Ressources
 
-- Argile Vive
-
-### ✨ Croyances
-
-- Loi du Sang et de la Bête
+- argile vive
+- roche braise
+- lait de pierre
 
 ## 🏷️ Entités mentionnées
 
 **Ailes-Grises** (Castes) — 1 mentions
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Enfants des Échos** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Passes-Bien** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Confluence des Esprits** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**Confluence des Esprits** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Enfants des courants** (Personnages) — 1 mentions ⭐ *Première apparition*
 
-**Gorge Profonde** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Enfants des échos** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Argile Vivante** (Technologies) — 1 mentions
+**Gouffre Humide** (Lieux) — 1 mentions
+
+**Passes-bien** (Lieux) — 1 mentions ⭐ *Première apparition*
+
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

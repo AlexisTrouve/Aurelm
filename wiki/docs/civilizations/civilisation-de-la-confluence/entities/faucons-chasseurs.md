@@ -1,62 +1,72 @@
 # Faucons Chasseurs
 
-*Castes* -- Civilisation de la Confluence
+*Creatures* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 9 |
+| **Mentions totales** | 12 |
 | **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
-| **Moyenne** | 1.0 mentions/tour |
+| **Pic d'activite** | Tour 12 (2 mentions) |
+| **Moyenne** | 1.1 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour  5  ████████████████████
-Tour  8  ████████████████████
-Tour  9  ████████████████████
-Tour 10  ████████████████████
-Tour 11  ████████████████████
-Tour 12  ████████████████████
-Tour 13  ████████████████████
-Tour 14  ████████████████████
+Tour  1  ██████████          
+Tour  2  ██████████          
+Tour  3  ██████████          
+Tour  5  ██████████          
+Tour  8  ██████████          
+Tour  9  ██████████          
+Tour 10  ██████████          
+Tour 11  ██████████          
+Tour 12  ████████████████████  ← Pic
+Tour 13  ██████████          
+Tour 14  ██████████          
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Cercle des Sages** (Institutions) — 5 tours
-- 🔵 **Argile Vivante** (Technologies) — 5 tours
-- 🔵 **Ailes-Grises** (Castes) — 4 tours
-- 🔵 **Tribunal des Moeurs** (Institutions) — 4 tours
-- 🔵 **Loi du Sang et de la Bete** (Belief) — 4 tours
+- 🔵 **Cercle des Sages** (Civilisations) — 9 tours
+- 🔵 **Gouffre Humide** (Lieux) — 9 tours
+- 🔵 **Argile Vivante** (Ressources) — 8 tours
+- 🔵 **Cheveux de Sang** (Creatures) — 3 tours
+- 🔵 **Ailes-Grises** (Castes) — 3 tours
 
 ## Description
 
-Les Faucons Chasseurs sont une caste au sein du peuple des Enfants des Échos, chargés de rassembler les indices et témoins pour reconstituer la vérité d'une tragédie. Ils doivent capturer les individus qui menacent les colonies souterraines. Les Faucons Chasseurs sont composés de personnes dont le courage, la force et la droiture sont reconnus de tous.
+Les Faucons Chasseurs sont une équipe formée par l'Assemblée des Chefs pour investiguer et rassembler les indices de la tragédie qui a eu lieu dans la nuit. Ils ont pour mission de capturer les responsables et de reconstituer la vérité. Ils sont composés de Faucons Chasseurs, d'Enfants des Échos armés et d'Aile-Grise avec rhombes.
 
 ## Chronologie
 
-**Tour 5: Les Faucons Chasseurs sont mentionnés comme une sous-catégorie sociale au sein du peuple.**
+**Tour 9: Les Faucons Chasseurs sont mentionnés dans le texte, mais pas explicitement comme entité.**
 
-**Tour 10: Les Faucons Chasseurs sont désignés comme une caste au sein du peuple des Enfants des Échos.**
+**Tour 11: L'Assemblée des Chefs crée les Faucons Chasseurs pour rassembler les indices de la tragédie. Ils sont chargés de capturer les responsables dans les montagnes.**
 
-**Tour 11: L'Assemblée des Chefs guide les Faucons Chasseurs dans leur mission de rassembler les indices et témoins pour reconstituer la vérité d'une tragédie.**
+**Tour 12: Les Faucons Chasseurs sont organisés en quatre équipes pour explorer les galeries souterraines et traquer le danger.**
 
-**Tour 12: Quatre équipes sont organisées, dont trois composées de Faucons Chasseurs, avec l'objectif de capturer les individus qui menacent les colonies souterraines.**
-
-**Tour 14: Un groupe de faucons chasseurs est chargé de traquer et d'identifier les individus inconnus pour comprendre leur intention.**
+**Tour 14: Le rôle des Faucons Chasseurs est de traquer un groupe d'hommes inconnus qui ont commis une série de crimes.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 1**
 > "Faucons Chasseurs"
 >
-> Contexte : sous-groupe social au sein d'un peuple...
+> Contexte : Faucons Chasseurs...
+
+**Tour 2**
+> "Faucons Chasseurs"
+>
+> Contexte : Faucons Chasseurs...
+
+**Tour 3**
+> "Faucons Chasseurs"
+>
+> Contexte : Faucons Chasseurs...
 
 **Tour 5**
 > "Faucons Chasseurs"
@@ -66,35 +76,27 @@ Les Faucons Chasseurs sont une caste au sein du peuple des Enfants des Échos, c
 **Tour 8**
 > "Faucons Chasseurs"
 >
-> Contexte : Faucons Chasseurs...
-
-**Tour 9**
-> "Faucons Chasseurs"
->
-> Contexte : Faucons Chasseurs...
-
-**Tour 10**
-> "Faucons Chasseurs"
->
-> Contexte : c'est une caste au sein du peuple des Enfants des Échos...
+> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 1**
 
-    > ...sous-groupe social au sein d'un peuple...
+    **Tour 2**
+
+    **Tour 3**
 
     **Tour 5**
 
-    > ...Faucons Chasseurs...
-
     **Tour 8**
+
+    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
     **Tour 9**
 
-    **Tour 10**
+    > ...Les Faucons Chasseurs sont mentionnés dans le texte, mais pas explicitement comme entité...
 
-    > ...c'est une caste au sein du peuple des Enfants des Échos...
+    **Tour 10**
 
     **Tour 11**
 

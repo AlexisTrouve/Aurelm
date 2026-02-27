@@ -1,6 +1,6 @@
-# Foyer du savoir
+# Foyer du Savoir
 
-*Technologies* -- Civilisation de la Confluence
+*Institutions* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -17,22 +17,12 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-Le Foyer du savoir est une installation technologique qui rassemble des chercheurs et des scientifiques de diverses castes. Elle est située dans le cœur de la cité, près de l'Université des sages. Le Foyer abrite des laboratoires, des bibliothèques et des ateliers où les spécialistes travaillent à des projets innovants. Les dirigeants du Foyer sont les chefs de caste qui coordonnent les recherches et décident des priorités.
-
-## Chronologie
-
-**Tour 1: Pas de mention précise sur le fonctionnement ou les caractéristiques du Foyer du savoir**
-
-**Tour 14: Le choix du Foyer du savoir multi-castes est proposé, permettant aux joueurs d'investir dans la technologie en rassemblant plusieurs castes. Les produits résultants sont promis à être puissants et variés.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
-> "Foyer du savoir"
+> "Foyer du Savoir"
 >
-> Contexte : ans les profondeurs de Gouffre Humide, au cœur du Foyer du savoir. C'est la nécessité de consigner l'aspect mais au...
+> Contexte : Foyer du Savoir...
 
 ??? note "Sources -- Passages originaux"
 

@@ -19,18 +19,20 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-La Morsure-des-Ancêtres est une racine sauvage, connue pour son goût mordant et ses propriétés réputées. Elle est utilisée dans la préparation d'un plat traditionnel appelé "Les Larmes du Ciel". Cette racine pousse dans les zones humides de la vallée. La cuisson lente de la Morsure-des-Ancêtres avec des herbes et des baies donne à ce plat sa saveur distinctive.
+La Morsure-des-Ancêtres est une racine à goût mordant, issue de la plante Gingembre sauvage, qui pousse dans les zones humides de la vallée. Elle est utilisée pour aromatiser et échauffer divers plats traditionnels, notamment "Les Larmes du Ciel". Cette racine est recherchée pour ses qualités gustatives et aromatiques.
 
 ## Chronologie
 
-**Tour 6: Dans les zones humides de la vallée pousse la Morsure-des-Ancêtres, dont le goût et l'arôme sont recherchés pour préparer "Les Larmes du Ciel".**
+**Tour 1: Dans les zones humides de la vallée pousse la Morsure-des-Ancêtres, une racine au goût mordant dont la chaleur et l'arôme en font un ingrédient recherché.**
+
+**Tour 6: Dans les zones humides de la vallée pousse la Morsure-des-Ancêtres, une racine au goût mordant dont la chaleur et l'arôme en font un ingrédient recherché. Elle est devenue la base de "Les Larmes du Ciel", notre plat traditionnel.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 6**
 > "Morsure-des-Ancêtres"
 >
-> Contexte : racine au goût mordant...
+> Contexte : la "Morsure-des-Ancêtres" (Gingembre sauvage)...
 
 ??? note "Sources -- Passages originaux"
 

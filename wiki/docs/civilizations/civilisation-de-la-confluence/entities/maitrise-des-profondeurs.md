@@ -19,18 +19,18 @@ Tour 13  ████████████████████  ← Pic
 
 ## Description
 
-La Maîtrise des Profondeurs est une technologie qui permet de contrôler et d'accéder aux profondeurs souterraines, potentiellement pour des raisons de recherche ou d'exploration. Elle est associée à l'idée de découvrir des secrets cachés dans les galeries. Cette technologie est susceptible d'être utilisée pour comprendre ce qui menace la sécurité de ces zones.
+La Maîtrise des Profondeurs est une technologie qui permet de manipuler et d'explorer les profondeurs souterraines. Elle se compose de systèmes complexes de soutènement, de ventilation et de détection pour assurer la sécurité et le confort des explorateurs. Cette technologie est cruciale pour les découvertes archéologiques et les missions scientifiques dans les galeries souterraines.
 
 ## Chronologie
 
-**Tour 13: La technologie est associée à un choix stratégique dans le contexte de l'étude des fresques et de la menace qui pèse sur la sécurité des galeries.**
+**Tour 13: L'équipe décide finalement d'utiliser la Maîtrise des Profondeurs pour coordonner le sauvetage et comprendre ce qui menace les galeries.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 13**
 > "Maîtrise des Profondeurs"
 >
-> Contexte : tmosphère d'enfer Choix : Sauvetage à la corde et Maîtrise des Profondeurs (Option libre) Face à cette découverte qui dépass...
+> Contexte : Maîtrise des Profondeurs...
 
 ??? note "Sources -- Passages originaux"
 

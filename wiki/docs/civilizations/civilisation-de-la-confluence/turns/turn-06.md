@@ -1,15 +1,15 @@
 # Tour 6
 
-📅 **28/10/2024** | 📊 **6 segments** | 🎯 **6 nouvelles entités**
+📅 **28/10/2024** | 📊 **6 segments** | 🎯 **5 nouvelles entités**
 
-> Depuis l'arrivée de la tribu dans la Vallée, le village a grandi en faisant feu de tout bois. Les habitants ont développé une relation symbiotique avec les animaux qui vivaient déjà dans la vallée, notamment des gibiers et des poissons. La tribu est devenue omnivore, consommant des légumes sauvages, des baies, des tubercules, du poisson gras, des gibiers et quelques herbes pour parfumer les plats. Cependant, la nourriture peut paraître manquer d'imagination et le régime alimentaire semble peu évolué.
+> La Civilisation de la Confluence a évolué dans une vallée montagneuse où deux rivières se rejoignent, offrant une terre fertile et des ressources abondantes. Les habitants ont développé une économie basée sur l'agriculture, la pêche et l'élevage, avec un système social composé de plusieurs villages. Le village principal se trouve à la confluence des deux rivières, tandis qu'un autre village se situe plus bas, sur des pilotis. Les habitants ont développé une relation symbiotique avec les animaux de la vallée, notamment les ours et les rennes, qui sont en train de s'être domestiqués. La tribu est omnivore et a un régime alimentaire varié, composé de légumes sauvages, baies, tubercules, gibiers, poisson gras et herbes parfumées. Bien que leur cuisine soit riche et diverse, les habitants semblent manquer d'imagination dans les saveurs.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Peuple du ciel clair`, `Regards-Libres`, `Cieux`, `Confluence`, `Larmes du Ciel`, `Morsure-des-Ancêtres`
-- **Mentions totales** : 9
-- **Technologies** : 2
-- **Ressources** : 4
+- **Entités découvertes** : `Regards-Libres`, `Oracle`, `Confluence`, `Morsure-des-Ancêtres`, `Larmes du Ciel`
+- **Mentions totales** : 5
+- **Technologies** : 1
+- **Ressources** : 1
 - **Densité narrative** : 4 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -40,46 +40,31 @@ Près du feu, j'observe les "Regards-Libres", ces grues cendrées qui vivent ave
 
 ### 🗺️ Géographie
 
-- La Vallée
-- Confluence des deux fleuves
-- Plateau rocailleux
+- lieux nommes
 
 ### 🔧 Technologies
 
-- outils de polissage
-- hameçons et casiers à poisson
+- inventions/savoir-faire adoptes
 
 ### 🌾 Ressources
 
-- poissons gras de la rivière
-- baies
-- tubercules
-- herbes pour parfumer
+- ressources exploitees
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bête
-- croyance en l'Oracle de leur vie
+- croyances/lois/rituels nommes
 
 ## 🏷️ Entités mentionnées
 
-**Sans-Ciel** (Castes) — 1 mentions
-
-**Confluents** (Civilisations) — 1 mentions
-
-**Peuple des Eaux** (Civilisations) — 1 mentions
-
-**Peuple du ciel clair** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
 **Regards-Libres** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Cieux** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Oracle** (Personnages) — 1 mentions ⭐ *Première apparition*
 
 **Confluence** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Larmes du Ciel** (Ressources) — 1 mentions ⭐ *Première apparition*
-
 **Morsure-des-Ancêtres** (Ressources) — 1 mentions ⭐ *Première apparition*
+
+**Larmes du Ciel** (Technologies) — 1 mentions ⭐ *Première apparition*
 
 ---
 

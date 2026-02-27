@@ -1,6 +1,6 @@
 # Confluence des Esprits
 
-*Institutions* -- Civilisation de la Confluence
+*Personnages* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,18 +19,18 @@ Tour 10  ████████████████████  ← Pic
 
 ## Description
 
-La Confluence des Esprits est une institution qui représente l'endroit où se rencontrent les courants invisibles de différentes traditions. Elle est fluide et adaptable, capable de s'élever ou de se fondre parmi la population pour mieux comprendre leurs besoins. Cette entité a un rôle essentiel dans l'harmonie de la vallée en observant et en coordonnant les différents aspects de la société.
+La Confluence des Esprits est une entité qui représente la rencontre de courants invisibles animant les différentes traditions d'une vallée. Elle joue un rôle évoluant avec le peuple, s'élevant parfois au-dessus de la vallée pour embrasser l'ensemble du territoire ou se fondant parmi les miens pour comprendre leurs besoins.
 
 ## Chronologie
 
-**Tour 10: L'héroïne décrit son expérience en tant que Confluence des Esprits, mentionnant qu'elle peut fluctuer entre une position élevée et une immersion au sein de la communauté. Cette fluité est similaire à celle des eaux dans une confluence, soulignant l'importance d'être adaptatif pour maintenir l'harmonie dans la vallée.**
+**Tour 10: La Confluence des Esprits se reconnait être la rencontre des courants invisibles animant les traditions, et comprend que son rôle est fluide comme les eaux d'une confluence**
 
 ## 💬 Mentions avec contexte
 
 **Tour 10**
 > "Confluence des Esprits"
 >
-> Contexte : c'est un rôle évolué dans la vallée...
+> Contexte : Je suis la Confluence des Esprits...
 
 ??? note "Sources -- Passages originaux"
 

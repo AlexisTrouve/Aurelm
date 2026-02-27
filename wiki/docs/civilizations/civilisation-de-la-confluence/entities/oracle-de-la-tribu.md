@@ -19,20 +19,20 @@ Tour  3  ████████████████████  ← Pic
 
 ## Description
 
-L'Oracle de la tribu est une entité énigmatique et mystique qui guide le clan grâce à sa clairvoyance. Elle est issue d'un cercle des sages, composé des âmes les plus sages et des esprits les plus éclairés. Cette entité a été créée par un individu qui a insufflé l'essence de sa connaissance dans le cercle. L'Oracle de la tribu est désormais présente indirectement sur le territoire de la tribu.
+L'Oracle de la tribu est une entité énigmatique et mystique qui guide le clan grâce à sa connaissance. Elle est créée par un personnage qui convoque les esprits sages et leur insuffle l'essence de sa connaissance. L'oracle devient ainsi une présence indirecte mais influente, avec un cercle des sages pour la soutenir. Ses volontés sont respectées grâce à la clairvoyance du clan.
 
 ## Chronologie
 
-**Tour 3: Un individu convoque les esprits les plus éclairés et les âmes les plus sages pour créer un cercle des sages. Il devient ensuite l'Oracle de la tribu, une entité énigmatique et mystique qui guide le clan.**
+**Tour 3: L'Oracle de la tribu est créée par un personnage qui convoque les esprits sages et leur insuffle l'essence de sa connaissance, formant ainsi un cercle des sages pour guider le clan.**
 
-**Tour 5: Les esprits de la tribu dans un cycle de sagesse prennent l'initiative de faire comprendre et respecter les volontés de l'Oracle de la tribu par leurs propres moyens.**
+**Tour 5: Pas de mention explicite**
 
 ## 💬 Mentions avec contexte
 
 **Tour 3**
 > "Oracle de la tribu"
 >
-> Contexte : je deviens donc l'oracle de la tribu...
+> Contexte : je deviens l'oracle de la tribu, une entité énigmatique et mystique...
 
 ??? note "Sources -- Passages originaux"
 

@@ -19,13 +19,13 @@ Tour  5  ████████████████████  ← Pic
 
 ## Description
 
-La famille est une institution qui joue un rôle central dans la société. Les liens familiaux sont considérés comme sacrés et les individus qui ne respectent pas ces liens peuvent être punis. La généalogie d'une grande famille est importante, car elle relie les membres vivants à ceux qui les ont précédés.
+La famille est une institution sociale qui joue un rôle central dans la vie des individus. Elle représente un lien spirituel et de parenté entre ses membres, ce qui donne à chacun d'entre eux une position spécifique au sein de la tribu. La famille est composée d'un mari, d'une femme et d'enfants, et sa cohésion est vitale pour maintenir les liens spirituels et protéger ses membres.
 
 ## Chronologie
 
-**Tour 1: La description du Tour 5 indique que la famille est une institution qui joue un rôle central dans la société.**
+**Tour 1: Les enfants apprennent en compagnie de leur mère les noms des ancêtres et la généalogie de la grande famille.**
 
-**Tour 5: La femme ne peut pas changer de partenaire du fait de la sacralité des liens familiaux. Un mari qui ne subvient pas aux besoins de sa femme et de ses enfants peut perdre leur faveur, ce qui entraîne leur perte à terme d'une procédure devant le tribunal spécial.**
+**Tour 5: La quise met en avant l'importance de la sacralité des liens familiaux. La femme ne peut pas changer de partenaire du fait de ces liens, mais elle n'est pas non plus sans défense si son mari ne répond pas à ses besoins.**
 
 ## 💬 Mentions avec contexte
 

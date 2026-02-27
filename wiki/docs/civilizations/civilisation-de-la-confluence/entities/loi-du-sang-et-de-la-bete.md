@@ -1,4 +1,4 @@
-# Loi du Sang et de la Bete
+# Loi du Sang et de la Bête
 
 *Belief* -- Civilisation de la Confluence
 
@@ -6,80 +6,36 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 5 |
-| **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 11-11 (1 tours) |
+| **Pic d'activite** | Tour 11 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour  3  ████████████████████
-Tour  9  ████████████████████
-Tour 11  ████████████████████
-Tour 14  ████████████████████
+Tour 11  ████████████████████  ← Pic
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **Argile Vivante** (Technologies) — 4 tours
-- 🔵 **Faucons Chasseurs** (Castes) — 4 tours
-- 🔵 **Cercle des Sages** (Institutions) — 3 tours
-- 🔵 **Caste de l'Air** (Castes) — 3 tours
-- 🔵 **Regards-Libres** (Creatures) — 2 tours
 
 ## Description
 
-La Loi du Sang et de la Bête est un dogme ou une croyance qui semble être profondément enraciné dans les cultures de cette civilisation. Elle règle les rapports entre l'humain et la bête, avec un accent mis sur la relation entre le sang humain et la présence animale.
+La Loi du Sang et de la Bête est une croyance selon laquelle un meurtre doit être puni, mais également que ce meurtre peut ouvrir la voie à un changement positif. Cette croyance suggère qu'il existe une relation entre le sang versé et l'issue d'un événement.
 
 ## Chronologie
 
-**Tour 11: La Loi du Sang et de la Bête est mentionnée comme un choix crucial après un meurtre qui divise les peuples. L'héroïque devra trouver une voie nouvelle, en fonction des conseils des ancêtres, pour résoudre la crise qui se dégage.**
+- Turn non spécifié dans les extraits: Aucune information pour ce tour
 
-**Tour 14: La Loi du Sang et de la Bête est présentée comme un principe régissant le sang et la bête, sans explication plus détaillée sur ce que cela signifie exactement en termes d'application pratique.**
+**Tour 11: Le personnage se retrouve face à un choix crucial après un meurtre : adopter la Loi du Sang et de la Bête pour ouvrir la voie à une nouvelle ère. Cette décision sera déterminante pour l'avenir de la communauté.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 1**
-> "Loi du Sang et de la Bete"
->
-> Contexte : Loi du Sang et de la Bete...
-
-**Tour 3**
-> "Loi du Sang et de la Bête"
->
-> Contexte : Loi du Sang et de la Bête...
-
-**Tour 9**
-> "Loi du Sang et de la Bête"
->
-> Contexte : Loi du Sang et de la Bête...
 
 **Tour 11**
 > "Loi du Sang et de la Bête"
 >
-> Contexte : Loi du Sang et de la Bête...
-
-**Tour 14**
-> "Loi du Sang et de la Bete"
->
-> Contexte : une loi qui regle le sang et la bête...
+> Contexte : la loi qui doit être appliquée...
 
 ??? note "Sources -- Passages originaux"
-
-    **Tour 1**
-
-    **Tour 3**
-
-    **Tour 9**
 
     **Tour 11**
 
     > Le premier meurtre Choix : Loi du Sang et de la Bête (option libre) Face à cette scène qui glace le sang, je sens la colère monter dans la foule, les accusations qui fusent, la suspicion qui divise déjà nos peuples. Cette nuit d'orage ne doit pas devenir celle de notre fracture. Je m'avance dans le cercle et lève la main pour apaiser les voix. Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle. Nous ne pouvons nous conten...
-
-    **Tour 14**
-
-    > ...une loi qui regle le sang et la bête...

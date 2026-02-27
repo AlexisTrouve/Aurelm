@@ -15,7 +15,7 @@
 
 ```
 Tour  1  ████████████████████  ← Pic
-Tour  9  ████████████████████
+Tour  5  ████████████████████
 Tour 13  ████████████████████
 Tour 14  ████████████████████
 ```
@@ -24,19 +24,19 @@ Tour 14  ████████████████████
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Faucons Chasseurs** (Castes) — 4 tours
+- 🔵 **Cheveux de Sang** (Civilisations) — 4 tours
+- 🔵 **Faucons Chasseurs** (Castes) — 3 tours
+- 🔵 **Cercle des Sages** (Institutions) — 3 tours
 - 🔵 **Argile Vivante** (Technologies) — 3 tours
 - 🔵 **Loi du Sang et de la Bete** (Belief) — 3 tours
-- 🔵 **Cheveux de Sang** (Civilisations) — 3 tours
-- 🔵 **Confluents** (Civilisations) — 3 tours
 
 ## Description
 
-La Caste de l'Air est une entité qui utilise la Fresque comme langage des idées, représentée par des blocs symbolisant différentes parties. Ils sont responsables de la création et de la mise à jour de cette fresque, avec des périodes de stagnation et d'évolution importantes. La Caste de l'Air semble être une organisation centrée sur la compréhension et l'expression des idées.
+La Caste de l'Air est une entité sociale dans le monde du jeu qui joue un rôle important dans la production et la diffusion d'idées. Ils sont responsables de la création et de la mise à jour de la Fresque, un langage utilisé pour communiquer des idées complexes. La caste possède également un système de génération pour créer des versions simplifiées ou plus avancées de la Fresque.
 
 ## Chronologie
 
-**Tour 14: Tu arrives pour enquêter et constates que les membres utilisent ces blocs représentant la Fresque. Il y a eu des périodes de stagnation, mais aujourd'hui ils ont une version plus évoluée et largement utilisée**
+**Tour 14: Tu arrives sur place et tu vois la Caste de l'Air utiliser les blocs représentant la Fresque pour communiquer. Les membres de la caste utilisent ces blocs pour exprimer des idées complexes de manière simple.**
 
 ## 💬 Mentions avec contexte
 
@@ -45,7 +45,7 @@ La Caste de l'Air est une entité qui utilise la Fresque comme langage des idée
 >
 > Contexte : Caste de l'Air...
 
-**Tour 9**
+**Tour 5**
 > "Caste de l'Air"
 >
 > Contexte : Caste de l'Air...
@@ -64,7 +64,7 @@ La Caste de l'Air est une entité qui utilise la Fresque comme langage des idée
 
     **Tour 1**
 
-    **Tour 9**
+    **Tour 5**
 
     **Tour 13**
 

@@ -19,18 +19,18 @@ Tour 14  ████████████████████  ← Pic
 
 ## Description
 
-Les Pouleheimos sont un peuple robuste de marchands cosmopolites qui ont traversé la mer sur leur navire. Ils vivent dans une relation paisible et profitables avec les Tlazhuaneca. Leur religion est étrange et peu documentée.
+Le peuple des Pouleheimos est une civilisation robuste et cosmopolite de marchands. Ils ont un système religieux unique, mais les relations avec eux sont généralement paisibles et profitables pour l'échange. Avant leur arrivée sur votre monde, ils ont déjà établi des liens avec d'autres peuples tels que les Tlazhuaneca.
 
 ## Chronologie
 
-**Tour 14: Les Pouleheimos sont mentionnés comme un peuple avec lequel les protagonistes n'ont pas eu de relations précédentes, mais qui ont des relations paisibles et profitables avec les Tlazhuaneca. Les protagonistes découvrent également que la relation entre les deux peuples est troublante.**
+**Tour 14: Les Pouleheimos traitent avec plusieurs peuples avant votre arrivée, y compris les Tlazhuaneca et vous-mêmes. Leurs relations sont paisibles mais font l'objet d'une nouvelle information troublante.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Pouleheimos"
 >
-> Contexte : t qui vivent sur des villages flottants. Puis les Pouleheimos, un peuple robustes de marchands cosmopolites et...
+> Contexte : peuple robustes de marchands cosmopolites...
 
 ??? note "Sources -- Passages originaux"
 

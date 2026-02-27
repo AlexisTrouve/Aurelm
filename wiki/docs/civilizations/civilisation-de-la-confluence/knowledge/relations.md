@@ -2,69 +2,55 @@
 
 Graphe textuel des relations pour **Civilisation de la Confluence**.
 
-## Allied With (7)
+## Allied With (1)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Chef de la Maison des Découvertes (person) | --> | Cercle des Sages (institution) | - |
-| Chef de la Maison des Découvertes (person) | --> | Chef du Tribunal des Mœurs (person) | - |
-| Enfants du Courant (institution) | --> | Ailes-Grises (caste) | - |
-| Enfants du Courant (institution) | --> | Gardiens de la Confluence (institution) | - |
-| Faucons Chasseurs (caste) | --> | Regards-Libres (creature) | - |
-| Porteurs de Flamme (caste) | --> | Enfants du Courant (institution) | - |
-| Regards-Libres (creature) | --> | Faucons Chasseurs (caste) | - |
+| Tribunal de moeurs (institution) | --> | Voix de l'Aurore (civilization) | - |
 
-## Controls (2)
+## Controls (1)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Cercle des Sages (institution) | --> | Voix de l'Aurore (institution) | - |
-| Proclamateurs (caste) | --> | Chef du Tribunal des Mœurs (person) | - |
+| Cercle des Sages (civilization) | --> | Gardiens de la Confluence (civilization) | - |
 
 ## Created By (3)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Enfants du Courant (institution) | --> | Porteurs de Flamme (caste) | - |
-| Faucons Chasseurs (caste) | --> | Assemblée des Chefs (institution) | - |
-| Gardiens de la Confluence (institution) | --> | Porteurs de Flamme (caste) | - |
+| Cercle des Sages (civilization) | --> | Tribu (civilization) | - |
+| Faucons Chasseurs (creature) | --> | Assemblée des Chefs (institution) | - |
+| Voix de l'Aurore (civilization) | --> | Ailes-Grises (caste) | - |
 
-## Located In (6)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Arbitre des Esprits (person) | --> | Gouffre Humide (place) | - |
-| Argile Vivante (technology) | --> | Chef de la Maison des Découvertes (person) | - |
-| Famille (institution) | --> | Oracle de la tribu (person) | - |
-| Larmes du Ciel (resource) | --> | Morsure-des-Ancêtres (resource) | - |
-| Maison des Découvertes (institution) | --> | Confluence (place) | - |
-| Regards-Libres (creature) | --> | Peuple des Eaux (civilization) | - |
-
-## Member Of (5)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Ailes-Grises (caste) | --> | Oracle de la tribu (person) | - |
-| Chef du Cercle des Sages (person) | --> | Assemblée des Chefs (institution) | - |
-| Faucons Chasseurs (caste) | --> | Enfants des Échos (civilization) | - |
-| Parents (caste) | --> | Famille (institution) | - |
-| Porteurs de Flamme (caste) | --> | Gardiens de la Confluence (institution) | - |
-
-## Part Of (2)
-
-| Source | | Cible | Tour |
-|---|---|---|---|
-| Chef de la Maison des Découvertes (person) | --> | Assemblée des Chefs (institution) | - |
-| Sans-Ciel (caste) | --> | Oracle de la tribu (person) | - |
-
-## Produces (1)
+## Located In (4)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
 | Gouffre Humide (place) | --> | Confluence (place) | - |
+| Maison des Découvertes (institution) | --> | Gardiens de la Confluence (civilization) | - |
+| Pêcheurs (creature) | --> | Ailes-Grises (caste) | - |
+| Tribunal de moeurs (institution) | --> | Gardiens de la Confluence (civilization) | - |
+
+## Member Of (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Porteurs de Flamme (institution) | --> | Gardiens de la Confluence (civilization) | - |
+
+## Part Of (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Tribunal de moeurs (institution) | --> | Cercle des Sages (civilization) | - |
 
 ## Trades With (1)
 
 | Source | | Cible | Tour |
 |---|---|---|---|
-| Sans-Ciel (caste) | --> | Cieux (place) | - |
+| Pouleheimos (civilization) | --> | Tlazhuaneca (civilization) | - |
+
+## Worships (1)
+
+| Source | | Cible | Tour |
+|---|---|---|---|
+| Loi du Sang et de la Bête (belief) | --> | Morsure-des-Ancêtres (resource) | - |

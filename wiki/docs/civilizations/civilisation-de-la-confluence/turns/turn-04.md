@@ -1,15 +1,15 @@
 # Tour 4
 
-📅 **28/09/2024** | 📊 **4 segments** | 🎯 **1 nouvelles entités**
+📅 **28/09/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> La civilisation de la Confluence est en pleine croissance sous l'influence de l'oracle, qui forme un cercle des sages pour guider les décisions de la tribu. Lorsque l'oracle quitte la terre, il laisse derrière lui une nouvelle génération qui le considère comme une entité quasi divine appelée 'l'Oracle'. Le cercle des sages continue à exercer son influence sur la tribu, mais se heurte à un problème complexe concernant les relations amoureuses dans la communauté. Un membre du cercle est envoyé pour chercher l'oracle afin de trouver une solution à ce conflit.
+> Le Maitre du Jeu a initié un processus de sélection d'individus qui possèdent une grande sagesse et capacité de pensée critique. Ces personnes forment le cercle des sages, où ils discutent et échangent leurs idées pour atteindre des conclusions mutuellement bénéfiques. Le Maitre du Jeu agit en médiateur, guidant les discussions et encourageant les membres à projeter leurs propres opinions, tout en trouvant des signes dans la nature qui les confortent dans leurs décisions. Après son départ, le cercle continue à fonctionner, mais un conflit émerge entre deux hommes disputant l'affection d'une femme. Le Maitre du Jeu est consulté pour résoudre ce problème et il doit choisir une solution.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Tribunal des Moeurs`
+- **Entités découvertes** : aucune
 - **Mentions totales** : 3
-- **Technologies** : 2
-- **Ressources** : 0
+- **Technologies** : 0
+- **Ressources** : 1
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -39,24 +39,21 @@ Je guide la tribu vers une nouvelle structure culturelle et institutionnel. Un h
 ### 🗺️ Géographie
 
 - Gouffre Humide
-- La Fourche dans la Rivière
+- la fourche dans la rivière
 
-### 🔧 Technologies
+### 🌾 Ressources
 
 - Argile Vivante
-- La Voix des Cieux
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- Rituel de Fertilité
-- Coutume de Dialogue Respectueux
+- la voix des cieux
+- les présages dans les étoiles, le vent et les entrailles
+- l'influence des ancêtres
 
 ## 🏷️ Entités mentionnées
 
-**Cercle des Sages** (Institutions) — 1 mentions
-
-**Tribunal des Moeurs** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Civilisations) — 2 mentions
 
 ---
 

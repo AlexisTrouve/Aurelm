@@ -1,6 +1,6 @@
 # Porteurs de Flamme
 
-*Castes* -- Civilisation de la Confluence
+*Institutions* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,20 +19,18 @@ Tour  9  ████████████████████  ← Pic
 
 ## Description
 
-Les Porteurs de Flamme sont une caste issue des Gardiens de la Confluence, chargée de voyager entre les différents groupes pour tisser ensemble les lieux sacrés et les villages existants. Ils transportent des petites braises dans des récipients en argile, symbolisant ainsi l'union de tous les groupes. Les Porteurs de Flamme sont choisis pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils sont inspirés par la chaleur des Cercles de Vigile.
+Les Porteurs de Flamme sont des messagers choisis pour leur connaissance des échanges et leur capacité à médier entre les différents groupes. Ils sont issus principalement des Gardiens de la Confluence et voyagent de feu en feu à travers les sentiers de la montagne, transportant avec eux de petites braises dans des récipients en argile. Ils sont inspirés par la chaleur des Cercles de Vigile.
 
 ## Chronologie
 
-**Tour 9: Les Enfants du Courant reçoivent une reconnaissance et un prestige supplémentaires grâce aux Porteurs de Flamme, qui voyageront de feu en feu à travers les sentiers de la montagne. Les Porteurs de Flamme seront les gardiens des secrets de la terre et deviendront les messagers entre les différents groupes.**
-
-**Tour 9 (suite): Pour tisser ensemble ces nouveaux lieux sacrés et nos villages existants, je désigne les Porteurs de Flamme.**
+**Tour 9: Les Porteurs de Flamme seront choisis pour leur connaissance des échanges et leur capacité à médier entre les différents groupes, inspirés par la chaleur des Cercles de Vigile.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 9**
 > "Porteurs de Flamme"
 >
-> Contexte : messagers qui voyagent de feu en feu à travers les sentiers de la montagne...
+> Contexte : Ces Porteurs de Flamme développeront progressivement un langage de signes et de symboles gravés sur de petits jetons d'argile pour mémoriser leurs voyages et les échanges qu'ils facilitent....
 
 ??? note "Sources -- Passages originaux"
 

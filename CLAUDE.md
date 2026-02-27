@@ -124,12 +124,13 @@ Flutter Desktop GUI (Dashboard)
 - French for all game content, English for code and comments
 - Commit messages in English
 - No secrets in code — use environment variables
+- **No hardcoded game-specific data** in pipeline code — entity names, castes, technologies, civilizations etc. are extracted by the LLM, not by pattern lists. Noise filtering (generic French words, URLs, markdown artifacts) is OK because it's language-level, not game-specific.
 
 ## Key Concepts (Domain)
 
 - **Turn**: A GM post on Discord containing narrative, choices, and consequences
 - **Civilization**: A player-controlled entity with its own history, tech, politics
-- **Entity**: Named thing extracted by NER — person, place, technology, institution, resource, creature
+- **Entity**: Named thing extracted by LLM — person, place, technology, institution, resource, creature, event, civilization, caste, belief
 - **Sanity Check**: Cross-referencing a GM statement against established lore for consistency
 - **Lore**: The accumulated canonical facts about the game world
 - **Living Clay (Argile Vivante)**: Example of a civilization-specific technology — hardens instantly on air contact

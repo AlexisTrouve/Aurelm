@@ -4,48 +4,37 @@
 
 | | |
 |---|---|
-| **Acquisition** | Tour 1 |
+| **Acquisition** | Tour 6 |
 | **Categorie** | Autre |
-| **Re-mentionne** | Tours 1, 14 |
 
-## Acquis en meme temps (Tour 1)
+## Acquis en meme temps (Tour 6)
 
-- [techniques](techniques.md)
+- [techniques de polissage](techniques-de-polissage.md)
 
 ## Arbre chronologique
 
-**Tour 1** (actuel) : **outils**
-**Tour 2** (suivant) : [gourdins](gourdins.md), [pieux](pieux.md)
+**Tour 5** (precedent) : [outils et techniques de chasse émergent](outils-et-techniques-de-chasse-emergent.md), [savoir des cycles de reproduction se transmet](savoir-des-cycles-de-reproduction-se-transmet.md), [nouvelles armes plus perfectionnées](nouvelles-armes-plus-perfectionnees.md)
+**Tour 6** (actuel) : **outils**
+**Tour 7** (suivant) : [rhombes en pierre](rhombes-en-pierre.md)
 
 ## Meme categorie : Autre
 
-- [techniques](techniques.md) (Tour 1)
-- [rites de déposition des morts](rites-de-deposition-des-morts.md) (Tour 3)
-- [mémentos en mémoire des aïeux](mementos-en-memoire-des-aieux.md) (Tour 3)
+- [Argile Vivante](argile-vivante.md) (Tour 1)
 - [la voix des cieux](la-voix-des-cieux.md) (Tour 4)
-- [comment trouver et interpréter les présages dans les étoiles, le vent et les entrailles](comment-trouver-et-interpreter-les-presages-dans-les-etoiles-le-vent-et-les-entrailles.md) (Tour 4)
-- [pointes de flèches](pointes-de-fleches.md) (Tour 5)
-- [roches striées](roches-striees.md) (Tour 5)
-- [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md) (Tour 6)
+- [outils et techniques de chasse émergent](outils-et-techniques-de-chasse-emergent.md) (Tour 5)
+- [savoir des cycles de reproduction se transmet](savoir-des-cycles-de-reproduction-se-transmet.md) (Tour 5)
+- [nouvelles armes plus perfectionnées](nouvelles-armes-plus-perfectionnees.md) (Tour 5)
+- [techniques de polissage](techniques-de-polissage.md) (Tour 6)
 - [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)
-- [pipeau en bambou](pipeau-en-bambou.md) (Tour 7)
 - [rhombes](rhombes.md) (Tour 8)
-- [cuillère](cuillere.md) (Tour 9)
-- [barreau de berceau](barreau-de-berceau.md) (Tour 9)
-- [artefacts](artefacts.md) (Tour 9)
-- [argile vive](argile-vive.md) (Tour 10)
-- [roche braise](roche-braise.md) (Tour 10)
-- [lait de pierre](lait-de-pierre.md) (Tour 10)
-- [Regards-Libres](regards-libres.md) (Tour 11)
-- [rhombes pour les rituels et communications](rhombes-pour-les-rituels-et-communications.md) (Tour 12)
-- [fresques](fresques.md) (Tour 13)
-- [pigments](pigments.md) (Tour 13)
-- [artefacts translucides](artefacts-translucides.md) (Tour 13)
-- [techniques de creusage](techniques-de-creusage.md) (Tour 13)
+- [Lait de Pierre](lait-de-pierre.md) (Tour 10)
+- [Roche Braise](roche-braise.md) (Tour 10)
+- [Regard-Libre](regard-libre.md) (Tour 11)
+- [Larmes du Ciel](larmes-du-ciel.md) (Tour 14)
 
-## Contexte (Tour 1)
+## Extrait narratif
 
-La Civilisation de la Confluence commence à naître dans un monde glacial et hostile, où les premières plantes émergent de la neige et où des hommes perdus cherchent à survivre. Le joueur montre à la civilisation le potentiel de suivre une rivière pour atteindre des lieux de vie et de paix.
+> ...pas tant la fierté de tes artisans plutôt que la difficulté d'établir un atelier improvisé qui a renforcé cet emplacement. La complexité des nouveaux outils et les techniques de polissage nécessitent de préparer les roches striés sur lesquels ils sont travaillés. Du filet de pêche lesté, à la lance à la p...
 
 ---
 [Retour a l'arbre technologique](../technologies.md)

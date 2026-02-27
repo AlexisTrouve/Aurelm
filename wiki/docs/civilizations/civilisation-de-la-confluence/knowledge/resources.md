@@ -2,39 +2,39 @@
 
 ## Par tour
 
-**Tour 2** : baies, graines, poissons
-**Tour 6** : baies, herbes pour parfumer, poissons gras de la rivière, tubercules
-**Tour 7** : baies
-**Tour 9** : Pierres aux propriétés inconnues
-**Tour 10** : Argile Vive
-**Tour 12** : [Larmes du Ciel](../entities/larmes-du-ciel.md), poisson de la [Confluence](../entities/confluence.md)
-**Tour 14** : Fleurs charnues, Nantons
+**Tour 2** : baie, graines, mollusques, poissons
+**Tour 3** : [argile vivante](../entities/argile-vivante.md)
+**Tour 4** : [Argile Vivante](../entities/argile-vivante.md)
+**Tour 6** : ressources exploitees
+**Tour 9** : argile, pierre
+**Tour 10** : argile vive, lait de pierre, roche braise
+**Tour 11** : [Argile Vivante](../entities/argile-vivante.md), Pierres de la Rivière
+**Tour 12** : [Argile Vivante](../entities/argile-vivante.md), poisson de la [Confluence](../entities/confluence.md)
+**Tour 14** : ressources exploitees
 
 ## Par catégorie
 
 ### 🍖 Nourriture
 
-- baies (Tour 2)
+- baie (Tour 2)
 - poissons (Tour 2)
-- poissons gras de la rivière (Tour 6)
+- lait de pierre (Tour 10)
 - poisson de la [Confluence](../entities/confluence.md) (Tour 12)
 
 ### 🌿 Végétaux
 
 - graines (Tour 2)
-- herbes pour parfumer (Tour 6)
-- tubercules (Tour 6)
-- Fleurs charnues (Tour 14)
-
-### 🦌 Faune
-
-- Nantons (Tour 14)
 
 ### 🪨 Matériaux
 
-- Pierres aux propriétés inconnues (Tour 9)
-- Argile Vive (Tour 10)
+- [argile vivante](../entities/argile-vivante.md) (Tour 3)
+- argile (Tour 9)
+- pierre (Tour 9)
+- argile vive (Tour 10)
+- roche braise (Tour 10)
+- Pierres de la Rivière (Tour 11)
 
 ### 📦 Autre
 
-- [Larmes du Ciel](../entities/larmes-du-ciel.md) (Tour 12)
+- mollusques (Tour 2)
+- ressources exploitees (Tour 6)

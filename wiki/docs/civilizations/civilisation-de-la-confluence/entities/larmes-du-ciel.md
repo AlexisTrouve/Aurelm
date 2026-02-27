@@ -1,9 +1,6 @@
 # Larmes du Ciel
 
-*Ressources* -- Civilisation de la Confluence
-
-!!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/larmes-du-ciel.md).
+*Technologies* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -22,18 +19,18 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-Les Larmes du Ciel sont un plat traditionnel d'une civilisation, préparé à partir de la racine pilée de la 'Morsure-des-Ancêtres' (Gingembre sauvage), de poisson fumé et de gibier marinés. Ce plat raconte l'histoire de cette civilisation en rappelant la force des ancêtres, les rivières et le gibier.
+Les Larmes du Ciel est une technique de préparation culinaire traditionnelle utilisée pour créer un plat spécial. Cette technologie consiste à mariner le poisson fumé et le gibier avec la racine pilée de Gingembre sauvage, puis à les disposer en couches dans des récipients en pierre avec des herbes et des baies. La cuisson lente permet d'extraire la graisse de la viande, créant une surface dorée qui rappelle la pluie.
 
 ## Chronologie
 
-**Tour 6: La cuisson lente des ingrédients fait perler la graisse à la surface du plat, évoquant une pluie.**
+**Tour 6: Le plat de Les Larmes du Ciel consiste en couches de poisson fumé et de gibier marinés avec la racine pilée. La cuisson lente fait perler la graisse à la surface, créant une atmosphère sereine.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 6**
 > "Larmes du Ciel"
 >
-> Contexte : plat traditionnel...
+> Contexte : nos plat traditionnel...
 
 ??? note "Sources -- Passages originaux"
 

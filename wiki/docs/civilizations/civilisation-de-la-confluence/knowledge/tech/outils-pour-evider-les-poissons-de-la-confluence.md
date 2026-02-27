@@ -14,10 +14,6 @@
 **Tour 12** (actuel) : **outils pour évider les poissons de la Confluence**
 **Tour 14** (suivant) : [Larmes du Ciel](larmes-du-ciel.md)
 
-## Meme categorie : Outils de peche
-
-- [hameçons et casiers à poisson](hamecons-et-casiers-a-poisson.md) (Tour 6)
-
 ## Extrait narratif
 
 > ...x que dans les rivières. Ce n'est pas pour en apprendre plus au sujet de leur grands ateliers qui délivrent une quantité sans-cesse plus importante d'outils, souvent d'excellente base pour des artefacts. Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utili...

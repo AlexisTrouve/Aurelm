@@ -1,6 +1,9 @@
 # Premier Artefact
 
-*Institutions* -- Civilisation de la Confluence
+*Technologies* -- Civilisation de la Confluence
+
+!!! info "Technologie active"
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/premier-artefact.md).
 
 ## 📊 Vue d'ensemble
 
@@ -17,20 +20,12 @@
 Tour 14  ████████████████████  ← Pic
 ```
 
-## Description
-
-Le Premier Artefact est une institution qui a utilisé les idéoglyphes pour immortaliser sa présence. Il s'agit d'un objet ou d'une entité importante, mais son existence n'est pas confirmée. Les méthodes employées sont associées à des pratiques anciennes et mystérieuses.
-
-## Chronologie
-
-**Tour 14: Les idéoglyphes, utilisés comme brouillons de gravure pour immortaliser le Premier Artefact, se sont révélés adaptés aux discussions des ailes grises sans nécessiter de déplacements. Les ébauches des idéoglyphes ont aidé les ailes grises à discuter d'éléments particuliers sans avoir besoin de s'éloigner ou de descendre sous terre.**
-
 ## 💬 Mentions avec contexte
 
 **Tour 14**
 > "Premier Artefact"
 >
-> Contexte : rouillons de gravure qui devaient immortaliser le Premier Artefact. Si ces gravures ne se sont montrées guère proban...
+> Contexte : Premier Artefact...
 
 ??? note "Sources -- Passages originaux"
 

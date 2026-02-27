@@ -1,6 +1,6 @@
 # Nature
 
-*Ressources* -- Civilisation de la Confluence
+*Lieux* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,13 +19,13 @@ Tour  2  ████████████████████  ← Pic
 
 ## Description
 
-La nature est une ressource qui fournit les biens de subsistance pour la survie des personnages. Elle comprend les éléments tels que la faune, la flore, les eaux et les saisons. Les personnages doivent s'adapter à ses rythmes et difficultés pour survivre.
+La Nature est une entité représentant l'environnement naturel de la région, caractérisée par ses vallées, rivières, forêts et sauvages. Elle offre un cadre pour l'existence des êtres vivants, notamment les protagonistes du récit, qui y trouvent nourriture, abri et ressources. La Nature peut être généreuse ou exigeante, influençant ainsi la vie quotidienne de ces personnages.
 
 ## Chronologie
 
-**Tour 2: La nature se montre prodigue pendant certaines saisons, offrant des quantités de poissons qui viennent se jeter sur les berges, mais la vie reste difficile. Les personnages doivent s'adapter aux fluctuations de la nature pour trouver de la nourriture.**
+**Tour 2: Les protagonistes s'installent en bord de rivière, ce qui suggère que la Nature leur fournit un habitat nécessaire à leur survie. La Nature se montre prodigue pendant certaines saisons, offrant des ressources abondantes. Cependant, la vie reste difficile, soulignant le côté exigeant de l'environnement.**
 
-- Turn 5: Pas de mention spécifique
+**Tour 5: La Nature est mentionnée en passant comme cadre pour les activités quotidiennes des protagonistes, qui chassent et récoltent dans les bois environnants.**
 
 ## 💬 Mentions avec contexte
 

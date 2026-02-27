@@ -1,16 +1,16 @@
 # Argile Vivante
 
-*Technologies* -- Civilisation de la Confluence
+*Ressources* -- Civilisation de la Confluence
 
 !!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/argile-vivante.md).
+    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/argile-vive.md).
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 5 |
-| **Tours actifs** | 1-14 (14 tours) |
+| **Mentions totales** | 8 |
+| **Tours actifs** | 1-13 (13 tours) |
 | **Pic d'activite** | Tour 1 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
@@ -18,31 +18,36 @@
 
 ```
 Tour  1  ████████████████████  ← Pic
-Tour  9  ████████████████████
+Tour  2  ████████████████████
+Tour  3  ████████████████████
+Tour  5  ████████████████████
+Tour  8  ████████████████████
 Tour 10  ████████████████████
-Tour 11  ████████████████████
-Tour 14  ████████████████████
+Tour 12  ████████████████████
+Tour 13  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Faucons Chasseurs** (Castes) — 5 tours
-- 🔵 **Loi du Sang et de la Bete** (Belief) — 4 tours
-- 🔵 **Caste de l'Air** (Castes) — 3 tours
+- 🔵 **Faucons Chasseurs** (Creatures) — 8 tours
+- 🔵 **Cercle des Sages** (Civilisations) — 8 tours
+- 🔵 **Gouffre Humide** (Lieux) — 8 tours
+- 🔵 **Cheveux de Sang** (Creatures) — 2 tours
 - 🔵 **Ailes-Grises** (Castes) — 2 tours
-- 🔵 **Regards-Libres** (Creatures) — 2 tours
 
 ## Description
 
-L'Argile Vivante est une technologie qui permet de créer des objets et des structures résistant à l'érosion et à la dégradation. Elle est composée d'une matière vivante capable de se remodeler et de s'adapter aux environnements. L'argile vivante est utilisée pour bâtir les demeures terrestres, comme la Maison des Découvertes, et pour ériger des autels en l'honneur des pionniers.
+L'Argile Vivante est une ressource naturelle qui joue un rôle crucial dans la culture et le développement de la civilisation. Elle est décrite comme ayant des vertus curatives, notamment grâce au « lait de pierre ». Cette ressource est utilisée pour créer des artefacts, dont certains sont chargés d'histoires et de mémoire. Bien que les détails soient limités, il semble que l'Argile Vivante ait une valeur importante dans l'économie et la culture de la civilisation.
 
 ## Chronologie
 
-**Tour 11: L'arbre de toutes les possibilités a ses racines dans l'argile vivante et est décrit comme une structure capable d'évoluer avec les saisons. La Maison des Découvertes sera construite près de la confluence, où l'eau chante.**
+**Tour 3: L'exploitation de la ressource est signalée pour la première fois, indiquant son importance économique. Cependant, les détails sur sa production ou utilisation sont rares à cette époque.**
 
-**Tour 14: L'Argile Vivante est utilisée pour créer les Autels des Pionniers, dont le premier est érigé à l'entrée du Gouffre Humide. Ces autels sont gravés avec les noms des pionniers qui ont disparu dans leur quête de connaissance.**
+**Tour 8: L'exploitation de la ressource est signalée pour la première fois, indiquant son importance économique. Cependant, les détails sur sa production ou utilisation sont rares à cette époque.**
+
+**Tour 12: Les légendes mentionnent le « lait de pierre » comme ayant des vertus curatives, confirmant les pouvoirs attribués à l'Argile Vivante. Cela suggère une utilisation médicale et thérapeutique de la ressource.**
 
 ## 💬 Mentions avec contexte
 
@@ -51,38 +56,46 @@ L'Argile Vivante est une technologie qui permet de créer des objets et des stru
 >
 > Contexte : Argile Vivante...
 
-**Tour 9**
+**Tour 2**
 > "Argile Vivante"
 >
 > Contexte : Argile Vivante...
 
-**Tour 10**
+**Tour 3**
+> "Argile Vivante"
+>
+> Contexte : ressource exploitée...
+
+**Tour 5**
 > "Argile Vivante"
 >
 > Contexte : Argile Vivante...
 
-**Tour 11**
+**Tour 8**
 > "Argile Vivante"
 >
-> Contexte : Argile Vivante...
-
-**Tour 14**
-> "Argile Vivante"
->
-> Contexte : Argile Vivante...
+> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
 ??? note "Sources -- Passages originaux"
 
     **Tour 1**
 
-    **Tour 9**
+    **Tour 2**
+
+    **Tour 3**
+
+    > ...ressource exploitée...
+
+    **Tour 5**
+
+    **Tour 8**
+
+    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
 
     **Tour 10**
 
-    **Tour 11**
+    **Tour 12**
 
-    > Deuxième Révélation : La Maison des Découvertes Dans mes visions, j'ai vu l'arbre de toutes les possibilités. Ses racines plongent dans l'argile vivante, ses branches touchent les quatre vents. Chaque saison lui apporte une nature différente, et c'est dans cette diversité qu'il trouve sa force éternelle. Nous bâtirons sa demeure terrestre près de la confluence, là où l'eau chante. Un grand cercle de pierre, d'argile et de bois, miroir de la voûte céleste. Car comme le ciel a ses saisons, notre Maison aura ses climats. À l'orient, la zone humide b...
+    > ...les légendes parlent du lait de pierre aux vertus curatives...
 
-    **Tour 14**
-
-    > À l'entrée de Gouffre Humide, nous érigeons le premier Autel des Pionniers - une stèle d'argile vivante où leurs noms sont gravés à jamais. Mais que ce ne soit pas le seul. Que chaque lieu où un explorateur, un chasseur, un artisan est tombé dans sa quête de connaissance reçoive son propre autel. De petits sanctuaires le long des routes et des rivières, où les voyageurs déposeront une offrande et recevront la protection de ceux qui sont partis avant eux.
+    **Tour 13**

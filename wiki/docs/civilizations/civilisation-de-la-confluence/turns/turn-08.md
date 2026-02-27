@@ -1,14 +1,14 @@
 # Tour 8
 
-📅 **07/12/2024** | 📊 **7 segments** | 🎯 **1 nouvelles entités**
+📅 **07/12/2024** | 📊 **7 segments** | 🎯 **7 nouvelles entités**
 
-> Les membres de la tribu commencent à chercher de nouveaux moyens pour transmettre leurs expériences et leurs idées aux générations futures, en créant des gravures, des histoires orales et d'autres formes de transmission. Cela entraîne une concurrence entre les différentes institutions de la société, notamment le cercle des sages, les voix de l'Aurore et les Gardiens de la confluence.
+> L'âge avancé des membres de la tribu a conduit à la recherche de moyens pour transmettre leurs expériences aux générations futures. Des idées concurrentes se sont développées, notamment autour des gravures et des histoires orales. Les institutions établies par les villageois commencent à entrer en conflit, notamment entre le cercle des sages, les voix de l'Aurore et les Gardiens de la confluence. Le Maitre du Jeu a indiqué que chacun doit rester dans sa place assignée par les cieux, mais cela n'a pas apaisé les tensions.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Aurore`
-- **Mentions totales** : 10
-- **Technologies** : 2
+- **Entités découvertes** : `Aurore`, `Chasseurs`, `Cheveux de Sang`, `Pêcheurs`, `Tribunal de moeurs`, `Artisans`, `Rhombes`
+- **Mentions totales** : 17
+- **Technologies** : 0
 - **Ressources** : 0
 - **Densité narrative** : 4 narratifs, 3 choix, 0 conséquences
 
@@ -44,35 +44,42 @@ C'est à travers les artefacts que le savoir trouve sa voie. Les artisans créen
 
 ### 🗺️ Géographie
 
-- Gouffre Humide
-
-### 🔧 Technologies
-
-- rhombes
-- Argile Vivante
+- Confluence
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- Croyance des Aurores
+- Aurore
+- Tribunal de moeurs
 
 ## 🏷️ Entités mentionnées
+
+**Aurore** (Belief) — 2 mentions ⭐ *Première apparition*
 
 **Regards-Libres** (Creatures) — 2 mentions
 
 **Ailes-Grises** (Castes) — 1 mentions
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Aurore** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Gardiens de la Confluence** (Civilisations) — 1 mentions
 
-**Cercle des Sages** (Institutions) — 1 mentions
+**Chasseurs** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Gardiens de la Confluence** (Institutions) — 1 mentions
+**Cheveux de Sang** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Tribunal des Moeurs** (Institutions) — 1 mentions
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Voix de l'Aurore** (Institutions) — 1 mentions
+**Pêcheurs** (Creatures) — 1 mentions ⭐ *Première apparition*
+
+**Tribunal de moeurs** (Institutions) — 1 mentions ⭐ *Première apparition*
+
+**Gouffre Humide** (Lieux) — 1 mentions
+
+**Argile Vivante** (Ressources) — 1 mentions
+
+**Artisans** (Technologies) — 1 mentions ⭐ *Première apparition*
+
+**Rhombes** (Technologies) — 1 mentions ⭐ *Première apparition*
 
 ---
 

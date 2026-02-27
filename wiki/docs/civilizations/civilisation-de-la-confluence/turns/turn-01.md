@@ -1,14 +1,14 @@
 # Tour 1
 
-📅 **03/09/2024** | 📊 **8 segments** | 🎯 **8 nouvelles entités**
+📅 **03/09/2024** | 📊 **8 segments** | 🎯 **6 nouvelles entités**
 
-> La narration débute avec le discours d'un être qui se présente comme ayant combattu sans succès, mais qui décide maintenant de partager son pouvoir avec les humains émergents. Les premiers souvenirs des joueurs s'inscrivent dans un paysage glacial, caractérisé par une neige jusqu'à l'horizon et un ciel terne. Le changement arrive lorsqu'apparaissent les premières plantes, suivies de la fonte de la neige, de la formation de rivières et d'un sol noirâtre émergeant. Les joueurs découvrent leur conscience comme petits mammifères, souffrant du manque de surprises dans leur environnement. Ils rencontrent des humains, méfiants et affamés, auxquels ils apprennent à survivre en leur enseignant diverses techniques pour chasser, pêcher ou trouver nourriture.
+> Le monde est à l'origine un paysage glacial et immobile, où la neige recouvre tout. Cependant, avec l'apparition des premières plantes, le monde commence à changer rapidement. Les rivières se forment, le sol noirâtre émerge, et une lumière aveuglante apparaît dans le ciel. Les personnages prennent conscience pour la première fois et découvrent l'ennui. Ils sont ensuite confrontés aux premiers hommes qui semblent perdus et affamés.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Loi du Sang et de la Bete`, `Caste de l'Air`, `Faucons Chasseurs`, `Cheveux de Sang`, `Confluents`, `Nanzagouets`, `Blanc sur blanc`, `Argile Vivante`
-- **Mentions totales** : 8
-- **Technologies** : 1
+- **Entités découvertes** : `Cercle des Sages`, `Faucons Chasseurs`, `Je me suis rendu à l'évidence`, `Blanc sur blanc`, `Gouffre Humide`, `Argile Vivante`
+- **Mentions totales** : 7
+- **Technologies** : 0
 - **Ressources** : 0
 - **Densité narrative** : 5 narratifs, 2 choix, 0 conséquences
 
@@ -45,32 +45,22 @@ Je leur montre comment suivre la rivière mène à des lieux de vie et de paix. 
 
 ### 🗺️ Géographie
 
-- rivière
-- cascade
-- guet succédé de rapides
-- île au milieu de la rivière
-
-### 🔧 Technologies
-
-- Argile Vivante
+- Premier Âge
+- Gouffre Humide
 
 ## 🏷️ Entités mentionnées
 
-**Loi du Sang et de la Bete** (Belief) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Caste de l'Air** (Castes) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Castes) — 1 mentions ⭐ *Première apparition*
+**Je me suis rendu à l'évidence** (Evenements) — 1 mentions ⭐ *Première apparition*
 
-**Cheveux de Sang** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Blanc sur blanc** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Confluents** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Gouffre Humide** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Nanzagouets** (Civilisations) — 1 mentions ⭐ *Première apparition*
-
-**Blanc sur blanc** (Evenements) — 1 mentions ⭐ *Première apparition*
-
-**Argile Vivante** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Argile Vivante** (Ressources) — 1 mentions ⭐ *Première apparition*
 
 ---
 

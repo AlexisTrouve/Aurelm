@@ -2,9 +2,6 @@
 
 *Lieux* -- Civilisation de la Confluence
 
-!!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/outils-pour-evider-les-poissons-de-la-confluence.md).
-
 ## 📊 Vue d'ensemble
 
 | | |
@@ -22,20 +19,18 @@ Tour  6  ████████████████████  ← Pic
 
 ## Description
 
-La Confluence est une place située à la rencontre de deux fleuves, l'un bleu azur et l'autre vert. Cet endroit offre une terre fertile et des largesses pour les habitants du village. Il s'agit d'un emplacement idéal qui a permis au petit groupe de survivants de prospérer.
+La Confluence est un lieu géographique stratégique où deux rivières, l'une bleu azur et l'autre vert, se rejoignent en une zone fertile. C'est là que le peuple du joueur a choisi de s'établir, offrant ainsi une sécurité et des conditions favorables à la prospérité.
 
 ## Chronologie
 
-**Tour 2: Pas de données disponibles pour ce tour**
-
-**Tour 6: Le protagoniste se réveille dans le village et se rappelle avoir guidé son peuple jusqu'à la Confluence, un endroit où il pourrait prospérer. La Vallée a offert ses largesses aux tiens, et la Confluence, la sécurité.**
+**Tour 6: La Vallée offre ses largesses aux tiens et la Confluence leur assure la sécurité.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 6**
 > "Confluence"
 >
-> Contexte : Confluence...
+> Contexte : la Confluence, la sécurité...
 
 ??? note "Sources -- Passages originaux"
 

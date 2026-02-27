@@ -2,14 +2,14 @@
 
 📅 **15/01/2025** | 📊 **11 segments** | 🎯 **1 nouvelles entités**
 
-> La société de la Confluence est marquée par la création d'artefacts, objets qui reçoivent une vie propre grâce à l'intervention des artisans. Ces artefacts sont considérés comme symboles de continuité avec les ancêtres et sont souvent utilisés dans des autels pour attirer leur attention. Les deux peuples des villages, dont les uns ont un ciel clair et les autres ne connaissent pas ce phénomène, développent des arts différents en fonction de leurs particularités. Les artisans sans ciel se concentrent sur la création d'objets utiles au quotidien, tandis que ceux avec des ciels clairs créent des outils pour les rituels sacrés et la musique. Cependant, une nouvelle mutation, connue sous le nom de 'Touché par les ancêtres', commence à se propager chez les ciels libres, où leurs yeux prennent la couleur du ciel et leurs chevelures deviennent dorées.
+> Dans la vallée, la nature est constante et changeante, et c'est aux artisans de transformer cette nature en donnant vie aux objets. Chaque génération ajoute sa marque à ces objets, les rendant uniques et emplissant les logis des villageois. Les artisans sont respectés et leur fierté tient à leur praticité pour certains ou au lien avec le monde spirituel pour d'autres. Cependant, une mutation inquiétante se répand parmi les ciels libres, où les yeux et la chevelure prennent des couleurs insolites.
 
 ## 📊 Statistiques du tour
 
 - **Entités découvertes** : `Porteurs de Flamme`
-- **Mentions totales** : 10
-- **Technologies** : 2
-- **Ressources** : 1
+- **Mentions totales** : 6
+- **Technologies** : 1
+- **Ressources** : 2
 - **Densité narrative** : 8 narratifs, 3 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -55,45 +55,39 @@ Ces Porteurs de Flamme développeront progressivement un langage de signes et de
 
 ### 🗺️ Géographie
 
-- Vallée
-- Montagnes
-- Gouffre Humide
+- vallée
+- montagne
+- rivières
+- Cercles de Vigile
+- Antres des Échos
 
 ### 🔧 Technologies
 
-- Argile Vivante
-- Lance
+- artisanat
 
 ### 🌾 Ressources
 
-- Pierres aux propriétés inconnues
+- pierre
+- argile
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bête
 - Rituel du Regard Partagé
+- Croyance aux Ailes-Grises
 
 ## 🏷️ Entités mentionnées
 
-**Loi du Sang et de la Bete** (Belief) — 1 mentions
+**Aurore** (Belief) — 1 mentions
 
 **Ailes-Grises** (Castes) — 1 mentions
 
-**Caste de l'Air** (Castes) — 1 mentions
+**Voix de l'Aurore** (Civilisations) — 1 mentions
 
-**Faucons Chasseurs** (Castes) — 1 mentions
-
-**Porteurs de Flamme** (Castes) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
 **Regards-Libres** (Creatures) — 1 mentions
 
-**Enfants du Courant** (Institutions) — 1 mentions
-
-**Gardiens de la Confluence** (Institutions) — 1 mentions
-
-**Voix de l'Aurore** (Institutions) — 1 mentions
-
-**Argile Vivante** (Technologies) — 1 mentions
+**Porteurs de Flamme** (Institutions) — 1 mentions ⭐ *Première apparition*
 
 ---
 

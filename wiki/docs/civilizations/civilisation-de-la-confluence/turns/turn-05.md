@@ -1,14 +1,14 @@
 # Tour 5
 
-📅 **20/10/2024** | 📊 **4 segments** | 🎯 **5 nouvelles entités**
+📅 **20/10/2024** | 📊 **4 segments** | 🎯 **7 nouvelles entités**
 
-> Dans la civilisation de la Confluence, il est essentiel que la tribu croisse au sein de cette terre pour laquelle ils se sont sacrifiés. Cependant, une concurrence féroce entre les hommes pour s'accaparer les femmes a créé un système où les sans-ciel sont exclus et les femmes deviennent propriété de leur mari. Ce système renforce la notion de famille et la cohésion entre ses membres est vitale, car leurs liens ne sont pas seulement de parenté mais spirituelle. Les enfants apprennent en compagnie de leur mère les noms de leurs ancêtres et ce qu'ils ont accompli, ce qui leur enseigne des leçons morales et ce qui est attendu d'eux au sein de la tribu.
+> La tribu de la Confluence vit dans l'obligation de croître et de faire fructifier la terre qui leur a été donnée par les ancêtres. Cela entraîne une concurrence féroce entre les hommes pour s'accaparer des femmes, ce qui conduit à l'exclusion progressive des sans-ciel. La famille devient un élément essentiel à la cohésion sociale, avec les liens familiaux étant non seulement de parenté mais également spirituels. Les enfants apprennent en compagnie de leur mère les histoires et leçons morales qui leur sont transmises par leurs ancêtres.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Sans-Ciel`, `Peuple des Eaux`, `Famille`, `Rivières`, `Généalogie`
-- **Mentions totales** : 9
-- **Technologies** : 2
+- **Entités découvertes** : `Sans-ciel`, `Enfants`, `Peuple des eaux`, `Tribu`, `Femme`, `Tribunal spécial`, `Mari`
+- **Mentions totales** : 11
+- **Technologies** : 1
 - **Ressources** : 0
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
@@ -36,42 +36,39 @@ Les esprits m'ont montré notre erreur : nous ne pouvons faire coexister sur la 
 
 ## 🔍 Découvertes
 
-### 🗺️ Géographie
-
-- Montagne
-- Confluents
-- Gouffre Humide
-
 ### 🔧 Technologies
 
-- Argile Vivante
-- Pointes de flèches
+- inventions/savoir-faire adoptes
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bête
-- Loi des Ancêtres
-- Rite de l'Union avec les Esprits
+- les esprits
+- le mariage sacré entre la terre et le ciel
+- la vérité : des nuages naissent les rivières, et des sans-ciels naîtra le peuple des eaux
 
 ## 🏷️ Entités mentionnées
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Sans-ciel** (Castes) — 1 mentions ⭐ *Première apparition*
 
-**Sans-Ciel** (Castes) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Confluents** (Civilisations) — 1 mentions
+**Enfants** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Peuple des Eaux** (Civilisations) — 1 mentions ⭐ *Première apparition*
+**Peuple des eaux** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Cercle des Sages** (Institutions) — 1 mentions
+**Tribu** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Famille** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Tribunal des Moeurs** (Institutions) — 1 mentions
+**Femme** (Creatures) — 1 mentions ⭐ *Première apparition*
 
-**Rivières** (Ressources) — 1 mentions ⭐ *Première apparition*
+**Tribunal spécial** (Institutions) — 1 mentions ⭐ *Première apparition*
 
-**Généalogie** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Mari** (Personnages) — 1 mentions ⭐ *Première apparition*
+
+**Gouffre Humide** (Lieux) — 1 mentions
+
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

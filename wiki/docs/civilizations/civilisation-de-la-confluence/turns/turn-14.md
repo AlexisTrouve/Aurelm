@@ -1,15 +1,15 @@
 # Tour 14
 
-📅 **08/09/2025** | 📊 **176 segments** | 🎯 **1 nouvelles entités**
+📅 **08/09/2025** | 📊 **176 segments** | 🎯 **3 nouvelles entités**
 
-> Les Ailes-Grises continuent leur pèlerinage dans les halls sacrés de Gouffre Humide, méditant et étudiant la Grande Fresque. Ils y voient un avertissement des premiers ancêtres, qui ont utilisé des techniques inconnues pour la créer. Les Ailes-Grises interprètent les images en fonction de leurs propres croyances et traditions, mais il est clair que la Fresque représente une vision du monde complexe et mystérieuse.
+> La civilisation de la Confluence est en train d'explorer les ruines de Gouffre Humide, un ancien site sacré qui abrite des fresques représentant les premiers ancêtres et leurs légendaires pouvoirs. Les habitants de la vallée se sont rendus compte que ces fresques dépassent leur compréhension actuelle et qu'elles peuvent être le secret pour comprendre leurs propres origines. Cependant, l'accès à ces ruines est difficile en raison des pièges mortels qui les entourent et de la complexité des galeries qui y mènent.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Croyance en la Reincarnation`
-- **Mentions totales** : 10
-- **Technologies** : 2
-- **Ressources** : 2
+- **Entités découvertes** : `Nanzagouets`, `Pouleheimos`, `Tlazhuaneca`
+- **Mentions totales** : 7
+- **Technologies** : 1
+- **Ressources** : 1
 - **Densité narrative** : 140 narratifs, 24 choix, 11 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -487,45 +487,35 @@ __Choix : Siliaska - Ceux qui portent le regard libre__
 
 ### 🗺️ Géographie
 
-- Gouffre Humide
-- Péninsule battue par les vents et les tempêtes
+- lieux nommes
 
 ### 🔧 Technologies
 
-- Argile Vivante
-- Larmes du Ciel
+- inventions/savoir-faire adoptes
 
 ### 🌾 Ressources
 
-- Nantons
-- Fleurs charnues
+- ressources exploitees
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- Croyance en la Reincarnation
+- croyances/lois/rituels nommes
 
 ## 🏷️ Entités mentionnées
 
-**Croyance en la Reincarnation** (Belief) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Loi du Sang et de la Bete** (Belief) — 1 mentions
+**Nanzagouets** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Caste de l'Air** (Castes) — 1 mentions
+**Pouleheimos** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Tlazhuaneca** (Civilisations) — 1 mentions ⭐ *Première apparition*
 
-**Cheveux de Sang** (Civilisations) — 1 mentions
+**Cheveux de Sang** (Creatures) — 1 mentions
 
-**Confluents** (Civilisations) — 1 mentions
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Nanzagouets** (Civilisations) — 1 mentions
-
-**Cercle des Sages** (Institutions) — 1 mentions
-
-**Tribunal des Moeurs** (Institutions) — 1 mentions
-
-**Argile Vivante** (Technologies) — 1 mentions
+**Gouffre Humide** (Lieux) — 1 mentions
 
 ---
 

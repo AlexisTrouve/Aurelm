@@ -1,14 +1,14 @@
 # Tour 13
 
-📅 **19/08/2025** | 📊 **2 segments** | 🎯 **1 nouvelles entités**
+📅 **19/08/2025** | 📊 **2 segments** | 🎯 **0 nouvelles entités**
 
-> Le Maitre du Jeu a répété ses instructions aux groupes qui l'ont rejoint, avant de les conduire vers la galerie souterraine de Gouffre Humide. Ils descendent dans les profondeurs, où ils découvrent des fresques anciennes sur les parois, qui représentent des bêtes et des hommes. Le sens de ces fresques est inconnu, mais elles sont différentes de celles trouvées dans certaines colonies souterraines. Le groupe continue sa descente et rencontre un lac souterrain qui les oblige à faire demi-tour. Ils découvrent ensuite une chambre secrète où ils trouvent des artefacts abandonnés, ainsi que des squelettes alignés sur leur dos. Les explorateurs comprennent alors qu'il y a eu une catastrophe ici et qu'il faudrait éviter de déranger les morts.
+> Après un discours intimidant, le groupe a pénétré dans la structure souterraine, où ils ont découvert des gravures et des peintures sur les parois. Ils ont également trouvé un bol couvert de poussière et plusieurs artefacts abandonnés. Cependant, leur exploration a été interrompue par l'écoulement d'un lac souterrain et un éboulement qui leur a coupé la voie. Alors qu'ils rebroussaient chemin, ils ont entendu un appel à l'aide provenant de loin, ce qui les a conduits vers une grotte où ils ont trouvé deux groupes de personnes affaiblies et plusieurs squelettes.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Fresques`
-- **Mentions totales** : 6
-- **Technologies** : 1
+- **Entités découvertes** : aucune
+- **Mentions totales** : 4
+- **Technologies** : 3
 - **Ressources** : 0
 - **Densité narrative** : 1 narratifs, 1 choix, 0 conséquences
 
@@ -44,25 +44,22 @@ Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre pr
 ### 🗺️ Géographie
 
 - Gouffre Humide
-- Profondeurs
 
 ### 🔧 Technologies
 
-- Argile Vivante
+- pigments
+- artefacts translucides
+- techniques de creusage
 
 ## 🏷️ Entités mentionnées
 
-**Caste de l'Air** (Castes) — 1 mentions
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Cheveux de Sang** (Civilisations) — 1 mentions
+**Gouffre Humide** (Lieux) — 1 mentions
 
-**Confluents** (Civilisations) — 1 mentions
-
-**Nanzagouets** (Civilisations) — 1 mentions
-
-**Fresques** (Technologies) — 1 mentions ⭐ *Première apparition*
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

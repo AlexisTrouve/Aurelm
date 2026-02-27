@@ -1,15 +1,15 @@
 # Tour 3
 
-📅 **13/09/2024** | 📊 **4 segments** | 🎯 **3 nouvelles entités**
+📅 **13/09/2024** | 📊 **4 segments** | 🎯 **0 nouvelles entités**
 
-> La tribu de la Confluence continue à évoluer et à grandir sous ton influence. Les rites funéraires ont été modifiés, avec l'idée que les oiseaux récupèrent le mort pour l'emmener au ciel. La vénération des ancêtres s'est développée, et les anciens sont maintenant considérés comme une source de sagesse. Les membres de la tribu se montrent respectueux et obéissants envers toi, qui es le plus ancien du groupe. Tu as guidé la tribu pour utiliser leurs terrains de chasse de manière équitable, alternant entre différents sites saisonniers. La viande est fumée et conservée pour les périodes difficiles. Les membres de la tribu se sont multipliés et te considèrent désormais comme un leader influent.
+> Les saisons passent et les traditions changent. Les individus trépassés sont emmenés à des sommets où ils sont déposés pour être récupérés par les oiseaux qui les emmènent au ciel. La tribu se développe et adopte de nouvelles croyances, notamment l'adoration des anciens qui deviennent une source de sagesse. Le Maitre du Jeu, qui est considéré comme le plus ancien de la tribu, a guidé les membres dans l'utilisation de leur territoire de chasse et leur a permis de se développer. Il réalise que sa position évolue et que ses descendants se font de plus en plus nombreux.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Parents`, `Cercle des Sages`, `Oracle de la tribu`
-- **Mentions totales** : 4
-- **Technologies** : 1
-- **Ressources** : 0
+- **Entités découvertes** : aucune
+- **Mentions totales** : 5
+- **Technologies** : 0
+- **Ressources** : 1
 - **Densité narrative** : 3 narratifs, 1 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -37,27 +37,28 @@ Je décide de forger une nouvelle structure pour la tribu. Je convoque les espri
 
 ### 🗺️ Géographie
 
-- Confluence
-- Sommet du territoire de la tribu
+- crêtes adjacentes
+- sommet du territoire de la tribu
+- confluence
 
-### 🔧 Technologies
+### 🌾 Ressources
 
-- Argile Vivante
+- argile vivante
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- Croyance que les oiseaux viennent récupérer morceau par morceau le mort pour l'emmener au ciel
+- croyance que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel
+- adoration des anciens comme source de savoir
 
 ## 🏷️ Entités mentionnées
 
-**Loi du Sang et de la Bete** (Belief) — 1 mentions
+**Cercle des Sages** (Civilisations) — 2 mentions
 
-**Parents** (Castes) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Cercle des Sages** (Institutions) — 1 mentions ⭐ *Première apparition*
+**Gouffre Humide** (Lieux) — 1 mentions
 
-**Oracle de la tribu** (Personnages) — 1 mentions ⭐ *Première apparition*
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

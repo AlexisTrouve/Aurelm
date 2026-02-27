@@ -11,7 +11,7 @@
 
 **Tour 8** (precedent) : [rhombes](rhombes.md)
 **Tour 9** (actuel) : **Lance**
-**Tour 10** (suivant) : [Lait de Pierre](lait-de-pierre.md), [Roches Braise](roches-braise.md)
+**Tour 10** (suivant) : [Lait de Pierre](lait-de-pierre.md), [Roche Braise](roche-braise.md)
 
 ## Meme categorie : Outils de chasse
 

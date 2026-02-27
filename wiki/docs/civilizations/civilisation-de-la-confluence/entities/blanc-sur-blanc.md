@@ -1,6 +1,6 @@
 # Blanc sur blanc
 
-*Evenements* -- Civilisation de la Confluence
+*Lieux* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,20 +19,20 @@ Tour  1  ████████████████████  ← Pic
 
 ## Description
 
-Blanc sur blanc est l'état initial du monde, caractérisé par un ciel terne et uniforme, une neige qui recouvre tout et un paysage immobile. Il marque le début de la genèse d'une civilisation. Cette entité n'a pas de contenu spécifique, mais plutôt un contexte et un rôle défini.
+Blanc sur blanc est un paysage décrit comme étant grisâtre, avec de la neige jusqu'à l'horizon et un ciel terne. Il s'agit du premier souvenir du personnage et il comprend que quelque chose arrive dans ce monde figé lorsqu'il voit une première plante percer cette croûte glacée.
 
 ## Chronologie
 
-**Tour 1: Le joueur décrit son propre échec et sa décision de disséminer ce qu'il lui reste de pouvoir. Il mentionne que le monde est dans l'état 'Blanc sur blanc' lorsqu'il se souvient de ses premiers souvenirs.**
+**Tour 1: Le personnage décrit ses souvenirs, y compris Blanc sur blanc, comme un paysage immobile avec de la neige jusqu'à l'horizon et un ciel terne. C'est là que les choses commencent à bouger, symbolisé par une plante qui pénètre dans ce monde figé.**
 
-**Tour 5: Cette entité n'est pas explicitement mentionnée comme étant active ou présente dans ce tour.**
+**Tour 5: Pas d'information spécifique disponible pour le tour 5.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 1**
 > "Blanc sur blanc"
 >
-> Contexte : premier souvenir...
+> Contexte : Blanc sur blanc...
 
 ??? note "Sources -- Passages originaux"
 

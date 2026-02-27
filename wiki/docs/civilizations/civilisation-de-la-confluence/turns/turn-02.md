@@ -1,15 +1,15 @@
 # Tour 2
 
-📅 **06/09/2024** | 📊 **5 segments** | 🎯 **5 nouvelles entités**
+📅 **06/09/2024** | 📊 **5 segments** | 🎯 **2 nouvelles entités**
 
-> Après avoir promis aux membres de la civilisation de la Confluence un havre de paix, le Maitre du Jeu les a amenés à un lieu encaissé dans une large vallée, où deux rivières cristallines se rencontrent. Bien qu'ils soient épuisés et que la nourriture soit difficile à trouver, ils ont finalement pu s'installer et commencer à construire leur nouvelle vie. Cependant, la mort est toujours présente dans leur quotidien, ce qui les amène à se demander où vont ceux qui disparaissent.
+> Après avoir promis aux membres de la civilisation un havre de paix et une terre de beauté, le groupe arrive finalement au lieu qu'ils recherchaient, mais leur installation s'avère difficile. Ils doivent apprendre à se nourrir en utilisant des outils rudimentaires, comme des gourdins et des pieux, et à reconnaître les opportunités fournies par la nature. Malgré les difficultés, ils commencent à repousser les effets de leur épuisement initial et à développer une vie plus stable.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Eux`, `Berges`, `Bois environnants`, `Confluence de deux rivières cristallines`, `Nature`
-- **Mentions totales** : 5
-- **Technologies** : 2
-- **Ressources** : 3
+- **Entités découvertes** : `Ciel`, `Eux`
+- **Mentions totales** : 6
+- **Technologies** : 1
+- **Ressources** : 4
 - **Densité narrative** : 3 narratifs, 2 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
@@ -38,36 +38,38 @@ Je leur montre des techniques afin de perfectionner l'art de la chasse et à pr�
 
 ### 🗺️ Géographie
 
-- Confluence des deux rivières cristallines
-- Vallée large
+- confluence de deux rivières cristallines
+- large vallée
 
 ### 🔧 Technologies
 
-- gourdins
-- pieux
+- inventions/savoir-faire adoptes
 
 ### 🌾 Ressources
 
 - poissons
+- mollusques
+- baie
 - graines
-- baies
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- Loi de l'Esprit qui veille sur les vivants depuis le ciel
+- l'esprit s'élève et veille sur les vivants depuis le ciel
+- il faut offrir en respect aux défunts des preuves de sagesses
 
 ## 🏷️ Entités mentionnées
 
-**Eux** (Personnages) — 1 mentions ⭐ *Première apparition*
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Berges** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Faucons Chasseurs** (Creatures) — 1 mentions
 
-**Bois environnants** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Ciel** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Confluence de deux rivières cristallines** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Eux** (Lieux) — 1 mentions ⭐ *Première apparition*
 
-**Nature** (Ressources) — 1 mentions ⭐ *Première apparition*
+**Gouffre Humide** (Lieux) — 1 mentions
+
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

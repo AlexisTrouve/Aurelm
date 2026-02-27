@@ -1,14 +1,14 @@
 # Tour 12
 
-📅 **10/06/2025** | 📊 **8 segments** | 🎯 **2 nouvelles entités**
+📅 **10/06/2025** | 📊 **8 segments** | 🎯 **0 nouvelles entités**
 
-> Le village de la Confluence est secoué par un meurtre, et le Maitre du Jeu est chargé de résoudre la situation. L'accusation pèse contre un sans-ciel, mais il n'y a pas de preuve formelle. Le Tribunal des mœurs doit donc décider comment punir l'assassin. Dans un autre contexte, le Maitre du Jeu est approché par des ailes grises qui lui rapportent des nouvelles inquiétantes concernant Gouffre Humide.
+> Dans le village de la Confluence, un événement tragique a eu lieu : l'un des habitants, un ciel-clair, a été assassiné avec un couteau. Les accusations se portent contre un homme sans-ciel qui aurait pu être impliqué dans ce meurtre. Le contexte social et politique de la communauté est complexe, avec des tensions entre les différents groupes et castes. La découverte de cette galerie abandonnée sous-terraine suscite également le mécontentement d'une partie de la population.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : `Assemblée des Chefs`, `Gouffre Humide`
-- **Mentions totales** : 9
-- **Technologies** : 2
+- **Entités découvertes** : aucune
+- **Mentions totales** : 6
+- **Technologies** : 1
 - **Ressources** : 2
 - **Densité narrative** : 5 narratifs, 3 choix, 0 conséquences
 
@@ -58,42 +58,35 @@ Ils ont creusé trop avidement et trop profondément Choix : Expédition de l'ar
 
 ### 🗺️ Géographie
 
+- vallée
 - Gouffre Humide
 - Confluence
-- Vallée
+- montagne
 
 ### 🔧 Technologies
 
-- Argile Vivante
-- outils pour évider les poissons de la Confluence
+- inventions/savoir-faire adoptes
 
 ### 🌾 Ressources
 
 - poisson de la Confluence
-- Larmes du Ciel
+- Argile Vivante
 
 ### ✨ Croyances
 
-- Loi du Sang et de la Bete
-- rituels des Enfants des Échos
+- croyance dans les vertus curatives du lait de pierre
 
 ## 🏷️ Entités mentionnées
 
-**Enfants des Échos** (Civilisations) — 2 mentions
+**Faucons Chasseurs** (Creatures) — 2 mentions
 
-**Ailes-Grises** (Castes) — 1 mentions
+**Cercle des Sages** (Civilisations) — 1 mentions
 
-**Faucons Chasseurs** (Castes) — 1 mentions
+**Cheveux de Sang** (Creatures) — 1 mentions
 
-**Passes-Bien** (Civilisations) — 1 mentions
+**Gouffre Humide** (Lieux) — 1 mentions
 
-**Assemblée des Chefs** (Institutions) — 1 mentions ⭐ *Première apparition*
-
-**Cercle des Sages** (Institutions) — 1 mentions
-
-**Arbitre des Esprits** (Personnages) — 1 mentions
-
-**Gouffre Humide** (Lieux) — 1 mentions ⭐ *Première apparition*
+**Argile Vivante** (Ressources) — 1 mentions
 
 ---
 

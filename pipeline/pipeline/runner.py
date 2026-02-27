@@ -29,6 +29,7 @@ from .summarizer import summarize_turn, AuthorContent
 from .entity_profiler import build_entity_profiles
 from .alias_resolver import resolve_aliases
 from .fact_extractor import FactExtractor
+from .extraction_versions import get_version, list_versions, ExtractionVersion
 from . import llm_stats
 
 
@@ -46,6 +47,8 @@ def run_pipeline(
     use_llm: bool = True,
     wiki_dir: str | None = None,
     track_progress: bool = False,
+    extraction_version: str = "v1-baseline",
+    model: str = "llama3.1:8b",
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
 
@@ -53,6 +56,14 @@ def run_pipeline(
     """
     _entity_cache.clear()
     llm_stats.reset()
+
+    global _active_model
+    _active_model = model
+
+    version = get_version(extraction_version)
+    print(f"[*] Extraction version: {version.name} -- {version.description}")
+    print(f"[*] Model: {model}")
+
     if use_llm:
         _register_unload_atexit()
 
@@ -95,7 +106,7 @@ def run_pipeline(
 
     # Step 6: Process each turn
     print("[6/9] Processing turns (classify -> extract facts -> summarize)...")
-    fact_extractor = FactExtractor() if use_llm else None
+    fact_extractor = FactExtractor(model=model, version=version) if use_llm else None
 
     conn = get_connection(db_path)
     run_id = _start_pipeline_run(conn)
@@ -153,7 +164,7 @@ def run_pipeline(
             # Summarize -- multi-call: 1 LLM call per author
             author_contents = _split_by_author(chunk.messages, gm_author_id)
             summary = summarize_turn(
-                turn_text, use_llm=use_llm,
+                turn_text, model=model, use_llm=use_llm,
                 civ_name=civ_name, player_name=player_name,
                 author_contents=author_contents if use_llm else None,
             )
@@ -235,6 +246,7 @@ def run_pipeline(
         print("[7/9] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
             db_path,
+            model=model,
             use_llm=True,
             incremental=True,
             run_id=run_id,
@@ -244,7 +256,7 @@ def run_pipeline(
 
         # Step 8: Alias resolution
         print("[8/9] Resolving entity aliases...")
-        alias_stats = resolve_aliases(db_path, profiles, use_llm=True)
+        alias_stats = resolve_aliases(db_path, profiles, model=model, use_llm=True)
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
     else:
@@ -341,12 +353,14 @@ def run_pipeline(
     return stats
 
 
+_active_model: str = "llama3.1:8b"
+
+
 def _unload_ollama_model() -> None:
     """Unload Ollama model to free VRAM and Windows pagefile reservation."""
-    from .summarizer import DEFAULT_MODEL
     try:
         import ollama
-        ollama.generate(model=DEFAULT_MODEL, prompt="", keep_alive=0)
+        ollama.generate(model=_active_model, prompt="", keep_alive=0)
         print("  Ollama model unloaded from VRAM.")
     except Exception:
         pass  # Non-critical — Ollama may already be unloaded or not running
@@ -606,7 +620,7 @@ def _build_civ_entity_lookup(conn, civ_id: int) -> dict:
     return lookup
 
 
-def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True) -> int:
+def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True, extraction_version: str = "v1-baseline") -> int:
     """Re-run fact extraction on all existing turns for a civilization.
 
     Uses the hybrid LLM + pattern approach with the civ's entity lookup.
@@ -627,7 +641,8 @@ def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True) -> 
     entity_lookup = _build_civ_entity_lookup(conn, civ_id)
     print(f"  Entity lookup: {len(entity_lookup)} entries")
 
-    fact_extractor = FactExtractor() if use_llm else FactExtractor.__new__(FactExtractor)
+    version = get_version(extraction_version)
+    fact_extractor = FactExtractor(version=version) if use_llm else FactExtractor.__new__(FactExtractor)
     if not use_llm:
         # Init a no-LLM extractor that only runs the pattern pass
         fact_extractor.ollama_base_url = ""
@@ -742,6 +757,8 @@ def run_pipeline_for_channels(
     wiki_dir: str | None = None,
     gm_authors: set[str] | None = None,
     track_progress: bool = True,
+    extraction_version: str = "v1-baseline",
+    model: str = "llama3.1:8b",
 ) -> dict:
     """Run pipeline for all civs with a discord_channel_id set in DB.
 
@@ -777,7 +794,13 @@ def run_pipeline_for_channels(
         "per_civ": {},
     }
 
-    fact_extractor = FactExtractor() if use_llm else None
+    global _active_model
+    _active_model = model
+
+    version = get_version(extraction_version)
+    print(f"[*] Extraction version: {version.name} -- {version.description}")
+    print(f"[*] Model: {model}")
+    fact_extractor = FactExtractor(model=model, version=version) if use_llm else None
 
     for civ_id, civ_name, player_name, channel_id in civs:
         print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
@@ -845,7 +868,7 @@ def run_pipeline_for_channels(
 
                 author_contents = _split_by_author(chunk.messages, gm_author_id)
                 summary = summarize_turn(
-                    turn_text, use_llm=use_llm,
+                    turn_text, model=model, use_llm=use_llm,
                     civ_name=civ_name, player_name=player_name,
                     author_contents=author_contents if use_llm else None,
                 )
@@ -955,6 +978,14 @@ def main() -> None:
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
     parser.add_argument(
+        "--extraction-version", required=True,
+        help=f"Extraction version to use. Available: {', '.join(list_versions())}",
+    )
+    parser.add_argument(
+        "--model", default="llama3.1:8b",
+        help="Ollama model to use for LLM extraction (default: llama3.1:8b)",
+    )
+    parser.add_argument(
         "--reextract-facts", action="store_true",
         help="Re-run hybrid fact extraction (LLM + patterns) on all existing turns and update DB"
     )
@@ -992,6 +1023,8 @@ def main() -> None:
         use_llm=not args.no_llm,
         wiki_dir=args.wiki_dir,
         track_progress=args.track_progress,
+        extraction_version=args.extraction_version,
+        model=args.model,
     )
 
 

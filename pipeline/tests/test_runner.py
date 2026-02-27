@@ -105,6 +105,7 @@ class TestFullPipeline:
                 civ_name="Civilisation de la Confluence",
                 player_name="Rubanc",
                 use_llm=False,
+                extraction_version="v1-baseline",
             )
 
             # Check stats
@@ -158,6 +159,7 @@ class TestFullPipeline:
                 db_path=db_path,
                 civ_name="Civilisation de la Confluence",
                 use_llm=False,
+                extraction_version="v1-baseline",
             )
 
             conn = get_connection(db_path)

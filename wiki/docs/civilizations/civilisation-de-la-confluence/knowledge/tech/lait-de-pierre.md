@@ -1,4 +1,4 @@
-# Lait de Pierre
+# lait de pierre
 
 *Technologie* -- Civilisation de la Confluence
 
@@ -9,25 +9,26 @@
 
 ## Acquis en meme temps (Tour 10)
 
-- [Roches Braise](roches-braise.md)
+- [argile vive](argile-vive.md)
+- [roche braise](roche-braise.md)
 
 ## Arbre chronologique
 
-**Tour 9** (precedent) : [Lance](lance.md)
-**Tour 10** (actuel) : **Lait de Pierre**
-**Tour 11** (suivant) : [Regard-Libre](regard-libre.md)
+**Tour 9** (precedent) : [artisanat](artisanat.md)
+**Tour 10** (actuel) : **lait de pierre**
+**Tour 11** (suivant) : [Regards-Libres](regards-libres.md), [Arène](arene.md)
 
 ## Meme categorie : Autre
 
-- [Argile Vivante](argile-vivante.md) (Tour 1)
-- [La Voix des Cieux](la-voix-des-cieux.md) (Tour 4)
-- [Pointes de flèches](pointes-de-fleches.md) (Tour 5)
-- [outils de polissage](outils-de-polissage.md) (Tour 6)
+- [inventions/savoir-faire adoptes](inventions-savoir-faire-adoptes.md) (Tour 2)
 - [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)
-- [rhombes](rhombes.md) (Tour 8)
-- [Roches Braise](roches-braise.md) (Tour 10)
-- [Regard-Libre](regard-libre.md) (Tour 11)
-- [Larmes du Ciel](larmes-du-ciel.md) (Tour 14)
+- [argile vive](argile-vive.md) (Tour 10)
+- [roche braise](roche-braise.md) (Tour 10)
+- [Regards-Libres](regards-libres.md) (Tour 11)
+- [Arène](arene.md) (Tour 11)
+- [pigments](pigments.md) (Tour 13)
+- [artefacts translucides](artefacts-translucides.md) (Tour 13)
+- [techniques de creusage](techniques-de-creusage.md) (Tour 13)
 
 ## Extrait narratif
 

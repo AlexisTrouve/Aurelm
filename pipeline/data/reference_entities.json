@@ -1,0 +1,128 @@
+{
+  "description": "Curated ground truth entities for each civilization. Used by the pipeline to seed entity_entities on first run and to validate LLM extractions. This is DATA, not code — it is expected to grow as new civilizations and turns are added.",
+  "civilizations": {
+    "Civilisation de la Confluence": {
+      "entities": [
+        {"name": "Arbitre des Esprits", "type": "institution", "aliases": ["Arbitre", "Oracle de la tribu", "Oracle", "Rubanc"]},
+        {"name": "Cercle des Sages", "type": "institution", "aliases": ["Conseil des Sages", "Cercle de ses sages", "Cercle"]},
+        {"name": "Tribunal des Mœurs", "type": "institution", "aliases": ["Tribunal des Moeurs", "Tribunal de mœurs", "Tribunal de moeurs", "Tribunal spécial", "Tribunal special"]},
+        {"name": "Assemblée des Chefs", "type": "institution", "aliases": ["Assemblee des Chefs"]},
+        {"name": "Maison des Découvertes", "type": "institution", "aliases": ["Maison des Decouvertes"]},
+        {"name": "Hall des Serments", "type": "institution", "aliases": []},
+        {"name": "Autels des Pionniers", "type": "institution", "aliases": ["Autel des Pionniers"]},
+        {"name": "Salle du Conseil", "type": "institution", "aliases": []},
+        {"name": "Foyer du Savoir", "type": "institution", "aliases": []},
+
+        {"name": "Ciels-clairs", "type": "caste", "aliases": ["Ciels-Clairs", "Ciel-clair", "Enfants du Ciel", "Enfants du ciel clair"]},
+        {"name": "Sans-ciels", "type": "caste", "aliases": ["Sans-Ciels", "Enfants des Nuages", "Sanciel", "Sans-ciel", "Peuple des eaux", "Peuple des Eaux"]},
+        {"name": "Enfants du Courant", "type": "caste", "aliases": ["Enfants des courants", "Enfants des Courants"]},
+        {"name": "Enfants des Échos", "type": "caste", "aliases": ["Enfants des Echos", "Fils des Échos", "Fils des echos"]},
+        {"name": "Passes-bien", "type": "caste", "aliases": ["Gardiens de la Confluence"]},
+        {"name": "Caste de l'Air", "type": "caste", "aliases": []},
+        {"name": "Caste du Feu", "type": "caste", "aliases": []},
+        {"name": "Caste de l'Eau", "type": "caste", "aliases": []},
+        {"name": "Caste de la Terre", "type": "caste", "aliases": []},
+        {"name": "Caste de l'Éther", "type": "caste", "aliases": ["Caste de l'Ether"]},
+
+        {"name": "Ailes-Grises", "type": "person", "aliases": ["Ailes Grises", "Shamans"]},
+        {"name": "Faucons Chasseurs", "type": "person", "aliases": ["Faucon Chasseur", "Faucon Chasseur vétéran"]},
+        {"name": "Voix de l'Aurore", "type": "person", "aliases": []},
+        {"name": "Regards-Libres", "type": "creature", "aliases": ["Regards Libres", "Regard Libre", "Groupes de Regards-Libres"]},
+        {"name": "Porteurs de Flamme", "type": "person", "aliases": ["Porteur de Flamme"]},
+        {"name": "Proclamateurs", "type": "person", "aliases": []},
+        {"name": "Gardiens du Hall", "type": "institution", "aliases": ["Gardien du Hall", "Quatre Gardiens"]},
+
+        {"name": "Confluence", "type": "place", "aliases": ["La Confluence", "Confluence de deux rivières cristallines", "Rivières cristallines"]},
+        {"name": "Gouffre Humide", "type": "place", "aliases": ["Gouffre"]},
+        {"name": "Gorge Profonde", "type": "place", "aliases": []},
+        {"name": "Morsure-des-Ancêtres", "type": "place", "aliases": ["Morsure des Ancetres", "Gingembre sauvage"]},
+        {"name": "Cercles de Vigile", "type": "place", "aliases": ["Cercle de Vigile"]},
+        {"name": "Antres des Échos", "type": "place", "aliases": ["Antre des Echos"]},
+        {"name": "Vallée des camps temporaires", "type": "place", "aliases": ["Vallée des camps"]},
+
+        {"name": "Argile vivante", "type": "technology", "aliases": ["Argile Vivante", "Argile vive"]},
+        {"name": "Lait de Pierre", "type": "technology", "aliases": ["Lait de pierre"]},
+        {"name": "Roche Braise", "type": "technology", "aliases": ["Roches Braise"]},
+        {"name": "Rhombes", "type": "technology", "aliases": ["Rhombes sacrés", "Rhombes en pierre"]},
+        {"name": "Glyphes du Gouffre", "type": "technology", "aliases": ["Colliers de glyphes", "Glyphe", "Hiéroglyphes"]},
+        {"name": "Larmes du Ciel", "type": "technology", "aliases": ["Les Larmes du Ciel"]},
+        {"name": "Gourdins", "type": "technology", "aliases": []},
+        {"name": "Pieux", "type": "technology", "aliases": ["Pieus", "Pieu"]},
+        {"name": "Pointes de flèches", "type": "technology", "aliases": ["Pointes de fleches"]},
+        {"name": "Lances", "type": "technology", "aliases": ["Lance", "Lance à la pointe polie"]},
+        {"name": "Hameçons et casiers à poisson", "type": "technology", "aliases": ["Hameçons", "Casiers à poisson", "Hamecons"]},
+        {"name": "Outils pour évider les poissons", "type": "technology", "aliases": []},
+        {"name": "Outils de polissage", "type": "technology", "aliases": []},
+
+        {"name": "Grande Fresque", "type": "technology", "aliases": ["Grande Fresque des Premiers Ancêtres", "Fresque des Âges", "Fresque de Gouffre Humide", "Fresques"]},
+        {"name": "Premier Artefact", "type": "technology", "aliases": []},
+
+        {"name": "Cheveux de Sang", "type": "civilization", "aliases": ["Pupupasu", "Cheveux sanglants"]},
+        {"name": "Nanzagouets", "type": "civilization", "aliases": ["Nanzagouet"]},
+        {"name": "Tlazhuaneca", "type": "civilization", "aliases": []},
+        {"name": "Pouleheimos", "type": "civilization", "aliases": []},
+        {"name": "Siliaska", "type": "civilization", "aliases": []},
+        {"name": "Peuple du Ciel-clair", "type": "civilization", "aliases": ["Peuple des cieux"]},
+        {"name": "Confluents", "type": "civilization", "aliases": []},
+
+        {"name": "Croyance en la réincarnation", "type": "belief", "aliases": [], "origin": "Nanzagouets", "note": "Croyance nanzagouet, pas confluente. Mentionnee dans les tours de la Confluence lors du premier contact."},
+        {"name": "Loi du Sang et de la Bête", "type": "belief", "aliases": ["Lois du Sang", "Loi du Sang", "Loi du sang"]},
+        {"name": "Culte des Ancêtres", "type": "belief", "aliases": []},
+
+        {"name": "Rituel du Regard Partagé", "type": "event", "aliases": ["Regard Partagé"]},
+        {"name": "Grande Prospection", "type": "event", "aliases": []},
+        {"name": "Maladie des Antres", "type": "event", "aliases": []},
+        {"name": "Premiers Ancêtres", "type": "event", "aliases": ["Premiers Ancestres"]},
+        {"name": "Blanc sur Blanc", "type": "event", "aliases": ["Ciel Terne"]},
+        {"name": "Premier Âge", "type": "event", "aliases": ["Premier Age"]},
+        {"name": "Morsure des Ancêtres", "type": "belief", "aliases": ["Morsure-des-Ancêtres", "Morsure des Ancetres"]},
+
+        {"name": "Voix des Cieux", "type": "technology", "aliases": ["La voix des cieux"]},
+        {"name": "Maîtrise des Profondeurs", "type": "technology", "aliases": ["Maitrise des Profondeurs"]},
+        {"name": "Appel de l'Abysse", "type": "technology", "aliases": ["L'Appel de l'Abysse"]},
+
+        {"name": "Artefacts translucides", "type": "technology", "aliases": []},
+        {"name": "Pigments", "type": "technology", "aliases": []},
+        {"name": "Techniques de creusage", "type": "technology", "aliases": []},
+        {"name": "Filet de pêche", "type": "technology", "aliases": ["Filets de pêche"]},
+
+        {"name": "Arène", "type": "place", "aliases": ["L'arène", "Arene"]},
+        {"name": "Village sur pilotis", "type": "place", "aliases": ["Villages sur pilotis"]},
+        {"name": "Zone chaude", "type": "place", "aliases": [], "note": "Zone de la Maison des Découvertes"},
+        {"name": "Zone froide", "type": "place", "aliases": [], "note": "Zone de la Maison des Découvertes"},
+        {"name": "Zone humide", "type": "place", "aliases": [], "note": "Zone de la Maison des Découvertes"},
+        {"name": "Zone sèche", "type": "place", "aliases": ["Zone seche"], "note": "Zone de la Maison des Découvertes"},
+
+        {"name": "Confluence des Esprits", "type": "belief", "aliases": []},
+        {"name": "Rituels de fertilité", "type": "belief", "aliases": ["Rituels de fertilite"]},
+        {"name": "Règles de la piété filiale", "type": "belief", "aliases": ["Regles de la piete filiale"]},
+
+        {"name": "Confluence des Échanges", "type": "institution", "aliases": ["Confluence des Echanges", "Confluence des échanges"]},
+
+        {"name": "Expédition de l'arbitre", "type": "event", "aliases": ["Expedition de l'arbitre"]},
+
+        {"name": "Façonneurs de Pierre", "type": "caste", "aliases": ["Faconneurs de Pierre"]},
+        {"name": "Nantons", "type": "creature", "aliases": []},
+        {"name": "Cornex", "type": "technology", "aliases": []},
+        {"name": "Idéoglyphes", "type": "technology", "aliases": ["Ideoglyphes"]},
+        {"name": "Peinture de la voix", "type": "technology", "aliases": []},
+        {"name": "Blocs standardisés", "type": "technology", "aliases": ["Blocs standardises", "Bloc standardisés"]},
+        {"name": "Passerelles", "type": "technology", "aliases": []},
+        {"name": "Pilotis", "type": "technology", "aliases": []},
+
+        {"name": "Traqueurs", "type": "person", "aliases": []},
+
+        {"name": "Route-rivière", "type": "place", "aliases": ["Route-riviere"]},
+        {"name": "Postes de garde", "type": "place", "aliases": []},
+        {"name": "Basses terres", "type": "place", "aliases": []},
+        {"name": "Plus Haut Sommet Visible", "type": "place", "aliases": []},
+        {"name": "Fourche dans la Rivière", "type": "place", "aliases": ["Fourche dans la riviere"]},
+        {"name": "Plateau rocailleux", "type": "place", "aliases": []},
+
+        {"name": "Conseil du village", "type": "institution", "aliases": []},
+        {"name": "Processions rituelles", "type": "belief", "aliases": []},
+        {"name": "Yeux de l'aurore", "type": "belief", "aliases": ["Yeux de l'Aurore"]}
+      ]
+    }
+  }
+}

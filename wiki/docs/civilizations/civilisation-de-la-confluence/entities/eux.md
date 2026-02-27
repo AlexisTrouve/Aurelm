@@ -1,9 +1,6 @@
 # Eux
 
-*Personnages* -- Civilisation de la Confluence
-
-!!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/pieux.md).
+*Lieux* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -22,22 +19,20 @@ Tour  2  ████████████████████  ← Pic
 
 ## Description
 
-Eux sont une groupe de personnes qui cherchent à se rendre en sécurité, quittant leur lieu actuel pour trouver un endroit meilleur. Ils sont des réfugiés, ayant vécu auparavant dans un état de faim et de fatigue. Ils sont capables de s'adapter à leur environnement et utilisent les ressources disponibles pour survivre. Ils n'hésitent pas à tuer petits animaux pour se nourrir.
+Eux est un lieu de beauté et d'abri, situé à la confluence de deux rivières cristallines dans une large vallée. Il s'agit d'un endroit où les personnages peuvent se sentir en sécurité et se reposer après leur périple. Eux offre des ressources naturelles telles que l'eau, les poissons et les petits animaux pour la nourriture.
 
 ## Chronologie
 
-**Tour 2: Ils commencent un long voyage vers une terre promise, traversant des régions difficiles où la faim et la fatigue sont omniprésentes. Bien que certains membres de leur groupe meurent, ils parviennent à atteindre enfin une vallée verdoyante où deux rivières cristallines se rencontrent.**
+**Tour 2: Les personnages arrivent à Eux après une longue et ardue quête, épuisés mais enthousiastes. Ils s'installent en bord de rivière et commencent à se reposer et à récupérer.**
 
-**Tour 5: Ils continuent leur périple, utilisant des outils rudimentaires pour chasser et pêcher. Ils semblent avoir retrouvé quelque peu le moral et commencent à repousser l'horizon de leurs rêves.**
-
-**Tour 6: S'ils sont toujours en quête d'une terre meilleure, Eux ont atteint un certain niveau de stabilité dans leur groupe. Ils utilisent maintenant des techniques de chasse plus efficaces pour se nourrir et semblent avoir développé une certaine confiance les uns envers les autres.**
+**Tour 5: Eux est décrit comme un endroit de beauté où les personnages peuvent trouver refuge. La description souligne l'importance du lieu pour les personnages qui y arrivent après une longue quête.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 2**
 > "Eux"
 >
-> Contexte : Eux...
+> Contexte : s'installent en bord de rivière...
 
 ??? note "Sources -- Passages originaux"
 

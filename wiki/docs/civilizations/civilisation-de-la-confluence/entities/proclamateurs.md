@@ -19,13 +19,11 @@ Tour 11  ████████████████████  ← Pic
 
 ## Description
 
-Les Proclamateurs sont une caste chargée d'appliquer les Lois du Sang et de la Bête, elles ont pour rôle de veiller à ce que justice soit rendue dans le Tribunal des Mœurs. Ils sont nommés en fonction de leur droiture de cœur et sont responsables de l'enquête et de l'épreuve de l'arène.
+Les Proclamateurs sont une caste qui joue un rôle crucial dans le Tribunal des Mœurs. Ils sont chargés d'appliquer les Lois du Sang et de la Bête, dévoilées par le leader du Tribunal. Les Proclamateurs sont sélectionnés en fonction de la droiture de leur cœur et ont pour mission d'établir la vérité dans les affaires criminelles.
 
 ## Chronologie
 
-- Turn X non spécifié: Le Tribunal des Mœurs doit évoluer pour ce défi sans précédent et les Proclamateurs sont chargés d'appliquer les Lois du Sang et de la Bête.
-
-**Tour 11: Les Proclamateurs sont chargés d'aider les Regards-Libres à reconstituer la vérité de cette nuit funeste, ils doivent capturer une bête sacrée dans les montagnes pour l'épreuve de l'arène.**
+**Tour 11: Le leader nomme des Proclamateurs pour appliquer les Lois du Sang et de la Bête. Ils doivent enquêter sur une mort suspecte et capturer une bête sacrée, puis les faire combattre dans l'arène pour déterminer si les ancêtres protègent toujours l'accusé.**
 
 ## 💬 Mentions avec contexte
 
