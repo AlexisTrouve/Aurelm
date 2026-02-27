@@ -4,7 +4,7 @@
 Tu es un expert senior. Là pour résoudre, pas pour tourner autour — trancher, clarifier, avancer.
 
 ## Configuration
-**IMPORTANT** : Toujours lire le fichier `../ProjectTracker/.env` au démarrage pour accéder aux credentials Git/Gitea/GitHub nécessaires pour les opérations sur les repositories.
+**IMPORTANT** : Toujours lire le fichier `../archives/ProjectTracker/.env` au démarrage pour accéder aux credentials Git/Gitea/GitHub nécessaires pour les opérations sur les repositories.
 
 ## Réseau
 D'autres Claude experts bossent sur d'autres projets ici. Chacun a son propre repo. Via duo-partner : demande un avis, partage une solution, ou demande-leur d'explorer leur codebase si besoin.
@@ -40,10 +40,10 @@ Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop R
 Flutter Desktop GUI (Dashboard)
         │
         ├── Discord Sync (read-only bot)
-        ├── ML Pipeline (spaCy + llama3.1:8b via Ollama)
+        ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
         ├── SQLite Database
-        └── OpenClaw Agent (Claude API primary, llama3.1:8b fallback)
+        └── OpenClaw Agent (Claude API primary, local LLM fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -51,7 +51,7 @@ Flutter Desktop GUI (Dashboard)
 
 - **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 68 source files, 6 tests. **Flutter not installed on dev machine** — CI builds via GitHub Actions. Run `flutter create --platforms=windows .` in gui/ when Flutter is available locally.
 - **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 9 tools ported from MCP server, aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API. 32 tests passing.
-- **pipeline/**: Python ML pipeline — ingestion, NER, chunking, summarization
+- **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization. `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **wiki/**: MkDocs Material — auto-generated game wiki
 - **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
 - **openclaw-config/**: OpenClaw skill definitions and config templates
@@ -62,7 +62,7 @@ Flutter Desktop GUI (Dashboard)
 
 ### Done
 - [x] **Step 1**: Repo scaffolding — structure, all stubs, schema, configs, first commit pushed to GitHub
-- [x] **Step 2**: ML Pipeline — markdown loader (Format A + B), EntityRuler NER with game patterns, enhanced classifier, extractive summarizer fallback, pipeline orchestrator. 59 tests passing, end-to-end validated on civjdr data (37 messages, 14 turns, 199 entities extracted).
+- [x] **Step 2**: ML Pipeline — markdown loader (Format A + B), LLM-based entity extraction (dual calls: facts+entities and entities-only), versioned extraction strategies (v1-baseline, v2-fewshot with model-specific prompts), enhanced classifier, extractive summarizer fallback, pipeline orchestrator. Entity noise filtering via `entity_filter.py`. Reference entity DB for validation (`pipeline/data/reference_entities.json`, 124 entities). 103 tests passing.
 
 - [x] **Step 3**: Wiki generator — auto-generates 8+ MkDocs Material pages (per-civ overview/turns/entities, global timeline, entity index, pipeline stats) with noise filtering, admonitions for choices/OOC, and dynamic nav update.
 
@@ -74,8 +74,10 @@ Flutter Desktop GUI (Dashboard)
 
 - [x] **Step 7**: End-to-end integration — Python bot package (discord.py + aiohttp + Anthropic SDK), 9 tools ported from TS to Python, HTTP API (/health, /status, /sync), Discord gateway (mentions/DMs -> Claude agent with tool use), fetcher (channel history -> DB), pipeline `run_pipeline_for_channels()` for multi-civ sync. Flutter: BotService (subprocess lifecycle), SyncService (HTTP client), bot_provider (health polling, sync state), updated PipelineStatusCard with bot status + sync button. Config via `aurelm_config.json` + env vars. 32 bot tests + 62 pipeline tests + 48 MCP tests all passing.
 
+- [x] **Step 8**: Incremental pipeline + progress tracking — migration 004 (pipeline_turn_status, pipeline_progress tables), incremental entity profiling (merges new turn summaries into existing), real-time progress API for Flutter UI, `--track-progress` CLI flag. 104 tests passing.
+
 ### Next Steps
-- [ ] **Step 8**: Deployment — packaging, Arthur's machine setup, Discord bot invite
+- [ ] **Step 9**: Deployment — packaging, Arthur's machine setup, Discord bot invite
 
 ## Environment Notes (Dev Machine)
 
@@ -83,22 +85,23 @@ Flutter Desktop GUI (Dashboard)
 - **Node.js**: v25.2.1 (mcp-server ready)
 - **Python**: 3.12 (pipeline ready)
 - **Flutter**: NOT installed — gui/ is placeholder only
-- **Ollama**: v0.15.6 installed, `llama3.1:8b` pulled (dev model)
-- **Arthur's machine**: RTX 5070 Ti 16GB VRAM — doit installer `ollama pull qwen3:14b` (12GB VRAM, 100% GPU, excellent French)
+- **Ollama**: v0.15.6 installed, `qwen3:8b` + `llama3.1:8b` pulled. Default dev model: `qwen3:8b`
+- **Arthur's machine**: RTX 5070 Ti 16GB VRAM — `ollama pull qwen3:14b` (12GB VRAM, 100% GPU, excellent French)
 - **Proxy required** for external HTTPS: `http://127.0.0.1:7897`
-- **Git push**: `git -c http.proxy=http://127.0.0.1:7897 push`
+- **Git push**: `git -c http.proxy=http://127.0.0.1:7897 push` (pushes to both GitHub and Gitea)
 - **GitHub API calls**: Use Python `urllib` with proxy (no `gh` CLI, no `wget`)
 - **GitHub user**: AlexisTrouve
 - **GitHub repo**: https://github.com/AlexisTrouve/Aurelm
+- **Gitea mirror**: https://git.etheryale.com/StillHammer/Aurelm (auto-pushed via dual push URLs on `origin`)
 - **Always remove tokens from git remote URLs after push**
 
 ## Tech Stack
 
 - **TypeScript** for MCP server (strict mode, ES2022 target)
-- **Python 3.11+** for ML pipeline (spaCy, Ollama client)
+- **Python 3.11+** for ML pipeline (Ollama client, httpx)
 - **Dart/Flutter** for GUI
 - **SQLite** as single database (no ORM — raw SQL with prepared statements)
-- **Ollama** for local LLM inference (llama3.1:8b — fits 8GB VRAM)
+- **Ollama** for local LLM inference (qwen3:8b dev, qwen3:14b prod — fits 8/16GB VRAM)
 - **Claude API** as primary agent backend, local LLM as fallback
 
 ## Coding Conventions
@@ -147,7 +150,7 @@ Flutter Desktop GUI (Dashboard)
 ## Testing
 
 - `cd mcp-server && npm test` — MCP server tests (48 tests via vitest)
-- `cd pipeline && pytest` — Pipeline tests (62 tests: test_chunker, test_classifier, test_loader, test_ner, test_runner)
+- `cd pipeline && pytest` — Pipeline tests (103 tests: test_chunker, test_classifier, test_loader, test_entity_filter, test_fact_extractor, test_runner, test_incremental_tracking)
 - `python -m pytest bot/tests/` — Bot tests (32 tests: tools, config, dispatch)
 - `cd gui && flutter test` — GUI tests (6 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing
