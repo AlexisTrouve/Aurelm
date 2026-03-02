@@ -1,0 +1,11 @@
+{
+  "provider": "ollama",
+  "default_model": "qwen3:14b",
+  "stages": {
+    "extraction": { "model": "qwen3:14b" },
+    "summarization": { "model": "llama3.1:8b" },
+    "profiling": { "model": "qwen3:8b" },
+    "aliases": { "model": "llama3.1:8b" },
+    "validation": { "model": "qwen3:14b" }
+  }
+}

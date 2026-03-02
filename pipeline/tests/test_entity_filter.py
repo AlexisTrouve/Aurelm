@@ -1,4 +1,4 @@
-"""Tests for entity noise filtering (structural only)."""
+"""Tests for entity noise filtering (structural + semantic)."""
 
 from pipeline.entity_filter import is_noise_entity, ExtractedEntity, VALID_ENTITY_TYPES
 
@@ -60,11 +60,26 @@ class TestIsNoiseEntity:
         assert not is_noise_entity("Cercle des Sages")
         assert not is_noise_entity("Cheveux de Sang")
 
-    def test_accepts_single_words(self):
-        # No word filtering -- prompt handles this
-        assert not is_noise_entity("village")
+    def test_accepts_non_generic_single_words(self):
+        # Non-generic single words pass through (could be game-specific)
         assert not is_noise_entity("farouche")
         assert not is_noise_entity("Rhombes")
+        assert not is_noise_entity("Confluence")
+        assert not is_noise_entity("Nantons")
+
+    def test_rejects_generic_single_words(self):
+        # Generic French nouns are noise when standing alone
+        assert is_noise_entity("village")
+        assert is_noise_entity("Montagne")
+        assert is_noise_entity("Créature")
+        assert is_noise_entity("Sculpteurs")
+
+    def test_accepts_compound_names_with_generic_root(self):
+        # Compound names built from generic roots are game-specific — keep them
+        assert not is_noise_entity("Montagne-Blanche")    # hyphenated
+        assert not is_noise_entity("Tailleurs de pierres")  # 3+ words
+        assert not is_noise_entity("Cercle des Sages")
+        assert not is_noise_entity("Ciels-clairs")         # hyphenated
 
 
 class TestExtractedEntity:
@@ -75,6 +90,16 @@ class TestExtractedEntity:
         assert ent.text == "Nanzagouets"
         assert ent.label == "civilization"
         assert ent.context == "Les Nanzagouets arrivent"
+
+    def test_certainty_default(self):
+        """Certainty defaults to 0 (not set) for backward compatibility."""
+        ent = ExtractedEntity(text="Test", label="place", context="")
+        assert ent.certainty == 0
+
+    def test_certainty_explicit(self):
+        """Certainty can be set explicitly."""
+        ent = ExtractedEntity(text="Test", label="place", context="", certainty=3)
+        assert ent.certainty == 3
 
 
 class TestValidEntityTypes:

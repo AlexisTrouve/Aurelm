@@ -15,6 +15,14 @@ def _mock_llm_response(body: dict) -> MagicMock:
     return mock
 
 
+def _mock_provider_returning(body: dict) -> MagicMock:
+    """Build a mock LLMProvider that returns the given dict as JSON string."""
+    provider = MagicMock()
+    provider.generate.return_value = json.dumps(body)
+    provider.name = "mock"
+    return provider
+
+
 class TestMediaLinkExtraction:
     """Test extraction of media links from raw content."""
 
@@ -331,10 +339,10 @@ class TestLLMOutputTypeValidation:
     """
 
     def _extract_with_mock(self, body: dict) -> StructuredFacts:
-        extractor = FactExtractor()
+        provider = _mock_provider_returning(body)
+        extractor = FactExtractor(provider=provider)
         segments = [{"segment_type": "narrative", "content": "Some game text."}]
-        with patch.object(extractor.client, "post", return_value=_mock_llm_response(body)):
-            return extractor.extract_facts(segments)
+        return extractor.extract_facts(segments)
 
     def test_string_field_coerced_to_list(self):
         """LLM returns a bare string instead of a list -- must be wrapped."""
@@ -391,37 +399,140 @@ class TestNumPredictSufficient:
 
     def test_num_predict_sufficient_per_call(self):
         """Fact extractor LLM call must request enough tokens (>= 1500)."""
-        extractor = FactExtractor()
+        provider = _mock_provider_returning({
+            "technologies": [], "resources": [], "beliefs": [],
+            "geography": [], "entities": []
+        })
+        extractor = FactExtractor(provider=provider)
         segments = [{"segment_type": "narrative", "content": "Some text."}]
-        all_options: list = []
 
-        def capture_post(url, json=None, **kwargs):
-            all_options.append(json.get("options", {}))
-            return _mock_llm_response({
-                "technologies": [], "resources": [], "beliefs": [],
-                "geography": [], "entities": []
-            })
+        extractor.extract_facts(segments)
 
-        with patch.object(extractor.client, "post", side_effect=capture_post):
-            extractor.extract_facts(segments)
+        # Provider.generate() should be called at least 2 times (facts + entities)
+        calls = provider.generate.call_args_list
+        assert len(calls) >= 2, f"Expected >=2 LLM calls, got {len(calls)}"
+        # Each call should request enough tokens
+        for i, call in enumerate(calls[:2]):
+            max_tokens = call.kwargs.get("max_tokens", 0)
+            assert max_tokens >= 1500, (
+                f"Call {i+1} max_tokens={max_tokens} too low for extraction"
+            )
 
-        assert len(all_options) == 2, f"Expected 2 LLM calls, got {len(all_options)}"
-        assert all_options[0].get("num_predict", 0) >= 1500, (
-            f"Call 1 num_predict={all_options[0].get('num_predict')} too low for facts+entities"
+
+class TestCertaintyParsing:
+    """Test certainty score parsing in _coerce_entity_list."""
+
+    def test_certainty_parsed_from_llm(self):
+        """Certainty field is read from LLM output."""
+        entities = FactExtractor._coerce_entity_list([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 3},
+            {"name": "Premiers Ancetres", "type": "civilization", "context": "...", "certainty": 2},
+            {"name": "Montagne Blanche", "type": "place", "context": "...", "certainty": 1},
+        ])
+        assert len(entities) == 3
+        assert entities[0].certainty == 3
+        assert entities[1].certainty == 2
+        assert entities[2].certainty == 1
+
+    def test_certainty_defaults_to_zero_when_missing(self):
+        """Missing certainty defaults to 0 (not set)."""
+        entities = FactExtractor._coerce_entity_list([
+            {"name": "Nanzagouets", "type": "civilization", "context": "..."},
+        ])
+        assert entities[0].certainty == 0
+
+    def test_certainty_invalid_value_defaults_to_zero(self):
+        """Non-numeric certainty falls back to 0."""
+        entities = FactExtractor._coerce_entity_list([
+            {"name": "Nanzagouets", "type": "civilization", "context": "...", "certainty": "high"},
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": None},
+        ])
+        assert entities[0].certainty == 0
+        assert entities[1].certainty == 0
+
+    def test_certainty_scale_1_to_10(self):
+        """Certainty scores on a 1-10 scale are parsed correctly."""
+        entities = FactExtractor._coerce_entity_list([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 9},
+            {"name": "Montagne Blanche", "type": "place", "context": "...", "certainty": 3},
+        ])
+        assert entities[0].certainty == 9
+        assert entities[1].certainty == 3
+
+
+class TestCertaintyFiltering:
+    """Test certainty-based filtering in extract_facts."""
+
+    def _extract_with_certainty(self, entities: list, threshold: int) -> StructuredFacts:
+        """Helper: mock LLM returning entities with certainty, using a version with threshold."""
+        from pipeline.extraction_versions import ExtractionVersion
+        version = ExtractionVersion(
+            name="test-certainty",
+            description="test",
+            certainty_threshold=threshold,
         )
-        assert all_options[1].get("num_predict", 0) >= 1500, (
-            f"Call 2 num_predict={all_options[1].get('num_predict')} too low for entity-only"
-        )
+        body = {
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+            "entities": entities,
+        }
+        provider = _mock_provider_returning(body)
+        extractor = FactExtractor(provider=provider, version=version)
+        segments = [{"segment_type": "narrative", "content": "Some game text."}]
+        return extractor.extract_facts(segments)
+
+    def test_threshold_filters_low_certainty(self):
+        """Entities below threshold are filtered out."""
+        facts = self._extract_with_certainty([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 3},
+            {"name": "Montagne Blanche", "type": "place", "context": "...", "certainty": 1},
+            {"name": "Premiers Ancetres", "type": "civilization", "context": "...", "certainty": 2},
+        ], threshold=2)
+        names = [e.text for e in facts.entities]
+        assert "Gouffre Humide" in names
+        assert "Premiers Ancetres" in names
+        assert "Montagne Blanche" not in names  # certainty 1 < threshold 2
+
+    def test_threshold_zero_keeps_all(self):
+        """Threshold 0 disables certainty filtering."""
+        facts = self._extract_with_certainty([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 3},
+            {"name": "Montagne Blanche", "type": "place", "context": "...", "certainty": 1},
+        ], threshold=0)
+        assert len(facts.entities) == 2
+
+    def test_certainty_zero_entities_kept(self):
+        """Entities with certainty 0 (not set) are always kept — e.g. from pattern pass."""
+        facts = self._extract_with_certainty([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 3},
+            {"name": "Nanzagouets", "type": "civilization", "context": "..."},  # no certainty → 0
+        ], threshold=2)
+        names = [e.text for e in facts.entities]
+        assert "Gouffre Humide" in names
+        assert "Nanzagouets" in names  # certainty 0 = not set, kept
+
+    def test_threshold_5_on_scale_10(self):
+        """Threshold 5 on a 1-10 scale filters correctly."""
+        facts = self._extract_with_certainty([
+            {"name": "Gouffre Humide", "type": "place", "context": "...", "certainty": 9},
+            {"name": "Premiers Ancetres", "type": "civilization", "context": "...", "certainty": 7},
+            {"name": "Montagne Blanche", "type": "place", "context": "...", "certainty": 3},
+            {"name": "Sculpteurs", "type": "caste", "context": "...", "certainty": 4},
+        ], threshold=5)
+        names = [e.text for e in facts.entities]
+        assert "Gouffre Humide" in names      # 9 >= 5
+        assert "Premiers Ancetres" in names    # 7 >= 5
+        assert "Montagne Blanche" not in names # 3 < 5
+        # Note: "Sculpteurs" alone is caught by noise filter before certainty
 
 
 class TestEntityExtraction:
     """Test LLM entity extraction via mock."""
 
     def _extract_with_mock(self, body: dict) -> StructuredFacts:
-        extractor = FactExtractor()
+        provider = _mock_provider_returning(body)
+        extractor = FactExtractor(provider=provider)
         segments = [{"segment_type": "narrative", "content": "Some game text."}]
-        with patch.object(extractor.client, "post", return_value=_mock_llm_response(body)):
-            return extractor.extract_facts(segments)
+        return extractor.extract_facts(segments)
 
     def test_entities_extracted_from_llm(self):
         """LLM returns entities -- should parse into ExtractedEntity list."""
@@ -502,3 +613,79 @@ class TestEntityExtraction:
         segments = [{"segment_type": "narrative", "content": "Some text"}]
         facts = extractor.extract_facts(segments)
         assert facts.entities == []
+
+
+class TestPerModelPromptOverrides:
+    """Test facts_prompt_by_model / entity_prompt_by_model on ExtractionVersion."""
+
+    def test_get_facts_prompt_default_fallback(self):
+        """Without override, returns the default facts_prompt."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        # llama model has no override -> fallback
+        prompt = v.get_facts_prompt("llama3.1:8b")
+        assert "{text}" in prompt
+        # Should be the qwen3-style prompt (default)
+        assert "METHODE D'EXTRACTION" in prompt or "CRITICAL" in prompt
+
+    def test_get_facts_prompt_qwen_gets_default(self):
+        """Qwen3 model gets the default facts_prompt (no override defined)."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_facts_prompt("qwen3:8b")
+        assert "{text}" in prompt
+
+    def test_get_facts_prompt_mistral_gets_nemo(self):
+        """Mistral Nemo model gets the Nemo-specific facts prompt."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_facts_prompt("mistral-nemo:latest")
+        assert "{text}" in prompt
+        # Nemo prompt uses markdown ### headers, not === CRITICAL ===
+        assert "### Tache" in prompt
+        assert "### Checklist" in prompt
+
+    def test_get_entity_prompt_mistral_gets_nemo(self):
+        """Mistral Nemo model gets the Nemo-specific entity prompt."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_entity_prompt("mistral-nemo:latest")
+        assert "{text}" in prompt
+        assert "### Checklist" in prompt
+
+    def test_get_entity_prompt_default_fallback(self):
+        """Unknown model falls back to default entity_prompt."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_entity_prompt("unknown-model:7b")
+        assert "{text}" in prompt
+        # Should be the qwen3-style entity prompt (default)
+        assert "COMMENT DETECTER" in prompt or "SCORE DE CERTITUDE" in prompt
+
+    def test_nemo_facts_prompt_format_works(self):
+        """Nemo facts prompt .format(text=...) resolves correctly (no stray braces)."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_facts_prompt("mistral-nemo:latest")
+        # Should not raise — all {{ }} are properly escaped
+        formatted = prompt.format(text="Les Marche-Nuages se reunissent.")
+        assert "Les Marche-Nuages se reunissent." in formatted
+        # JSON example braces should survive as literal { }
+        assert '"entities"' in formatted
+
+    def test_nemo_entity_prompt_format_works(self):
+        """Nemo entity prompt .format(text=...) resolves correctly."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        prompt = v.get_entity_prompt("mistral-nemo:latest")
+        formatted = prompt.format(text="Test texte.")
+        assert "Test texte." in formatted
+
+    def test_system_prompt_mistral_gets_nemo(self):
+        """Mistral Nemo gets its own system prompt (no /no_think)."""
+        from pipeline.extraction_versions import get_version
+        v = get_version("v14-certainty-10")
+        sys_prompt = v.get_system_prompt("mistral-nemo:latest")
+        assert sys_prompt is not None
+        assert "/no_think" not in sys_prompt
+        assert "JSON valide" in sys_prompt

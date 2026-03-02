@@ -15,10 +15,9 @@ import json
 import re
 from dataclasses import dataclass, field
 
-import ollama
-
 from . import llm_stats
 from .db import get_connection, update_progress
+from .llm_provider import LLMProvider, OllamaProvider
 
 
 @dataclass
@@ -130,6 +129,7 @@ def build_entity_profiles(
     incremental: bool = True,
     run_id: int | None = None,
     track_progress: bool = False,
+    provider: LLMProvider | None = None,
 ) -> list[EntityProfile]:
     """Build rich profiles for all active entities in the database.
 
@@ -257,39 +257,50 @@ def build_entity_profiles(
                     mentions=mentions_text,
                 )
 
-                try:
-                    data = _call_ollama(model, prompt)
-                    profile.description = data.get("description") or ""
+                # Use provided provider or fall back to default Ollama
+                llm = provider or OllamaProvider()
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        data = _call_llm(llm, model, prompt)
+                        profile.description = data.get("description") or ""
 
-                    # Convert turn_summaries dict to sorted list
-                    turn_summaries = data.get("turn_summaries", {})
-                    if isinstance(turn_summaries, dict):
-                        profile.history = [
-                            f"{k}: {v}" for k, v in sorted(
-                                turn_summaries.items(),
-                                key=lambda x: _extract_turn_number(x[0]),
-                            )
+                        # Convert turn_summaries dict to sorted list
+                        turn_summaries = data.get("turn_summaries", {})
+                        if isinstance(turn_summaries, dict):
+                            profile.history = [
+                                f"{k}: {v}" for k, v in sorted(
+                                    turn_summaries.items(),
+                                    key=lambda x: _extract_turn_number(x[0]),
+                                )
+                            ]
+                        elif isinstance(turn_summaries, list):
+                            profile.history = turn_summaries
+                        else:
+                            # Fallback to old format
+                            profile.history = data.get("history", [])
+
+                        raw_aliases = data.get("aliases", [])
+                        profile.aliases_suggested = [
+                            a.strip() for a in raw_aliases
+                            if isinstance(a, str) and a.strip() and a.strip().lower() != name.lower()
                         ]
-                    elif isinstance(turn_summaries, list):
-                        profile.history = turn_summaries
-                    else:
-                        # Fallback to old format
-                        profile.history = data.get("history", [])
 
-                    raw_aliases = data.get("aliases", [])
-                    profile.aliases_suggested = [
-                        a.strip() for a in raw_aliases
-                        if isinstance(a, str) and a.strip() and a.strip().lower() != name.lower()
-                    ]
-
-                    raw_relations = data.get("relations", [])
-                    if isinstance(raw_relations, list):
-                        profile.raw_relations = [
-                            r for r in raw_relations
-                            if isinstance(r, dict) and r.get("target") and r.get("type")
-                        ]
-                except Exception as e:
-                    print(f"       WARNING: LLM failed for '{name}': {e}")
+                        raw_relations = data.get("relations", [])
+                        if isinstance(raw_relations, list):
+                            profile.raw_relations = [
+                                r for r in raw_relations
+                                if isinstance(r, dict) and r.get("target") and r.get("type")
+                            ]
+                        break  # Success, exit retry loop
+                    except Exception as e:
+                        if attempt < max_retries - 1:
+                            import time
+                            wait = 5 * (attempt + 1)
+                            print(f"       RETRY {attempt+1}/{max_retries} for '{name}' in {wait}s: {e}")
+                            time.sleep(wait)
+                        else:
+                            print(f"       WARNING: LLM failed for '{name}' after {max_retries} attempts: {e}")
 
         profiles.append(profile)
 
@@ -454,17 +465,15 @@ def _extract_turn_number(key: str) -> int:
     return int(match.group()) if match else 0
 
 
-def _call_ollama(model: str, prompt: str) -> dict:
-    """Call Ollama and parse JSON response."""
+def _call_llm(provider: LLMProvider, model: str, prompt: str) -> dict:
+    """Call LLM via provider and parse JSON response."""
     llm_stats.increment("entity_profiling")
-    response = ollama.chat(
+    raw = provider.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        format="json",
-        options={"num_ctx": NUM_CTX},
-        keep_alive=60,  # 60s idle timeout instead of default 5min
+        num_ctx=NUM_CTX,
+        json_mode=True,
     )
-    raw = response["message"]["content"]
     return _parse_json_response(raw)
 
 

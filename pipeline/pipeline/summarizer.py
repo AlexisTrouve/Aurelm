@@ -10,9 +10,8 @@ import json
 import re
 from dataclasses import dataclass, field
 
-import ollama
-
 from . import llm_stats
+from .llm_provider import LLMProvider, OllamaProvider
 
 
 @dataclass
@@ -111,6 +110,7 @@ def summarize_turn(
     civ_name: str | None = None,
     player_name: str | None = None,
     author_contents: list[AuthorContent] | None = None,
+    provider: LLMProvider | None = None,
 ) -> TurnSummary:
     """Generate a structured summary of a game turn.
 
@@ -121,14 +121,19 @@ def summarize_turn(
     if not use_llm:
         return _extractive_summary(turn_text, civ_name=civ_name)
 
+    # Use provided provider or fall back to default Ollama
+    llm = provider or OllamaProvider()
+
     try:
         if author_contents and len(author_contents) > 0:
             result = _multi_call_summary(
                 author_contents, model, civ_name=civ_name, player_name=player_name,
+                provider=llm,
             )
         else:
             result = _single_call_summary(
                 turn_text, model, civ_name=civ_name, player_name=player_name,
+                provider=llm,
             )
         # If LLM returned empty summary, fall back to extractive
         if not result.short_summary and not result.detailed_summary:
@@ -144,6 +149,7 @@ def _multi_call_summary(
     model: str,
     civ_name: str | None = None,
     player_name: str | None = None,
+    provider: LLMProvider | None = None,
 ) -> TurnSummary:
     """Multi-call: one LLM call per author, then merge."""
     civ_context = ""
@@ -163,7 +169,7 @@ def _multi_call_summary(
                 civ_context=civ_context,
                 text=text,
             )
-            data = _call_ollama(model, prompt)
+            data = _call_llm(model, prompt, provider)
             gm_parts.append(data)
         else:
             player_ref = player_name or ac.author or "le joueur"
@@ -172,7 +178,7 @@ def _multi_call_summary(
                 player_ref=player_ref,
                 text=text,
             )
-            data = _call_ollama(model, prompt)
+            data = _call_llm(model, prompt, provider)
             player_parts.append(data)
 
     return _merge_summaries(gm_parts, player_parts)
@@ -240,6 +246,7 @@ def _single_call_summary(
     model: str,
     civ_name: str | None = None,
     player_name: str | None = None,
+    provider: LLMProvider | None = None,
 ) -> TurnSummary:
     """Single-call fallback (backward compatible)."""
     civ_context = ""
@@ -257,7 +264,7 @@ def _single_call_summary(
         text=text,
     )
 
-    data = _call_ollama(model, prompt)
+    data = _call_llm(model, prompt, provider)
 
     return TurnSummary(
         short_summary=data.get("short_summary", ""),
@@ -268,17 +275,16 @@ def _single_call_summary(
     )
 
 
-def _call_ollama(model: str, prompt: str) -> dict:
-    """Call Ollama and parse JSON response."""
+def _call_llm(model: str, prompt: str, provider: LLMProvider | None = None) -> dict:
+    """Call LLM via provider and parse JSON response."""
     llm_stats.increment("summarization")
-    response = ollama.chat(
+    llm = provider or OllamaProvider()
+    raw_content = llm.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        format="json",
-        options={"num_ctx": NUM_CTX},
-        keep_alive=60,  # 60s idle timeout instead of default 5min
+        num_ctx=NUM_CTX,
+        json_mode=True,
     )
-    raw_content = response["message"]["content"]
     return _parse_json_response(raw_content)
 
 

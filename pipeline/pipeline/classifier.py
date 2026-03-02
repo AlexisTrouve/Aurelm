@@ -26,11 +26,41 @@ def classify_segments(text: str) -> list[ClassifiedSegment]:
     """Split text into segments and classify each one.
 
     Uses heuristics first, then optionally LLM for ambiguous segments.
+    Implements a surgical choice-block filter:
+    - Choice headers ("### Choix 2 - Mars Attack") -> CHOICE (always excluded)
+    - Inside a choice block, SHORT paragraphs (<3 sentences) -> CHOICE
+      (these are GM option summaries like "Il faut les repousser à la mer")
+    - Inside a choice block, LONG paragraphs (>=3 sentences) -> normal
+      classification (the GM often inserts real narrative/lore between options)
     """
     segments: list[ClassifiedSegment] = []
     paragraphs = _split_paragraphs(text)
 
+    # State machine: tracks whether we're inside a GM choice block
+    in_choice_block = False
+
     for para in paragraphs:
+        # Choice headers always start a new choice block
+        if _is_choice_header(para):
+            in_choice_block = True
+            segments.append(
+                ClassifiedSegment(text=para, segment_type=SegmentType.CHOICE, confidence=0.95)
+            )
+            continue
+
+        # Non-choice header resets the choice block state
+        if in_choice_block and _is_block_boundary(para):
+            in_choice_block = False
+
+        # Inside a choice block: short paragraphs are hypothetical options,
+        # long paragraphs are likely GM narrative/lore mixed in.
+        if in_choice_block and _is_short_option(para):
+            segments.append(
+                ClassifiedSegment(text=para, segment_type=SegmentType.CHOICE, confidence=0.85)
+            )
+            continue
+
+        # Normal classification (outside choice block, or long lore paragraph inside)
         segment_type, confidence = _classify_paragraph(para)
         segments.append(
             ClassifiedSegment(
@@ -41,6 +71,66 @@ def classify_segments(text: str) -> list[ClassifiedSegment]:
         )
 
     return segments
+
+
+def _is_short_option(text: str) -> bool:
+    """Detect short GM option paragraphs (hypothetical, not real lore).
+
+    Inside choice blocks, GM option summaries are 1-2 sentences:
+    "Il faut les repousser à la mer, car ces terres sont les vôtres."
+    Real lore paragraphs are >= 3 sentences and should be kept.
+
+    We use sentence count (not char length) because char thresholds are
+    fragile — a 250-char paragraph can be either a short option or real
+    lore depending on the turn. Sentence count is more semantically stable.
+    See docs/filtrage-contenu-jdr.md for context.
+    """
+    sentences = re.split(r'[.!?](?:\s|$)', text.strip())
+    sentences = [s for s in sentences if s.strip()]
+    return len(sentences) < 3
+
+
+def _is_choice_header(text: str) -> bool:
+    """Detect GM choice headers in various markdown formats.
+
+    Matches: "### Choix 2 - Mars Attack", "**Choix 1 - Guerre:**",
+    "Action libre - L'épave", "Sujet libre - La Terre Sous Nos Pas".
+    """
+    stripped = text.strip()
+    lower = stripped.lower()
+
+    # "### Choix N" or "## Choix N" (markdown header format)
+    if re.match(r'^#{1,4}\s+choix\s+\d', lower):
+        return True
+    # "**Choix N**" or "**Choix N - titre**" (bold format, existing pattern)
+    if re.match(r'^\*\*choix\s*\d', lower):
+        return True
+    # "Action libre" / "Sujet libre" headers
+    if re.match(r'^#{1,4}\s+(action|sujet)\s+libre', lower):
+        return True
+    if re.match(r'^\*\*(action|sujet)\s+libre', lower):
+        return True
+
+    return False
+
+
+def _is_block_boundary(text: str) -> bool:
+    """Detect paragraph boundaries that end a choice block.
+
+    A non-choice markdown header (narrative section) or a player response
+    header resets the choice-block state.
+    """
+    stripped = text.strip()
+    lower = stripped.lower()
+
+    # Markdown header that is NOT a choice/action header
+    if re.match(r'^#{1,4}\s+', stripped) and not _is_choice_header(stripped):
+        return True
+    # Player response patterns
+    if 'réponse du joueur' in lower or 'résumé des décisions' in lower:
+        return True
+
+    return False
 
 
 def _split_paragraphs(text: str) -> list[str]:
@@ -96,6 +186,10 @@ def _classify_paragraph(text: str) -> tuple[SegmentType, float]:
         return SegmentType.OOC, 0.9
 
     # Choice markers — explicit patterns from real data
+    # Note: _is_choice_header() handles the state machine in classify_segments(),
+    # but we also detect choices here for standalone classification.
+    if _is_choice_header(text):
+        return SegmentType.CHOICE, 0.95
     if re.search(r"\*\*choix\s*\d*\b", lower):
         return SegmentType.CHOICE, 0.95
     if re.match(r"^\*\*choix\*\*", stripped, re.IGNORECASE):
