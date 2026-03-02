@@ -218,6 +218,9 @@ def build_entity_profiles(
             civ_id=civ_id,
             mention_count=len(mentions),
             mention_contexts=mention_contexts,
+            # Always populate description from DB — even when use_llm=False
+            # (alias resolver needs descriptions to confirm candidates)
+            description=existing_description or "",
         )
 
         if use_llm and mentions:
