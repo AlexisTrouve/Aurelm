@@ -17,11 +17,12 @@ import json
 import re
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
-import httpx
+from functools import lru_cache
 
 from . import llm_stats
 from .entity_filter import ExtractedEntity, is_noise_entity, VALID_ENTITY_TYPES
 from .extraction_versions import ExtractionVersion, get_version, V1_BASELINE
+from .llm_provider import LLMProvider, OllamaProvider
 
 
 @dataclass
@@ -44,25 +45,28 @@ class FactExtractor:
         ollama_base_url: str = "http://localhost:11434",
         model: str = "llama3.1:8b",
         version: Optional[ExtractionVersion] = None,
+        provider: Optional[LLMProvider] = None,
     ):
         """
         Initialize the fact extractor.
 
         Args:
-            ollama_base_url: Base URL for Ollama API
+            ollama_base_url: Base URL for Ollama API (ignored if provider is set)
             model: Model to use for extraction
             version: Extraction version config (defaults to v1-baseline)
+            provider: LLM provider instance (defaults to OllamaProvider)
         """
-        self.ollama_base_url = ollama_base_url
         self.model = model
         self.version = version or V1_BASELINE
-        self.client = httpx.Client(timeout=300.0)
+        # Use provided provider, or fall back to OllamaProvider for backwards compat
+        self.provider = provider or OllamaProvider(base_url=ollama_base_url)
 
     def extract_facts(
         self,
         segments: List[Dict[str, Any]],
         raw_content: str = "",
         entity_lookup: Optional[Dict[str, Dict]] = None,
+        validation_model: Optional[str] = None,
     ) -> StructuredFacts:
         """
         Extract structured facts and entities from turn segments.
@@ -75,6 +79,8 @@ class FactExtractor:
             raw_content: Optional raw Discord message content for media link extraction
             entity_lookup: Optional {name_lower: {canonical_name, entity_type, ...}}
                            built from DB entities for the current civ.
+            validation_model: Optional model override for the validation LLM call.
+                              If None, uses self.model (same as extraction).
 
         Returns:
             StructuredFacts object with all extracted information
@@ -131,12 +137,16 @@ class FactExtractor:
             # LLM call 2: dedicated entity extraction
             dedicated_entities = self._llm_extract_entities_only(chunk)
 
+            # LLM call 3 (optional): GPT-NER style marking
+            marked_entities = self._llm_mark_entities(chunk)
+
             all_technologies = merge(all_technologies, llm_result.get("technologies", []))
             all_resources = merge(all_resources, llm_result.get("resources", []))
             all_beliefs = merge(all_beliefs, llm_result.get("beliefs", []))
             all_geography = merge(all_geography, llm_result.get("geography", []))
             all_entities.extend(llm_result.get("entities", []))
             all_entities.extend(dedicated_entities)
+            all_entities.extend(marked_entities)
 
         # Pattern pass: known entity names from DB (runs on full text)
         pattern_facts = self._pattern_extract_facts(relevant_text, entity_lookup or {})
@@ -146,14 +156,38 @@ class FactExtractor:
         all_geography = merge(all_geography, pattern_facts.get("geography", []))
         all_entities.extend(pattern_facts.get("entities", []))
 
-        # Dedup entities by name|type
+        # Dedup entities by name (first occurrence wins for type)
         seen_entities: set = set()
         merged_entities: List[ExtractedEntity] = []
         for ent in all_entities:
-            key = f"{ent.text.lower()}|{ent.label}"
+            key = ent.text.lower().strip()
             if key not in seen_entities:
                 seen_entities.add(key)
                 merged_entities.append(ent)
+
+        # Certainty filtering: if the version defines a threshold, filter entities
+        # by their LLM-assigned certainty score. Replaces validation pass for v14+.
+        if self.version.certainty_threshold > 0:
+            before_count = len(merged_entities)
+            merged_entities = [
+                e for e in merged_entities
+                # Keep entities with certainty >= threshold, or certainty 0 (not set —
+                # e.g. from pattern pass or mark pass which don't produce certainty)
+                if e.certainty >= self.version.certainty_threshold or e.certainty == 0
+            ]
+            filtered_count = before_count - len(merged_entities)
+            if filtered_count > 0:
+                print(f"  Certainty filter: {before_count} -> {len(merged_entities)} entities "
+                      f"(removed {filtered_count} below threshold {self.version.certainty_threshold})")
+
+        # Validation pass (optional): LLM filters entities with a checklist
+        # Skipped when certainty filtering is active (v14+) — the two are alternatives.
+        elif self.version.validate_prompt:
+            text_for_validation = relevant_text[:3000]
+            merged_entities = self._llm_validate_entities(
+                merged_entities, text_for_validation,
+                model_override=validation_model,
+            )
 
         return StructuredFacts(
             media_links=media_links,
@@ -164,6 +198,74 @@ class FactExtractor:
             choices_proposed=choices_proposed,
             entities=merged_entities,
         )
+
+    @staticmethod
+    def _robust_json_parse(text: str) -> Optional[dict]:
+        """Parse JSON from LLM output with recovery for common malformations.
+
+        LLMs (especially smaller ones) frequently produce broken JSON:
+        truncated at max_tokens, missing trailing brackets, stray commas,
+        or text before/after the JSON object. This method tries multiple
+        strategies to extract a usable dict.
+
+        Returns None only if all recovery strategies fail.
+        """
+        if not text or not text.strip():
+            return None
+
+        # Strategy 1: direct parse of the full text
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 2: extract outermost { ... } and parse
+        match = re.search(r'\{[\s\S]*\}', text)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: repair truncated JSON — close open brackets/braces
+        # Find the first '{' and attempt incremental repair
+        start = text.find('{')
+        if start == -1:
+            return None
+
+        fragment = text[start:]
+        # Try closing progressively: the JSON may be cut mid-array or mid-object
+        for suffix in [']}', '"}]}', '"]}]}', '}', '}}', '"}}']:
+            try:
+                return json.loads(fragment + suffix)
+            except json.JSONDecodeError:
+                continue
+
+        # Strategy 4: truncate at the last valid comma and close
+        # Find the last complete array element (last '},')
+        last_complete = fragment.rfind('},')
+        if last_complete > 0:
+            truncated = fragment[:last_complete + 1]  # up to and including '}'
+            for suffix in [']}', ']}]}', ']}}}']:
+                try:
+                    return json.loads(truncated + suffix)
+                except json.JSONDecodeError:
+                    continue
+
+        # Strategy 5: extract individual arrays by key (last resort)
+        # If the top-level object is broken, try to salvage individual fields
+        result: dict = {}
+        for key in ["entities", "technologies", "resources", "beliefs", "geography"]:
+            # Look for "key": [...] pattern
+            pattern = rf'"{key}"\s*:\s*\[[\s\S]*?\]'
+            arr_match = re.search(pattern, fragment)
+            if arr_match:
+                try:
+                    result[key] = json.loads('{' + arr_match.group(0) + '}')[key]
+                except (json.JSONDecodeError, KeyError):
+                    pass
+
+        return result if result else None
 
     def _chunk_text(self, text: str) -> List[str]:
         """Split text into chunks based on version config.
@@ -347,6 +449,13 @@ class FactExtractor:
             if is_noise_entity(name):
                 continue
 
+            # Parse certainty score (default 0 = not set by LLM)
+            raw_certainty = item.get("certainty", 0)
+            try:
+                certainty = int(raw_certainty)
+            except (TypeError, ValueError):
+                certainty = 0
+
             # Dedup by name|type
             dedup_key = f"{name.lower()}|{etype}"
             if dedup_key in seen:
@@ -357,6 +466,7 @@ class FactExtractor:
                 text=name,
                 label=etype,
                 context=context[:200] if context else "",
+                certainty=certainty,
             ))
 
         return entities
@@ -364,38 +474,29 @@ class FactExtractor:
     def _llm_extract_facts_and_entities(self, text: str) -> Dict[str, Any]:
         """Use LLM to extract facts and entities in a single call."""
         v = self.version
-        prompt = v.facts_prompt.format(text=text)
-
-        request_body: dict = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": v.temperature,
-                "num_predict": v.num_predict,
-                "num_ctx": v.num_ctx,
-            }
-        }
+        prompt = v.get_facts_prompt(self.model).format(text=text)
         sys_prompt = v.get_system_prompt(self.model)
-        if sys_prompt:
-            request_body["system"] = sys_prompt
 
         try:
             llm_stats.increment("fact_extraction")
-            response = self.client.post(
-                f"{self.ollama_base_url}/api/generate",
-                json=request_body,
+            response_text = self.provider.generate(
+                model=self.model,
+                prompt=prompt,
+                system=sys_prompt,
+                temperature=v.temperature,
+                max_tokens=v.num_predict,
+                num_ctx=v.num_ctx,
+                seed=v.seed,
+                # Always request JSON mode — we parse the response as JSON.
+                # The schema (if set) gives Ollama structured output; json_mode
+                # gives OpenRouter response_format: json_object.
+                json_mode=True,
+                json_schema=v.facts_format if isinstance(v.facts_format, dict) else None,
             )
-            response.raise_for_status()
 
-            result = response.json()
-            response_text = result.get("response", "").strip()
-
-            # Try to extract JSON from response (in case LLM added extra text)
-            json_match = re.search(r'\{[\s\S]*\}', response_text)
-            if json_match:
-                facts = json.loads(json_match.group(0))
-
+            # Parse JSON with recovery for malformed LLM output
+            facts = self._robust_json_parse(response_text)
+            if facts:
                 return {
                     "technologies": self._coerce_list(facts.get("technologies")),
                     "resources": self._coerce_list(facts.get("resources")),
@@ -418,36 +519,26 @@ class FactExtractor:
         catches what the combined facts+entities call tends to miss.
         """
         v = self.version
-        prompt = v.entity_prompt.format(text=text)
-
-        request_body: dict = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": v.temperature,
-                "num_predict": v.num_predict,
-                "num_ctx": v.num_ctx,
-            }
-        }
+        prompt = v.get_entity_prompt(self.model).format(text=text)
         sys_prompt = v.get_system_prompt(self.model)
-        if sys_prompt:
-            request_body["system"] = sys_prompt
 
         try:
             llm_stats.increment("entity_extraction")
-            response = self.client.post(
-                f"{self.ollama_base_url}/api/generate",
-                json=request_body,
+            response_text = self.provider.generate(
+                model=self.model,
+                prompt=prompt,
+                system=sys_prompt,
+                temperature=v.temperature,
+                max_tokens=v.num_predict,
+                num_ctx=v.num_ctx,
+                seed=v.seed,
+                # Always request JSON — entity extraction returns JSON.
+                json_mode=True,
+                json_schema=v.entity_format if isinstance(v.entity_format, dict) else None,
             )
-            response.raise_for_status()
 
-            result = response.json()
-            response_text = result.get("response", "").strip()
-
-            json_match = re.search(r'\{[\s\S]*\}', response_text)
-            if json_match:
-                data = json.loads(json_match.group(0))
+            data = self._robust_json_parse(response_text)
+            if data:
                 return self._coerce_entity_list(data.get("entities"))
             else:
                 return []
@@ -455,6 +546,130 @@ class FactExtractor:
         except Exception as e:
             print(f"Error during dedicated entity extraction: {e}")
             return []
+
+    def _llm_mark_entities(self, text: str) -> List[ExtractedEntity]:
+        """GPT-NER style: LLM rewrites text with @@entity## markers.
+
+        More natural for generative models — they copy the text word by word
+        and add markers, instead of having to remember everything for a JSON blob.
+        Typically catches entities the JSON-based calls miss.
+        """
+        v = self.version
+        if not v.mark_prompt:
+            return []
+
+        prompt = v.mark_prompt.format(text=text)
+
+        mark_sys = v.get_mark_system_prompt(self.model)
+
+        try:
+            llm_stats.increment("mark_extraction")
+            # Mark extraction returns free-form text, not JSON
+            marked_text = self.provider.generate(
+                model=self.model,
+                prompt=prompt,
+                system=mark_sys,
+                temperature=v.temperature,
+                max_tokens=v.num_predict,
+                num_ctx=v.num_ctx,
+                seed=v.seed,
+                json_mode=False,
+            )
+
+            # Parse @@entity## markers
+            entities: List[ExtractedEntity] = []
+            seen: set = set()
+            for match in re.finditer(r'@@(.+?)##', marked_text):
+                name = match.group(1).strip()
+                if not name or is_noise_entity(name):
+                    continue
+                key = name.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                # Get surrounding context
+                start = max(0, match.start() - 50)
+                end = min(len(marked_text), match.end() + 50)
+                context = marked_text[start:end]
+                context = re.sub(r'@@|##', '', context).strip()[:100]
+
+                entities.append(ExtractedEntity(
+                    text=name,
+                    label="unknown",  # marking doesn't provide types
+                    context=context,
+                ))
+            return entities
+
+        except Exception as e:
+            print(f"Error during mark-based entity extraction: {e}")
+            return []
+
+    def _llm_validate_entities(
+        self, entities: List[ExtractedEntity], text: str,
+        model_override: Optional[str] = None,
+    ) -> List[ExtractedEntity]:
+        """Post-extraction validation pass: LLM filters entities with a checklist.
+
+        Sends the extracted entity list + original text to the LLM,
+        which validates each entity against 4 questions and returns only the good ones.
+
+        Args:
+            entities: Entities to validate
+            text: Original turn text for context
+            model_override: If set, use this model instead of self.model
+        """
+        v = self.version
+        if not v.validate_prompt:
+            return entities
+
+        if not entities:
+            return []
+
+        # Format entities for the prompt
+        entity_lines = "\n".join(
+            f"- {ent.text} [{ent.label}]" for ent in entities
+        )
+
+        # Support both {text} and text-free validation prompts
+        try:
+            prompt = v.validate_prompt.format(text=text, entities=entity_lines)
+        except KeyError:
+            prompt = v.validate_prompt.format(entities=entity_lines)
+
+        # Use override model for validation if specified (per-stage config)
+        validation_model = model_override or self.model
+        validate_sys = v.get_validate_system_prompt(validation_model)
+
+        try:
+            llm_stats.increment("entity_validation")
+            response_text = self.provider.generate(
+                model=validation_model,
+                prompt=prompt,
+                system=validate_sys,
+                temperature=v.temperature,
+                max_tokens=v.num_predict,
+                num_ctx=v.num_ctx,
+                seed=v.seed,
+                json_mode=True,
+            )
+
+            data = self._robust_json_parse(response_text)
+            if data:
+                # Support both formats: {"keep": ["name1",...]} and {"entities": [...]}
+                if "keep" in data:
+                    keep_names = {n.lower().strip() for n in data["keep"] if isinstance(n, str)}
+                    validated = [e for e in entities if e.text.lower().strip() in keep_names]
+                else:
+                    validated = self._coerce_entity_list(data.get("entities"))
+                print(f"  Validation: {len(entities)} -> {len(validated)} entities")
+                return validated
+            else:
+                print(f"Warning: Validation LLM response not valid JSON: {response_text[:500]}")
+                return entities
+
+        except Exception as e:
+            print(f"Error during entity validation: {e}, keeping all entities")
+            return entities
 
     def _pattern_extract_facts(
         self, text: str, entity_lookup: Dict[str, Dict]
@@ -508,8 +723,9 @@ class FactExtractor:
         }
 
     def close(self):
-        """Close HTTP client."""
-        self.client.close()
+        """Close the underlying provider's HTTP client."""
+        if hasattr(self.provider, 'close'):
+            self.provider.close()
 
     def __enter__(self):
         return self

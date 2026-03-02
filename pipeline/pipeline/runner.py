@@ -30,6 +30,10 @@ from .entity_profiler import build_entity_profiles
 from .alias_resolver import resolve_aliases
 from .fact_extractor import FactExtractor
 from .extraction_versions import get_version, list_versions, ExtractionVersion
+from .llm_provider import (
+    LLMProvider, OllamaProvider, create_provider,
+    LLMConfig, load_llm_config, llm_config_from_cli,
+)
 from . import llm_stats
 
 
@@ -47,24 +51,41 @@ def run_pipeline(
     use_llm: bool = True,
     wiki_dir: str | None = None,
     track_progress: bool = False,
-    extraction_version: str = "v1-baseline",
+    extraction_version: str = "v13.2-validate",
     model: str = "llama3.1:8b",
+    provider: LLMProvider | None = None,
+    llm_config: LLMConfig | None = None,
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
+
+    Args:
+        llm_config: Optional per-stage model config. If provided, overrides
+                    model/provider args (each stage gets its own model).
 
     Returns a stats dict with counts of processed items.
     """
     _entity_cache.clear()
     llm_stats.reset()
 
+    # If llm_config provided, it drives model selection per stage
+    if llm_config:
+        model = llm_config.default_model
+        provider = provider or create_provider(llm_config.provider_name)
+
     global _active_model
     _active_model = model
 
+    # Create provider if not passed explicitly (default: Ollama local)
+    llm_provider = provider or OllamaProvider()
+
     version = get_version(extraction_version)
     print(f"[*] Extraction version: {version.name} -- {version.description}")
-    print(f"[*] Model: {model}")
+    if llm_config and llm_config.stage_models:
+        print(f"[*] LLM config: {llm_config.summary()}")
+    else:
+        print(f"[*] Model: {model} (provider: {llm_provider.name})")
 
-    if use_llm:
+    if use_llm and llm_provider.name == "ollama":
         _register_unload_atexit()
 
     stats = {
@@ -106,7 +127,13 @@ def run_pipeline(
 
     # Step 6: Process each turn
     print("[6/9] Processing turns (classify -> extract facts -> summarize)...")
-    fact_extractor = FactExtractor(model=model, version=version) if use_llm else None
+    # Per-stage models: extraction model for FactExtractor, validation model passed per-call
+    extraction_model = llm_config.get_model("extraction") if llm_config else model
+    validation_model = llm_config.get_model("validation") if llm_config else None
+    summarization_model = llm_config.get_model("summarization") if llm_config else model
+    profiling_model = llm_config.get_model("profiling") if llm_config else model
+    aliases_model = llm_config.get_model("aliases") if llm_config else model
+    fact_extractor = FactExtractor(model=extraction_model, version=version, provider=llm_provider) if use_llm else None
 
     conn = get_connection(db_path)
     run_id = _start_pipeline_run(conn)
@@ -139,7 +166,10 @@ def run_pipeline(
                     {"segment_type": seg.segment_type.value, "content": seg.text}
                     for seg in segments
                 ]
-                structured_facts = fact_extractor.extract_facts(segment_dicts, raw_content)
+                structured_facts = fact_extractor.extract_facts(
+                    segment_dicts, raw_content,
+                    validation_model=validation_model,
+                )
 
             # Insert segments
             for seg_order, seg in enumerate(segments):
@@ -164,9 +194,10 @@ def run_pipeline(
             # Summarize -- multi-call: 1 LLM call per author
             author_contents = _split_by_author(chunk.messages, gm_author_id)
             summary = summarize_turn(
-                turn_text, model=model, use_llm=use_llm,
+                turn_text, model=summarization_model, use_llm=use_llm,
                 civ_name=civ_name, player_name=player_name,
                 author_contents=author_contents if use_llm else None,
+                provider=llm_provider,
             )
 
             # Persist summary + structured facts
@@ -246,17 +277,18 @@ def run_pipeline(
         print("[7/9] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
             db_path,
-            model=model,
+            model=profiling_model,
             use_llm=True,
             incremental=True,
             run_id=run_id,
             track_progress=track_progress,
+            provider=llm_provider,
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
         # Step 8: Alias resolution
         print("[8/9] Resolving entity aliases...")
-        alias_stats = resolve_aliases(db_path, profiles, model=model, use_llm=True)
+        alias_stats = resolve_aliases(db_path, profiles, model=aliases_model, use_llm=True, provider=llm_provider)
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
     else:
@@ -343,9 +375,14 @@ def run_pipeline(
     else:
         print("[9/9] Skipping wiki generation (use --wiki-dir to enable)")
 
-    # Unload Ollama model to free VRAM and virtual memory
+    # Unload models to free VRAM (no-op for cloud providers)
     if use_llm:
-        _unload_ollama_model()
+        # Unload all distinct models that were used across stages
+        used_models = {extraction_model, summarization_model, profiling_model, aliases_model}
+        if validation_model:
+            used_models.add(validation_model)
+        for m in used_models:
+            llm_provider.unload(m)
 
     # Final summary
     print("[DONE] Pipeline complete!")
@@ -620,7 +657,7 @@ def _build_civ_entity_lookup(conn, civ_id: int) -> dict:
     return lookup
 
 
-def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True, extraction_version: str = "v1-baseline") -> int:
+def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True, extraction_version: str = "v7-v4t0") -> int:
     """Re-run fact extraction on all existing turns for a civilization.
 
     Uses the hybrid LLM + pattern approach with the civ's entity lookup.
@@ -757,13 +794,18 @@ def run_pipeline_for_channels(
     wiki_dir: str | None = None,
     gm_authors: set[str] | None = None,
     track_progress: bool = True,
-    extraction_version: str = "v1-baseline",
+    extraction_version: str = "v13.2-validate",
     model: str = "llama3.1:8b",
+    provider: LLMProvider | None = None,
+    llm_config: LLMConfig | None = None,
 ) -> dict:
     """Run pipeline for all civs with a discord_channel_id set in DB.
 
     Called by the bot's /sync endpoint. Processes unprocessed messages
     per channel/civ, then optionally rebuilds wiki.
+
+    Args:
+        llm_config: Optional per-stage model config. Overrides model/provider.
 
     Returns aggregated stats across all civs.
     """
@@ -771,7 +813,15 @@ def run_pipeline_for_channels(
         global GM_AUTHORS
         GM_AUTHORS = gm_authors
 
-    if use_llm:
+    # If llm_config provided, it drives model selection
+    if llm_config:
+        model = llm_config.default_model
+        provider = provider or create_provider(llm_config.provider_name)
+
+    # Create provider if not passed explicitly
+    llm_provider = provider or OllamaProvider()
+
+    if use_llm and llm_provider.name == "ollama":
         _register_unload_atexit()
 
     init_db(db_path)
@@ -797,10 +847,18 @@ def run_pipeline_for_channels(
     global _active_model
     _active_model = model
 
+    # Per-stage model resolution
+    extraction_model = llm_config.get_model("extraction") if llm_config else model
+    validation_model = llm_config.get_model("validation") if llm_config else None
+    summarization_model = llm_config.get_model("summarization") if llm_config else model
+
     version = get_version(extraction_version)
     print(f"[*] Extraction version: {version.name} -- {version.description}")
-    print(f"[*] Model: {model}")
-    fact_extractor = FactExtractor(model=model, version=version) if use_llm else None
+    if llm_config and llm_config.stage_models:
+        print(f"[*] LLM config: {llm_config.summary()}")
+    else:
+        print(f"[*] Model: {model} (provider: {llm_provider.name})")
+    fact_extractor = FactExtractor(model=extraction_model, version=version, provider=llm_provider) if use_llm else None
 
     for civ_id, civ_name, player_name, channel_id in civs:
         print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
@@ -845,7 +903,10 @@ def run_pipeline_for_channels(
                         {"segment_type": seg.segment_type.value, "content": seg.text}
                         for seg in segments
                     ]
-                    structured_facts = fact_extractor.extract_facts(segment_dicts, raw_content)
+                    structured_facts = fact_extractor.extract_facts(
+                        segment_dicts, raw_content,
+                        validation_model=validation_model,
+                    )
 
                 for seg_order, seg in enumerate(segments):
                     conn.execute(
@@ -868,9 +929,10 @@ def run_pipeline_for_channels(
 
                 author_contents = _split_by_author(chunk.messages, gm_author_id)
                 summary = summarize_turn(
-                    turn_text, model=model, use_llm=use_llm,
+                    turn_text, model=summarization_model, use_llm=use_llm,
                     civ_name=civ_name, player_name=player_name,
                     author_contents=author_contents if use_llm else None,
+                    provider=llm_provider,
                 )
 
                 # Persist summary + structured facts
@@ -962,8 +1024,13 @@ def run_pipeline_for_channels(
             print(f"  Wiki generation failed: {exc}")
             aggregated["wiki_error"] = str(exc)
 
-    # Unload Ollama model to free VRAM and virtual memory
-    _unload_ollama_model()
+    # Unload models to free VRAM (no-op for cloud providers)
+    used_models = {extraction_model, summarization_model}
+    if validation_model:
+        used_models.add(validation_model)
+    used_models.add(model)  # default model as fallback
+    for m in used_models:
+        llm_provider.unload(m)
 
     return aggregated
 
@@ -983,7 +1050,16 @@ def main() -> None:
     )
     parser.add_argument(
         "--model", default="llama3.1:8b",
-        help="Ollama model to use for LLM extraction (default: llama3.1:8b)",
+        help="Model to use for LLM extraction (default: llama3.1:8b)",
+    )
+    parser.add_argument(
+        "--llm-provider", choices=["ollama", "openrouter"],
+        help="LLM provider: 'ollama' (local) or 'openrouter' (cloud). Required unless --llm-config is used.",
+    )
+    parser.add_argument(
+        "--llm-config", default=None,
+        help="Path to LLM config JSON for per-stage model selection. "
+             "Overrides --model and --llm-provider when set.",
     )
     parser.add_argument(
         "--reextract-facts", action="store_true",
@@ -1015,6 +1091,21 @@ def main() -> None:
     if not args.data_dir or not args.civ:
         parser.error("--data-dir and --civ are required unless using --reextract-facts")
 
+    # Build LLM config: either from JSON file or from CLI args
+    config: LLMConfig | None = None
+    llm_provider: LLMProvider | None = None
+
+    if args.llm_config:
+        # Per-stage config from JSON file — overrides --model and --llm-provider
+        config = load_llm_config(args.llm_config)
+        llm_provider = create_provider(config.provider_name) if not args.no_llm else None
+    elif not args.no_llm:
+        # Classic CLI args — require --llm-provider
+        if not args.llm_provider:
+            parser.error("--llm-provider is required unless --llm-config or --no-llm is used")
+        config = llm_config_from_cli(args.model, args.llm_provider)
+        llm_provider = create_provider(args.llm_provider)
+
     run_pipeline(
         data_dir=args.data_dir,
         db_path=args.db,
@@ -1024,7 +1115,9 @@ def main() -> None:
         wiki_dir=args.wiki_dir,
         track_progress=args.track_progress,
         extraction_version=args.extraction_version,
-        model=args.model,
+        model=config.default_model if config else args.model,
+        provider=llm_provider,
+        llm_config=config,
     )
 
 

@@ -1,0 +1,11 @@
+{
+  "bot_port": 8473,
+  "proxy": "http://127.0.0.1:7897",
+  "wiki_dir": "../wiki",
+  "ollama_model": "qwen3:14b",
+  "extraction_version": "v15.3.4-tightnon",
+  "gm_authors": ["Arthur Ignatus"],
+  "channels": {
+    "1471145314630107248": {"civ_name": "Civilisation de la Confluence", "player": "Rubanc"}
+  }
+}

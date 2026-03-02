@@ -18,6 +18,7 @@ class ExtractedEntity:
     text: str
     label: str  # person, place, technology, institution, resource, creature, event, civilization, caste, belief
     context: str
+    certainty: int = 0  # LLM self-assessed confidence (0=not set, scale defined by version)
 
 
 # Valid entity types for validation
@@ -57,12 +58,44 @@ def _strip_accents(text: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
-def is_noise_entity(name: str) -> bool:
-    """Check if an entity name is structurally broken.
+# Generic French nouns that are NEVER game-specific entity names.
+# Language-level filter (not game-specific): these are common French words
+# that smaller LLMs frequently extract as "entities" despite being generic.
+# Only includes unambiguous generics — game-specific names that LOOK generic
+# (e.g. "Passes-bien", "Ciels-clairs") are not here because their compound
+# form makes them unique.
+_GENERIC_FRENCH_NOUNS = {
+    # Geography generics (single generic words)
+    "montagne", "montagnes", "vallee", "vallees", "riviere", "rivieres",
+    "fleuve", "fleuves", "lac", "lacs", "mer", "mers", "ocean", "oceans",
+    "foret", "forets", "plaine", "plaines", "colline", "collines",
+    "sommet", "sommets", "hauteur", "hauteurs", "berceau",
+    # Profession generics (common roles, not game-specific titles)
+    "pecheur", "pecheurs", "scribe", "scribes", "chef", "chefs",
+    "pretre", "pretres", "batisseur", "batisseurs", "guerrier", "guerriers",
+    "chasseur", "chasseurs", "artisan", "artisans", "marchand", "marchands",
+    "sculpteur", "sculpteurs", "forgeron", "forgerons", "tailleur", "tailleurs",
+    # Creature generics
+    "creature", "creatures", "animal", "animaux", "bete", "betes",
+    # Object generics
+    "lance", "lances", "arc", "arcs", "epee", "epees",
+    "palanquin", "palanquins", "codex", "fresque", "fresques",
+    # Building/place generics
+    "maison", "village", "cite", "temple", "autel", "autels",
+    "antre", "antres", "ruine", "ruines", "sanctuaire",
+    # Abstract generics
+    "hieroglyphe", "hieroglyphes", "glyphe", "glyphes",
+    "present", "presents", "architecture",
+}
 
-    Only rejects structural problems: URLs, markdown, multiline,
-    truncated strings, pure numbers. Content-level filtering is
-    the LLM prompt's job.
+
+def is_noise_entity(name: str) -> bool:
+    """Check if an entity name is structurally broken or a generic French word.
+
+    Two-level filtering:
+    1. Structural: URLs, markdown, multiline, truncated strings, pure numbers
+    2. Semantic: single generic French nouns that are never game-specific
+       (only when the name is 1-2 words with no compound markers like hyphens)
     """
     # Structural patterns (URLs, markdown, too short, numbers)
     if _NOISE_PATTERN.match(name):
@@ -111,5 +144,25 @@ def is_noise_entity(name: str) -> bool:
     # Ends with sentence-ending punctuation = full sentence, not a name
     if name.rstrip().endswith((".","!","?")):
         return True
+
+    # Semantic filter: reject single generic French words.
+    # Only applies to short names (1-2 words) WITHOUT compound markers
+    # (hyphens, apostrophes) that could indicate a game-specific term.
+    # "Montagne" → noise, but "Montagne-Blanche" → kept
+    # "Sculpteurs" → noise, but "Sculpteurs d'Argile" → kept (3+ words)
+    words = name.split()
+    if len(words) <= 2 and "-" not in name and "'" not in name:
+        normalized = _strip_accents(name.lower().strip())
+        # Check each word individually — "Tailleurs de pierres" has 3 words
+        # but "Tailleurs" alone should be caught as 1-word
+        if len(words) == 1 and normalized in _GENERIC_FRENCH_NOUNS:
+            return True
+        # 2-word patterns like "étrange créature" or "étendue d'eau"
+        # where both words are generic
+        if len(words) == 2:
+            w1 = _strip_accents(words[0].lower())
+            w2 = _strip_accents(words[1].lower())
+            if w1 in _GENERIC_FRENCH_NOUNS and w2 in _GENERIC_FRENCH_NOUNS:
+                return True
 
     return False

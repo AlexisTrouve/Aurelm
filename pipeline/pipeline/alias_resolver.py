@@ -17,10 +17,9 @@ import json
 import re
 from dataclasses import dataclass
 
-import ollama
-
 from .db import get_connection
 from .entity_profiler import EntityProfile
+from .llm_provider import LLMProvider, OllamaProvider
 
 
 @dataclass
@@ -173,6 +172,7 @@ def find_alias_candidates(profiles: list[EntityProfile]) -> list[AliasCandidate]
 def confirm_aliases(
     candidates: list[AliasCandidate],
     model: str = DEFAULT_MODEL,
+    provider: LLMProvider | None = None,
 ) -> list[ConfirmedAlias]:
     """Stage 2: Confirm alias candidates with targeted LLM calls."""
     confirmed: list[ConfirmedAlias] = []
@@ -192,7 +192,7 @@ def confirm_aliases(
         )
 
         try:
-            data = _call_ollama(model, prompt)
+            data = _call_llm(model, prompt, provider)
         except Exception as e:
             print(f"       WARNING: LLM confirmation failed for "
                   f"'{a.canonical_name}' <-> '{b.canonical_name}': {e}")
@@ -244,6 +244,7 @@ def resolve_aliases(
     profiles: list[EntityProfile],
     model: str = DEFAULT_MODEL,
     use_llm: bool = True,
+    provider: LLMProvider | None = None,
 ) -> dict:
     """Full alias resolution: find candidates -> confirm -> store.
 
@@ -269,7 +270,7 @@ def resolve_aliases(
         return stats
 
     # Stage 2: LLM confirmation
-    confirmed = confirm_aliases(candidates, model)
+    confirmed = confirm_aliases(candidates, model, provider=provider)
     stats["aliases_confirmed"] = len(confirmed)
 
     if confirmed:
@@ -312,16 +313,15 @@ def _description_overlap(desc_a: str, desc_b: str) -> float:
     return len(intersection) / smaller if smaller > 0 else 0.0
 
 
-def _call_ollama(model: str, prompt: str) -> dict:
-    """Call Ollama and parse JSON response."""
-    response = ollama.chat(
+def _call_llm(model: str, prompt: str, provider: LLMProvider | None = None) -> dict:
+    """Call LLM via provider and parse JSON response."""
+    llm = provider or OllamaProvider()
+    raw = llm.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        format="json",
-        options={"num_ctx": NUM_CTX},
-        keep_alive=60,  # 60s idle timeout instead of default 5min
+        num_ctx=NUM_CTX,
+        json_mode=True,
     )
-    raw = response["message"]["content"]
     return _parse_json_response(raw)
 
 
