@@ -287,8 +287,21 @@ def run_pipeline(
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
         # Step 8: Alias resolution
+        # Prompt version + score threshold can be set per-stage in llm_config:
+        # "aliases": {"prompt_version": "v5-score-pct", "score_threshold": 0.7}
+        aliases_confirm_version = (
+            llm_config.get_prompt_version("aliases") if llm_config else None
+        )
+        aliases_score_threshold = (
+            llm_config.get_score_threshold("aliases") if llm_config else 0.7
+        )
         print("[8/9] Resolving entity aliases...")
-        alias_stats = resolve_aliases(db_path, profiles, model=aliases_model, use_llm=True, provider=llm_provider)
+        alias_stats = resolve_aliases(
+            db_path, profiles, model=aliases_model, use_llm=True,
+            provider=llm_provider,
+            confirm_version=aliases_confirm_version or "v2-qwen3",
+            score_threshold=aliases_score_threshold,
+        )
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
     else:

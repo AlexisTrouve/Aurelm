@@ -544,31 +544,53 @@ VALID_STAGES = {"extraction", "summarization", "profiling", "aliases", "validati
 
 @dataclass
 class LLMConfig:
-    """Per-stage LLM model configuration.
+    """Per-stage LLM model and prompt configuration.
 
-    Allows different models per pipeline stage (extraction, summarization,
-    profiling, aliases, validation). The provider is global — no mixing
-    ollama/openrouter within a single run.
+    Allows different models and prompt versions per pipeline stage.
+    The provider is global — no mixing ollama/openrouter within a run.
 
     Attributes:
         provider_name: "ollama" or "openrouter" (global for all stages)
         default_model: Fallback model when a stage has no override
         stage_models: Optional per-stage model overrides
+        stage_prompt_versions: Optional per-stage prompt version overrides
+            e.g. {"aliases": "v1-llama"} to use the Llama-tuned confirmation prompt
     """
 
     provider_name: str
     default_model: str
     stage_models: dict[str, str] = field(default_factory=dict)
+    stage_prompt_versions: dict[str, str] = field(default_factory=dict)
+    stage_score_thresholds: dict[str, float] = field(default_factory=dict)
 
     def get_model(self, stage: str) -> str:
         """Return the model for a given pipeline stage, or the default."""
         return self.stage_models.get(stage, self.default_model)
 
+    def get_prompt_version(self, stage: str) -> str | None:
+        """Return the prompt version for a stage, or None if not set."""
+        return self.stage_prompt_versions.get(stage)
+
+    def get_score_threshold(self, stage: str, default: float = 0.7) -> float:
+        """Return the score threshold for a stage, or the given default."""
+        return self.stage_score_thresholds.get(stage, default)
+
     def summary(self) -> str:
         """Human-readable summary for log output."""
         lines = [f"provider={self.provider_name}, default={self.default_model}"]
         for stage in sorted(self.stage_models):
-            lines.append(f"  {stage}: {self.stage_models[stage]}")
+            pv = self.stage_prompt_versions.get(stage)
+            st = self.stage_score_thresholds.get(stage)
+            extras = []
+            if pv:
+                extras.append(f"prompt: {pv}")
+            if st is not None:
+                extras.append(f"threshold: {st:.0%}")
+            extras_str = f" ({', '.join(extras)})" if extras else ""
+            lines.append(f"  {stage}: {self.stage_models[stage]}{extras_str}")
+        for stage in sorted(self.stage_prompt_versions):
+            if stage not in self.stage_models:
+                lines.append(f"  {stage}: (default model) prompt={self.stage_prompt_versions[stage]}")
         return "\n".join(lines)
 
 
@@ -603,22 +625,37 @@ def load_llm_config(path: str | Path) -> LLMConfig:
     if not default_model:
         raise ValueError(f"LLM config missing 'default_model' field: {path}")
 
-    # Parse per-stage overrides
+    # Parse per-stage overrides (model + optional prompt_version + score_threshold)
     stage_models: dict[str, str] = {}
+    stage_prompt_versions: dict[str, str] = {}
+    stage_score_thresholds: dict[str, float] = {}
     for stage_name, stage_cfg in data.get("stages", {}).items():
         if stage_name not in VALID_STAGES:
             raise ValueError(
                 f"Unknown stage '{stage_name}' in {path}. "
                 f"Valid stages: {sorted(VALID_STAGES)}"
             )
-        model = stage_cfg.get("model") if isinstance(stage_cfg, dict) else stage_cfg
+        if isinstance(stage_cfg, dict):
+            model = stage_cfg.get("model")
+            pv = stage_cfg.get("prompt_version")
+            st = stage_cfg.get("score_threshold")
+        else:
+            model = stage_cfg
+            pv = None
+            st = None
         if model:
             stage_models[stage_name] = model
+        if pv:
+            stage_prompt_versions[stage_name] = pv
+        if st is not None:
+            stage_score_thresholds[stage_name] = float(st)
 
     return LLMConfig(
         provider_name=provider,
         default_model=default_model,
         stage_models=stage_models,
+        stage_prompt_versions=stage_prompt_versions,
+        stage_score_thresholds=stage_score_thresholds,
     )
 
 

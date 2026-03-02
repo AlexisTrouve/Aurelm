@@ -5,7 +5,7 @@
     "extraction": { "model": "qwen3:14b" },
     "summarization": { "model": "llama3.1:8b" },
     "profiling": { "model": "qwen3:8b" },
-    "aliases": { "model": "llama3.1:8b" },
+    "aliases": { "model": "qwen/qwen3-14b", "prompt_version": "v12-desc-first-tuned", "score_threshold": 0.7 },
     "validation": { "model": "qwen3:14b" }
   }
 }
