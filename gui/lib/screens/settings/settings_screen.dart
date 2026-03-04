@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -95,16 +97,37 @@ class SettingsScreen extends ConsumerWidget {
           Text('About', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.auto_stories),
-              title: const Text(AppConstants.appName),
-              subtitle: Text(
-                'v${AppConstants.appVersion} — GM Dashboard for Civilization RPGs',
-              ),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.auto_stories),
+                  title: const Text(AppConstants.appName),
+                  subtitle: Text(
+                    'v${AppConstants.appVersion} — GM Dashboard for Civilization RPGs',
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.open_in_new),
+                  title: const Text('GitHub'),
+                  subtitle: const Text(
+                      'github.com/AlexisTrouve/Aurelm'),
+                  trailing: const Icon(Icons.chevron_right, size: 18),
+                  onTap: () => _openGitHub(),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Opens the GitHub repository in the system browser (Windows: cmd /c start).
+  void _openGitHub() {
+    Process.run(
+      'cmd',
+      ['/c', 'start', 'https://github.com/AlexisTrouve/Aurelm'],
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/turn_with_entities.dart';
@@ -16,7 +17,10 @@ class TimelineTurnCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go('/turns/${t.id}'),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,6 +140,7 @@ class TimelineTurnCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+      ), // InkWell child: Padding
+    ); // InkWell + Card
   }
 }

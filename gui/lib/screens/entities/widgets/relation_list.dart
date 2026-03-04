@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../providers/database_provider.dart';
-import '../../../data/database.dart';
+import '../../../data/daos/relation_dao.dart';
 
+/// Shows all relations for an entity, with the related entity's canonical name
+/// resolved via a JOIN (no N+1 queries).
 class RelationList extends ConsumerWidget {
   final int entityId;
 
@@ -15,8 +17,8 @@ class RelationList extends ConsumerWidget {
     final db = ref.watch(databaseProvider);
     if (db == null) return const SizedBox.shrink();
 
-    return StreamBuilder<List<RelationRow>>(
-      stream: db.relationDao.watchRelationsForEntity(entityId),
+    return StreamBuilder<List<RelationWithNames>>(
+      stream: db.relationDao.watchRelationsWithNamesForEntity(entityId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -24,18 +26,17 @@ class RelationList extends ConsumerWidget {
         final relations = snapshot.data ?? [];
         if (relations.isEmpty) {
           return Text(
-            'No relations found',
+            'Aucune relation',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           );
         }
 
-        // Group by direction
         final outgoing =
-            relations.where((r) => r.sourceEntityId == entityId).toList();
+            relations.where((r) => r.isOutgoing).toList();
         final incoming =
-            relations.where((r) => r.targetEntityId == entityId).toList();
+            relations.where((r) => !r.isOutgoing).toList();
 
         return Card(
           child: Column(
@@ -45,35 +46,25 @@ class RelationList extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                   child: Text(
-                    'Outgoing',
+                    'Vers',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                 ),
-                ...outgoing.map((r) => _RelationTile(
-                      relationType: r.relationType,
-                      description: r.description,
-                      targetEntityId: r.targetEntityId,
-                      direction: 'to',
-                    )),
+                ...outgoing.map((r) => _RelationTile(relation: r)),
               ],
               if (incoming.isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                   child: Text(
-                    'Incoming',
+                    'Depuis',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                   ),
                 ),
-                ...incoming.map((r) => _RelationTile(
-                      relationType: r.relationType,
-                      description: r.description,
-                      targetEntityId: r.sourceEntityId,
-                      direction: 'from',
-                    )),
+                ...incoming.map((r) => _RelationTile(relation: r)),
               ],
             ],
           ),
@@ -84,30 +75,31 @@ class RelationList extends ConsumerWidget {
 }
 
 class _RelationTile extends StatelessWidget {
-  final String relationType;
-  final String? description;
-  final int targetEntityId;
-  final String direction;
+  final RelationWithNames relation;
 
-  const _RelationTile({
-    required this.relationType,
-    required this.description,
-    required this.targetEntityId,
-    required this.direction,
-  });
+  const _RelationTile({required this.relation});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
       leading: Icon(
-        direction == 'to' ? Icons.arrow_forward : Icons.arrow_back,
+        relation.isOutgoing ? Icons.arrow_forward : Icons.arrow_back,
         size: 18,
       ),
-      title: Text(relationType.replaceAll('_', ' ')),
-      subtitle: description != null ? Text(description!) : null,
+      // Show the related entity name prominently
+      title: Text(
+        relation.relatedName,
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      // Show relation type + optional description as subtitle
+      subtitle: Text(
+        relation.relation.description != null
+            ? '${relation.relation.relationType.replaceAll('_', ' ')} · ${relation.relation.description}'
+            : relation.relation.relationType.replaceAll('_', ' '),
+      ),
       trailing: const Icon(Icons.chevron_right, size: 18),
-      onTap: () => context.go('/entities/$targetEntityId'),
+      onTap: () => context.go('/entities/${relation.relatedEntityId}'),
     );
   }
 }

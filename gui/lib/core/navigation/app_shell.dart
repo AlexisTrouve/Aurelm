@@ -28,20 +28,33 @@ class AppShell extends StatelessWidget {
       label: Text('Graph'),
     ),
     NavigationRailDestination(
+      icon: Icon(Icons.task_alt_outlined),
+      selectedIcon: Icon(Icons.task_alt),
+      label: Text('Sujets'),
+    ),
+    NavigationRailDestination(
       icon: Icon(Icons.settings_outlined),
       selectedIcon: Icon(Icons.settings),
       label: Text('Settings'),
     ),
   ];
 
-  static const _routes = ['/', '/entities', '/timeline', '/graph', '/settings'];
+  static const _routes = [
+    '/',
+    '/entities',
+    '/timeline',
+    '/graph',
+    '/subjects',
+    '/settings',
+  ];
 
   int _selectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/entities')) return 1;
     if (location.startsWith('/timeline')) return 2;
     if (location.startsWith('/graph')) return 3;
-    if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/subjects')) return 4;
+    if (location.startsWith('/settings')) return 5;
     return 0; // dashboard + /civs/:id
   }
 
