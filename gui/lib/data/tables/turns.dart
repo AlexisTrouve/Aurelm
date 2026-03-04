@@ -29,4 +29,7 @@ class TurnSegments extends Table {
   IntColumn get segmentOrder => integer().named('segment_order')();
   TextColumn get segmentType => text().named('segment_type')();
   TextColumn get content => text()();
+  // 'gm' = GM narrative, 'pj' = player response (migration 007)
+  TextColumn get source =>
+      text().withDefault(const Constant('gm'))();
 }

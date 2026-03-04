@@ -952,9 +952,16 @@ class $TurnSegmentsTable extends TurnSegments
   late final GeneratedColumn<String> content = GeneratedColumn<String>(
       'content', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('gm'));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, turnId, segmentOrder, segmentType, content];
+      [id, turnId, segmentOrder, segmentType, content, source];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -996,6 +1003,10 @@ class $TurnSegmentsTable extends TurnSegments
     } else if (isInserting) {
       context.missing(_contentMeta);
     }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
     return context;
   }
 
@@ -1015,6 +1026,8 @@ class $TurnSegmentsTable extends TurnSegments
           .read(DriftSqlType.string, data['${effectivePrefix}segment_type'])!,
       content: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
     );
   }
 
@@ -1030,12 +1043,14 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
   final int segmentOrder;
   final String segmentType;
   final String content;
+  final String source;
   const SegmentRow(
       {required this.id,
       required this.turnId,
       required this.segmentOrder,
       required this.segmentType,
-      required this.content});
+      required this.content,
+      required this.source});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1044,6 +1059,7 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
     map['segment_order'] = Variable<int>(segmentOrder);
     map['segment_type'] = Variable<String>(segmentType);
     map['content'] = Variable<String>(content);
+    map['source'] = Variable<String>(source);
     return map;
   }
 
@@ -1054,6 +1070,7 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
       segmentOrder: Value(segmentOrder),
       segmentType: Value(segmentType),
       content: Value(content),
+      source: Value(source),
     );
   }
 
@@ -1066,6 +1083,7 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
       segmentOrder: serializer.fromJson<int>(json['segmentOrder']),
       segmentType: serializer.fromJson<String>(json['segmentType']),
       content: serializer.fromJson<String>(json['content']),
+      source: serializer.fromJson<String>(json['source']),
     );
   }
   @override
@@ -1077,6 +1095,7 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
       'segmentOrder': serializer.toJson<int>(segmentOrder),
       'segmentType': serializer.toJson<String>(segmentType),
       'content': serializer.toJson<String>(content),
+      'source': serializer.toJson<String>(source),
     };
   }
 
@@ -1085,13 +1104,15 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
           int? turnId,
           int? segmentOrder,
           String? segmentType,
-          String? content}) =>
+          String? content,
+          String? source}) =>
       SegmentRow(
         id: id ?? this.id,
         turnId: turnId ?? this.turnId,
         segmentOrder: segmentOrder ?? this.segmentOrder,
         segmentType: segmentType ?? this.segmentType,
         content: content ?? this.content,
+        source: source ?? this.source,
       );
   SegmentRow copyWithCompanion(TurnSegmentsCompanion data) {
     return SegmentRow(
@@ -1103,6 +1124,7 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
       segmentType:
           data.segmentType.present ? data.segmentType.value : this.segmentType,
       content: data.content.present ? data.content.value : this.content,
+      source: data.source.present ? data.source.value : this.source,
     );
   }
 
@@ -1113,14 +1135,15 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
           ..write('turnId: $turnId, ')
           ..write('segmentOrder: $segmentOrder, ')
           ..write('segmentType: $segmentType, ')
-          ..write('content: $content')
+          ..write('content: $content, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, turnId, segmentOrder, segmentType, content);
+      Object.hash(id, turnId, segmentOrder, segmentType, content, source);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1129,7 +1152,8 @@ class SegmentRow extends DataClass implements Insertable<SegmentRow> {
           other.turnId == this.turnId &&
           other.segmentOrder == this.segmentOrder &&
           other.segmentType == this.segmentType &&
-          other.content == this.content);
+          other.content == this.content &&
+          other.source == this.source);
 }
 
 class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
@@ -1138,12 +1162,14 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
   final Value<int> segmentOrder;
   final Value<String> segmentType;
   final Value<String> content;
+  final Value<String> source;
   const TurnSegmentsCompanion({
     this.id = const Value.absent(),
     this.turnId = const Value.absent(),
     this.segmentOrder = const Value.absent(),
     this.segmentType = const Value.absent(),
     this.content = const Value.absent(),
+    this.source = const Value.absent(),
   });
   TurnSegmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -1151,6 +1177,7 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
     required int segmentOrder,
     required String segmentType,
     required String content,
+    this.source = const Value.absent(),
   })  : turnId = Value(turnId),
         segmentOrder = Value(segmentOrder),
         segmentType = Value(segmentType),
@@ -1161,6 +1188,7 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
     Expression<int>? segmentOrder,
     Expression<String>? segmentType,
     Expression<String>? content,
+    Expression<String>? source,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1168,6 +1196,7 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
       if (segmentOrder != null) 'segment_order': segmentOrder,
       if (segmentType != null) 'segment_type': segmentType,
       if (content != null) 'content': content,
+      if (source != null) 'source': source,
     });
   }
 
@@ -1176,13 +1205,15 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
       Value<int>? turnId,
       Value<int>? segmentOrder,
       Value<String>? segmentType,
-      Value<String>? content}) {
+      Value<String>? content,
+      Value<String>? source}) {
     return TurnSegmentsCompanion(
       id: id ?? this.id,
       turnId: turnId ?? this.turnId,
       segmentOrder: segmentOrder ?? this.segmentOrder,
       segmentType: segmentType ?? this.segmentType,
       content: content ?? this.content,
+      source: source ?? this.source,
     );
   }
 
@@ -1204,6 +1235,9 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
     if (content.present) {
       map['content'] = Variable<String>(content.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     return map;
   }
 
@@ -1214,7 +1248,8 @@ class TurnSegmentsCompanion extends UpdateCompanion<SegmentRow> {
           ..write('turnId: $turnId, ')
           ..write('segmentOrder: $segmentOrder, ')
           ..write('segmentType: $segmentType, ')
-          ..write('content: $content')
+          ..write('content: $content, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -4949,6 +4984,7 @@ typedef $$TurnSegmentsTableCreateCompanionBuilder = TurnSegmentsCompanion
   required int segmentOrder,
   required String segmentType,
   required String content,
+  Value<String> source,
 });
 typedef $$TurnSegmentsTableUpdateCompanionBuilder = TurnSegmentsCompanion
     Function({
@@ -4957,6 +4993,7 @@ typedef $$TurnSegmentsTableUpdateCompanionBuilder = TurnSegmentsCompanion
   Value<int> segmentOrder,
   Value<String> segmentType,
   Value<String> content,
+  Value<String> source,
 });
 
 class $$TurnSegmentsTableFilterComposer
@@ -4982,6 +5019,9 @@ class $$TurnSegmentsTableFilterComposer
 
   ColumnFilters<String> get content => $composableBuilder(
       column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
 }
 
 class $$TurnSegmentsTableOrderingComposer
@@ -5008,6 +5048,9 @@ class $$TurnSegmentsTableOrderingComposer
 
   ColumnOrderings<String> get content => $composableBuilder(
       column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
 }
 
 class $$TurnSegmentsTableAnnotationComposer
@@ -5033,6 +5076,9 @@ class $$TurnSegmentsTableAnnotationComposer
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 }
 
 class $$TurnSegmentsTableTableManager extends RootTableManager<
@@ -5066,6 +5112,7 @@ class $$TurnSegmentsTableTableManager extends RootTableManager<
             Value<int> segmentOrder = const Value.absent(),
             Value<String> segmentType = const Value.absent(),
             Value<String> content = const Value.absent(),
+            Value<String> source = const Value.absent(),
           }) =>
               TurnSegmentsCompanion(
             id: id,
@@ -5073,6 +5120,7 @@ class $$TurnSegmentsTableTableManager extends RootTableManager<
             segmentOrder: segmentOrder,
             segmentType: segmentType,
             content: content,
+            source: source,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5080,6 +5128,7 @@ class $$TurnSegmentsTableTableManager extends RootTableManager<
             required int segmentOrder,
             required String segmentType,
             required String content,
+            Value<String> source = const Value.absent(),
           }) =>
               TurnSegmentsCompanion.insert(
             id: id,
@@ -5087,6 +5136,7 @@ class $$TurnSegmentsTableTableManager extends RootTableManager<
             segmentOrder: segmentOrder,
             segmentType: segmentType,
             content: content,
+            source: source,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

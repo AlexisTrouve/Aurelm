@@ -35,6 +35,12 @@ class TurnDetailScreen extends ConsumerWidget {
         final typeColor =
             AppColors.turnTypeColors[t.turnType] ?? Colors.grey;
 
+        // Split segments by source (migration 007: 'gm' vs 'pj')
+        final gmSegs =
+            data.segments.where((s) => s.source == 'gm').toList();
+        final pjSegs =
+            data.segments.where((s) => s.source == 'pj').toList();
+
         return Scaffold(
           appBar: AppBar(
             title: Text(t.title ?? 'Tour ${t.turnNumber}',
@@ -157,8 +163,27 @@ class TurnDetailScreen extends ConsumerWidget {
                   ),
                 ],
 
-                // Segments grouped by type
-                if (data.segments.isNotEmpty) ...[
+                // GM narrative segments
+                if (gmSegs.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const SectionHeader(title: 'Tour MJ'),
+                  const SizedBox(height: 8),
+                  ...gmSegs.map((seg) => _SegmentCard(segment: seg)),
+                ],
+
+                // PJ response segments (migration 007 fusion)
+                if (pjSegs.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  const SectionHeader(title: 'Réponse Joueur'),
+                  const SizedBox(height: 8),
+                  ...pjSegs.map((seg) => _SegmentCard(
+                        segment: seg,
+                        isPj: true,
+                      )),
+                ],
+
+                // Fallback: segments with no source distinction (pre-migration)
+                if (gmSegs.isEmpty && pjSegs.isEmpty && data.segments.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   const SectionHeader(title: 'Contenu du tour'),
                   const SizedBox(height: 8),
@@ -189,15 +214,18 @@ class TurnDetailScreen extends ConsumerWidget {
 }
 
 /// One segment card — uses color-coded left border per segment type.
+/// [isPj] tints the background slightly purple to distinguish player content.
 class _SegmentCard extends StatelessWidget {
   final SegmentRow segment;
+  final bool isPj;
 
-  const _SegmentCard({super.key, required this.segment});
+  const _SegmentCard({super.key, required this.segment, this.isPj = false});
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        AppColors.segmentTypeColors[segment.segmentType] ?? Colors.grey;
+    final color = isPj
+        ? Colors.purple
+        : AppColors.segmentTypeColors[segment.segmentType] ?? Colors.grey;
     final typeLabel = switch (segment.segmentType) {
       'narrative' => 'Narration',
       'choice' => 'Choix',
