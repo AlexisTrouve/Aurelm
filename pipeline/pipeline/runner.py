@@ -34,6 +34,8 @@ from .llm_provider import (
     LLMProvider, OllamaProvider, create_provider,
     LLMConfig, load_llm_config, llm_config_from_cli,
 )
+from .subject_extractor import SubjectExtractor, build_turn_pairs
+from .subject_helpers import load_open_subjects, insert_subject, apply_resolutions
 from . import llm_stats
 
 
@@ -96,22 +98,22 @@ def run_pipeline(
     }
 
     # Step 1: Init DB
-    print("[1/9] Initializing database...")
+    print("[1/10] Initializing database...")
     init_db(db_path)
     run_migrations(db_path)
 
     # Step 2: Register civilization
-    print(f"[2/9] Registering civilization: {civ_name}")
+    print(f"[2/10] Registering civilization: {civ_name}")
     civ_id = register_civilization(db_path, civ_name, player_name=player_name)
 
     # Step 3: Load markdown files
-    print(f"[3/9] Loading markdown files from {data_dir}...")
+    print(f"[3/10] Loading markdown files from {data_dir}...")
     msg_count = load_directory(data_dir, db_path, channel_id=CHANNEL_ID)
     stats["messages_loaded"] = msg_count
     print(f"       -> {msg_count} messages in database")
 
     # Step 4: Fetch unprocessed messages
-    print("[4/9] Fetching unprocessed messages...")
+    print("[4/10] Fetching unprocessed messages...")
     messages = fetch_unprocessed_messages(db_path, CHANNEL_ID)
     print(f"       ->{len(messages)} unprocessed messages")
 
@@ -120,20 +122,29 @@ def run_pipeline(
         return stats
 
     # Step 5: Detect turn boundaries
-    print("[5/9] Detecting turn boundaries...")
+    print("[5/10] Detecting turn boundaries...")
     gm_author_id = _find_gm_author_id(messages)
-    chunks = detect_turn_boundaries(messages, gm_author_id)
+    all_chunks = detect_turn_boundaries(messages, gm_author_id)
+    # Only process GM turns — player-only chunks (PJ responses, synthetic placeholders)
+    # are not lore sources and must not become turn records.
+    chunks = [c for c in all_chunks if c.is_gm_post]
     print(f"       ->{len(chunks)} turns detected")
 
     # Step 6: Process each turn
-    print("[6/9] Processing turns (classify -> extract facts -> summarize)...")
-    # Per-stage models: extraction model for FactExtractor, validation model passed per-call
-    extraction_model = llm_config.get_model("extraction") if llm_config else model
-    validation_model = llm_config.get_model("validation") if llm_config else None
+    print("[6/10] Processing turns (classify -> extract facts -> summarize)...")
+    # Per-stage models: each LLM call can use a different model.
+    # Config priority: llm_config stage override > CLI --model fallback.
+    extraction_model  = llm_config.get_model("extraction")  if llm_config else model
+    focus_model       = llm_config.get_model("focus")       if llm_config else None
+    validation_model  = llm_config.get_model("validation")  if llm_config else None
     summarization_model = llm_config.get_model("summarization") if llm_config else model
-    profiling_model = llm_config.get_model("profiling") if llm_config else model
-    aliases_model = llm_config.get_model("aliases") if llm_config else model
-    fact_extractor = FactExtractor(model=extraction_model, version=version, provider=llm_provider) if use_llm else None
+    profiling_model   = llm_config.get_model("profiling")   if llm_config else model
+    aliases_model     = llm_config.get_model("aliases")     if llm_config else model
+    subjects_model    = llm_config.get_model("subjects")    if llm_config else model
+    fact_extractor = FactExtractor(
+        model=extraction_model, version=version, provider=llm_provider,
+        focus_model=focus_model, validate_model=validation_model,
+    ) if use_llm else None
 
     conn = get_connection(db_path)
     run_id = _start_pipeline_run(conn)
@@ -141,6 +152,11 @@ def run_pipeline(
     try:
         turn_number = _get_next_turn_number(conn, civ_id)
         total_turns = len(chunks)
+
+        # Maps 1-indexed sequential GM position -> DB turn_id.
+        # Used after the loop to link PJ (player) segments to their GM turn.
+        # Index matches build_turn_pairs() sequential numbering.
+        gm_seq_to_turn_id: dict[int, int] = {}
 
         for i, chunk in enumerate(chunks):
             turn_text = "\n\n".join(m.content for m in chunk.messages)
@@ -154,6 +170,7 @@ def run_pipeline(
                 (civ_id, turn_number, raw_ids, chunk.turn_type),
             )
             turn_id = cursor.lastrowid
+            gm_seq_to_turn_id[i + 1] = turn_id  # 1-indexed to match build_turn_pairs
             stats["turns_created"] += 1
 
             # Classify segments
@@ -262,6 +279,14 @@ def run_pipeline(
                 total_turns, total_turns, "turn", "completed"
             )
 
+        # Insert PJ (player) segments into their corresponding GM turns.
+        # Each non-GM chunk is attached to the preceding GM turn so that
+        # 1 turn_turns row holds both GM narrative and player response.
+        if gm_seq_to_turn_id:
+            pj_count = _insert_pj_segments(conn, all_chunks, gm_seq_to_turn_id)
+            if pj_count:
+                print(f"       ->{pj_count} PJ segments inserted")
+
         conn.commit()
         _complete_pipeline_run(conn, run_id, stats)
 
@@ -272,9 +297,17 @@ def run_pipeline(
     finally:
         conn.close()
 
-    # Step 7: Entity profiling (LLM-based)
+    # Step 7: Subject extraction (MJ choices + PJ initiatives)
     if use_llm:
-        print("[7/9] Building entity profiles (1 LLM call per entity)...")
+        print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
+        _run_subject_extraction(
+            db_path, civ_id, all_chunks, gm_author_id,
+            subjects_model, llm_provider,
+        )
+
+    # Step 8: Entity profiling (LLM-based)
+    if use_llm:
+        print("[8/10] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
             db_path,
             model=profiling_model,
@@ -286,7 +319,7 @@ def run_pipeline(
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
-        # Step 8: Alias resolution
+        # Step 9: Alias resolution
         # Prompt version + score threshold can be set per-stage in llm_config:
         # "aliases": {"prompt_version": "v5-score-pct", "score_threshold": 0.7}
         aliases_confirm_version = (
@@ -295,7 +328,7 @@ def run_pipeline(
         aliases_score_threshold = (
             llm_config.get_score_threshold("aliases") if llm_config else 0.7
         )
-        print("[8/9] Resolving entity aliases...")
+        print("[9/10] Resolving entity aliases...")
         alias_stats = resolve_aliases(
             db_path, profiles, model=aliases_model, use_llm=True,
             provider=llm_provider,
@@ -305,12 +338,13 @@ def run_pipeline(
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
     else:
-        print("[7/9] Skipping entity profiling (--no-llm)")
-        print("[8/9] Skipping alias resolution (--no-llm)")
+        print("[7/10] Skipping subject extraction (--no-llm)")
+        print("[8/10] Skipping entity profiling (--no-llm)")
+        print("[9/10] Skipping alias resolution (--no-llm)")
 
-    # Step 9: Wiki generation (optional)
+    # Step 10: Wiki generation (optional)
     if wiki_dir:
-        print("[9/9] Generating wiki...")
+        print("[10/10] Generating wiki...")
 
         # Progress callback for wiki generation
         def wiki_progress(current, total, unit_type):
@@ -386,12 +420,12 @@ def run_pipeline(
             else:
                 print("       WARNING: wiki/generate.py not found -- skipping wiki generation")
     else:
-        print("[9/9] Skipping wiki generation (use --wiki-dir to enable)")
+        print("[10/10] Skipping wiki generation (use --wiki-dir to enable)")
 
     # Unload models to free VRAM (no-op for cloud providers)
     if use_llm:
         # Unload all distinct models that were used across stages
-        used_models = {extraction_model, summarization_model, profiling_model, aliases_model}
+        used_models = {extraction_model, summarization_model, profiling_model, aliases_model, subjects_model}
         if validation_model:
             used_models.add(validation_model)
         for m in used_models:
@@ -400,6 +434,236 @@ def run_pipeline(
     # Final summary
     print("[DONE] Pipeline complete!")
     _print_stats(stats)
+    return stats
+
+
+def _insert_pj_segments(
+    conn,
+    all_chunks: list,
+    gm_seq_to_turn_id: dict[int, int],
+) -> int:
+    """Insert player (PJ) segments into the corresponding GM turn.
+
+    Iterates all_chunks in order, counting GM chunks to stay in sync with the
+    1-indexed gm_seq_to_turn_id mapping built during the GM loop.
+    Skips synthetic placeholders (content < 50 chars) and turns where
+    PJ segments already exist (idempotent).
+
+    Returns total PJ segments inserted.
+    """
+    gm_seq = 0
+    total_inserted = 0
+
+    for chunk in all_chunks:
+        if chunk.is_gm_post:
+            gm_seq += 1
+            continue
+
+        # Non-GM chunk — attach to the preceding GM turn
+        turn_id = gm_seq_to_turn_id.get(gm_seq)
+        if turn_id is None:
+            # No corresponding GM turn in this batch (e.g. orphan PJ chunk)
+            continue
+
+        # Skip synthetic __player__ placeholders (content is just "[Tour N]")
+        pj_text = "\n\n".join(m.content for m in chunk.messages)
+        if len(pj_text.strip()) < 50:
+            continue
+
+        # Idempotency: skip if PJ segments already exist for this turn
+        existing = conn.execute(
+            "SELECT COUNT(*) FROM turn_segments WHERE turn_id = ? AND source = 'pj'",
+            (turn_id,),
+        ).fetchone()[0]
+        if existing > 0:
+            continue
+
+        # Find the current max segment_order so PJ segments come after GM ones
+        max_order_row = conn.execute(
+            "SELECT MAX(segment_order) FROM turn_segments WHERE turn_id = ?",
+            (turn_id,),
+        ).fetchone()
+        base_order = (max_order_row[0] if max_order_row[0] is not None else -1) + 1
+
+        pj_segments = classify_segments(pj_text)
+        for seg_idx, seg in enumerate(pj_segments):
+            conn.execute(
+                """INSERT OR IGNORE INTO turn_segments
+                   (turn_id, segment_order, segment_type, content, source)
+                   VALUES (?, ?, ?, ?, 'pj')""",
+                (turn_id, base_order + seg_idx, seg.segment_type.value, seg.text),
+            )
+            total_inserted += 1
+
+    return total_inserted
+
+
+def _run_subject_extraction(
+    db_path: str,
+    civ_id: int,
+    all_chunks: list,
+    gm_author_id: str,
+    model: str,
+    provider: LLMProvider,
+) -> dict:
+    """Run subject extraction stage: MJ choices, PJ initiatives, resolutions.
+
+    Processes turns in chronological order. For each turn:
+    1. Extract MJ subjects (choices/questions requiring player response)
+    2. Detect MJ consequences for open PJ initiatives
+    3. Store new MJ subjects
+    4. If PJ text exists: match resolutions + extract PJ initiatives
+    5. Refresh open subjects for next turn
+
+    Args:
+        db_path: Path to SQLite database
+        civ_id: Civilization ID
+        all_chunks: All TurnChunk objects (GM + PJ)
+        gm_author_id: Author ID of the GM
+        model: LLM model for subject extraction
+        provider: LLM provider instance
+
+    Returns:
+        Stats dict with subject/resolution counts
+    """
+    extractor = SubjectExtractor(provider=provider, model=model)
+    turn_pairs = build_turn_pairs(all_chunks, gm_author_id)
+
+    conn = get_connection(db_path)
+    stats = {"subjects_extracted": 0, "resolutions_applied": 0, "initiatives_extracted": 0}
+
+    try:
+        # Get turn_id mapping: turn_number -> turn_id from DB
+        turn_rows = conn.execute(
+            """SELECT id, turn_number FROM turn_turns
+               WHERE civ_id = ? ORDER BY turn_number""",
+            (civ_id,),
+        ).fetchall()
+        turn_number_to_id = {row["turn_number"]: row["id"] for row in turn_rows}
+
+        for turn_number in sorted(turn_pairs.keys()):
+            pair = turn_pairs[turn_number]
+            gm_text = pair["gm_text"]
+            pj_text = pair["pj_text"]
+            turn_id = turn_number_to_id.get(turn_number)
+
+            if not turn_id:
+                continue
+
+            # Skip if already processed (idempotency check)
+            existing = conn.execute(
+                "SELECT COUNT(*) FROM subject_subjects WHERE source_turn_id = ?",
+                (turn_id,),
+            ).fetchone()[0]
+            if existing > 0:
+                continue
+
+            # 1. Extract MJ subjects (choices/questions)
+            mj_subjects = extractor.extract_mj_subjects(gm_text, turn_number)
+
+            # 2. Detect MJ consequences for open PJ initiatives
+            open_subjects = load_open_subjects(conn, civ_id)
+            mj_consequences = extractor.detect_mj_consequences(
+                gm_text, open_subjects, turn_number
+            )
+
+            # Apply MJ consequences (resolves PJ initiatives)
+            if mj_consequences:
+                resolved = apply_resolutions(
+                    conn,
+                    [
+                        {
+                            "subject_id": r.subject_id,
+                            "resolution_text": r.resolution_text,
+                            "confidence": r.confidence,
+                        }
+                        for r in mj_consequences
+                    ],
+                    turn_id,
+                )
+                stats["resolutions_applied"] += resolved
+
+            # 3. Store new MJ subjects
+            for subj in mj_subjects:
+                subj_dict = {
+                    "direction": subj.direction,
+                    "title": subj.title,
+                    "description": subj.description,
+                    "category": subj.category,
+                    "options": [
+                        {
+                            "number": opt.number,
+                            "label": opt.label,
+                            "description": opt.description,
+                            "is_libre": opt.is_libre,
+                        }
+                        for opt in subj.options
+                    ],
+                }
+                insert_subject(conn, subj_dict, civ_id, turn_id)
+                stats["subjects_extracted"] += 1
+
+            # 4. If PJ text exists: match resolutions + extract initiatives
+            if pj_text.strip():
+                # Refresh open subjects (includes newly inserted MJ subjects)
+                open_subjects = load_open_subjects(conn, civ_id)
+
+                # Match PJ responses to open MJ subjects
+                resolutions = extractor.match_resolutions(
+                    pj_text, open_subjects, turn_number
+                )
+                if resolutions:
+                    resolved = apply_resolutions(
+                        conn,
+                        [
+                            {
+                                "subject_id": r.subject_id,
+                                "resolution_text": r.resolution_text,
+                                "chosen_option_label": r.chosen_option_label,
+                                "is_libre": r.is_libre,
+                                "confidence": r.confidence,
+                            }
+                            for r in resolutions
+                        ],
+                        turn_id,
+                    )
+                    stats["resolutions_applied"] += resolved
+
+                # Extract PJ initiatives
+                pj_initiatives = extractor.extract_pj_subjects(pj_text, turn_number)
+                for subj in pj_initiatives:
+                    subj_dict = {
+                        "direction": subj.direction,
+                        "title": subj.title,
+                        "description": subj.description,
+                        "category": subj.category,
+                        "options": [],
+                    }
+                    insert_subject(conn, subj_dict, civ_id, turn_id)
+                    stats["initiatives_extracted"] += 1
+
+            conn.commit()
+
+            if turn_number % 5 == 0 or turn_number == max(turn_pairs.keys()):
+                print(
+                    f"       -> T{turn_number}: "
+                    f"{stats['subjects_extracted']} subjects, "
+                    f"{stats['resolutions_applied']} resolutions, "
+                    f"{stats['initiatives_extracted']} initiatives"
+                )
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Error in subject extraction: {e}")
+        raise
+    finally:
+        conn.close()
+
+    print(
+        f"       -> Total: {stats['subjects_extracted']} subjects, "
+        f"{stats['resolutions_applied']} resolutions, "
+        f"{stats['initiatives_extracted']} initiatives"
+    )
     return stats
 
 
@@ -445,11 +709,19 @@ def _split_by_author(messages: list, gm_author_id: str) -> list[AuthorContent]:
 
 
 def _find_gm_author_id(messages: list) -> str:
-    """Find the GM's author_id from known GM author names."""
+    """Find the GM's author_id from known GM author names.
+
+    Uses prefix matching so "Arthur Ignatus (03/09/2024)" matches "Arthur Ignatus".
+    Skips synthetic __player__ placeholders which have a fixed ID and no real content.
+    """
     for msg in messages:
-        if msg.author_name in GM_AUTHORS:
+        name_lower = msg.author_name.lower()
+        if any(name_lower.startswith(gm.lower()) for gm in GM_AUTHORS):
             return msg.author_id
-    # Fallback: first message author is probably the GM
+    # Fallback: first non-synthetic message
+    for msg in messages:
+        if msg.author_name != "__player__":
+            return msg.author_id
     return messages[0].author_id if messages else ""
 
 
@@ -861,9 +1133,11 @@ def run_pipeline_for_channels(
     _active_model = model
 
     # Per-stage model resolution
-    extraction_model = llm_config.get_model("extraction") if llm_config else model
-    validation_model = llm_config.get_model("validation") if llm_config else None
+    extraction_model    = llm_config.get_model("extraction")    if llm_config else model
+    focus_model         = llm_config.get_model("focus")         if llm_config else None
+    validation_model    = llm_config.get_model("validation")    if llm_config else None
     summarization_model = llm_config.get_model("summarization") if llm_config else model
+    subjects_model      = llm_config.get_model("subjects")      if llm_config else model
 
     version = get_version(extraction_version)
     print(f"[*] Extraction version: {version.name} -- {version.description}")
@@ -871,7 +1145,10 @@ def run_pipeline_for_channels(
         print(f"[*] LLM config: {llm_config.summary()}")
     else:
         print(f"[*] Model: {model} (provider: {llm_provider.name})")
-    fact_extractor = FactExtractor(model=extraction_model, version=version, provider=llm_provider) if use_llm else None
+    fact_extractor = FactExtractor(
+        model=extraction_model, version=version, provider=llm_provider,
+        focus_model=focus_model, validate_model=validation_model,
+    ) if use_llm else None
 
     for civ_id, civ_name, player_name, channel_id in civs:
         print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
@@ -883,7 +1160,8 @@ def run_pipeline_for_channels(
             continue
 
         gm_author_id = _find_gm_author_id(messages)
-        chunks = detect_turn_boundaries(messages, gm_author_id)
+        all_chunks = detect_turn_boundaries(messages, gm_author_id)
+        chunks = [c for c in all_chunks if c.is_gm_post]
         print(f"  {len(messages)} messages -> {len(chunks)} turns")
 
         civ_stats = {"turns_created": 0, "entities_extracted": 0, "segments_created": 0}
@@ -1020,6 +1298,13 @@ def run_pipeline_for_channels(
         finally:
             conn.close()
 
+        # Subject extraction for this civ (after turns are committed)
+        if use_llm:
+            _run_subject_extraction(
+                db_path, civ_id, all_chunks, gm_author_id,
+                subjects_model, llm_provider,
+            )
+
         aggregated["civs_processed"] += 1
         aggregated["total_turns_created"] += civ_stats["turns_created"]
         aggregated["total_entities_extracted"] += civ_stats["entities_extracted"]
@@ -1038,7 +1323,7 @@ def run_pipeline_for_channels(
             aggregated["wiki_error"] = str(exc)
 
     # Unload models to free VRAM (no-op for cloud providers)
-    used_models = {extraction_model, summarization_model}
+    used_models = {extraction_model, summarization_model, subjects_model}
     if validation_model:
         used_models.add(validation_model)
     used_models.add(model)  # default model as fallback
