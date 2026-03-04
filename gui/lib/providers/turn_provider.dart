@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
+import '../data/daos/turn_dao.dart';
 import '../models/filter_state.dart';
 import '../models/turn_with_entities.dart';
 import 'database_provider.dart';
@@ -30,7 +31,11 @@ final timelineProvider = StreamProvider<List<TurnWithEntities>>((ref) {
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   final filters = ref.watch(timelineFilterProvider);
-  return db.turnDao.watchTimeline(civId: filters.civId);
+  // Pass both filters — turnType was previously ignored in the DAO
+  return db.turnDao.watchTimeline(
+    civId: filters.civId,
+    turnType: filters.turnType,
+  );
 });
 
 final turnDetailProvider =
@@ -38,6 +43,14 @@ final turnDetailProvider =
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   return db.turnDao.watchTurn(turnId);
+});
+
+/// Enriched turn detail for the TurnDetailScreen.
+final turnDetailDataProvider =
+    StreamProvider.family<TurnDetailData?, int>((ref, turnId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.turnDao.watchTurnDetail(turnId);
 });
 
 final turnSegmentsProvider =

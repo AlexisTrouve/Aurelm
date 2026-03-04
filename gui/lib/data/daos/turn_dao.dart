@@ -14,7 +14,11 @@ part 'turn_dao.g.dart';
 class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
   TurnDao(super.db);
 
-  Stream<List<TurnWithEntities>> watchTimeline({int? civId, int limit = 100}) {
+  Stream<List<TurnWithEntities>> watchTimeline({
+    int? civId,
+    String? turnType,
+    int limit = 100,
+  }) {
     var query = select(turnTurns).join([
       innerJoin(
           civCivilizations, civCivilizations.id.equalsExp(turnTurns.civId)),
@@ -22,6 +26,10 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
 
     if (civId != null) {
       query.where(turnTurns.civId.equals(civId));
+    }
+    // Apply turnType filter (was previously ignored — fix)
+    if (turnType != null) {
+      query.where(turnTurns.turnType.equals(turnType));
     }
 
     query
@@ -83,4 +91,49 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
               (t) => t.civId.equals(civId) & t.turnNumber.equals(turnNumber)))
         .getSingleOrNull();
   }
+
+  /// Enriched turn for detail page: turn + civ name + all segments.
+  Stream<TurnDetailData?> watchTurnDetail(int turnId) {
+    return (select(turnTurns).join([
+      innerJoin(civCivilizations,
+          civCivilizations.id.equalsExp(turnTurns.civId)),
+    ])
+          ..where(turnTurns.id.equals(turnId)))
+        .watchSingleOrNull()
+        .asyncMap((row) async {
+      if (row == null) return null;
+
+      final turn = row.readTable(turnTurns);
+      final civ = row.readTable(civCivilizations);
+
+      final segments = await (select(turnSegments)
+            ..where((s) => s.turnId.equals(turnId))
+            ..orderBy([(s) => OrderingTerm.asc(s.segmentOrder)]))
+          .get();
+
+      final mentionCount = await _countMentionsForTurn(turnId);
+
+      return TurnDetailData(
+        turn: turn,
+        civName: civ.name,
+        segments: segments,
+        entityCount: mentionCount,
+      );
+    });
+  }
+}
+
+/// Data holder for turn detail page.
+class TurnDetailData {
+  final TurnRow turn;
+  final String civName;
+  final List<SegmentRow> segments;
+  final int entityCount;
+
+  const TurnDetailData({
+    required this.turn,
+    required this.civName,
+    required this.segments,
+    required this.entityCount,
+  });
 }

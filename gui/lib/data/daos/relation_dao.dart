@@ -8,6 +8,29 @@ import '../../models/graph_data.dart';
 
 part 'relation_dao.g.dart';
 
+/// Relation enriched with canonical names for both endpoints — avoids N+1 lookups.
+class RelationWithNames {
+  final RelationRow relation;
+  final String sourceName;
+  final String targetName;
+
+  /// Name of the "other" entity (opposite side from the queried entity)
+  final String relatedName;
+  final int relatedEntityId;
+
+  /// true = this entity is the source (→ outgoing); false = this entity is target (← incoming)
+  final bool isOutgoing;
+
+  const RelationWithNames({
+    required this.relation,
+    required this.sourceName,
+    required this.targetName,
+    required this.relatedName,
+    required this.relatedEntityId,
+    required this.isOutgoing,
+  });
+}
+
 @DriftAccessor(tables: [EntityRelations, EntityEntities, EntityMentions])
 class RelationDao extends DatabaseAccessor<AurelmDatabase>
     with _$RelationDaoMixin {
@@ -20,6 +43,45 @@ class RelationDao extends DatabaseAccessor<AurelmDatabase>
               t.targetEntityId.equals(entityId))
           ..where((t) => t.isActive.equals(1)))
         .watch();
+  }
+
+  /// Relations enriched with entity names — avoids N+1 by using two table aliases.
+  Stream<List<RelationWithNames>> watchRelationsWithNamesForEntity(
+      int entityId) {
+    // Drift alias: join entity_entities twice (once for source, once for target)
+    final sourceAlias = alias(entityEntities, 'src');
+    final targetAlias = alias(entityEntities, 'tgt');
+
+    return (select(entityRelations).join([
+      leftOuterJoin(
+          sourceAlias, sourceAlias.id.equalsExp(entityRelations.sourceEntityId)),
+      leftOuterJoin(
+          targetAlias, targetAlias.id.equalsExp(entityRelations.targetEntityId)),
+    ])
+          ..where((entityRelations.sourceEntityId.equals(entityId) |
+                  entityRelations.targetEntityId.equals(entityId)) &
+              entityRelations.isActive.equals(1)))
+        .watch()
+        .map((rows) {
+      return rows.map((row) {
+        final relation = row.readTable(entityRelations);
+        final sourceName =
+            row.readTableOrNull(sourceAlias)?.canonicalName ?? '…';
+        final targetName =
+            row.readTableOrNull(targetAlias)?.canonicalName ?? '…';
+        // "Related" entity = the other side of the relation
+        final isOutgoing = relation.sourceEntityId == entityId;
+        return RelationWithNames(
+          relation: relation,
+          sourceName: sourceName,
+          targetName: targetName,
+          relatedName: isOutgoing ? targetName : sourceName,
+          relatedEntityId:
+              isOutgoing ? relation.targetEntityId : relation.sourceEntityId,
+          isOutgoing: isOutgoing,
+        );
+      }).toList();
+    });
   }
 
   Stream<GraphData> watchGraphData({int? civId, int entityLimit = 50}) {

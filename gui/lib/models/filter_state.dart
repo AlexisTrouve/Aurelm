@@ -1,3 +1,33 @@
+/// Filter state for the Subjects screen.
+class SubjectFilterState {
+  /// 'mj_to_pj' | 'pj_to_mj' | null (all directions)
+  final String? direction;
+
+  /// 'open' | 'resolved' | null (all statuses)
+  final String? subjectStatus;
+
+  final int? civId;
+
+  const SubjectFilterState({
+    this.direction,
+    this.subjectStatus,
+    this.civId,
+  });
+
+  SubjectFilterState copyWith({
+    String? Function()? direction,
+    String? Function()? subjectStatus,
+    int? Function()? civId,
+  }) {
+    return SubjectFilterState(
+      direction: direction != null ? direction() : this.direction,
+      subjectStatus:
+          subjectStatus != null ? subjectStatus() : this.subjectStatus,
+      civId: civId != null ? civId() : this.civId,
+    );
+  }
+}
+
 class EntityFilterState {
   final String? entityType;
   final int? civId;

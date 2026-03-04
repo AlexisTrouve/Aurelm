@@ -7,8 +7,11 @@ import '../../screens/civilization/civ_detail_screen.dart';
 import '../../screens/entities/entity_browser_screen.dart';
 import '../../screens/entities/entity_detail_screen.dart';
 import '../../screens/timeline/timeline_screen.dart';
+import '../../screens/timeline/turn_detail_screen.dart';
 import '../../screens/graph/graph_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/subjects/subject_browser_screen.dart';
+import '../../screens/subjects/subject_detail_screen.dart';
 import '../navigation/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -56,10 +59,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/turns/:id',
+            pageBuilder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return NoTransitionPage(child: TurnDetailScreen(turnId: id));
+            },
+          ),
+          GoRoute(
             path: '/graph',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: GraphScreen(),
             ),
+          ),
+          GoRoute(
+            path: '/subjects',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: SubjectBrowserScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/subjects/:id',
+            pageBuilder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return NoTransitionPage(child: SubjectDetailScreen(subjectId: id));
+            },
           ),
           GoRoute(
             path: '/settings',
