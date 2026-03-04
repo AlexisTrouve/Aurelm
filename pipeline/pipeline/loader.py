@@ -1,8 +1,24 @@
 """Markdown file loader — parses civjdr Background/*.md files into raw messages.
 
-Supports two formats:
-- Format A (older files): Raw Discord dump — `Author\\n—\\nDD/MM/YYYY HH:MM\\n[content]`
-- Format B (newer files): Structured markdown — `## Post narratif - Author`, `## Réponse - Author`
+Supports two file layouts:
+
+Old layout (mixed files):
+  One or more .md files containing interleaved GM and player posts.
+  Turn boundaries detected by the chunker via GM-after-player pattern.
+  Formats:
+  - Format A: Raw Discord dump — `Author\\n—\\nDD/MM/YYYY HH:MM\\n[content]`
+  - Format B: Structured markdown — `## Post narratif - Author`, `## Réponse - Author`
+
+New layout (split files, detected automatically):
+  Pairs of files per turn: `YYYY-MM-DD--mj-T##-*.md` (GM) + `pj-T##-*.md` (player).
+  BOTH files are loaded — the pj file contains player roleplay decisions that
+  introduce major entities (institutions, technologies, governance structures).
+  Load order per turn:
+    1. Synthetic __player__ placeholder  → triggers chunker boundary
+    2. mj-T## content (GM posts)
+    3. pj-T## content (player posts, if present)  → signals end of GM streak
+  The pj posts act as the natural "player after GM" signal that the chunker
+  uses to detect the end of a turn, making room for the next turn's boundary.
 """
 
 from __future__ import annotations
@@ -26,6 +42,15 @@ class ParsedMessage:
     source_file: str
 
 
+# Regex to detect new-layout MJ files: "YYYY-MM-DD--mj-T##-..." in stem
+_NEW_LAYOUT_MJ = re.compile(r"\d{4}-\d{2}-\d{2}--mj-T(\d+)-")
+
+# Synthetic author used as player placeholder in new-layout loading.
+# Must differ from any real GM author so the chunker can detect the boundary.
+_SYNTHETIC_PLAYER_NAME = "__player__"
+_SYNTHETIC_PLAYER_ID = "00000000"
+
+
 # Regex for Format A: "Author\n—\nDD/MM/YYYY HH:MM"
 FORMAT_A_HEADER = re.compile(
     r"^(.+?)\n—\n(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2})\s*$", re.MULTILINE
@@ -38,11 +63,23 @@ FORMAT_B_HEADER = re.compile(
     re.MULTILINE,
 )
 
+# Regex for Format C: H1 title + italic author line
+# e.g. "# Post MJ — T19 — Title\n*Arthur Ignatus — 2026-03-03*"
+FORMAT_C_AUTHOR = re.compile(
+    r"^\*([^*]+?)\s*[—\-]\s*(\d{4}-\d{2}-\d{2})\*\s*$",
+    re.MULTILINE,
+)
+
 
 def detect_format(text: str) -> str:
-    """Detect whether a file is Format A or Format B."""
+    """Detect whether a file is Format A, B, or C.
+
+    Format C: H1 title + italic '*Author — YYYY-MM-DD*' line (new simplified format).
+    """
     if FORMAT_B_HEADER.search(text):
         return "B"
+    if FORMAT_C_AUTHOR.search(text):
+        return "C"
     if FORMAT_A_HEADER.search(text):
         return "A"
     # Fallback: if it starts with a markdown heading, treat as B
@@ -132,6 +169,39 @@ def parse_format_b(text: str, source_file: str) -> list[ParsedMessage]:
     return messages
 
 
+def parse_format_c(text: str, source_file: str) -> list[ParsedMessage]:
+    """Parse Format C: H1 title + italic '*Author — YYYY-MM-DD*' line.
+
+    Content runs from after the first '---' separator until '## Choix' or EOF.
+    """
+    match = FORMAT_C_AUTHOR.search(text)
+    if not match:
+        return []
+
+    author = match.group(1).strip()
+    date_iso = match.group(2).strip()  # already YYYY-MM-DD
+    timestamp = f"{date_iso}T00:00:00"
+
+    # Content: everything after the author line
+    after_author = text[match.end():]
+    # Strip leading separators
+    after_author = re.sub(r"^\s*---+\s*", "", after_author).strip()
+    # Keep all content — ## headings inside are narrative sections, not format delimiters
+    content_part = after_author
+    content = _strip_youtube_embeds(content_part)
+    content = re.sub(r"^---+\s*$", "", content, flags=re.MULTILINE).strip()
+
+    if not content:
+        return []
+
+    return [ParsedMessage(
+        author_name=author,
+        content=content,
+        timestamp=timestamp,
+        source_file=source_file,
+    )]
+
+
 def parse_file(filepath: Path) -> list[ParsedMessage]:
     """Parse a markdown file, auto-detecting format."""
     text = filepath.read_text(encoding="utf-8")
@@ -140,12 +210,21 @@ def parse_file(filepath: Path) -> list[ParsedMessage]:
 
     if fmt == "A":
         return parse_format_a(text, source)
+    elif fmt == "C":
+        return parse_format_c(text, source)
     else:
         return parse_format_b(text, source)
 
 
 def load_directory(data_dir: str, db_path: str, channel_id: str = "file-import") -> int:
-    """Load all .md files from a directory into the database. Returns count of messages inserted."""
+    """Load .md files from a directory into the database.
+
+    Auto-detects the file layout:
+    - New layout (mj-T##/pj-T## pairs): loads only GM files, one turn each.
+    - Old layout (mixed files): loads all files, chunker detects turn boundaries.
+
+    Returns count of messages inserted.
+    """
     data_path = Path(data_dir)
     if not data_path.is_dir():
         raise FileNotFoundError(f"Data directory not found: {data_dir}")
@@ -154,16 +233,108 @@ def load_directory(data_dir: str, db_path: str, channel_id: str = "file-import")
     if not md_files:
         raise FileNotFoundError(f"No .md files found in {data_dir}")
 
+    # Detect layout by checking if any file matches the new mj-T## naming convention
+    mj_files = sorted(
+        (f for f in md_files if _NEW_LAYOUT_MJ.search(f.stem)),
+        key=lambda f: int(_NEW_LAYOUT_MJ.search(f.stem).group(1)),
+    )
+
+    if mj_files:
+        return _load_new_layout(mj_files, db_path, channel_id)
+    else:
+        return _load_old_layout(md_files, db_path, channel_id)
+
+
+def _load_new_layout(mj_files: list[Path], db_path: str, channel_id: str) -> int:
+    """Load new-layout mj-T## + pj-T## file pairs as individual turns.
+
+    For each turn:
+      1. Insert a synthetic __player__ placeholder (triggers chunker boundary)
+      2. Insert all messages from mj-T## (GM narrative)
+      3. Insert all messages from pj-T## if it exists (player roleplay — contains
+         major lore: institutions, technologies, governance decisions)
+    """
+    conn = get_connection(db_path)
+    inserted = 0
+    try:
+        for mj_filepath in mj_files:
+            turn_num = int(_NEW_LAYOUT_MJ.search(mj_filepath.stem).group(1))
+            file_date = _extract_date_from_filename(mj_filepath.name)
+            base_ts = file_date or datetime.now().isoformat()
+
+            # 1. Synthetic player placeholder — triggers chunker boundary detection.
+            placeholder_id = f"synth-player-T{turn_num:03d}"
+            conn.execute(
+                """INSERT OR IGNORE INTO turn_raw_messages
+                   (discord_message_id, discord_channel_id, author_id, author_name,
+                    content, timestamp)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (placeholder_id, channel_id, _SYNTHETIC_PLAYER_ID,
+                 _SYNTHETIC_PLAYER_NAME, f"[Tour {turn_num}]", base_ts),
+            )
+
+            # 2. GM content from the mj file
+            for filepath in [mj_filepath]:
+                for msg in parse_file(filepath):
+                    msg_id = _make_message_id(msg)
+                    try:
+                        cursor = conn.execute(
+                            """INSERT OR IGNORE INTO turn_raw_messages
+                               (discord_message_id, discord_channel_id, author_id, author_name,
+                                content, timestamp)
+                               VALUES (?, ?, ?, ?, ?, ?)""",
+                            (msg_id, channel_id, _author_id(msg.author_name),
+                             msg.author_name, msg.content, msg.timestamp),
+                        )
+                        if cursor.rowcount > 0:
+                            inserted += 1
+                    except Exception:
+                        pass  # UNIQUE constraint — skip duplicates
+
+            # 3. Player content from the matching pj-T## file (same dir, same turn num).
+            # Replace "mj" with "pj" in the stem to find the partner file.
+            pj_stem_pattern = mj_filepath.stem.replace("--mj-", "--pj-")
+            pj_candidates = list(mj_filepath.parent.glob(f"{pj_stem_pattern}*"))
+            # Fallback: search by pj-T## pattern in the same directory
+            if not pj_candidates:
+                pj_candidates = list(mj_filepath.parent.glob(f"*--pj-T{turn_num:02d}-*.md"))
+            if not pj_candidates:
+                pj_candidates = list(mj_filepath.parent.glob(f"*--pj-T{turn_num}-*.md"))
+
+            for pj_filepath in sorted(pj_candidates):
+                for msg in parse_file(pj_filepath):
+                    msg_id = _make_message_id(msg)
+                    try:
+                        cursor = conn.execute(
+                            """INSERT OR IGNORE INTO turn_raw_messages
+                               (discord_message_id, discord_channel_id, author_id, author_name,
+                                content, timestamp)
+                               VALUES (?, ?, ?, ?, ?, ?)""",
+                            (msg_id, channel_id, _author_id(msg.author_name),
+                             msg.author_name, msg.content, msg.timestamp),
+                        )
+                        if cursor.rowcount > 0:
+                            inserted += 1
+                    except Exception:
+                        pass  # UNIQUE constraint — skip duplicates
+
+        conn.commit()
+    finally:
+        conn.close()
+
+    return inserted
+
+
+def _load_old_layout(md_files: list[Path], db_path: str, channel_id: str) -> int:
+    """Load old-layout files (all .md files, turn boundaries detected by chunker)."""
     conn = get_connection(db_path)
     inserted = 0
     try:
         for filepath in md_files:
-            # Skip Archive/ subdirectory files
             if "Archive" in filepath.parts:
                 continue
             messages = parse_file(filepath)
             for msg in messages:
-                # Generate a stable fake discord_message_id from content hash
                 msg_id = _make_message_id(msg)
                 try:
                     cursor = conn.execute(
@@ -294,5 +465,12 @@ def _make_message_id(msg: ParsedMessage) -> str:
 
 
 def _author_id(author_name: str) -> str:
-    """Generate a stable author ID from name."""
-    return hashlib.md5(author_name.encode()).hexdigest()[:8]
+    """Generate a stable author ID from name.
+
+    Strips trailing date/timestamp suffixes like "(03/09/2024)" so that
+    "Arthur Ignatus (03/09/2024)" and "Arthur Ignatus (06/09/2024)" map to
+    the same ID. This is critical for GM detection across turns.
+    """
+    # Remove trailing parenthesized content (dates, timestamps)
+    normalized = re.sub(r"\s*\([^)]*\)\s*$", "", author_name).strip()
+    return hashlib.md5(normalized.encode()).hexdigest()[:8]

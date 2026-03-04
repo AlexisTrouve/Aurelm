@@ -539,7 +539,7 @@ def create_provider(
 # ---------------------------------------------------------------------------
 
 # Valid stage names that can have per-stage model overrides
-VALID_STAGES = {"extraction", "summarization", "profiling", "aliases", "validation"}
+VALID_STAGES = {"extraction", "focus", "summarization", "profiling", "aliases", "validation", "subjects"}
 
 
 @dataclass
