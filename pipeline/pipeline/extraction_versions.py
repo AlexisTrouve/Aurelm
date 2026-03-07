@@ -62,11 +62,53 @@ class ExtractionVersion:
     validate_system_prompt: Optional[str] = None
     validate_system_prompt_by_model: Optional[dict[str, str]] = None
 
+    # Focus call — 3rd JSON extraction call focused on a specific entity type
+    # (e.g. castes/institutions only). Runs per-chunk like calls 1 and 2,
+    # and its results are merged into the entity list before dedup.
+    focus_prompt: Optional[str] = None
+    focus_prompt_by_model: Optional[dict[str, str]] = None
+
+    # Per-call model overrides — let a cheaper/different model handle a specific pass.
+    # e.g. validate_model = "meta-llama/llama-3.1-8b-instruct" for the validate pass
+    #      (binary OUI/NON filter doesn't need qwen3:14b).
+    # focus_model = "mistralai/mistral-nemo" for the focused extraction call.
+    # None = use self.model (the main extraction model).
+    validate_model: Optional[str] = None
+    focus_model: Optional[str] = None
+
+    # num_predict override specifically for the validate pass.
+    # Validate responses are short (just a list of kept names), so 256 suffices.
+    # When None, falls back to the global num_predict (default 4000).
+    validate_num_predict: Optional[int] = None
+
     # Certainty score config — LLM self-assesses confidence per entity
     # certainty_scale: (min, max) — e.g. (1, 3) or (1, 10)
     # certainty_threshold: entities below this score are filtered out (0 = disabled)
     certainty_scale: tuple = (1, 3)
     certainty_threshold: int = 0  # 0 = no filtering (backwards compat)
+
+    # Masked extraction passes — after first-pass dedup, replace found entity
+    # names with _____ in the chunk text and run extra entity-only LLM calls.
+    # Forces the LLM to look at what remains when dominant entities are hidden,
+    # improving recall for techs/beliefs/creatures that get overshadowed otherwise.
+    mask_and_retry: bool = False  # v21.0 compat — equivalent to mask_passes=1
+    # mask_passes > 0 overrides mask_and_retry. 1 = one masked pass (v21.1+),
+    # 2 = two sequential masked passes (v21.1 triple-pass), etc.
+    mask_passes: int = 0
+    # Custom prompt for the masked entity pass. If None, falls back to entity_prompt.
+    # The mask prompt can explain what _____ means and focus on overlooked types.
+    mask_entity_prompt: Optional[str] = None
+    mask_entity_prompt_by_model: Optional[dict[str, str]] = None
+    # Model for the masked pass. If None, falls back to self.model (extraction model).
+    # Higher-precision models (e.g. qwen3.5-35b-a3b) may reduce hallucinations
+    # when the LLM is given text stripped of its dominant entities.
+    mask_model: Optional[str] = None
+    # Per-pass prompts for scoped masked extraction (v21.5+).
+    # If set, pass N uses mask_entity_prompts[N] (if index in range), falling back
+    # to mask_entity_prompt then entity_prompt. Must be a tuple (frozen dataclass).
+    # Useful to assign different entity-type scopes to each sequential masked pass,
+    # e.g. pass 0 = techs/beliefs, pass 1 = persons/places.
+    mask_entity_prompts: Optional[tuple] = None
 
     # Chunking config
     chunk_by_paragraph: bool = False
@@ -109,6 +151,14 @@ class ExtractionVersion:
                     return prompt
         return self.validate_system_prompt
 
+    def get_focus_prompt(self, model: str = "") -> Optional[str]:
+        """Return the focus prompt for a given model (falls back to focus_prompt)."""
+        if self.focus_prompt_by_model and model:
+            for prefix, prompt in self.focus_prompt_by_model.items():
+                if self._model_matches_prefix(model, prefix):
+                    return prompt
+        return self.focus_prompt
+
     def get_facts_prompt(self, model: str = "") -> str:
         """Return the facts+entities user prompt for a given model.
 
@@ -132,6 +182,37 @@ class ExtractionVersion:
                 if self._model_matches_prefix(model, prefix):
                     return prompt
         return self.entity_prompt
+
+    def get_mask_entity_prompt(self, model: str = "", pass_index: int = 0) -> str:
+        """Return the entity prompt for a given masked pass.
+
+        Priority order:
+          1. mask_entity_prompts[pass_index] — per-pass scoped prompts (v21.5+)
+          2. mask_entity_prompt_by_model — model-specific single prompt
+          3. mask_entity_prompt — single custom prompt for all masked passes
+          4. entity_prompt / entity_prompt_by_model — normal entity pass prompt
+        """
+        # Per-pass scoped prompt takes highest priority
+        if self.mask_entity_prompts and pass_index < len(self.mask_entity_prompts):
+            return self.mask_entity_prompts[pass_index]
+        if self.mask_entity_prompt_by_model and model:
+            for prefix, prompt in self.mask_entity_prompt_by_model.items():
+                if self._model_matches_prefix(model, prefix):
+                    return prompt
+        if self.mask_entity_prompt:
+            return self.mask_entity_prompt
+        return self.get_entity_prompt(model)
+
+    def effective_mask_passes(self) -> int:
+        """Number of masked passes to run after first extraction.
+
+        mask_passes takes priority over mask_and_retry (backwards compat).
+        """
+        if self.mask_passes > 0:
+            return self.mask_passes
+        if self.mask_and_retry:
+            return 1
+        return 0
 
 
 # ---------------------------------------------------------------------------
@@ -2080,6 +2161,1133 @@ V15_3_4_TIGHTNON = ExtractionVersion(
     max_chunk_words=800,
 )
 
+
+# ---------------------------------------------------------------------------
+# v17: type-aware recall fix
+#
+# Two confirmed root causes for FNs in v15.3.4 (F1=69.5%):
+#
+# 1. entity_filter killed named technologies: Lances, Codex, Palanquin, Fresque(s)
+#    Fix: removed them from _GENERIC_FRENCH_NOUNS in entity_filter.py
+#
+# 2. System prompt JAMAIS list had "reincarnation" as a single generic word —
+#    unintentionally discouraged extraction of "Croyance en la reincarnation"
+#    (4-word belief in the reference).
+#    Fix: remove "reincarnation" from JAMAIS, add explicit belief examples.
+#
+# 3. LLM misses simple single-word technologies (Pilotis, Pigments, Rhombes, Cornex)
+#    because they look like common nouns. Fix: add them to OUI example list.
+#
+# 4. LLM misses beliefs because no examples of multi-word named beliefs were shown.
+#    Fix: add belief examples to both system prompt and entity_prompt.
+# ---------------------------------------------------------------------------
+_V17_SYSTEM = """Tu extrais des entites nommees d'un jeu de civilisation. Regles :
+- Extrais le nom EXACT tel qu'il apparait (pluriel, tirets, majuscules).
+- UNE seule forme par entite. Si "Faucons Chasseurs" existe, n'extrais pas aussi "Faucon Chasseur".
+- Les outils simples sont des technologies nommees quand ils ont un role cle dans le recit : Lances, Pilotis, Rhombes, Pigments, Codex, Palanquin = OUI si mentionnes comme acquis/fabriques/utilises.
+- Les croyances peuvent etre des formulations completes : "Croyance en la reincarnation", "Pelerinage de Gouffre Humide", "Yeux de l'aurore" = OUI (croyances nommees).
+- JAMAIS de mots seuls generiques : roi, cercle, hall, sel, ordres, guerre, combat, rumeur, exil, autre, collaboration, dangers, assemblees, mission, testament.
+- JAMAIS de phrases ou descriptions : "Un Faucon Chasseur veteran", "Action libre - L'epave", "Rencontre du troisieme type", "Grande Foret".
+- JAMAIS de prefixes "Un/Une/Le/La/Les" dans le nom."""
+
+_V17_ENTITY_PROMPT = """Extrait les noms de technologies, lieux, institutions, castes, civilisations, croyances et evenements de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "technology|place|institution|civilization|caste|belief|event", "context": "phrase courte"}}]}}
+
+OUI : "Gourdins", "Lances", "Pilotis", "Rhombes", "Pigments", "Codex", "Glyphes du Gouffre", "Hall des Serments", "Gorge Profonde", "Cheveux de Sang", "Croyance en la reincarnation", "Pelerinage de Gouffre Humide".
+NON : mots communs, mots seuls generiques (roi, hall, cercle, sel, ordres, guerre, exil, autre).
+NON : descriptions ("Un Faucon Chasseur veteran", "Action libre - L'epave", "Mars Attack").
+NON : variantes — UNE forme par entite.
+Si rien, retourne {{"entities": []}}."""
+
+V17_TYPERECALL = ExtractionVersion(
+    name="v17-typerecall",
+    description=(
+        "Type-aware recall fix — targets the 2 confirmed root causes of technology/belief FNs: "
+        "(1) entity_filter no longer kills Lances/Codex/Palanquin/Fresque; "
+        "(2) system prompt no longer has 'reincarnation' in JAMAIS list; "
+        "(3) entity_prompt OUI list adds Pilotis/Rhombes/Pigments/Codex and belief examples. "
+        "Based on v15.3.4-tightnon structure."
+    ),
+    system_prompt=_V17_SYSTEM,
+    facts_prompt=_V15_2_FACTS_PROMPT,
+    entity_prompt=_V17_ENTITY_PROMPT,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+# ---------------------------------------------------------------------------
+# v18: T11-targeted recall fix (tools + compound places/institutions)
+#
+# Root causes diagnosed on T11 benchmark (F1=71.4%, 6 FNs, 10 FPs):
+#
+# FN root causes:
+# 1. entity_filter blocked "Ciseaux de bois au dents d'obsidienne" (6 words, > 5 limit)
+#    Fix: entity_filter.py threshold changed from > 5 to > 6.
+#
+# 2. LLM extracts "Antres" (1 word, blocked by antre/antres in GENERIC_FRENCH_NOUNS)
+#    instead of the full "Antres des Echos". Fix: add to entity_prompt OUI.
+#
+# 3. LLM misses craft tools (burin en pierre, maillets en bois, ciseaux de bois)
+#    because they look like descriptive phrases. Fix: explicit tech examples.
+#
+# 4. LLM misses "Voix de l'Aurore" (starts with lowercase "voix" in text).
+#    Fix: add to entity_prompt OUI.
+#
+# FP root causes:
+# 5. "Zone humide/chaude/seche/froide" = sections of a building, not entities.
+#    Fix: explicit NON example.
+# 6. "Foyer eternel", "Arbre de toutes les possibilites" = metaphors.
+#    Fix: system prompt rule against abstract metaphors.
+# ---------------------------------------------------------------------------
+_V18_SYSTEM = """Tu extrais des entites nommees d'un jeu de civilisation. Regles :
+- Extrais le nom EXACT tel qu'il apparait (pluriel, tirets, majuscules).
+- TOUJOURS le nom COMPLET compose : "Antres des Echos" (pas "Antres"), "Voix de l'Aurore" (pas "Voix").
+- UNE seule forme par entite. Si "Faucons Chasseurs" existe, n'extrais pas aussi "Faucon Chasseur".
+- JAMAIS de mots seuls generiques : roi, cercle, hall, sel, ordres, guerre, combat, rumeur, exil, autre, collaboration, dangers, assemblees, mission, reincarnation, testament.
+- JAMAIS de phrases ou descriptions : "Un Faucon Chasseur veteran", "Action libre - L'epave", "Grande Foret".
+- JAMAIS de sections de batiment : "zone humide", "zone chaude", "zone seche", "zone froide".
+- JAMAIS de metaphores ou images poetiques : "foyer eternel", "arbre de toutes les possibilites".
+- JAMAIS de prefixes "Un/Une/Le/La/Les" dans le nom."""
+
+_V18_FACTS_PROMPT = """Extrait faits et entites nommees de ce tour de jeu. Reponds UNIQUEMENT avec du JSON.
+
+Texte :
+{text}
+
+Reponds avec ce JSON UNIQUEMENT :
+{{
+  "technologies": ["outils/inventions nommes : 'burin en pierre', 'maillets en bois', 'ciseaux de bois au dents d obsidienne', 'rhombes', 'lances', 'argile vive'"],
+  "resources": ["ressources exploitees"],
+  "beliefs": ["croyances/lois/rituels nommes"],
+  "geography": ["lieux nommes"],
+  "entities": [{{"name": "Nom Propre", "type": "person|place|technology|institution|resource|creature|event|civilization|caste|belief", "context": "phrase courte"}}]
+}}
+
+ENTITES = noms propres ET termes specifiques du jeu (institutions, castes, technologies, lieux, civilisations, croyances, evenements, creatures).
+OUI : "Cercle des Sages", "Argile Vivante", "Ciels-clairs", "Gourdins", "Lances", "burin en pierre", "maillets en bois", "Voix de l'Aurore", "Antres des Echos".
+NON : pronoms (lui, eux, toi, nous), mots purement generiques (homme, femme, vallee, village, riviere, montagne), phrases longues.
+NON : mots seuls generiques (roi, cercle, hall, sel, ordres, guerre, combat, rumeur, exil, autre, collaboration, dangers).
+NON : sections de batiment ("zone humide", "zone chaude", "zone seche", "zone froide") ni metaphores ("foyer eternel").
+NON : descriptions avec articles ("Un Faucon Chasseur veteran", "Une Grande Foret", "Un representant des pecheurs").
+NON : variantes d'un meme nom — extrais UNE SEULE forme (la plus complete, avec le bon pluriel/tiret).
+NOTE : des mots comme "marginaux", "artisans", "pecheurs", "chasseurs" peuvent designer des groupes sociaux nommes (castes). Extrais-les si utilises comme groupe distinct dans le texte."""
+
+_V18_ENTITY_PROMPT = """Extrait les noms de technologies, lieux, institutions, castes, civilisations, croyances et evenements de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "technology|place|institution|civilization|caste|belief|event", "context": "phrase courte"}}]}}
+
+OUI : "Gourdins", "Lances", "Rhombes", "Antres des Echos", "Voix de l'Aurore", "burin en pierre", "maillets en bois", "ciseaux de bois au dents d obsidienne".
+NON : mots seuls generiques (roi, hall, cercle, sel, ordres, guerre, exil, autre, homme, femme, riviere, village).
+NON : sections de batiment ("zone humide", "zone chaude", "zone seche", "zone froide").
+NON : descriptions ("Un Faucon Chasseur veteran", "Action libre - L'epave", "Mars Attack").
+NON : variantes — UNE forme par entite.
+NOTE : "marginaux", "artisans", "pecheurs", "chasseurs" peuvent etre des groupes sociaux nommes — extrais si groupe distinct.
+Si rien, retourne {{"entities": []}}."""
+
+V18_TOOLRECALL = ExtractionVersion(
+    name="v18-toolrecall",
+    description=(
+        "T11-targeted: adds craft tool examples (burin/maillet/ciseaux) to OUI lists, "
+        "compound place/institution completeness rule (Antres des Echos, Voix de l'Aurore), "
+        "building-section NON examples (zone humide/chaude/seche/froide), "
+        "metaphor JAMAIS rule. entity_filter threshold also bumped to > 6 words."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.1: v18 + validation pass (call 4: LLM filters the combined list)
+#
+# Goal: kill the persistent FPs that survive the NON instructions:
+#   - Zone humide/chaude/seche/froide (building sections)
+#   - Foyer eternel, Arbre de toutes les possibilites (metaphors)
+#   - Argile vivante (doublon of Argile vive)
+#   - Descriptive titles like "Trois Revelations de l'Arbitre des Esprits"
+# Risk: over-filtering may drop some TPs → recall could drop slightly.
+# ---------------------------------------------------------------------------
+_V18_1_VALIDATE_PROMPT = """Tu valides une liste d'entites nommees extraites d'un texte de jeu.
+Reponds UNIQUEMENT avec du JSON.
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+VIRE une entite si c'est :
+- Une section de batiment : "Zone humide", "Zone chaude", "Zone seche", "Zone froide"
+- Une metaphore ou image poetique : "Foyer eternel", "Arbre de toutes les possibilites", "Fleuve du temps"
+- Un doublon d'une entite deja presente (forme differente du meme nom : "Argile vivante" si "Argile vive" est la)
+- Un titre de passage ou formulation narrative : "Trois Revelations de ...", "Premiere Revelation"
+- Un mot seul generique sans contexte de jeu : "Foyer", "Ciel", "Riviere"
+
+GARDE tout le reste : castes, institutions, lieux nommes, technologies, civilisations, croyances.
+
+Reponds avec un JSON contenant les noms a conserver tels quels (copie exacte depuis la liste).
+Exemple de format : {{"keep": ["Cercle des Sages", "Ailes-Grises", "Argile Vivante"]}}"""
+
+V18_1_VALIDATE = ExtractionVersion(
+    name="v18.1-validate",
+    description=(
+        "v18 + validation pass: LLM filters combined list to kill persistent FPs "
+        "(Zone X building sections, metaphors, doublons). validate_prompt targets "
+        "the specific FP patterns still surviving v18's NON instructions."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    validate_prompt=_V18_1_VALIDATE_PROMPT,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.2: v18 + GPT-NER marking pass (call 3: LLM annotates text inline)
+#
+# Goal: catch entities the JSON calls miss by asking the LLM to re-read
+# the text and annotate every entity name with @@name## markers.
+# Particularly useful for: Rhombes, Voix de l'Aurore (missed in dense paragraphs).
+# Risk: mark pass tends to add FPs (no type constraint, any noun can be marked).
+# label="unknown" for all marked entities (types resolved later by alias pass).
+# ---------------------------------------------------------------------------
+_V18_2_MARK_PROMPT = """Relis ce texte et entoure CHAQUE nom propre d'entite avec @@...## :
+castes, institutions, lieux, technologies nommees, civilisations, personnages.
+
+NE MODIFIE PAS le texte. Insere SEULEMENT les marqueurs @@...## autour des noms.
+N'entoure PAS les mots communs, descriptions, metaphores ni sections de batiment.
+
+Texte :
+{text}"""
+
+V18_2_MARK = ExtractionVersion(
+    name="v18.2-mark",
+    description=(
+        "v18 + GPT-NER marking pass: LLM re-reads text and annotates entities "
+        "inline with @@name## markers. Catches what JSON calls miss in dense paragraphs "
+        "(Rhombes, Voix de l'Aurore). Risk: may add FPs (no type constraint)."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    mark_prompt=_V18_2_MARK_PROMPT,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.3: v18 + focused call (call 3b: JSON extraction for castes/institutions only)
+#
+# Goal: recover castes that fall through calls 1+2 in dense narrative chunks
+# (Tailleurs de pierre, Explorateurs, Regards-Libres fluctuate as TPs/FNs).
+# Uses focus_prompt → _llm_extract_focused() — a targeted JSON call with a
+# narrower prompt than call 2.
+# ---------------------------------------------------------------------------
+_V18_3_FOCUS_PROMPT = """Extrait UNIQUEMENT les castes, groupes sociaux, institutions et civilisations de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "caste|institution|civilization", "context": "phrase courte"}}]}}
+
+OUI : "Enfants des Echos", "Tailleurs de pierre", "Egalisateurs", "Dessinateurs", "Peintres", "Passes-bien", "Ailes-Grises", "Sans-ciels", "Ciels-libres", "Enfants du Courant", "Explorateurs", "Regards-Libres", "Voix de l'Aurore", "Assemblee des Chefs", "Cercle des Sages", "Maison des Decouvertes", "Tribunal des Moeurs".
+NON : mots communs (tribus, peuple, habitants, artisans), pronoms, descriptions.
+Si rien, retourne {{"entities": []}}."""
+
+V18_3_FOCUS = ExtractionVersion(
+    name="v18.3-focus",
+    description=(
+        "v18 + focused caste/institution call (call 3b): dedicated JSON pass "
+        "targeting social groups and institutions only. Recovers castes that "
+        "calls 1+2 miss in dense narrative (Tailleurs de pierre, Explorateurs, "
+        "Regards-Libres, Voix de l'Aurore). Uses focus_prompt infrastructure."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    focus_prompt=_V18_3_FOCUS_PROMPT,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.4-combo: v18.3 (focus) + v18.1 (validate) + accent dedup fix
+#
+# Strategy: maximize recall with the focus call, then prune FPs with the
+# validate pass using a cheap model (llama3.1:8b / meta-llama on OpenRouter).
+#
+# 3 extraction calls per chunk (facts+entities, entities-only, castes/institutions)
+# + 1 global validate pass post-dedup using a cheaper/faster model.
+#
+# Expected: R≥90% from focus, FPs pruned by validate → best F1 combo.
+# Dedup now normalizes accents so focus call (no accents in prompt) doesn't
+# produce doublons vs calls 1+2 (accented output from qwen3:14b).
+#
+# validate_model = "meta-llama/llama-3.1-8b-instruct" (OpenRouter) or
+#                  "llama3.1:8b" (Ollama local) — cheap binary filter task.
+# ---------------------------------------------------------------------------
+V18_4_COMBO = ExtractionVersion(
+    name="v18.4-combo",
+    description=(
+        "v18 + focus call (castes/institutions) + validate pass (llama3.1:8b). "
+        "Accent-normalized dedup to avoid doublons from focus call. "
+        "3 extraction calls + 1 validate: maximize recall then prune FPs cheaply."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    focus_prompt=_V18_3_FOCUS_PROMPT,
+    validate_prompt=_V18_1_VALIDATE_PROMPT,
+    # Llama 3.1 8B handles binary OUI/NON filtering fine and is 4-5x cheaper.
+    # OpenRouter: "meta-llama/llama-3.1-8b-instruct"
+    # Ollama local: "llama3.1:8b"
+    validate_model="meta-llama/llama-3.1-8b-instruct",
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.4.1: v18.4 + protected validate prompt (castes/institutions immune)
+#           + Rhombes added to focus OUI list
+#
+# Root cause of v18.4 FNs: Llama's validate pass removes castes it perceives
+# as "generic workers" (Tailleurs de pierre, Explorateurs) and institutions
+# that aren't obviously institutional (Voix de l'Aurore).
+# Fix: make the validate prompt explicitly type-aware — NE JAMAIS virer [caste]/[institution]/[person].
+# Also: add Rhombes to focus prompt to catch the persistent tech FN.
+# ---------------------------------------------------------------------------
+_V18_4_1_VALIDATE_PROMPT = """Tu valides une liste d'entites nommees extraites d'un jeu de role.
+Reponds UNIQUEMENT avec du JSON.
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+VIRE UNIQUEMENT si c'est CLAIREMENT l'un de ces cas :
+1. Section de batiment : "Zone humide", "Zone chaude", "Zone seche", "Zone froide"
+2. Metaphore ou image poetique : "Foyer eternel", "Arbre de toutes les possibilites", "Fleuve du temps"
+3. Doublon evident de la meme entite : "Argile vivante" si "Argile vive" est deja present
+4. Titre narratif trop long ou descriptif : "Trois Revelations de l'Arbitre des Esprits", "Premiere revelation"
+5. Mot seul generique (1 mot) sans specifique : "Foyer", "Ciel", "Riviere", "Batiment"
+
+NE VIRE JAMAIS :
+- Une caste ou groupe social [caste] — meme si le nom semble generique : "Tailleurs de pierre", "Explorateurs", "Passes-bien"
+- Une institution [institution] — meme si peu connue : "Voix de l'Aurore", "Confluence des Echanges"
+- Un personnage nomme [person]
+- Une technologie nommee [technology]
+- Un lieu nomme [place]
+
+Reponds avec un JSON contenant les noms a conserver tels quels (copie exacte depuis la liste).
+Exemple de format : {{"keep": ["Cercle des Sages", "Ailes-Grises", "Argile Vivante"]}}"""
+
+_V18_4_1_FOCUS_PROMPT = """Extrait UNIQUEMENT les castes, groupes sociaux, institutions, civilisations et technologies nommees de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "caste|institution|civilization|technology", "context": "phrase courte"}}]}}
+
+OUI : "Enfants des Echos", "Tailleurs de pierre", "Egalisateurs", "Dessinateurs", "Peintres", "Passes-bien", "Ailes-Grises", "Sans-ciels", "Ciels-libres", "Enfants du Courant", "Explorateurs", "Regards-Libres", "Voix de l'Aurore", "Assemblee des Chefs", "Cercle des Sages", "Maison des Decouvertes", "Tribunal des Moeurs", "Rhombes".
+NON : mots purement generiques (peuple, habitants, gens), descriptions, sections de batiment.
+NOTE : "marginaux", "artisans", "tribu" peuvent etre des groupes sociaux nommes — inclus si groupe distinct dans le texte.
+Si rien, retourne {{"entities": []}}."""
+
+V18_4_1_PROTECTCASTE = ExtractionVersion(
+    name="v18.4.1-protectcaste",
+    description=(
+        "v18.4 + type-aware validate prompt (NE JAMAIS virer caste/institution/person/technology) "
+        "+ Rhombes added to focus OUI list. "
+        "Fixes: Tailleurs de pierre, Explorateurs, Voix de l'Aurore killed by Llama validate."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    focus_prompt=_V18_4_1_FOCUS_PROMPT,
+    validate_prompt=_V18_4_1_VALIDATE_PROMPT,
+    validate_model="meta-llama/llama-3.1-8b-instruct",
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v18.4.2: v18.4.1 same tweaks but Mistral-Nemo for validate
+#
+# Nemo is smaller/faster than qwen3:14b but better at French than llama3.1:8b.
+# Hypothesis: Nemo's understanding of French nominal groups (castes with French
+# names) is better than Llama's — less likely to strip "Tailleurs de pierre".
+# ---------------------------------------------------------------------------
+V18_4_2_NEMO = ExtractionVersion(
+    name="v18.4.2-nemo",
+    description=(
+        "v18.4.1 prompts but validate_model = mistral-nemo (better French than llama3.1:8b). "
+        "Tests if Nemo's French comprehension preserves French-named castes better."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    focus_prompt=_V18_4_1_FOCUS_PROMPT,
+    validate_prompt=_V18_4_1_VALIDATE_PROMPT,
+    validate_model="mistralai/mistral-nemo",
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v19-recall: v18.4.2-nemo with relaxed social-role NON lists
+#
+# Root cause of T05/T04 under-extraction: _V18_FACTS_PROMPT and _V18_ENTITY_PROMPT
+# had "artisans, chasseurs, pecheurs, tribus" explicitly in the NON list, and
+# "mots communs" as a catch-all. This blocked game-specific social group names
+# (marginaux, artisans as a caste, tribunal special) that use common French vocab.
+#
+# Fix: remove social role words from NON lists, add NOTE clarifying they can be
+# named castes/groups. entity_filter.py handles structural noise; semantic noise
+# (truly generic words) is handled in post-processing.
+# ---------------------------------------------------------------------------
+V19_RECALL = ExtractionVersion(
+    name="v19-recall",
+    description=(
+        "v18.4.2-nemo with relaxed social-role NON lists. Removes 'artisans, chasseurs, "
+        "pecheurs, tribus' from NON mots communs — these can be named castes. Adds NOTE "
+        "in all 3 extraction prompts clarifying social groups may be named entities."
+    ),
+    # _V18_SYSTEM unchanged — its JAMAIS list only blocks clearly generic single words
+    system_prompt=_V18_SYSTEM,
+    # facts + entity prompts now use the updated NON lists (modified in-place above)
+    facts_prompt=_V18_FACTS_PROMPT,
+    entity_prompt=_V18_ENTITY_PROMPT,
+    # focus prompt also updated (artisans removed from NON)
+    focus_prompt=_V18_4_1_FOCUS_PROMPT,
+    validate_prompt=_V18_4_1_VALIDATE_PROMPT,
+    validate_model="mistralai/mistral-nemo",
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+# ---------------------------------------------------------------------------
+# v20-clean: generic prompts (no game-specific entity names) + strong validate
+#
+# Root cause of contamination: OUI lists in v18/v19 contained hardcoded entity
+# names from the game (Cheveux de Sang, Gorge Profonde, Hall des Serments, etc.)
+# which caused the LLM to hallucinate those entities even when absent from text.
+#
+# Approach:
+#   - Extraction prompts: TYPE-based guidance only, no specific entity names
+#   - Focus prompt: describes caste/institution STRUCTURE, not specific names
+#   - Validate: adds text-presence rule ("vire si le nom n'apparait pas dans le texte")
+#   - Same 4-call architecture as v18.4.2-nemo
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# v22 prompts: adds explicit guidance for rituels/rites/architecture.
+# Root insight: the pipeline consistently misses ritual practices (even named
+# ones like "Rites de déposition des morts") and architectural elements
+# (Pilotis, Paniers immergés) because prompts focus on weapons/institutions.
+# Solution: add these categories explicitly in OUI examples and TOUJOURS rules.
+# v22 system prompt is updated; facts/entity/focus user prompts are updated.
+# ---------------------------------------------------------------------------
+
+_V22_SYSTEM = """Tu extrais des entites nommees d'un jeu de civilisation. Regles :
+- Extrais le nom EXACT tel qu'il apparait (pluriel, tirets, majuscules).
+- TOUJOURS le nom COMPLET compose : "Antres des Echos" (pas "Antres"), "Voix de l'Aurore" (pas "Voix").
+- UNE seule forme par entite. Si "Faucons Chasseurs" existe, n'extrais pas aussi "Faucon Chasseur".
+- TOUJOURS les rituels et rites nommes, meme si le nom semble courant : "Rites de deposition des morts", "Rituels de Fertilite", "Culte des Ancetres".
+- TOUJOURS les elements d'architecture et d'infrastructure specifiques a la civilisation : "Pilotis", "Paniers immerges", "Rhombes", "Pipeau en bambou".
+- JAMAIS de mots seuls generiques : roi, cercle, hall, sel, ordres, guerre, combat, rumeur, exil, autre, collaboration, dangers, assemblees, mission, reincarnation, testament.
+- JAMAIS de phrases ou descriptions : "Un Faucon Chasseur veteran", "Action libre - L'epave", "Grande Foret".
+- JAMAIS de sections de batiment : "zone humide", "zone chaude", "zone seche", "zone froide".
+- JAMAIS de metaphores ou images poetiques : "foyer eternel", "arbre de toutes les possibilites".
+- JAMAIS de prefixes "Un/Une/Le/La/Les" dans le nom."""
+
+_V22_FACTS_PROMPT = """Extrait faits et entites nommees de ce tour de jeu. Reponds UNIQUEMENT avec du JSON.
+
+Texte :
+{text}
+
+Reponds avec ce JSON UNIQUEMENT :
+{{
+  "technologies": ["outils/inventions nommes en 2-5 mots"],
+  "resources": ["ressources exploitees"],
+  "beliefs": ["croyances/lois/rituels nommes"],
+  "geography": ["lieux nommes"],
+  "entities": [{{"name": "Nom Propre", "type": "person|place|technology|institution|resource|creature|event|civilization|caste|belief", "context": "phrase courte"}}]
+}}
+
+ENTITES = noms propres ET termes specifiques du jeu (institutions, castes, technologies, lieux, civilisations, croyances, evenements, creatures).
+OUI si c'est : un NOM PROPRE, un GROUP SOCIAL DISTINCT, une INSTITUTION DE GOUVERNANCE, un OUTIL/TECHNIQUE NOMME.
+OUI : rituels et rites nommes meme si le nom semble ordinaire : "Rites de deposition des morts", "Rituels de Fertilite", "Culte des Ancetres".
+OUI : elements d'architecture et d'infrastructure : "Pilotis", "Paniers immerges", "Rhombes", "Pipeau en bambou".
+NON : pronoms (lui, eux, toi, nous), mots purement generiques (homme, femme, vallee, village, riviere, montagne).
+NON : mots seuls generiques (roi, cercle, hall, sel, ordres, guerre, combat, rumeur, exil, autre, collaboration, dangers).
+NON : metaphores ou images poetiques ("foyer eternel", "arbre de toutes les possibilites").
+NON : descriptions avec articles indefinis ("Un chasseur veteran", "Une grande foret", "Un representant des pecheurs").
+NON : variantes d'un meme nom — extrais UNE SEULE forme (la plus complete).
+NOTE : des groupes comme "marginaux", "artisans", "pecheurs", "chasseurs" peuvent designer des CASTES nommees. Extrais-les si utilises comme groupe social distinct dans le texte."""
+
+_V22_ENTITY_PROMPT = """Extrait les noms de technologies, lieux, institutions, castes, civilisations, croyances et evenements de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "technology|place|institution|civilization|caste|belief|event", "context": "phrase courte"}}]}}
+
+OUI si c'est un NOM PROPRE ou terme specifique : groupe social distinct, institution de gouvernance, outil/technique nomme, lieu geographique nomme, civilisation, croyance ritualisee.
+OUI : rituels et rites nommes : "Rites de deposition des morts", "Rituels de Fertilite", "Culte des Ancetres", "Rites funeraires".
+OUI : elements d'architecture/infrastructure : "Pilotis", "Paniers immerges", "Rhombes", "Pipeau en bambou".
+NON : mots seuls generiques (roi, hall, cercle, sel, ordres, guerre, exil, autre, homme, femme, riviere, village).
+NON : descriptions longues ou phrases ("Un Faucon Chasseur veteran", "Action libre - L'epave").
+NON : variantes — UNE forme par entite.
+NOTE : groupes sociaux comme "artisans", "pecheurs", "chasseurs" peuvent etre des castes nommees — inclus si groupe distinct.
+Si rien, retourne {{"entities": []}}."""
+
+_V22_FOCUS_PROMPT = """Extrait UNIQUEMENT les castes, groupes sociaux, institutions, civilisations, technologies et rituels nommees de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "caste|institution|civilization|technology|belief", "context": "phrase courte"}}]}}
+
+CASTES = groupes sociaux distincts avec un nom propre. Formes typiques :
+  - Occupation au pluriel : "Sculpteurs", "Explorateurs", "Dessinateurs", "Peintres", "Chasseurs"
+  - Nom compose avec trait d'union : "Ciels-libres", "Sans-ciels", "Porte-flammes", "Ailes-grises"
+  - Formule "Enfants/Fils/Filles de X" : "Enfants des Echos", "Fils du Vent", "Enfants du Courant"
+  - Adjectif + trait d'union : "Regards-Libres", "Passes-bien", "Pieds-noirs"
+INSTITUTIONS = organes de gouvernance, de savoir ou de justice :
+  - Formule "Assemblee/Cercle/Maison/Tribunal/Voix de X" : "Assemblee des Chefs", "Cercle des Sages", "Maison des Decouvertes", "Tribunal des Moeurs"
+  - Autres organes nommes : "Confluence des Echanges", "Ordre des Anciens"
+TECHNOLOGIES = outils, techniques, elements d'architecture ou savoir-faire nommes : "burin en pierre", "filet de peche leste", "rhombes", "pilotis", "paniers immerges"
+RITUELS/CROYANCES = pratiques religieuses ou spirituelles nommees : "Rites de deposition des morts", "Rituels de Fertilite", "Culte des Ancetres"
+NON : mots purement generiques (peuple, habitants, gens, tribu sans nom propre), descriptions, sections de batiment sans nom.
+NOTE : des termes comme "marginaux", "artisans" peuvent designer des groupes sociaux distincts — inclus si groupe nomme dans le texte.
+Si rien, retourne {{"entities": []}}."""
+
+# Alias — v20/v21 versions use this name; v22 prompt is a superset (added OUI
+# lines for rituels/architecture) so pointing old versions here is safe.
+_V20_FACTS_PROMPT = _V22_FACTS_PROMPT
+
+_V20_ENTITY_PROMPT = """Extrait les noms de technologies, lieux, institutions, castes, civilisations, croyances et evenements de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "technology|place|institution|civilization|caste|belief|event", "context": "phrase courte"}}]}}
+
+OUI si c'est un NOM PROPRE ou terme technique specifique en 2-5 mots : groupe social distinct, institution de gouvernance, outil/technique nomme, lieu geographique nomme, civilisation, croyance ritualisee.
+NON : mots seuls generiques (roi, hall, cercle, sel, ordres, guerre, exil, autre, homme, femme, riviere, village).
+NON : descriptions longues ou phrases ("Un Faucon Chasseur veteran", "Action libre - L'epave").
+NON : variantes — UNE forme par entite.
+NOTE : groupes sociaux comme "artisans", "pecheurs", "chasseurs" peuvent etre des castes nommees — inclus si groupe distinct.
+Si rien, retourne {{"entities": []}}."""
+
+_V20_FOCUS_PROMPT = """Extrait UNIQUEMENT les castes, groupes sociaux, institutions, civilisations et technologies nommees de ce texte. JSON uniquement.
+
+Texte :
+{text}
+
+Reponds UNIQUEMENT avec ce JSON :
+{{"entities": [{{"name": "Nom exact", "type": "caste|institution|civilization|technology", "context": "phrase courte"}}]}}
+
+CASTES = groupes sociaux distincts avec un nom propre. Formes typiques :
+  - Occupation au pluriel : "Sculpteurs", "Explorateurs", "Dessinateurs", "Peintres", "Chasseurs"
+  - Nom compose avec trait d'union : "Ciels-libres", "Sans-ciels", "Porte-flammes", "Ailes-grises"
+  - Formule "Enfants/Fils/Filles de X" : "Enfants des Echos", "Fils du Vent", "Enfants du Courant"
+  - Adjectif + trait d'union : "Regards-Libres", "Passes-bien", "Pieds-noirs"
+INSTITUTIONS = organes de gouvernance, de savoir ou de justice :
+  - Formule "Assemblee/Cercle/Maison/Tribunal/Voix de X" : "Assemblee des Chefs", "Cercle des Sages", "Maison des Decouvertes", "Tribunal des Moeurs"
+  - Autres organes nommes : "Confluence des Echanges", "Ordre des Anciens"
+TECHNOLOGIES = outils, techniques ou savoir-faire nommes en 2-5 mots : "burin en pierre", "filet de peche leste", "rhombes"
+NON : mots purement generiques (peuple, habitants, gens, tribu sans nom propre), descriptions, sections de batiment sans nom.
+NOTE : des termes comme "marginaux", "artisans" peuvent designer des groupes sociaux distincts — inclus si groupe nomme dans le texte.
+Si rien, retourne {{"entities": []}}."""
+
+_V20_VALIDATE_PROMPT = """Tu valides une liste d'entites nommees extraites d'un jeu de role.
+Reponds UNIQUEMENT avec du JSON.
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+VIRE UNIQUEMENT si c'est CLAIREMENT l'un de ces cas :
+1. Metaphore ou image poetique : "Foyer eternel", "Arbre de toutes les possibilites", "Fleuve du temps"
+2. Doublon evident de la meme entite : "Argile vivante" si "Argile vive" est deja present
+3. Titre narratif trop long ou descriptif : "Trois Revelations de l'Arbitre des Esprits"
+4. Mot seul generique (1 mot) sans specifique : "Foyer", "Ciel", "Riviere", "Batiment"
+5. Entite dont AUCUN mot significatif (longueur >= 4) ne se retrouve nulle part dans le texte, meme approximativement
+
+NE VIRE JAMAIS :
+- Une caste ou groupe social [caste] — meme si le nom semble generique : "Tailleurs de pierre", "Explorateurs", "Ailes-Grises", "Sans-ciels"
+- Une institution [institution] — meme si peu connue : "Voix de l'Aurore", "Confluence des Echanges"
+- Une technologie nommee [technology] en 2+ mots : "burin en pierre", "ciseaux de bois"
+- Un personnage nomme [person]
+- Un lieu nomme [place]
+En cas de doute, GARDE l'entite.
+
+Reponds avec un JSON contenant les noms a conserver tels quels (copie exacte depuis la liste).
+Exemple de format : {{"keep": ["Cercle des Sages", "Ailes-Grises", "Argile Vivante"]}}"""
+
+# ---------------------------------------------------------------------------
+# v20.1-clean: v20-clean + redesigned nemo validate prompt
+#
+# Problems with v20 validate prompt:
+#   - Two conflicting blocks (VIRE si / NE VIRE JAMAIS) → nemo takes shortcuts,
+#     killed ALL technologies in T06 despite explicit NE VIRE JAMAIS [technology].
+#   - No few-shot examples: nemo guesses intent instead of following rules.
+#   - num_predict=4000 wasted for a ~100 char response.
+#
+# Fixes:
+#   - Positive framing: GARDE by default, SUPPRIME only 3 explicit cases.
+#   - Type protections stated FIRST with concrete domain examples.
+#   - Few-shot examples covering the exact failure modes (technologies kept).
+#   - validate_num_predict=256 (enough for a JSON list of names).
+# ---------------------------------------------------------------------------
+
+_V20_1_VALIDATE_PROMPT = """Tu filtres une liste d'entites nommees extraites d'un texte de jeu de role.
+Reponds UNIQUEMENT avec du JSON valide. Aucune explication.
+
+REGLE : GARDE tout par defaut.
+SUPPRIME seulement si c'est clairement l'un de ces 3 cas :
+1. Metaphore poetique sans referent concret dans le texte : "Fleuve du temps", "Bras de la mort"
+2. Un seul mot generique (pas un nom propre) : "feu", "ciel", "riviere", "montagne"
+3. Doublon exact d'une autre entite de la liste
+
+Exemples :
+- "Gardiens du Feu Sacre" [caste]          → GARDE
+- "Lance a pointe d'obsidienne" [technology] → GARDE
+- "Voix des Ancetres" [belief]             → GARDE (nom propre d'une croyance)
+- "Conseil des Sages" [institution]        → GARDE
+- "Fleuve du temps" [belief]               → SUPPRIME (metaphore, pas une entite reelle)
+- "feu" [place]                            → SUPPRIME (mot generique)
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+Reponds avec exactement ce format :
+{{"keep": ["Nom Exact 1", "Nom Exact 2"]}}"""
+
+V20_1_CLEAN = ExtractionVersion(
+    name="v20.1-clean",
+    description=(
+        "v20-clean + redesigned nemo validate prompt. "
+        "Positive framing (GARDE by default), type protections first, "
+        "few-shot examples covering technology/caste/institution cases. "
+        "validate_num_predict=256 (validate responses are ~100 chars)."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_1_VALIDATE_PROMPT,
+    validate_model="mistralai/mistral-nemo",
+    validate_num_predict=256,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+# ---------------------------------------------------------------------------
+# v20.2-clean: v20.1 + per-entity reasoning in nemo validate
+#
+# Change: output format {"keep": [...]} → {"decisions": [{name, keep, reason}]}
+# Forcing nemo to justify each decision improves consistency and gives us
+# visibility on why entities are dropped (debuggable).
+# validate_num_predict bumped to 512 (was 256) to fit ~15 entries with reasons.
+# ---------------------------------------------------------------------------
+
+_V20_2_VALIDATE_PROMPT = """Tu filtres une liste d'entites nommees extraites d'un texte de jeu de role.
+Reponds UNIQUEMENT avec du JSON valide.
+
+REGLE : GARDE tout par defaut.
+SUPPRIME seulement si c'est clairement l'un de ces cas :
+- Metaphore poetique sans referent concret dans le texte
+- Un seul mot generique commun (pas un nom propre, pas un outil, pas un groupe social)
+- Doublon exact d'une autre entite de la liste
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+Reponds avec ce format JSON :
+- "keep" : noms exacts des entites gardees (copies depuis la liste ci-dessus)
+- "drops" : pour chaque entite supprimee, ecrire "nom exact: raison textuelle courte" separes par " | "
+
+{{"keep": ["Nom1", "Nom2"], "drops": "Nom supprime: raison textuelle | Nom2 supprime: raison textuelle"}}"""
+
+V20_2_CLEAN = ExtractionVersion(
+    name="v20.2-clean",
+    description=(
+        "v20.1-clean + per-entity reasoning in validate. "
+        "Uses qwen3:14b for validation (not nemo) — nemo can only handle simple lists, "
+        "loops with dots on any format that requires textual reasoning in a string field. "
+        "Output format: {keep: [...], drops: 'name: reason | name2: reason2'}. "
+        "validate_num_predict=512."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",  # qwen3 handles structured reasoning; nemo loops on drops field
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
+V21_0_MASKED = ExtractionVersion(
+    name="v21.0-masked",
+    description=(
+        "v20.2-clean + masked second-pass extraction. "
+        "After first-pass dedup, replaces found entity names with _____ in the chunk text "
+        "and runs an extra entity-only LLM call. Without dominant entities (Oracle, Cercle des Sages...) "
+        "the LLM is forced to find what remains — improves recall for techs/beliefs/creatures."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_and_retry=True,
+)
+
+# ---------------------------------------------------------------------------
+# Masked-pass prompt — explains the _____ placeholders and redirects focus
+# to the entity types systematically missed by the main extraction passes.
+# Used by v21.2 and v21.4.
+# ---------------------------------------------------------------------------
+_V21_MASK_ENTITY_PROMPT = """\
+Dans le texte ci-dessous, _____ représente des entités nommées déjà identifiées \
+(personnes, institutions majeures, castes, lieux connus...).
+
+Ta tâche : extraire UNIQUEMENT les entités nommées que _____ n'a PAS remplacées.
+Concentre-toi sur ce que les autres appels ratent systématiquement :
+- Technologies et outils (procédés, artefacts, instruments nommés)
+- Ressources naturelles et plantes avec un nom propre
+- Lieux et environnements nommés (gorges, plateaux, zones précises)
+- Croyances, rituels et pratiques sociales nommées
+- Créatures et espèces avec un nom propre
+- Groupes et institutions secondaires
+
+N'extrais PAS : les blancs _____ eux-mêmes, les objets entièrement génériques (pierre, eau, bois).
+
+Texte :
+{text}
+
+Réponds UNIQUEMENT en JSON :
+{{"entities": [{{"name": "nom exact tel qu'écrit dans le texte", \
+"type": "technology|place|belief|resource|creature|institution|caste|person|event|civilization", \
+"context": "courte phrase où il apparaît"}}]}}"""
+
+# ---------------------------------------------------------------------------
+# v21.1-masked-triple: 2 sequential masked passes (triple-pass total)
+# Each pass uses entities from all previous passes to mask the text, then
+# searches for what remains — progressively peeling layers of saliency.
+# ---------------------------------------------------------------------------
+V21_1_MASKED_TRIPLE = ExtractionVersion(
+    name="v21.1-masked-triple",
+    description=(
+        "v21.0-masked + a second masked pass (triple-pass total). "
+        "Pass 1: normal 4-call extraction. Pass 2: mask P1 entities -> extract again. "
+        "Pass 3: mask P1+P2 entities -> extract again. Same prompt/model as normal entity pass."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=2,  # 2 extra masked passes after the initial extraction
+)
+
+# ---------------------------------------------------------------------------
+# v21.2-masked-prompt: 1 masked pass with a targeted prompt
+# The mask prompt explains what _____ means and focuses on overlooked types.
+# ---------------------------------------------------------------------------
+V21_2_MASKED_PROMPT = ExtractionVersion(
+    name="v21.2-masked-prompt",
+    description=(
+        "v21.0-masked + custom masked-pass prompt that explains _____ placeholders "
+        "and explicitly targets technologies/resources/beliefs/creatures overlooked by the main pass."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_entity_prompt=_V21_MASK_ENTITY_PROMPT,
+)
+
+# ---------------------------------------------------------------------------
+# v21.3-masked-llm: 1 masked pass with a higher-precision model
+# qwen3.5-35b-a3b had 94.1% precision on T11 vs 81% for qwen3:14b —
+# less likely to hallucinate when the text is stripped of its main entities.
+# ---------------------------------------------------------------------------
+V21_3_MASKED_LLM = ExtractionVersion(
+    name="v21.3-masked-llm",
+    description=(
+        "v21.0-masked + different model for the masked pass (qwen/qwen3.5-35b-a3b). "
+        "High-precision model reduces hallucinations on impoverished (heavily masked) text."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_model="qwen/qwen3.5-35b-a3b",
+)
+
+# ---------------------------------------------------------------------------
+# v21.4-masked-both: 1 masked pass with targeted prompt + high-precision model
+# Combines v21.2 (targeted prompt) and v21.3 (35b-a3b model).
+# ---------------------------------------------------------------------------
+V21_4_MASKED_BOTH = ExtractionVersion(
+    name="v21.4-masked-both",
+    description=(
+        "v21.0-masked + targeted mask prompt (v21.2) + qwen3.5-35b-a3b model (v21.3). "
+        "Best-of-both: the prompt explains _____ and focuses on missed types; "
+        "the high-precision model reduces hallucinations."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_entity_prompt=_V21_MASK_ENTITY_PROMPT,
+    mask_model="qwen/qwen3.5-35b-a3b",
+)
+
+# ---------------------------------------------------------------------------
+# v21.5-scoped: 2 masked passes, each targeting a different entity-type scope.
+# Pass 0: tech/beliefs/resources/creatures — typically missed by main passes.
+# Pass 1: persons/places/institutions — secondary ones missed by main passes.
+# Each pass only sees entities remaining AFTER all previous passes are masked.
+# ---------------------------------------------------------------------------
+_V21_MASK_SCOPE0_PROMPT = """\
+Dans ce texte, _____ remplace des entites nommees deja identifiees.
+
+Passe 1 - Culture materielle et savoirs.
+Extrais UNIQUEMENT ce qui reste dans cette categorie :
+- Technologies, outils, procedes de fabrication (meme non capitalises)
+- Ressources naturelles ou matieres avec un nom specifique
+- Croyances, rituels, pratiques sociales nommes
+- Etres vivants ou especes avec un nom propre
+
+N'inclus PAS de personnages, institutions ou lieux (reserves a la passe suivante).
+
+Texte :
+{text}
+
+JSON uniquement :
+{{"entities": [{{"name": "nom tel qu'ecrit", "type": "technology|resource|belief|creature", "context": "courte phrase"}}]}}\
+"""
+
+_V21_MASK_SCOPE1_PROMPT = """\
+Dans ce texte, _____ remplace des entites nommees deja identifiees.
+
+Passe 2 - Acteurs et espaces.
+Extrais UNIQUEMENT ce qui reste dans cette categorie :
+- Personnes ou personnages avec un nom propre non encore captures
+- Lieux, zones, environnements nommes (gorges, plateaux, batiments, routes)
+- Groupes, institutions, castes secondaires non encore captures
+- Evenements ou moments cles nommes
+
+N'inclus PAS technologies, ressources ou croyances (couverts par la passe precedente).
+
+Texte :
+{text}
+
+JSON uniquement :
+{{"entities": [{{"name": "nom tel qu'ecrit", "type": "person|place|institution|caste|event|civilization", "context": "courte phrase"}}]}}\
+"""
+
+V21_5_SCOPED = ExtractionVersion(
+    name="v21.5-scoped",
+    description=(
+        "v21.0-masked + 2 scoped masked passes with different type-buckets. "
+        "Pass 0 (tech/beliefs/resources/creatures) + pass 1 (persons/places/institutions). "
+        "Each pass forces focus on one half of the entity taxonomy."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=2,
+    # Per-pass prompts: pass 0 = tech scope, pass 1 = person/place scope
+    mask_entity_prompts=(_V21_MASK_SCOPE0_PROMPT, _V21_MASK_SCOPE1_PROMPT),
+)
+
+# ---------------------------------------------------------------------------
+# v21.6-llama: 2 masked passes using llama3.1:8b as the mask-pass model.
+# Tests whether a different architecture (llama vs qwen3) handles masked text
+# better — the 35b-a3b (also non-qwen3) returned empty JSON, llama may differ.
+# ---------------------------------------------------------------------------
+V21_6_LLAMA = ExtractionVersion(
+    name="v21.6-llama",
+    description=(
+        "v21.0-masked + 2 masked passes using llama3.1:8b as mask-pass model. "
+        "Tests if llama architecture handles masked (_____ heavy) text better "
+        "than qwen3 (which tends to ignore remaining content) or 35b-a3b (empty JSON)."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=2,
+    mask_model="meta-llama/llama-3.1-8b-instruct",
+)
+
+# ---------------------------------------------------------------------------
+# v21.7-radical: 1 masked pass with a completely different framing.
+# Instead of "named entity extraction", frames the task as completing an
+# archaeologist's catalog — explicitly drops the proper-noun requirement
+# and biases toward exhaustiveness. Targets the core missed-entity pattern:
+# specific cultural terms that look like common nouns (gourdins, pieu...).
+# ---------------------------------------------------------------------------
+_V21_RADICAL_PROMPT = """\
+Un groupe d'anthropologues documente une civilisation fictive.
+Ils ont deja repertorie ses entites majeures dans le texte (remplacees par _____).
+
+Ta mission : COMPLETER leur catalogue avec ce qu'ils ont manque.
+
+Critere d'inclusion : un terme merite d'etre inclus s'il est PROPRE a cette civilisation
+(outil, procede, rituel, substance, espece, lieu ou concept nomme), MEME si ce terme
+ressemble a un nom commun francais ordinaire. Ce qui compte : est-ce specifique a
+cette culture fictive ? Pas : est-ce un nom propre capitalise ?
+
+Methode en 2 etapes :
+1. Liste mentalement tous les termes restants qui semblent specifiques a ce groupe.
+2. Selectionne ceux qui auraient leur place dans une encyclopedie de cette civilisation.
+
+Ne filtre pas trop — mieux vaut inclure un terme douteux que rater une entite culturelle.
+
+Texte :
+{text}
+
+Retourne UNIQUEMENT ce JSON (sois exhaustif) :
+{{"entities": [{{"name": "nom tel qu'il apparait dans le texte", \
+"type": "technology|place|belief|resource|creature|institution|caste|person|event|civilization", \
+"context": "courte phrase d'ou il vient"}}]}}\
+"""
+
+V21_7_RADICAL = ExtractionVersion(
+    name="v21.7-radical",
+    description=(
+        "v21.0-masked + radical prompt change: 'catalogue incomplet d'anthropologues'. "
+        "Drops the proper-noun filter — any term SPECIFIC TO THIS CIVILIZATION counts. "
+        "Targets the core missed-entity problem: culturally-specific common nouns "
+        "(gourdins, pieu, lait de pierre) that standard extraction consistently misses."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_entity_prompt=_V21_RADICAL_PROMPT,
+)
+
+
+# ---------------------------------------------------------------------------
+# v21.8-radical-filtered: v21.7 radical prompt + explicit N'EXTRAIS PAS list
+# for abstract concepts, emotions, and biological states.
+# v21.7 breakthrough: found Gourdins + Pieu for the first time by dropping the
+# proper-noun filter. v21.8 tries to keep that gain while reducing the 32 FPs
+# caused by: Corps, Esprit, Faim, Fatigue, Mort, Naissance, Univers, Pays...
+# ---------------------------------------------------------------------------
+_V21_8_RADICAL_FILTERED_PROMPT = """\
+Un groupe d'anthropologues documente une civilisation fictive.
+Ils ont deja repertorie ses entites majeures dans le texte (remplacees par _____).
+
+Ta mission : COMPLETER leur catalogue avec ce qu'ils ont manque.
+
+EXTRAIS — termes specifiques a cette civilisation :
+- Outils, armes, techniques de fabrication (meme noms communs : "gourdins", "pieu", "filet leste")
+- Substances, materiaux ou ressources avec un nom ou usage culturel specifique
+- Especes animales ou vegetales importantes pour ce groupe (avec nom propre ou denomination locale)
+- Rituels, pratiques sociales, croyances nommees
+- Lieux, structures, espaces geographiques nommes
+
+N'EXTRAIS PAS — termes trop generiques ou abstraits :
+- Emotions et etats mentaux : peur, faim, fatigue, joie, tristesse, espoir, honte
+- Etats biologiques et evenements du vivant : mort, naissance, maladie, vieillesse
+- Concepts abstraits : univers, nature, vie, temps, choix, destin, liberte, verite
+- Verbes nominalises sans specifique culturel : depart, retour, arrivee, rencontre, crise
+- Mots ultra-generiques : bois, eau, feu, ciel, terre, pays, lieu, groupe, peuple
+
+Texte :
+{text}
+
+JSON uniquement :
+{{"entities": [{{"name": "nom tel qu'il apparait dans le texte", \
+"type": "technology|place|belief|resource|creature|institution|caste|person|event|civilization", \
+"context": "courte phrase d'ou il vient"}}]}}\
+"""
+
+V21_8_RADICAL_FILTERED = ExtractionVersion(
+    name="v21.8-radical-filtered",
+    description=(
+        "v21.7 radical ('catalogue anthropologue') + explicit N'EXTRAIS PAS for abstract "
+        "concepts, emotions, and biological states. Keeps the proper-noun filter drop "
+        "(which found gourdins + pieu) while excluding: Corps, Esprit, Faim, Fatigue, "
+        "Mort, Naissance, Univers, Pays (the 32 FPs from v21.7)."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_entity_prompt=_V21_8_RADICAL_FILTERED_PROMPT,
+)
+
+
+# ---------------------------------------------------------------------------
+# v21.9-radical-protected: v21.8 + validate prompt protects concrete tools/weapons/
+# materials explicitly. Root cause of v21.8 failure: validate drops Gourdins/Pieu
+# as "Metaphore poetique" even though the rule says "pas un outil". Adding an
+# explicit GARDE TOUJOURS clause for outils concrets + validate_num_predict=1024
+# to give the validate model enough tokens to reason carefully with 20+ entities.
+# ---------------------------------------------------------------------------
+_V21_9_VALIDATE_PROMPT = """Tu filtres une liste d'entites nommees extraites d'un texte de jeu de role.
+Reponds UNIQUEMENT avec du JSON valide.
+
+GARDE TOUJOURS sans exception :
+- Outils, armes, techniques de fabrication, materiaux — meme si le nom semble ordinaire
+  (ex: "gourdins", "pieu", "filet", "rhombes", "serpes", "casiers a poisson")
+- Groupes sociaux, castes, institutions nommees
+- Lieux geographiques nommes
+
+REGLE : GARDE tout par defaut.
+SUPPRIME seulement si c'est clairement l'un de ces cas :
+- Metaphore poetique sans referent concret dans le texte (ex: "Espoir", "Destin")
+- Un seul mot ultra-generique (pas un outil, pas un groupe social, pas un lieu)
+- Doublon exact d'une autre entite de la liste
+
+Texte de reference :
+{text}
+
+Entites a valider :
+{entities}
+
+Reponds avec ce format JSON :
+- "keep" : noms exacts des entites gardees (copies depuis la liste ci-dessus)
+- "drops" : pour chaque entite supprimee, ecrire "nom exact: raison textuelle courte" separes par " | "
+
+{{"keep": ["Nom1", "Nom2"], "drops": "Nom supprime: raison textuelle | Nom2 supprime: raison textuelle"}}"""
+
+V21_9_RADICAL_PROTECTED = ExtractionVersion(
+    name="v21.9-radical-protected",
+    description=(
+        "v21.8 + validate prompt adds explicit GARDE TOUJOURS for outils/armes/materiaux. "
+        "Root cause fix: validate was dropping Gourdins+Pieu as 'Metaphore poetique' despite "
+        "rule 'pas un outil'. New validate also bumps num_predict to 1024 (512 was too short "
+        "for 20+ entities with per-entity reasoning)."
+    ),
+    system_prompt=_V18_SYSTEM,
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V21_9_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=1024,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
+    mask_entity_prompt=_V21_8_RADICAL_FILTERED_PROMPT,
+)
+
+
+V20_CLEAN = ExtractionVersion(
+    name="v20-clean",
+    description=(
+        "Generic prompts (no hardcoded game entity names in OUI). "
+        "TYPE-based guidance only: castes/institutions described structurally. "
+        "Validate adds text-presence rule: remove anything not literally in the text. "
+        "Same 4-call architecture as v18.4.2-nemo (facts + entities + focus + nemo validate)."
+    ),
+    system_prompt=_V18_SYSTEM,  # /no_think system prompt, unchanged
+    facts_prompt=_V20_FACTS_PROMPT,
+    entity_prompt=_V20_ENTITY_PROMPT,
+    focus_prompt=_V20_FOCUS_PROMPT,
+    validate_prompt=_V20_VALIDATE_PROMPT,
+    validate_model="mistralai/mistral-nemo",
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
+
 # ---------------------------------------------------------------------------
 # v16-bigctx: v1 prompt + 16K context window (no chunking)
 # Alternative coverage fix: instead of chunking, expand the context window
@@ -2094,6 +3302,36 @@ V16_BIGCTX = ExtractionVersion(
     entity_prompt=_V1_ENTITY_PROMPT,
     chunk_by_paragraph=False,
     num_ctx=16384,
+)
+
+# ---------------------------------------------------------------------------
+# v22.0: new baseline with v22 prompts — rituels/rites/architecture added.
+# Incorporates the key insight from v21.x series: the pipeline misses ritual
+# names and architectural elements because the prompts don't mention them.
+# Uses _V22_SYSTEM (adds TOUJOURS rituels + architecture) and _V22_*_PROMPT
+# (adds explicit OUI examples for both categories in all 3 extraction calls).
+# Reference set also cleaned: -8 generic entities (Gourdins, Pieu, Fumage,
+# Poisson fumé, Radeaux, Vallée, Techniques de polissage, Passerelles) → 34.
+# ---------------------------------------------------------------------------
+V22_0 = ExtractionVersion(
+    name="v22.0",
+    description=(
+        "New baseline: v21.0-masked architecture (1 masked pass, qwen3:14b) "
+        "with updated system + user prompts that explicitly mention rituels/rites "
+        "('Rites de déposition des morts', 'Rituels de Fertilité') and architecture "
+        "('Pilotis', 'Paniers immergés') in OUI examples. Focus prompt now includes "
+        "a RITUELS/CROYANCES category. System prompt adds TOUJOURS rules for both."
+    ),
+    system_prompt=_V22_SYSTEM,
+    facts_prompt=_V22_FACTS_PROMPT,
+    entity_prompt=_V22_ENTITY_PROMPT,
+    focus_prompt=_V22_FOCUS_PROMPT,
+    validate_prompt=_V20_2_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+    mask_passes=1,
 )
 
 # ---------------------------------------------------------------------------
@@ -2131,6 +3369,29 @@ _VERSIONS: dict[str, ExtractionVersion] = {
     "v15.3.2-chunk600": V15_3_2_CHUNK600,
     "v15.3.3-chunk1200": V15_3_3_CHUNK1200,
     "v15.3.4-tightnon": V15_3_4_TIGHTNON,
+    "v17-typerecall": V17_TYPERECALL,
+    "v18-toolrecall": V18_TOOLRECALL,
+    "v18.1-validate": V18_1_VALIDATE,
+    "v18.2-mark": V18_2_MARK,
+    "v18.3-focus": V18_3_FOCUS,
+    "v18.4-combo": V18_4_COMBO,
+    "v18.4.1-protectcaste": V18_4_1_PROTECTCASTE,
+    "v18.4.2-nemo": V18_4_2_NEMO,
+    "v19-recall": V19_RECALL,
+    "v20-clean": V20_CLEAN,
+    "v20.1-clean": V20_1_CLEAN,
+    "v20.2-clean": V20_2_CLEAN,
+    "v21.0-masked": V21_0_MASKED,
+    "v21.1-masked-triple": V21_1_MASKED_TRIPLE,
+    "v21.2-masked-prompt": V21_2_MASKED_PROMPT,
+    "v21.3-masked-llm": V21_3_MASKED_LLM,
+    "v21.4-masked-both": V21_4_MASKED_BOTH,
+    "v21.5-scoped": V21_5_SCOPED,
+    "v21.6-llama": V21_6_LLAMA,
+    "v21.7-radical": V21_7_RADICAL,
+    "v21.8-radical-filtered": V21_8_RADICAL_FILTERED,
+    "v21.9-radical-protected": V21_9_RADICAL_PROTECTED,
+    "v22.0": V22_0,
     "v16-bigctx": V16_BIGCTX,
     "v7-v4t0": ExtractionVersion(
         name="v7-v4t0",

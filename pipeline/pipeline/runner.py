@@ -20,6 +20,8 @@ from .db import (
     run_migrations,
     mark_turn_processed,
     update_progress,
+    insert_turn_stats,
+    update_run_usage,
 )
 from .loader import load_directory
 from .ingestion import fetch_unprocessed_messages
@@ -149,6 +151,34 @@ def run_pipeline(
     conn = get_connection(db_path)
     run_id = _start_pipeline_run(conn)
 
+    # Build entity lookup from DB before the loop — starts empty for a fresh run,
+    # populated from previous turns on incremental runs.
+    # Rebuilt every 5 turns after periodic dedup so hints stay fresh and canonical.
+    entity_lookup = _build_civ_entity_lookup(conn, civ_id)
+
+    # Register prompt logging callback on the LLM provider.
+    # Every generate()/chat() call will persist its prompt+response to pipeline_llm_calls.
+    def _prompt_log_callback(log_run_id, log_turn_id, stage, model, system, prompt, response):
+        try:
+            conn.execute(
+                """INSERT INTO pipeline_llm_calls
+                   (run_id, turn_id, stage, model, system_prompt, user_prompt, response)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (log_run_id, log_turn_id, stage, model, system, prompt, response),
+            )
+            conn.commit()
+        except Exception:
+            pass  # never let logging break the pipeline
+
+    if use_llm:
+        llm_provider.set_prompt_logger(_prompt_log_callback)
+        llm_provider.set_call_context(run_id, None)  # turn_id updated per-turn below
+
+    # Per-turn extraction stats for final logging (MJ turns only — PJ has no entity extraction).
+    # Each entry: {turn_number, text_chars, sys_prompt_chars, chunks, raw, after_dedup, final,
+    #              usage_before, usage_after}
+    _mj_turn_logs: list[dict] = []
+
     try:
         turn_number = _get_next_turn_number(conn, civ_id)
         total_turns = len(chunks)
@@ -170,23 +200,29 @@ def run_pipeline(
                 (civ_id, turn_number, raw_ids, chunk.turn_type),
             )
             turn_id = cursor.lastrowid
+            # Update prompt logger context so all LLM calls for this turn are tagged correctly
+            if use_llm:
+                llm_provider.set_call_context(run_id, turn_id)
             gm_seq_to_turn_id[i + 1] = turn_id  # 1-indexed to match build_turn_pairs
             stats["turns_created"] += 1
 
             # Classify segments
             segments = classify_segments(turn_text)
 
-            # Extract structured facts
+            # Extract structured facts (snapshot usage before/after for per-turn cost delta)
             structured_facts = None
             if fact_extractor:
                 segment_dicts = [
                     {"segment_type": seg.segment_type.value, "content": seg.text}
                     for seg in segments
                 ]
+                usage_before = llm_provider.get_usage_snapshot()
                 structured_facts = fact_extractor.extract_facts(
                     segment_dicts, raw_content,
+                    entity_lookup=entity_lookup,
                     validation_model=validation_model,
                 )
+                usage_after = llm_provider.get_usage_snapshot()
 
             # Insert segments
             for seg_order, seg in enumerate(segments):
@@ -196,6 +232,50 @@ def run_pipeline(
                     (turn_id, seg_order, seg.segment_type.value, seg.text),
                 )
                 stats["segments_created"] += 1
+
+            # Collect per-turn extraction stats for logging
+            if fact_extractor:
+                exs = fact_extractor.last_stats
+                turn_cost = (
+                    usage_after.get("total_cost", 0) - usage_before.get("total_cost", 0)
+                )
+                turn_tokens = (
+                    usage_after.get("total_tokens", 0) - usage_before.get("total_tokens", 0)
+                )
+                _mj_turn_logs.append({
+                    "turn_number": turn_number,
+                    "text_chars": exs.get("text_chars", len(turn_text)),
+                    "sys_prompt_chars": exs.get("sys_prompt_chars", 0),
+                    "chunks": exs.get("chunks", 1),
+                    "raw": exs.get("raw", 0),
+                    "after_dedup": exs.get("after_dedup", 0),
+                    "final": exs.get("final", 0),
+                    "cost": turn_cost,
+                    "tokens": turn_tokens,
+                })
+                # Persist GM turn stats to DB
+                insert_turn_stats(
+                    conn, run_id, turn_id, "gm",
+                    text_chars=exs.get("text_chars", len(turn_text)),
+                    sys_prompt_chars=exs.get("sys_prompt_chars", 0),
+                    chunks=exs.get("chunks", 1),
+                    raw_entities=exs.get("raw", 0),
+                    after_dedup=exs.get("after_dedup", 0),
+                    final_entities=exs.get("final", 0),
+                    est_tokens=turn_tokens,
+                    est_cost_usd=turn_cost,
+                )
+                # Per-turn line: turn# | text size | chunks | funnel | density | cost
+                txt_k = exs.get("text_chars", len(turn_text)) / 1000
+                final = exs.get("final", 0)
+                density = (final / txt_k) if txt_k > 0 else 0
+                cost_str = f"${turn_cost:.4f}" if turn_cost > 0 else f"~{turn_tokens}tok"
+                print(
+                    f"       T{turn_number:02d} [GM] "
+                    f"{txt_k:.1f}K chr | {exs.get('chunks',1)} chks | "
+                    f"raw:{exs.get('raw',0)} dd:{exs.get('after_dedup',0)} fin:{final} | "
+                    f"{density:.1f}/K | {cost_str}"
+                )
 
             # Extract entities from LLM results
             if structured_facts and structured_facts.entities:
@@ -269,8 +349,17 @@ def run_pipeline(
 
             turn_number += 1
 
+            # Every 5 turns: dedup entities by normalized name, then rebuild lookup.
+            # Keeps entity_lookup clean and canonical so subsequent turns get accurate
+            # hints injection (no stale duplicates like "sans-ciel" vs "sans-ciels").
             if (i + 1) % 5 == 0 or i == len(chunks) - 1:
-                print(f"       ->Processed {i + 1}/{len(chunks)} turns")
+                merged = _periodic_entity_dedup(conn, civ_id)
+                entity_lookup = _build_civ_entity_lookup(conn, civ_id)
+                merge_note = f", {merged} merged" if merged else ""
+                print(
+                    f"       -> Processed {i + 1}/{len(chunks)} GM turns"
+                    f" | lookup: {len(entity_lookup)} entries{merge_note}"
+                )
 
         # Mark pipeline phase as completed
         if track_progress and total_turns > 0:
@@ -279,13 +368,31 @@ def run_pipeline(
                 total_turns, total_turns, "turn", "completed"
             )
 
-        # Insert PJ (player) segments into their corresponding GM turns.
-        # Each non-GM chunk is attached to the preceding GM turn so that
-        # 1 turn_turns row holds both GM narrative and player response.
+        # Insert PJ (player) segments + collect PJ text stats for logging
+        pj_turn_logs: list[dict] = []
         if gm_seq_to_turn_id:
-            pj_count = _insert_pj_segments(conn, all_chunks, gm_seq_to_turn_id)
+            pj_count, pj_turn_logs = _insert_pj_segments(
+                conn, all_chunks, gm_seq_to_turn_id, run_id,
+                fact_extractor=fact_extractor,
+                entity_lookup=entity_lookup,
+                civ_id=civ_id,
+            )
             if pj_count:
-                print(f"       ->{pj_count} PJ segments inserted")
+                total_pj_ents = sum(p.get("pj_entities", 0) for p in pj_turn_logs)
+                print(
+                    f"       -> {pj_count} PJ segments inserted"
+                    + (f" | {total_pj_ents} PJ entities extracted" if total_pj_ents else "")
+                )
+                for pj in pj_turn_logs:
+                    ent_note = f" | {pj['pj_entities']} ents" if pj.get("pj_entities") else ""
+                    print(
+                        f"       T{pj['turn_number']:02d} [PJ] "
+                        f"{pj['text_chars']/1000:.1f}K chr | {pj['segments']} segs{ent_note}"
+                    )
+
+        # Print extraction summary: MJ vs PJ side-by-side
+        if _mj_turn_logs:
+            _print_extraction_summary(_mj_turn_logs, pj_turn_logs)
 
         conn.commit()
         _complete_pipeline_run(conn, run_id, stats)
@@ -431,6 +538,19 @@ def run_pipeline(
         for m in used_models:
             llm_provider.unload(m)
 
+    # Capture provider usage (tokens + cost) for final summary + persist to DB
+    usage = llm_provider.get_usage_snapshot()
+    stats["provider_usage"] = usage
+    if usage.get("total_tokens", 0) > 0 or usage.get("total_cost", 0) > 0:
+        conn2 = get_connection(db_path)
+        try:
+            update_run_usage(conn2, run_id,
+                             usage.get("total_tokens", 0),
+                             usage.get("total_cost", 0.0))
+            conn2.commit()
+        finally:
+            conn2.close()
+
     # Final summary
     print("[DONE] Pipeline complete!")
     _print_stats(stats)
@@ -441,18 +561,30 @@ def _insert_pj_segments(
     conn,
     all_chunks: list,
     gm_seq_to_turn_id: dict[int, int],
-) -> int:
-    """Insert player (PJ) segments into the corresponding GM turn.
+    run_id: int | None = None,
+    fact_extractor=None,
+    entity_lookup: dict | None = None,
+    civ_id: int | None = None,
+) -> tuple[int, list[dict]]:
+    """Insert player (PJ) segments into the corresponding GM turn, and optionally
+    extract named entities from PJ text.
 
     Iterates all_chunks in order, counting GM chunks to stay in sync with the
     1-indexed gm_seq_to_turn_id mapping built during the GM loop.
     Skips synthetic placeholders (content < 50 chars) and turns where
     PJ segments already exist (idempotent).
 
-    Returns total PJ segments inserted.
+    When fact_extractor + civ_id are provided, also runs entity extraction on
+    PJ text — entity_only + focused, no validate (PJ lore is trusted canon).
+    Entities introduced by the player (Morsure-des-Ancêtres, Paniers immergés...)
+    are inserted with mentions linked to the corresponding GM turn.
+
+    Returns (total_segments_inserted, per_turn_stats_list).
+    per_turn_stats_list entries: {turn_number, text_chars, segments, pj_entities}
     """
     gm_seq = 0
     total_inserted = 0
+    turn_logs: list[dict] = []
 
     for chunk in all_chunks:
         if chunk.is_gm_post:
@@ -476,6 +608,13 @@ def _insert_pj_segments(
             (turn_id,),
         ).fetchone()[0]
         if existing > 0:
+            # Already processed — skip segments AND entity extraction (idempotent)
+            turn_logs.append({
+                "turn_number": gm_seq,
+                "text_chars": len(pj_text),
+                "segments": 0,
+                "pj_entities": 0,
+            })
             continue
 
         # Find the current max segment_order so PJ segments come after GM ones
@@ -495,7 +634,43 @@ def _insert_pj_segments(
             )
             total_inserted += 1
 
-    return total_inserted
+        # PJ entity extraction: capture named entities introduced by the player.
+        # Examples: Morsure-des-Ancêtres (T06 PJ), Paniers immergés (T05 PJ).
+        # No validate — PJ text is trusted canon lore, genericity filter not needed.
+        pj_entity_count = 0
+        if fact_extractor is not None and civ_id is not None:
+            pj_entities = fact_extractor.extract_pj_entities(pj_text, entity_lookup or {})
+            for ent in pj_entities:
+                entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
+                conn.execute(
+                    """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
+                       VALUES (?, ?, ?, ?)""",
+                    (entity_id, turn_id, ent.text, ent.context),
+                )
+            pj_entity_count = len(pj_entities)
+
+        seg_count = len(pj_segments)
+        turn_logs.append({
+            "turn_number": gm_seq,
+            "text_chars": len(pj_text),
+            "segments": seg_count,
+            "pj_entities": pj_entity_count,
+        })
+        # Persist PJ stats to DB
+        if run_id is not None:
+            insert_turn_stats(
+                conn, run_id, turn_id, "pj",
+                text_chars=len(pj_text),
+                sys_prompt_chars=0,
+                chunks=0,
+                raw_entities=0,
+                after_dedup=0,
+                final_entities=0,
+                est_tokens=0,
+                est_cost_usd=0.0,
+            )
+
+    return total_inserted, turn_logs
 
 
 def _run_subject_extraction(
@@ -884,6 +1059,65 @@ def _fail_pipeline_run(conn, run_id: int, error: str) -> None:
     conn.commit()
 
 
+def _print_extraction_summary(mj_logs: list[dict], pj_logs: list[dict]) -> None:
+    """Print a per-source extraction summary table after stage [6/10].
+
+    Shows: turns | total text | total entities | funnel (raw/dedup/final) |
+           entity density (ent/1000 chars) | estimated cost.
+    MJ rows have entity stats; PJ rows show text size only (no entity extraction).
+    """
+    def _sum(logs, key):
+        return sum(r.get(key, 0) for r in logs)
+
+    mj_chars = _sum(mj_logs, "text_chars")
+    mj_raw   = _sum(mj_logs, "raw")
+    mj_dd    = _sum(mj_logs, "after_dedup")
+    mj_final = _sum(mj_logs, "final")
+    mj_cost  = _sum(mj_logs, "cost")
+    mj_tok   = _sum(mj_logs, "tokens")
+    mj_k     = mj_chars / 1000 if mj_chars else 1
+    mj_dens  = mj_final / mj_k
+
+    pj_chars = _sum(pj_logs, "text_chars")
+    pj_k     = pj_chars / 1000 if pj_chars else 1
+
+    total_chars = mj_chars + pj_chars
+    total_cost  = mj_cost  # PJ not extracted by LLM (subjects tracked separately)
+    total_tok   = mj_tok
+
+    cost_fmt = (lambda c, t: f"${c:.4f}" if c > 0 else f"~{t}tok")
+
+    print()
+    print("  Extraction Summary (stage 6)")
+    print(f"  {'':4} {'turns':>5}  {'text':>7}  {'raw':>4} {'dd':>4} {'fin':>4}  {'dens':>6}  {'cost/tokens':>12}")
+    print(f"  {'----':4} {'-----':>5}  {'-------':>7}  {'----':>4} {'----':>4} {'----':>4}  {'------':>6}  {'------------':>12}")
+    print(
+        f"  {'MJ':4} {len(mj_logs):>5}  {mj_chars/1000:>6.1f}K  "
+        f"{mj_raw:>4} {mj_dd:>4} {mj_final:>4}  {mj_dens:>5.1f}/K  "
+        f"{cost_fmt(mj_cost, mj_tok):>12}"
+    )
+    if pj_logs:
+        print(
+            f"  {'PJ':4} {len(pj_logs):>5}  {pj_chars/1000:>6.1f}K  "
+            f"{'n/a':>4} {'n/a':>4} {'n/a':>4}  {'n/a':>6}  {'(subjects)':>12}"
+        )
+    print(
+        f"  {'TOT':4} {len(mj_logs)+len(pj_logs):>5}  {total_chars/1000:>6.1f}K  "
+        f"{mj_raw:>4} {mj_dd:>4} {mj_final:>4}  {mj_dens:>5.1f}/K  "
+        f"{cost_fmt(total_cost, total_tok):>12}"
+    )
+    print()
+
+    # Flag low-density turns (< 1.0 ent/K) for review
+    low = [r for r in mj_logs if r["text_chars"] > 500 and
+           (r["final"] / (r["text_chars"] / 1000)) < 1.0]
+    if low:
+        print(f"  [!] Low-density turns (<1.0/K): "
+              + ", ".join(f"T{r['turn_number']:02d}({r['final']}ent/{r['text_chars']//100*100}c)"
+                          for r in low))
+        print()
+
+
 def _print_stats(stats: dict) -> None:
     """Print pipeline run statistics."""
     print()
@@ -905,9 +1139,90 @@ def _print_stats(stats: dict) -> None:
         print(f"  LLM calls total:     {llm_stats.total()}")
         print(f"    fact extraction:   {counts['fact_extraction']}")
         print(f"    entity extraction: {counts['entity_extraction']}")
+        print(f"    focus extraction:  {counts['focused_extraction']}")
+        print(f"    validation:        {counts['entity_validation']}")
+        print(f"    subject extr.:     {counts['subject_extraction']}")
+        print(f"    subject resolv.:   {counts['subject_resolution']}")
         print(f"    summarization:     {counts['summarization']}")
         print(f"    entity profiling:  {counts['entity_profiling']}")
+    # Show total cost if available (OpenRouter provider)
+    if "provider_usage" in stats:
+        usage = stats["provider_usage"]
+        if usage.get("total_cost", 0) > 0:
+            print(f"  Total cost:          ${usage['total_cost']:.4f}")
+            print(f"  Total tokens:        {usage['total_tokens']:,}")
     print("=" * 40)
+
+
+def _periodic_entity_dedup(conn, civ_id: int) -> int:
+    """Merge duplicate entities with the same normalized name for a civ.
+
+    Runs after every N turns during stage [6] to keep the entity table clean
+    before it's used as context for the next batch of turns.
+
+    Strategy: group active entities by _normalize_for_dedup(canonical_name).
+    Keep the entity with the most mentions as primary; redirect all mentions,
+    relations, aliases and subject references from secondary to primary.
+    Returns the number of merges performed.
+    """
+    rows = conn.execute(
+        "SELECT id, canonical_name FROM entity_entities WHERE civ_id = ? AND is_active = 1",
+        (civ_id,),
+    ).fetchall()
+
+    # Group by normalized key
+    groups: dict[str, list] = {}
+    for row in rows:
+        eid = row[0] if not hasattr(row, "keys") else row["id"]
+        name = row[1] if not hasattr(row, "keys") else row["canonical_name"]
+        key = _normalize_for_dedup(name)
+        groups.setdefault(key, []).append((eid, name))
+
+    merged = 0
+    for key, entities in groups.items():
+        if len(entities) < 2:
+            continue
+
+        # Pick primary: entity with most mentions, or lowest id as tiebreak
+        mention_counts = {}
+        for eid, _ in entities:
+            cnt = conn.execute(
+                "SELECT COUNT(*) FROM entity_mentions WHERE entity_id = ?", (eid,)
+            ).fetchone()[0]
+            mention_counts[eid] = cnt
+
+        primary_id = max(entities, key=lambda e: (mention_counts[e[0]], -e[0]))[0]
+
+        for eid, name in entities:
+            if eid == primary_id:
+                continue
+            # Redirect mentions, relations, aliases, subjects to primary
+            conn.execute(
+                "UPDATE entity_mentions SET entity_id = ? WHERE entity_id = ?",
+                (primary_id, eid),
+            )
+            conn.execute(
+                "UPDATE entity_relations SET source_entity_id = ? WHERE source_entity_id = ?",
+                (primary_id, eid),
+            )
+            conn.execute(
+                "UPDATE entity_relations SET target_entity_id = ? WHERE target_entity_id = ?",
+                (primary_id, eid),
+            )
+            conn.execute(
+                "UPDATE entity_aliases SET entity_id = ? WHERE entity_id = ?",
+                (primary_id, eid),
+            )
+            # Deactivate secondary (soft delete to preserve history)
+            conn.execute(
+                "UPDATE entity_entities SET is_active = 0 WHERE id = ?", (eid,)
+            )
+            merged += 1
+
+    if merged:
+        conn.commit()
+
+    return merged
 
 
 def _build_civ_entity_lookup(conn, civ_id: int) -> dict:
