@@ -19,18 +19,18 @@ Tour  5  ████████████████████  ← Pic
 
 ## Description
 
-La Tribu est une entité qui semble avoir une forte tradition et un sentiment d'identité collective. Ils se considèrent comme ayant une responsabilité sacrée envers la terre sur laquelle ils vivent, qu'ils ont sacrifié des ancêtres pour protéger. Cette tribu seems à avoir une dynamique sociale complexe avec une concurrence féroce entre les hommes pour s'accaparer les femmes.
+La Tribu est une entité civilisationnelle qui se développe sur une terre sacrée, héritée de sacrifices passés. Elle a pour mission de faire fructifier cet éden, selon un devoir sacré transmis par les ancêtres. La Tribu est marquée par une concurrence féroce entre ses membres, notamment pour s'accaparer les femmes, et exclut progressivement les « sans-ciel ». Elle est donc une société hiérarchisée, traditionnelle et en constante évolution.
 
 ## Chronologie
 
-**Tour 5: Les sans-ciel sont exclus au fil du temps, une génération après l'autre.**
+**Tour 5: La Tribu est représentée par un individu qui vient consulter un interlocuteur, transmettant les paroles des ancêtres. La Tribu doit croître et faire fructifier la terre sacrée, selon un devoir sacré. La concurrence entre les hommes pour les femmes devient de plus en plus féroce, et les « sans-ciel » sont progressivement exclus.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 5**
 > "Tribu"
 >
-> Contexte : elle doit croître au sein de cette terre...
+> Contexte : organisation sociale et familiale...
 
 ??? note "Sources -- Passages originaux"
 

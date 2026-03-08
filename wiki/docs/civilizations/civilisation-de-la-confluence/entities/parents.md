@@ -19,20 +19,18 @@ Tour  3  ████████████████████  ← Pic
 
 ## Description
 
-La caste des Parents est une entité qui représente les ancêtres et aïeux d'une famille. Ils sont chargés de transmettre leur sagesse et leur expérience aux vivants, notamment par le biais de mémentos qui servent à puiser dans leurs connaissances. Ces mémentos peuvent également être des autels où les familles se rendent pour recevoir conseils des ancêtres.
+Les Parents sont une caste qui joue un rôle central dans la mémoire collective et spirituelle de la société. Ils sont responsables de la conservation des mémentos des aïeux, qui servent à transmettre la sagesse des ancêtres aux vivants. Ces mémentos sont gardés par les enfants des Parents et empilés sur des autels. Ils permettent aux vivants de puiser dans le discernement des anciens, tout en imposant une responsabilité morale de se montrer dignes de leurs enseignements. Les Parents sont donc des gardiens spirituels et culturels de la communauté.
 
 ## Chronologie
 
-**Tour 3: Les parents sont chargés de garder les mémentos en mémoire de leurs aïeux et de transmettre leur sagesse aux vivants. Les enfants sont responsables de conserver les mémentos des parents, tandis que ceux d'avant sont empilés sur des autels.**
-
-**Tour 4: Les familles doivent se montrer dignes des enseignements des ancêtres et être conscients du regard constant qu'ils portent sur eux.**
+**Tour 3: Les Parents sont mentionnés dans le contexte de leur rôle de gardiens des mémentos des aïeux. Ils sont responsables de leur conservation et de leur transmission aux enfants, qui les gardent, tandis que les mémentos anciens sont empilés sur des autels. Ces objets sont visités régulièrement pour recevoir des conseils des ancêtres.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 3**
 > "Parents"
 >
-> Contexte : Parents...
+> Contexte : groupe qui garde les mémentos des aïeux...
 
 ??? note "Sources -- Passages originaux"
 

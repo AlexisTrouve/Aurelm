@@ -9,93 +9,52 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 8 |
-| **Tours actifs** | 1-13 (13 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
+| **Mentions totales** | 2 |
+| **Tours actifs** | 2-3 (2 tours) |
+| **Pic d'activite** | Tour 2 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour  2  ████████████████████
+Tour  2  ████████████████████  ← Pic
 Tour  3  ████████████████████
-Tour  5  ████████████████████
-Tour  8  ████████████████████
-Tour 10  ████████████████████
-Tour 12  ████████████████████
-Tour 13  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Faucons Chasseurs** (Creatures) — 8 tours
-- 🔵 **Cercle des Sages** (Civilisations) — 8 tours
-- 🔵 **Gouffre Humide** (Lieux) — 8 tours
-- 🔵 **Cheveux de Sang** (Creatures) — 2 tours
-- 🔵 **Ailes-Grises** (Castes) — 2 tours
+- 🔵 **Gourdins** (Technologies) — 2 tours
 
 ## Description
 
-L'Argile Vivante est une ressource naturelle qui joue un rôle crucial dans la culture et le développement de la civilisation. Elle est décrite comme ayant des vertus curatives, notamment grâce au « lait de pierre ». Cette ressource est utilisée pour créer des artefacts, dont certains sont chargés d'histoires et de mémoire. Bien que les détails soient limités, il semble que l'Argile Vivante ait une valeur importante dans l'économie et la culture de la civilisation.
+L'Argile Vivante est une ressource particulière exploitée dans le cadre du jeu. Elle semble être une matière première rare ou spécifique, probablement liée à des processus de fabrication ou de construction. Son exploitation est mentionnée dans le Tour 2, ce qui suggère qu'elle joue un rôle économique ou stratégique. Elle est également associée à des lieux nommés dans le Tour 3, ce qui pourrait indiquer qu'elle est trouvée ou gérée dans des zones géographiques précises.
 
 ## Chronologie
 
-**Tour 3: L'exploitation de la ressource est signalée pour la première fois, indiquant son importance économique. Cependant, les détails sur sa production ou utilisation sont rares à cette époque.**
+**Tour 2: L'Argile Vivante est mentionnée comme une ressource exploitée, ce qui indique qu'elle est utilisée activement par les joueurs ou les entités du jeu.**
 
-**Tour 8: L'exploitation de la ressource est signalée pour la première fois, indiquant son importance économique. Cependant, les détails sur sa production ou utilisation sont rares à cette époque.**
-
-**Tour 12: Les légendes mentionnent le « lait de pierre » comme ayant des vertus curatives, confirmant les pouvoirs attribués à l'Argile Vivante. Cela suggère une utilisation médicale et thérapeutique de la ressource.**
+**Tour 3: L'Argile Vivante est liée à des lieux nommés, suggérant qu'elle est associée à des zones spécifiques ou qu'elle est extraite de ces lieux.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 1**
-> "Argile Vivante"
->
-> Contexte : Argile Vivante...
 
 **Tour 2**
 > "Argile Vivante"
 >
-> Contexte : Argile Vivante...
+> Contexte : ressource exploitee...
 
 **Tour 3**
 > "Argile Vivante"
 >
-> Contexte : ressource exploitée...
-
-**Tour 5**
-> "Argile Vivante"
->
-> Contexte : Argile Vivante...
-
-**Tour 8**
-> "Argile Vivante"
->
-> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+> Contexte : lieux nommes...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 1**
-
     **Tour 2**
+
+    > ...ressource exploitee...
 
     **Tour 3**
 
-    > ...ressource exploitée...
-
-    **Tour 5**
-
-    **Tour 8**
-
-    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
-
-    **Tour 10**
-
-    **Tour 12**
-
-    > ...les légendes parlent du lait de pierre aux vertus curatives...
-
-    **Tour 13**
+    > ...lieux nommes...

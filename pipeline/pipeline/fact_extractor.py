@@ -81,6 +81,8 @@ class FactExtractor:
         raw_content: str = "",
         entity_lookup: Optional[Dict[str, Dict]] = None,
         validation_model: Optional[str] = None,
+        prev_tech_era: Optional[str] = None,
+        prev_fantasy_level: Optional[str] = None,
     ) -> StructuredFacts:
         """
         Extract structured facts and entities from turn segments.
@@ -95,6 +97,10 @@ class FactExtractor:
                            built from DB entities for the current civ.
             validation_model: Optional model override for the validation LLM call.
                               If None, uses self.model (same as extraction).
+            prev_tech_era: Tech era label from the previous turn (e.g. "neolithique").
+                           Appended to the system prompt so the LLM knows the context.
+            prev_fantasy_level: Fantasy level label from the previous turn (e.g. "realiste").
+                                Appended to the system prompt alongside tech_era.
 
         Returns:
             StructuredFacts object with all extracted information
@@ -134,6 +140,22 @@ class FactExtractor:
         chunks = self._chunk_text(relevant_text)
         # Estimate system prompt size once (same for all chunks)
         sys_prompt = self.version.get_system_prompt(self.model) or ""
+
+        # Inject tech/fantasy context from the previous turn so the LLM can
+        # calibrate what counts as a "notable" named entity in this era.
+        # Example: "Navires" is a major tech in a neolithic context but mundane later.
+        if prev_tech_era or prev_fantasy_level:
+            context_lines = ["\nContexte de la civilisation (tour precedent) :"]
+            if prev_tech_era:
+                context_lines.append(f"- Niveau technologique : {prev_tech_era}")
+            if prev_fantasy_level:
+                context_lines.append(f"- Niveau fantastique : {prev_fantasy_level}")
+            context_lines.append(
+                "Utilise ce contexte pour calibrer ce qui est 'notable' : "
+                "une technologie simple est remarquable en contexte neolithique, "
+                "un element surnaturel est rare en contexte realiste."
+            )
+            sys_prompt = sys_prompt + "\n" + "\n".join(context_lines)
 
         # Merge helper
         def merge(a: List[str], b: List[str]) -> List[str]:

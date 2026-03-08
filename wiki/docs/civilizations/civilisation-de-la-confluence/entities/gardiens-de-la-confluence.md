@@ -1,58 +1,38 @@
-# Gardiens de la Confluence
+# Gardiens de la confluence
 
-*Civilisations* -- Civilisation de la Confluence
+*Institutions* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 2 |
-| **Tours actifs** | 7-8 (2 tours) |
-| **Pic d'activite** | Tour 7 (1 mentions) |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 8-8 (1 tours) |
+| **Pic d'activite** | Tour 8 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  7  ████████████████████  ← Pic
-Tour  8  ████████████████████
+Tour  8  ████████████████████  ← Pic
 ```
-
-## 🔗 Reseau relationnel
-
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **Ailes-Grises** (Castes) — 2 tours
-- 🔵 **Regards-Libres** (Creatures) — 2 tours
-- 🔵 **Cercle des Sages** (Civilisations) — 2 tours
 
 ## Description
 
-Les Gardiens de la Confluence sont une civilisation qui a prospéré grâce à l'échange et aux échanges entre les peuples. Ils cultivent leur influence dans les flux de la vallée, enrichis par ces interactions. Leurs caractéristiques notables incluent leur position unique dans la société, étant indépendants des décisions des villageois.
+Les Gardiens de la confluence sont une institution qui prétend être indépendante des décisions des villageois. Ils occupent une position centrale dans la structure sociale et religieuse, probablement liée à un lieu de convergence ou de passage important. Leur rôle semble être de surveiller ou de réguler les interactions entre différentes factions ou courants, et ils sont perçus comme des arbitres neutres. Leur position est contestée par d'autres institutions qui cherchent à étendre leur influence.
 
 ## Chronologie
 
-**Tour 7: Les Gardiens de la Confluence sont mentionnés comme une des trois factions émergentes dans la vallée, aux côtés des Voix de l'Aurore et des Enfants du Courant. Ils cultivent leur influence grâce à leurs relations avec les autres peuples.**
-
-**Tour 8: Les Gardiens de la Confluence estiment être indépendants de toutes les décisions des villageois, ce qui les met en conflit potentiel avec les autres factions.**
+**Tour 8: Les Gardiens de la confluence affirment leur indépendance face aux autres institutions en concurrence. Ils sont confrontés à un conflit potentiel et reçoivent un avertissement sous forme de présages, probablement pour éviter un affrontement ou pour les orienter dans leur rôle de médiateurs.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 7**
-> "Gardiens de la Confluence"
->
-> Contexte : Gardiens de la Confluence...
-
 **Tour 8**
-> "Gardiens de la Confluence"
+> "Gardiens de la confluence"
 >
-> Contexte : Anticipant le conflit, tu leur indique par voie de présages que …...
+> Contexte : estiment être indépendants de toutes les décisions des villageois...
 
 ??? note "Sources -- Passages originaux"
-
-    **Tour 7**
-
-    > ...présages, préservant les traditions ancestrales du peuple du ciel Des Cliques émergent dans notre société, transformant la structure du conseil : Les Voix de l'Aurore : dirigés par les Ailes-Grises, ils défendent la primauté des anciennes lois et des rituels sacrés Les Enfants du Courant : forts de leurs villages prospères, ils revendiquent une plus grande voix dans les décisions de la vallée Les Gardiens de la Confluence : enrichis par l'échange entre les peuples, ils cultivent leur influence dans les flux de la vallée
 
     **Tour 8**
 

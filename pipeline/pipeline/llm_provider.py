@@ -90,6 +90,57 @@ class LLMProvider(ABC):
         """Provider name for display (e.g. 'ollama', 'openrouter')."""
         ...
 
+    def get_usage_snapshot(self) -> dict:
+        """Return a point-in-time snapshot of token/cost usage.
+
+        Used by runner to compute per-turn cost deltas: snapshot before extraction,
+        snapshot after, subtract. Providers with real token tracking (OpenRouter)
+        return actual values; Ollama returns char-based estimates (free = $0).
+        """
+        return {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0, "total_cost": 0.0}
+
+    # ------------------------------------------------------------------
+    # Prompt logging hook
+    # ------------------------------------------------------------------
+
+    def set_call_context(self, run_id: int | None, turn_id: int | None) -> None:
+        """Set the current run/turn context for prompt logging.
+
+        Called by runner at the start of each turn so that all subsequent
+        LLM calls are tagged with the correct run_id / turn_id.
+        """
+        self._log_run_id: int | None = getattr(self, "_log_run_id", None)
+        self._log_turn_id: int | None = getattr(self, "_log_turn_id", None)
+        self._log_run_id = run_id
+        self._log_turn_id = turn_id
+
+    def set_prompt_logger(self, callback) -> None:
+        """Register a callable that persists every LLM call to the DB.
+
+        Signature: callback(run_id, turn_id, stage, model, system, prompt, response)
+        Set to None to disable logging.
+        """
+        self._prompt_logger = callback
+
+    def _log_call(
+        self, stage: str, model: str,
+        system: str | None, prompt: str, response: str,
+    ) -> None:
+        """Internal: call the registered prompt logger if one is set."""
+        logger = getattr(self, "_prompt_logger", None)
+        if logger is None:
+            return
+        run_id = getattr(self, "_log_run_id", None)
+        turn_id = getattr(self, "_log_turn_id", None)
+        try:
+            logger(run_id, turn_id, stage, model, system, prompt, response)
+        except Exception:
+            pass  # never let logging break the pipeline
+
+    # current_stage: callers set this attribute before generate()/chat() so
+    # _log_call() knows which pipeline stage the call belongs to.
+    current_stage: str = "unknown"
+
 
 class OllamaProvider(LLMProvider):
     """Local Ollama provider — wraps both /api/generate and /api/chat.
@@ -102,6 +153,10 @@ class OllamaProvider(LLMProvider):
         self.base_url = base_url
         # Lazy-init httpx client (only created when generate() is called)
         self._client: Any = None
+        # Char-based usage tracking — Ollama has no real token API, so we
+        # count prompt+response chars and estimate tokens (chars/4).
+        self._chars_prompt = 0
+        self._chars_completion = 0
 
     def _get_client(self):
         """Lazy-init httpx client to avoid import cost if only chat() is used."""
@@ -145,7 +200,12 @@ class OllamaProvider(LLMProvider):
         result = self._post_with_retry(
             f"{self.base_url}/api/generate", request_body
         )
-        return result.get("response", "").strip()
+        response_text = result.get("response", "").strip()
+        # Track chars for usage estimation
+        self._chars_prompt += len(prompt) + len(system or "")
+        self._chars_completion += len(response_text)
+        self._log_call(self.current_stage, model, system, prompt, response_text)
+        return response_text
 
     def chat(
         self,
@@ -164,13 +224,21 @@ class OllamaProvider(LLMProvider):
         if seed is not None:
             options["seed"] = seed
 
-        result = self._chat_with_retry(
+        response_text = self._chat_with_retry(
             model=model,
             messages=messages,
             json_mode=json_mode,
             options=options,
         )
-        return result
+        # Track chars for usage estimation (sum all message content)
+        prompt_chars = sum(len(m.get("content", "")) for m in messages)
+        self._chars_prompt += prompt_chars
+        self._chars_completion += len(response_text)
+        # Log via chat: reconstruct system+user for the logger
+        sys_msg = next((m["content"] for m in messages if m["role"] == "system"), None)
+        user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
+        self._log_call(self.current_stage, model, sys_msg, user_msg, response_text)
+        return response_text
 
     def unload(self, model: str) -> None:
         """Unload model from VRAM to free GPU memory."""
@@ -184,6 +252,23 @@ class OllamaProvider(LLMProvider):
     @property
     def name(self) -> str:
         return "ollama"
+
+    def get_usage_snapshot(self) -> dict:
+        """Char-based usage estimate — Ollama has no real token API.
+
+        Estimates tokens as chars/4 (rough French text ratio).
+        Cost is always 0 since Ollama is local.
+        """
+        est_prompt = self._chars_prompt // 4
+        est_completion = self._chars_completion // 4
+        return {
+            "prompt_tokens": est_prompt,
+            "completion_tokens": est_completion,
+            "total_tokens": est_prompt + est_completion,
+            "total_cost": 0.0,
+            "chars_prompt": self._chars_prompt,
+            "chars_completion": self._chars_completion,
+        }
 
     def _post_with_retry(
         self, url: str, body: dict, max_retries: int = 3
@@ -282,6 +367,10 @@ class OpenRouterProvider(LLMProvider):
         self._total_prompt_tokens = 0
         self._total_completion_tokens = 0
         self._total_cost = 0.0
+
+    def get_usage_snapshot(self) -> dict:
+        """Return a copy of current usage — use before/after extraction for per-turn deltas."""
+        return dict(self.get_usage())
 
     def _track_usage(self, result: dict):
         """Extract and accumulate usage info from OpenRouter response."""
@@ -458,7 +547,11 @@ class OpenRouterProvider(LLMProvider):
         choices = result.get("choices", [])
         if not choices:
             return ""
-        return choices[0].get("message", {}).get("content", "").strip()
+        response_text = choices[0].get("message", {}).get("content", "").strip()
+        sys_msg = next((m["content"] for m in messages if m["role"] == "system"), None)
+        user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
+        self._log_call(self.current_stage, model, sys_msg, user_msg, response_text)
+        return response_text
 
     def unload(self, model: str) -> None:
         """No-op for cloud providers — nothing to unload."""

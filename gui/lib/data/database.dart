@@ -48,7 +48,17 @@ class AurelmDatabase extends _$AurelmDatabase {
   AurelmDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  // Drift schemaVersion must match the DB's user_version pragma.
+  // The Python pipeline manages the real schema via migrations — Drift is query-only.
+  // aurelm_fullrun.db was created with user_version=1 (5 Python migrations applied).
+  int get schemaVersion => 1;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        // Never auto-create or auto-migrate — Python manages the schema
+        onCreate: (_) async {},
+        onUpgrade: (_, __, ___) async {},
+      );
 
   static AurelmDatabase open(String dbPath) {
     return AurelmDatabase(_openConnection(dbPath));

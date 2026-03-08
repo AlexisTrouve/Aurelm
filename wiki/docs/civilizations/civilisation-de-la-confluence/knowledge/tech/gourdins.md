@@ -9,18 +9,16 @@
 
 ## Acquis en meme temps (Tour 2)
 
-- [pieux](pieux.md)
+- [pieu](pieu.md)
 
 ## Arbre chronologique
 
-**Tour 1** (precedent) : [Argile Vivante](argile-vivante.md)
 **Tour 2** (actuel) : **gourdins**
-**Tour 4** (suivant) : [la voix des cieux](la-voix-des-cieux.md)
+**Tour 3** (suivant) : [fumage de viande](fumage-de-viande.md)
 
 ## Meme categorie : Outils de chasse
 
-- [pieux](pieux.md) (Tour 2)
-- [Lance](lance.md) (Tour 9)
+- [lance à la pointe polie](lance-a-la-pointe-polie.md) (Tour 6)
 
 ## Extrait narratif
 

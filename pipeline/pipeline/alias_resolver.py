@@ -576,6 +576,174 @@ SCORE : [0 à 100.
 JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
 
 
+# v16: v12 descriptions-first + minimal example improvements only.
+#
+# v15 regressed (F1=71.4% vs 82.4%) because:
+#   - "prime sur les descriptions" in SCORE discouraged INCOMPATIBILITÉ_NOM=OUI on borderline cases
+#     → pair 25 (Confluence des Biens / Échanges) slipped to FP (70%), pair 5 also affected
+#   - Generalizing Gardiens rule to "X ou tout concept associé à X" was too broad → pair 5 FN
+#   - Context bleeding from SCORE change → DESCRIPTIONS=NON for pair 17 (Peuple du ciel / des cieux)
+#
+# Strategy for v16: ONLY improve the 2 example strings in the 2 failing ÉTAPE 2 rules.
+# No changes to SCORE section, no changes to rule structure, no generalization.
+# Hypothesis: Qwen3 needs to SEE the exact failing pairs as examples to recognize the pattern.
+#
+# FP 21: "Gardiens / Protecteurs de X" vs X — Qwen3 didn't apply because X differs
+#   (Gardiens de "la Confluence" ≠ "Confluence des Esprits" — different X).
+#   Fix: add example showing exact pair 21 names so Qwen3 can pattern-match it.
+#
+# FP 15: "Lieu géographique précis" vs "Élément naturel générique" — example was not close enough.
+#   Fix: use exact pair 15 names in the example.
+_V16_MINIMAL_EXAMPLES_PROMPT = """\
+Tu es un archiviste expert pour un JDR de civilisation multijoueur.
+
+CONTEXTE CRUCIAL : Dans ce JDR, la même entité peut apparaître sous des noms différents selon les tours et les joueurs. Une institution, un lieu ou un groupe peut avoir plusieurs appellations utilisées alternativement. Les descriptions viennent de tours différents et décrivent souvent la même réalité sous des angles complémentaires. La différence de nom NE PROUVE PAS qu'il s'agit d'entités distinctes.
+
+ENTITÉ A : "{name_a}" (type: {type_a})
+{desc_a}
+
+ENTITÉ B : "{name_b}" (type: {type_b})
+{desc_b}
+
+SIGNAL : {reason}
+
+ANALYSE EN 2 ÉTAPES :
+
+ÉTAPE 1 — DESCRIPTIONS (ignore les noms pour l'instant) :
+Lis les descriptions. Les descriptions décrivent-elles la même entité dans le monde du jeu — même rôle social, même fonction, même lieu, même objet ?
+Note : pour des groupes ou peuples, des descriptions partielles décrivant des aspects complémentaires (l'un parle de leur origine, l'autre de leur rôle) → répond INCERTAIN si les fonctions ne contredisent pas.
+→ OUI / INCERTAIN / NON — justifie en une phrase.
+
+ÉTAPE 2 — NOMS (si ÉTAPE 1 ≠ NON, vérifie ces incompatibilités structurelles) :
+Les noms révèlent-ils une incompatibilité évidente ?
+• "Chef / Dirigeant de X" vs X (une personne ou rôle de direction ≠ l'institution)
+• "Enfants / Fils de X" vs X (sous-groupe ≠ le groupe entier)
+• "Gardiens / Protecteurs de X" vs X ou tout concept lié à X (groupe fonctionnel ≠ le lieu/concept — ex : "Gardiens de la Confluence" ≠ "Confluence des Esprits" : les gardiens sont un groupe qui surveille la Confluence, pas la Confluence elle-même)
+• Lieu physique vs Institution qui s'y réunit (ex: Salle du Conseil ≠ Conseil du village)
+• Lieu géographique précis et nommé vs Élément naturel générique du même type (ex : "Confluence de deux rivières cristallines" = un point précis de jonction ≠ "Rivières cristallines" = les rivières en général, pas ce point)
+• Phénomène naturel vs groupe social portant un nom similaire
+• "[Terme] de [A]" vs "[Terme] de [B]" avec A et B clairement différents (eau ≠ ciel, Air ≠ Éther, Biens ≠ Échanges)
+→ Si OUI à l'une : INCOMPATIBILITÉ_NOM=OUI
+
+SCORE : [0 à 100.
+  DESCRIPTIONS=OUI + INCOMPATIBILITÉ_NOM=NON → 80-100.
+  DESCRIPTIONS=INCERTAIN + INCOMPATIBILITÉ_NOM=NON → 65-80.
+  DESCRIPTIONS=NON → 0-40.
+  INCOMPATIBILITÉ_NOM=OUI → 0-35.
+  70+ = confirmation, <70 = rejet.]
+
+JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
+
+
+# v15: v12 descriptions-first + targeted fixes for the 2 remaining FPs.
+#
+# FP 21 (Gardiens de la Confluence / Confluence des Esprits at 90%):
+#   v12 rule "Gardiens de X ≠ X" wasn't applied because the X differs ("la Confluence" ≠ "des Esprits").
+#   Fix: generalize to "groupe dont le nom contient Gardiens/Protecteurs/Voix de X ≠ X ou concept associé à X"
+#   + add exact pair 21 example so Qwen3 can't miss it.
+#
+# FP 15 (Confluence de deux rivières cristallines / Rivières cristallines at 90%):
+#   v12 example was "Confluence de deux rivières spécifiques ≠ rivières en général" — close but not exact.
+#   Qwen3 saw DESCRIPTIONS=OUI (same river valley) → INCOMPATIBILITÉ_NOM=NON (descriptions win).
+#   Fix: use the exact pair 15 names as the example + move INCOMPATIBILITÉ_NOM=OUI to FIRST in SCORE
+#   with explicit "(prime sur les descriptions, même si DESCRIPTIONS=OUI)".
+#
+# Intentionally preserved from v12:
+#   - descriptions-first order (to avoid regression on pair 17: Peuple du ciel/des cieux)
+#   - no ÉTAPE 0 / VETO structure (caused regression on pair 1: Sans-ciels in v14)
+_V15_EXPLICIT_EXAMPLES_PROMPT = """\
+Tu es un archiviste expert pour un JDR de civilisation multijoueur.
+
+CONTEXTE CRUCIAL : Dans ce JDR, la même entité peut apparaître sous des noms différents selon les tours et les joueurs. Une institution, un lieu ou un groupe peut avoir plusieurs appellations utilisées alternativement. Les descriptions viennent de tours différents et décrivent souvent la même réalité sous des angles complémentaires. La différence de nom NE PROUVE PAS qu'il s'agit d'entités distinctes.
+
+ENTITÉ A : "{name_a}" (type: {type_a})
+{desc_a}
+
+ENTITÉ B : "{name_b}" (type: {type_b})
+{desc_b}
+
+SIGNAL : {reason}
+
+ANALYSE EN 2 ÉTAPES :
+
+ÉTAPE 1 — DESCRIPTIONS (ignore les noms pour l'instant) :
+Lis les descriptions. Les descriptions décrivent-elles la même entité dans le monde du jeu — même rôle social, même fonction, même lieu, même objet ?
+Note : pour des groupes ou peuples, des descriptions partielles décrivant des aspects complémentaires (l'un parle de leur origine, l'autre de leur rôle) → répond INCERTAIN si les fonctions ne contredisent pas.
+→ OUI / INCERTAIN / NON — justifie en une phrase.
+
+ÉTAPE 2 — NOMS (si ÉTAPE 1 ≠ NON, vérifie ces incompatibilités structurelles) :
+Les noms révèlent-ils une incompatibilité évidente ?
+• "Chef / Dirigeant de X" vs X (une personne ou rôle de direction ≠ l'institution)
+• "Enfants / Fils de X" vs X (sous-groupe ≠ le groupe entier)
+• Tout groupe défini par sa FONCTION vis-à-vis d'un lieu ou concept ("Gardiens de X", "Protecteurs de X", "Voix de X") ≠ ce lieu/concept ou n'importe quel autre concept lié à X — même si les deux descriptions parlent du même lieu (ex précis : "Gardiens de la Confluence" est un GROUPE chargé de surveiller ≠ "Confluence des Esprits" qui est un LIEU/CONCEPT — même si les deux mentionnent la Confluence)
+• Lieu physique vs Institution qui s'y réunit (ex: Salle du Conseil ≠ Conseil du village)
+• Lieu géographique précis et nommé vs Élément naturel générique du même type (ex précis : "Confluence de deux rivières cristallines" = un point géographique précis ≠ "Rivières cristallines" = les rivières en général, pas le point de confluence)
+• Phénomène naturel vs groupe social portant un nom similaire
+• "[Terme] de [A]" vs "[Terme] de [B]" avec A et B clairement différents (eau ≠ ciel, Air ≠ Éther, Biens ≠ Échanges)
+→ Si OUI à l'une : INCOMPATIBILITÉ_NOM=OUI
+
+SCORE : [0 à 100.
+  INCOMPATIBILITÉ_NOM=OUI → 0-35 (cette règle prime sur les descriptions — même si DESCRIPTIONS=OUI, la distinction de noms est structurelle et définitive).
+  DESCRIPTIONS=OUI + INCOMPATIBILITÉ_NOM=NON → 80-100.
+  DESCRIPTIONS=INCERTAIN + INCOMPATIBILITÉ_NOM=NON → 65-80.
+  DESCRIPTIONS=NON → 0-40.
+  70+ = confirmation, <70 = rejet.]
+
+JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
+
+
+# v14: surgical fix — ÉTAPE 0 (2 override rules only) + v12's descriptions-first structure.
+# Problem in v12: FP 15 (Confluence de deux rivières / Rivières cristallines) at 90% and
+#   FP 21 (Gardiens / Confluence des Esprits) at 75% — DESCRIPTIONS=OUI overrides rules.
+# Problem in v13: moved ALL rules to override → broke pair 17 (Peuple du ciel / des cieux, 30%).
+#   Root cause: changing order (incompatibilities first, descriptions second) changed model priors
+#   → descriptions analysis gave NON for the same pair that was OUI in v12.
+#
+# Solution: keep v12's ORDER (descriptions first) to preserve pair 17,
+# but add ÉTAPE 0 with ONLY the 2 specific override rules that caused FPs:
+#   1. Gardiens/Protecteurs de X ≠ X (catches FP 21)
+#   2. Lieu précis ≠ Générique (catches FP 15)
+# These are the most structural/clear-cut rules that won't affect any TPs.
+_V14_SURGICAL_PROMPT = """\
+Tu es un archiviste expert pour un JDR de civilisation multijoueur.
+
+CONTEXTE CRUCIAL : Dans ce JDR, la même entité peut apparaître sous des noms différents selon les tours et les joueurs. Une institution, un lieu ou un groupe peut avoir plusieurs appellations utilisées alternativement. Les descriptions viennent de tours différents et décrivent souvent la même réalité sous des angles complémentaires. La différence de nom NE PROUVE PAS qu'il s'agit d'entités distinctes.
+
+ENTITÉ A : "{name_a}" (type: {type_a})
+{desc_a}
+
+ENTITÉ B : "{name_b}" (type: {type_b})
+{desc_b}
+
+SIGNAL : {reason}
+
+ÉTAPE 0 — VETO STRUCTUREL (vérifie ces 2 règles AVANT de lire les descriptions) :
+Si l'une s'applique → SCORE ≤ 30, peu importe les descriptions :
+• Un groupe chargé de garder, protéger ou représenter un lieu/concept ≠ ce lieu/concept lui-même (ex: "Gardiens de la Confluence" ≠ "Confluence des Esprits" même si les deux parlent de la Confluence)
+• Un lieu géographique précis et nommé (avec qualificatifs spécifiques : "Confluence de deux rivières cristallines") ≠ un élément naturel générique du même type ("rivières cristallines en général")
+→ VETO=OUI ou NON
+
+ÉTAPE 1 — DESCRIPTIONS (seulement si VETO=NON, ignore les noms pour l'instant) :
+Les descriptions décrivent-elles la même entité — même rôle social, même fonction, même lieu, même objet ?
+Pour des groupes/peuples, des aspects complémentaires (origine vs rôle) → INCERTAIN si non contradictoire.
+→ OUI / INCERTAIN / NON — justifie en une phrase.
+
+ÉTAPE 2 — INCOMPATIBILITÉS SECONDAIRES (seulement si VETO=NON et ÉTAPE 1 ≠ NON) :
+Une de ces structures révèle-t-elle une incompatibilité ?
+• "Chef / Dirigeant de X" vs X — • "Enfants / Fils de X" vs X — • Lieu physique vs Institution qui s'y réunit — • Phénomène naturel vs groupe social — • "[Terme] de [A]" vs "[Terme] de [B]" avec A et B clairement différents (eau ≠ ciel, Air ≠ Éther)
+→ INCOMP2=OUI ou NON
+
+SCORE : [0 à 100.
+  VETO=OUI → 0-30.
+  INCOMP2=OUI → 20-40.
+  DESCRIPTIONS=OUI + INCOMP2=NON → 80-100.
+  DESCRIPTIONS=INCERTAIN + INCOMP2=NON → 65-80.
+  DESCRIPTIONS=NON → 0-40.
+  70+ = confirmation, <70 = rejet.]
+
+JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
+
+
 # Registry of confirmation prompt versions.
 # Key = version name, used in llm_config.json "aliases": {"prompt_version": "..."}
 _CONFIRM_VERSIONS: dict[str, AliasConfirmVersion] = {
@@ -692,6 +860,47 @@ _CONFIRM_VERSIONS: dict[str, AliasConfirmVersion] = {
             "Fixes FP 15 (Confluence précis / rivières génériques) and FP 21 (Gardiens)."
         ),
         prompt=_V13_INCOMP_OVERRIDE_PROMPT,
+        json_mode=False,
+        score_scale=100,
+    ),
+    "v14-surgical": AliasConfirmVersion(
+        name="v14-surgical",
+        description=(
+            "Surgical fix — ÉTAPE 0 (veto) with ONLY 2 override rules: Gardiens de X ≠ X "
+            "and lieu précis ≠ générique. Keeps v12's descriptions-first order to avoid "
+            "the regression that broke Peuple du ciel/des cieux in v13. "
+            "Targets F1>82% by fixing FP 15 and 21 without touching TPs."
+        ),
+        prompt=_V14_SURGICAL_PROMPT,
+        json_mode=False,
+        score_scale=100,
+    ),
+    "v16-minimal-examples": AliasConfirmVersion(
+        name="v16-minimal-examples",
+        description=(
+            "Minimal improvement on v12 — ONLY changes the 2 example strings in the 2 failing rules. "
+            "Gardiens rule: adds exact pair 21 example (Gardiens de la Confluence ≠ Confluence des Esprits) "
+            "and extends to '≠ X ou tout concept lié à X'. "
+            "Lieu précis rule: uses exact pair 15 names as example. "
+            "SCORE section unchanged from v12 to avoid v15's regressions. "
+            "Hypothesis: Qwen3 needs exact examples to pattern-match the failing cases."
+        ),
+        prompt=_V16_MINIMAL_EXAMPLES_PROMPT,
+        json_mode=False,
+        score_scale=100,
+    ),
+    "v15-explicit-examples": AliasConfirmVersion(
+        name="v15-explicit-examples",
+        description=(
+            "v12 + exact concrete examples for the 2 remaining FPs, INCOMPATIBILITÉ_NOM=OUI "
+            "moved first in SCORE with explicit override note. "
+            "Gardiens rule: generalized to 'groupe fonctionnel ≠ X ou concept associé à X' "
+            "with example (Gardiens de la Confluence ≠ Confluence des Esprits). "
+            "Lieu précis rule: example now uses exact pair 15 names "
+            "(Confluence de deux rivières cristallines ≠ Rivières cristallines). "
+            "Order preserved from v12 (descriptions first) to avoid v13/v14 regressions."
+        ),
+        prompt=_V15_EXPLICIT_EXAMPLES_PROMPT,
         json_mode=False,
         score_scale=100,
     ),

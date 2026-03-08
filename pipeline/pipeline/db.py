@@ -194,3 +194,45 @@ def update_progress(
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (run_id, phase, civ_id, civ_name, total, current, unit_type, status, datetime.now().isoformat()),
     )
+
+
+def insert_turn_stats(
+    conn: sqlite3.Connection,
+    run_id: int,
+    turn_id: int,
+    source: str,
+    text_chars: int,
+    sys_prompt_chars: int,
+    chunks: int,
+    raw_entities: int,
+    after_dedup: int,
+    final_entities: int,
+    est_tokens: int,
+    est_cost_usd: float,
+) -> None:
+    """Insert or replace per-turn extraction stats.
+
+    source must be 'gm' or 'pj'. UNIQUE(run_id, turn_id, source) ensures idempotency.
+    PJ rows typically have raw/dedup/final = 0 (no entity extraction on PJ text).
+    """
+    conn.execute(
+        """INSERT OR REPLACE INTO pipeline_turn_stats
+           (run_id, turn_id, source, text_chars, sys_prompt_chars, chunks,
+            raw_entities, after_dedup, final_entities, est_tokens, est_cost_usd)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (run_id, turn_id, source, text_chars, sys_prompt_chars, chunks,
+         raw_entities, after_dedup, final_entities, est_tokens, est_cost_usd),
+    )
+
+
+def update_run_usage(
+    conn: sqlite3.Connection,
+    run_id: int,
+    total_tokens: int,
+    total_cost_usd: float,
+) -> None:
+    """Update pipeline_runs with final token/cost totals from the provider."""
+    conn.execute(
+        "UPDATE pipeline_runs SET total_tokens = ?, total_cost_usd = ? WHERE id = ?",
+        (total_tokens, total_cost_usd, run_id),
+    )

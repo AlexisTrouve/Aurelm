@@ -4,36 +4,36 @@
 
 | | |
 |---|---|
-| **Acquisition** | Tour 10 |
+| **Acquisition** | Tour 1 |
 | **Categorie** | Autre |
-| **Fiche narrative** | [Voir la page entite](../../entities/argile-vivante.md) |
+| **Re-mentionne** | Tours 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 |
+| **Fiche narrative** | [Voir la page entite](../../entities/argile-vive.md) |
 
-## Acquis en meme temps (Tour 10)
+## Acquis en meme temps (Tour 1)
 
-- [roche braise](roche-braise.md)
-- [lait de pierre](lait-de-pierre.md)
+- [burin en pierre](burin-en-pierre.md)
+- [maillets en bois](maillets-en-bois.md)
+- [ciseaux de bois au dents d obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md)
+- [rhombes](rhombes.md)
+- [lances](lances.md)
 
 ## Arbre chronologique
 
-**Tour 9** (precedent) : [artisanat](artisanat.md)
-**Tour 10** (actuel) : **argile vive**
-**Tour 11** (suivant) : [Regards-Libres](regards-libres.md), [Arène](arene.md)
+**Tour 1** (actuel) : **argile vive**
+**Tour 3** (suivant) : [ciseaux de bois au dents d'obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md)
 
 ## Meme categorie : Autre
 
-- [inventions/savoir-faire adoptes](inventions-savoir-faire-adoptes.md) (Tour 2)
-- [rhombes en pierre](rhombes-en-pierre.md) (Tour 7)
-- [roche braise](roche-braise.md) (Tour 10)
-- [lait de pierre](lait-de-pierre.md) (Tour 10)
-- [Regards-Libres](regards-libres.md) (Tour 11)
-- [Arène](arene.md) (Tour 11)
-- [pigments](pigments.md) (Tour 13)
-- [artefacts translucides](artefacts-translucides.md) (Tour 13)
-- [techniques de creusage](techniques-de-creusage.md) (Tour 13)
+- [burin en pierre](burin-en-pierre.md) (Tour 1)
+- [maillets en bois](maillets-en-bois.md) (Tour 1)
+- [ciseaux de bois au dents d obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md) (Tour 1)
+- [rhombes](rhombes.md) (Tour 1)
+- [ciseaux de bois au dents d'obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md) (Tour 3)
+- [ciseaux de bois aux dents d'obsidienne](ciseaux-de-bois-aux-dents-d-obsidienne.md) (Tour 8)
 
-## Extrait narratif
+## Contexte (Tour 1)
 
-> ...générations maintenant. On commence à deviner les alcôves qui accueilleront les artisans. Aujourd'hui, ce n'est que de la terre battue, le grés et l'argile. Personne ne vient l'accueillir. Il faut dire, à ce moment de la journée, la plupart sont au fond des cavernes, en train de creuser et découvrir jusq...
+La civilisation de la Confluence émerge d'un monde recouvert de neige, marquée par l'apparition de la vie et l'interaction avec des humains perdus.
 
 ---
 [Retour a l'arbre technologique](../technologies.md)

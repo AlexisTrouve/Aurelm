@@ -1306,6 +1306,133 @@ def generate_choices_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, 
     _write_page(out_path / "choices.md", content)
 
 
+def generate_subjects_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
+    """Generate subject tracking page for a civilization.
+
+    Creates civilizations/{civ_slug}/knowledge/subjects.md with:
+    - Open subjects summary (most useful for Arthur)
+    - Open subjects detail (MJ choices awaiting PJ, PJ initiatives awaiting MJ)
+    - Resolved subjects with resolution details
+    """
+    civ_slug = slugify(civ_name)
+
+    # Check if subject tables exist (migration may not have run)
+    try:
+        conn.execute("SELECT 1 FROM subject_subjects LIMIT 1")
+    except Exception:
+        return  # Tables don't exist yet
+
+    # Get subject stats
+    stats_rows = conn.execute(
+        """SELECT status, COUNT(*) as cnt
+           FROM subject_subjects WHERE civ_id = ?
+           GROUP BY status""",
+        (civ_id,),
+    ).fetchall()
+    stats = {row["status"]: row["cnt"] for row in stats_rows}
+    total = sum(stats.values())
+
+    if total == 0:
+        return  # No subjects to display
+
+    lines = [
+        "# Sujets MJ / PJ",
+        "",
+        f"Suivi des sujets ouverts et resolus pour **{civ_name}**.",
+        "",
+        "## Resume",
+        "",
+        f"| Statut | Nombre |",
+        f"|--------|--------|",
+        f"| Ouverts | {stats.get('open', 0)} |",
+        f"| Resolus | {stats.get('resolved', 0)} |",
+        f"| Remplaces | {stats.get('superseded', 0)} |",
+        f"| Abandonnes | {stats.get('abandoned', 0)} |",
+        f"| **Total** | **{total}** |",
+        "",
+    ]
+
+    # Open subjects (most useful section — displayed first)
+    open_rows = conn.execute(
+        """SELECT s.id, s.title, s.description, s.direction, s.category,
+                  t.turn_number
+           FROM subject_subjects s
+           JOIN turn_turns t ON s.source_turn_id = t.id
+           WHERE s.civ_id = ? AND s.status = 'open'
+           ORDER BY t.turn_number, s.id""",
+        (civ_id,),
+    ).fetchall()
+
+    if open_rows:
+        lines.append("## Sujets Ouverts")
+        lines.append("")
+
+        for row in open_rows:
+            # Direction arrow: MJ->PJ or PJ->MJ
+            arrow = "MJ -> PJ" if row["direction"] == "mj_to_pj" else "PJ -> MJ"
+            lines.append(f"### {row['title']}")
+            lines.append("")
+            lines.append(f"*Tour {row['turn_number']} | {arrow} | {row['category']}*")
+            lines.append("")
+
+            if row["description"]:
+                lines.append(f"{row['description']}")
+                lines.append("")
+
+            # Load options
+            opt_rows = conn.execute(
+                """SELECT option_number, label, description, is_libre
+                   FROM subject_options WHERE subject_id = ?
+                   ORDER BY option_number""",
+                (row["id"],),
+            ).fetchall()
+
+            if opt_rows:
+                for opt in opt_rows:
+                    libre_tag = " *(libre)*" if opt["is_libre"] else ""
+                    lines.append(f"- **Option {opt['option_number']}**: {opt['label']}{libre_tag}")
+                    if opt["description"]:
+                        lines.append(f"    - {opt['description']}")
+                lines.append("")
+
+    # Resolved subjects
+    resolved_rows = conn.execute(
+        """SELECT s.id, s.title, s.description, s.direction, s.category,
+                  t.turn_number AS source_turn,
+                  r.resolution_text, r.confidence,
+                  rt.turn_number AS resolved_turn,
+                  o.label AS chosen_option
+           FROM subject_subjects s
+           JOIN turn_turns t ON s.source_turn_id = t.id
+           LEFT JOIN subject_resolutions r ON r.subject_id = s.id
+           LEFT JOIN turn_turns rt ON r.resolved_by_turn_id = rt.id
+           LEFT JOIN subject_options o ON r.chosen_option_id = o.id
+           WHERE s.civ_id = ? AND s.status = 'resolved'
+           ORDER BY t.turn_number, s.id""",
+        (civ_id,),
+    ).fetchall()
+
+    if resolved_rows:
+        lines.append("## Sujets Resolus")
+        lines.append("")
+
+        for row in resolved_rows:
+            arrow = "MJ -> PJ" if row["direction"] == "mj_to_pj" else "PJ -> MJ"
+            lines.append(f'!!! success "T{row["source_turn"]} -> T{row["resolved_turn"] or "?"} | {row["title"]}"')
+            lines.append(f"    *{arrow} | {row['category']}*")
+            lines.append("")
+            if row["chosen_option"]:
+                lines.append(f"    **Option choisie**: {row['chosen_option']}")
+                lines.append("")
+            if row["resolution_text"]:
+                lines.append(f"    {row['resolution_text']}")
+                lines.append("")
+
+    content = "\n".join(lines)
+    out_path = Path(output_dir) / "civilizations" / civ_slug / "knowledge"
+    _write_page(out_path / "subjects.md", content)
+
+
 def generate_relations_page(conn: sqlite3.Connection, civ_id: int, civ_name: str, output_dir: str) -> None:
     """Generate typed relations page for a civilization.
 
@@ -3090,7 +3217,8 @@ def generate_wiki(
             generate_geography_page(conn, civ["id"], civ["name"], output_dir)
             generate_choices_page(conn, civ["id"], civ["name"], output_dir)
             generate_relations_page(conn, civ["id"], civ["name"], output_dir)
-            stats["pages_generated"] += 6
+            generate_subjects_page(conn, civ["id"], civ["name"], output_dir)
+            stats["pages_generated"] += 7
 
             # Phase 6: Generate analytics page
             generate_analytics_page(conn, civ["id"], civ["name"], output_dir)
@@ -3156,6 +3284,7 @@ def _build_nav(civs: list) -> list:
                     {"Geographie": f"civilizations/{slug}/knowledge/geography.md"},
                     {"Choix": f"civilizations/{slug}/knowledge/choices.md"},
                     {"Relations": f"civilizations/{slug}/knowledge/relations.md"},
+                    {"Sujets": f"civilizations/{slug}/knowledge/subjects.md"},
                     {"Analytics": f"civilizations/{slug}/knowledge/analytics.md"},
                 ]},
             ]

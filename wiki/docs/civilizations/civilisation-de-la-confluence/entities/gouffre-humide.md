@@ -6,98 +6,92 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 9 |
-| **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 1 (1 mentions) |
+| **Mentions totales** | 5 |
+| **Tours actifs** | 13-17 (5 tours) |
+| **Pic d'activite** | Tour 13 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ████████████████████  ← Pic
-Tour  2  ████████████████████
-Tour  3  ████████████████████
-Tour  5  ████████████████████
-Tour  8  ████████████████████
-Tour 10  ████████████████████
-Tour 12  ████████████████████
-Tour 13  ████████████████████
+Tour 13  ████████████████████  ← Pic
 Tour 14  ████████████████████
+Tour 15  ████████████████████
+Tour 16  ████████████████████
+Tour 17  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Faucons Chasseurs** (Creatures) — 9 tours
-- 🔵 **Cercle des Sages** (Civilisations) — 9 tours
-- 🔵 **Argile Vivante** (Ressources) — 8 tours
-- 🔵 **Cheveux de Sang** (Creatures) — 3 tours
-- 🔵 **Ailes-Grises** (Castes) — 2 tours
+- 🔵 **Ailes-Grises** (Castes) — 5 tours
+- 🔵 **Enfants des échos** (Castes) — 4 tours
+- 🔵 **Tailleurs de pierre** (Castes) — 3 tours
+- 🔵 **Passes-bien** (Castes) — 3 tours
+- 🔵 **Sans-ciels** (Castes) — 3 tours
 
 ## Description
 
-Gouffre Humide est une antre des échos située dans les profondeurs de la Terre. Elle joue un rôle important pour le peuple qui y vit, notamment pour leur économie et leur santé. Les habitants de Gouffre Humide dépendent du poisson de la confluence pour survivre, ce qui fait que l'antre est très sensible aux changements dans les échanges avec la surface. Les halls sacrés de Gouffre Humide sont des lieux religieux importants pour le peuple qui adore les ancètres.
+Le Gouffre Humide est un lieu souterrain important, probablement un antre ou une grotte profonde, connu pour ses échos et son rôle vital dans la survie des colonies des profondeurs. Il est relié à la confluence, un point d'eau essentiel pour l'alimentation des habitants. Le Gouffre Humide est également un site sacré, lié à des croyances religieuses et à l'histoire ancienne de la région, et il abrite un Foyer du savoir où naît un art nouveau. Il est traversé par des marcheurs, des chercheurs, et des groupes en déplacement.
 
 ## Chronologie
 
-**Tour 12: Les villageois aplanissent les surfaces et taillent l'escalier pour faciliter l'accès à Gouffre Humide, ce qui accélère le trafic piéton entre la confluence et l'antre.**
+**Tour 13: Le Gouffre Humide est un lieu essentiel pour les habitants des profondeurs, relié à la confluence par un escalier construit par plusieurs générations. Il est vital pour leur survie, car l'absence de poisson de la confluence peut provoquer la maladie des Antres.**
 
-**Tour 13: La descente dans les entrailles de Gouffre Humide est une expérience mystique pour les habitants de la surface, tandis que les enfants des échos se préparent à participer aux opérations de recherche du groupe disparu.**
+**Tour 14: Le Gouffre Humide est un lieu mystique et inconnu pour les habitants de la surface, où les groupes en mission de recherche doivent descendre. Les enfants des échos y sont présents, armés de pioches et de ciseaux à pierre.**
 
-**Tour 14: Les ailes grises visitent les halls sacrés de Gouffre Humide, qui sont considérés comme un peuple précédent par le peuple qui adore les ancètres.**
+**Tour 15: Le Gouffre Humide abrite des halls sacrés où les ailes grises effectuent des cérémonies religieuses. Ces lieux sont vénérés comme des traces des premiers ancêtres, suscitant à la fois révérence et inquiétude.**
+
+**Tour 16: Le Gouffre Humide est le berceau d'un art nouveau, né au Foyer du savoir, pour documenter et interpréter la Fresque des Âges. Les enfants des échos y ont un rôle central dans sa création.**
+
+**Tour 17: Le Gouffre Humide est le point de destination d'une longue marche des captifs, qui y parviennent après plusieurs jours de voyage. C'est là que les premiers échanges linguistiques ont lieu avec un aile-grise curieux.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 1**
+**Tour 13**
 > "Gouffre Humide"
 >
-> Contexte : Gouffre Humide...
+> Contexte : lieu avec des statues et bas-reliefs...
 
-**Tour 2**
+**Tour 14**
 > "Gouffre Humide"
 >
-> Contexte : Gouffre Humide...
+> Contexte : expérience mystique...
 
-**Tour 3**
+**Tour 15**
 > "Gouffre Humide"
 >
-> Contexte : Gouffre Humide...
+> Contexte : halls sacrés...
 
-**Tour 5**
+**Tour 16**
 > "Gouffre Humide"
 >
-> Contexte : Gouffre Humide...
+> Contexte : origine de l'art nouveau...
 
-**Tour 8**
+**Tour 17**
 > "Gouffre Humide"
 >
-> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+> Contexte : marche difficile pour rejoindre Gouffre Humide...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 1**
-
-    **Tour 2**
-
-    **Tour 3**
-
-    **Tour 5**
-
-    **Tour 8**
-
-    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
-
-    **Tour 10**
-
-    **Tour 12**
+    **Tour 13**
 
     > ...ravail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des di...
 
-    **Tour 13**
+    **Tour 14**
 
     > Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en...
 
-    **Tour 14**
+    **Tour 15**
 
     > Les ailes grises se succèdent dans les halls sacrés de Gouffre Humide. La valse des hommes de foi est justifiée d'abord par l'importance des lieux. Ton peuple qui adore les ancêtres voit dans ces halls oubliés un peuple qui vous a précédé. Avec le temps, on les qualifient même de premier ancêtre, à la fois avec révérence, fierté, mais surtout inquiétude. Le secret de leur chute interroge et influe ton peuple qui se sait maintenant promis à pareil destin s'il ne par...
+
+    **Tour 16**
+
+    > Un art nouveau, né dans les profondeurs de Gouffre Humide, au cœur du Foyer du savoir. C'est la nécessité de consigner l'aspect mais aussi les interprétations donné à la Fresque des Âges qui a précipité sa mise au point. Les rumeurs veulent qu'au départ, ça n'ait été que la tentative par certains enfants des échos de représenter des éléments de la fresque, pour en assurer la conservation. Les enfants des échos ont l'habitude de travailler la pierre. Leu...
+
+    **Tour 17**
+
+    > Le voyage n'est pas terminé pour les captifs. Ils entreprennent une grande marche pour rejoindre Gouffre Humide dans les sommets. Une marche difficile pour ces marins, mais une première occasion d'échanger, pendant les longs jours qui nécessitent pour arriver dans les hauteurs. On doit la compréhension des premiers mots à un aile-grise particulièrement curieux qui rejoint le groupe sur son passage. On découvre alors qu'ils se font appeler "Nanzagouet". Pas ce groupe, mais leur peuple dans son ensemble. Qua...

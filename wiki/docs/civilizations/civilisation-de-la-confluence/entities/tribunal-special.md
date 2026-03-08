@@ -19,20 +19,18 @@ Tour  5  ████████████████████  ← Pic
 
 ## Description
 
-Le tribunal spécial est une institution judiciaire qui joue un rôle crucial dans la vie sociale de la tribu. Il est chargé d'administrer la justice, notamment en matière de droits des femmes et enfants. Le tribunal spécial a le pouvoir de prendre des décisions importantes concernant les mariages, les familles et l'héritage.
+Le Tribunal spécial est une institution chargée de trancher des affaires familiales, notamment en cas de conflits entre époux. Il joue un rôle clé dans la régulation des relations conjugales et parentales, en permettant à une femme de se séparer de son mari si celui-ci ne remplit pas ses obligations. Cette institution est ancrée dans la sacralité des liens familiaux et spirituels, et son intervention peut entraîner des conséquences importantes pour la cohésion de la famille et la protection des esprits ancestraux.
 
 ## Chronologie
 
-**Tour 3: Le tribunal spécial n'est pas mentionné dans ce tour, mais il est probablement l'institution responsable d'administrer la justice et de protéger les droits des femmes et enfants.**
-
-**Tour 5: Le tribunal spécial est impliqué dans une procédure humiliante qui peut aboutir au retrait d'une femme et de son enfant si le mari ne subvient pas à leurs besoins. Cette procédure renforce la notion de famille en mettant en avant l'importance des liens spirituels entre les membres.**
+**Tour 5: Dans le Tour 5, le Tribunal spécial est mentionné dans le contexte d'une procédure humiliante qui permet à une femme de perdre son mari et son enfant si celui-ci ne subvient pas à leurs besoins. L'institution joue donc un rôle de régulation des relations conjugales et de préservation de la cohésion familiale.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 5**
 > "Tribunal spécial"
 >
-> Contexte : procédure humiliante devant le tribunal spécial...
+> Contexte : procédure humiliante...
 
 ??? note "Sources -- Passages originaux"
 

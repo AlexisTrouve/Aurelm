@@ -6,108 +6,93 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 12 |
-| **Tours actifs** | 1-14 (14 tours) |
-| **Pic d'activite** | Tour 12 (2 mentions) |
-| **Moyenne** | 1.1 mentions/tour |
+| **Mentions totales** | 6 |
+| **Tours actifs** | 3-19 (17 tours) |
+| **Pic d'activite** | Tour 3 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  1  ██████████          
-Tour  2  ██████████          
-Tour  3  ██████████          
-Tour  5  ██████████          
-Tour  8  ██████████          
-Tour  9  ██████████          
-Tour 10  ██████████          
-Tour 11  ██████████          
-Tour 12  ████████████████████  ← Pic
-Tour 13  ██████████          
-Tour 14  ██████████          
+Tour  3  ████████████████████  ← Pic
+Tour  9  ████████████████████
+Tour 15  ████████████████████
+Tour 16  ████████████████████
+Tour 18  ████████████████████
+Tour 19  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Cercle des Sages** (Civilisations) — 9 tours
-- 🔵 **Gouffre Humide** (Lieux) — 9 tours
-- 🔵 **Argile Vivante** (Ressources) — 8 tours
-- 🔵 **Cheveux de Sang** (Creatures) — 3 tours
+- 🔵 **Ciels-clairs** (Lieux) — 4 tours
+- 🔵 **Enfants des échos** (Castes) — 3 tours
+- 🔵 **Passes-bien** (Castes) — 3 tours
 - 🔵 **Ailes-Grises** (Castes) — 3 tours
+- 🔵 **Sans-ciels** (Castes) — 3 tours
 
 ## Description
 
-Les Faucons Chasseurs sont une équipe formée par l'Assemblée des Chefs pour investiguer et rassembler les indices de la tragédie qui a eu lieu dans la nuit. Ils ont pour mission de capturer les responsables et de reconstituer la vérité. Ils sont composés de Faucons Chasseurs, d'Enfants des Échos armés et d'Aile-Grise avec rhombes.
+Les Faucons Chasseurs sont un groupe de chasseurs ou d'observateurs spécialisés dans la traque et l'observation. Ils jouent un rôle de surveillance et de reconnaissance, notamment pour traquer des individus inconnus ou surveiller des activités humaines. Leur rôle est essentiel dans la protection des terres et des ressources, et ils sont souvent sollicités pour leurs compétences en observation et en traque.
 
 ## Chronologie
 
-**Tour 9: Les Faucons Chasseurs sont mentionnés dans le texte, mais pas explicitement comme entité.**
+**Tour 16: Un groupe de faucons chasseurs est chargé de traquer des hommes inconnus et de découvrir leur origine. Leur mission est de surveiller et d'identifier ces individus, probablement en raison d'une menace potentielle.**
 
-**Tour 11: L'Assemblée des Chefs crée les Faucons Chasseurs pour rassembler les indices de la tragédie. Ils sont chargés de capturer les responsables dans les montagnes.**
+**Tour 18: Les faucons chasseurs sont actifs dans leurs hivernages, traquant des animaux rares et dangereux. Ils servent également de témoins et de validateurs de l'autorité de certains individus, qui cherchent à prouver leur leadership.**
 
-**Tour 12: Les Faucons Chasseurs sont organisés en quatre équipes pour explorer les galeries souterraines et traquer le danger.**
-
-**Tour 14: Le rôle des Faucons Chasseurs est de traquer un groupe d'hommes inconnus qui ont commis une série de crimes.**
+**Tour 19: Des faucons chasseurs accompagnent des artisans dans l'observation des navires et des radeaux. Leur rôle est de surveiller avec attention et de fournir un soutien visuel à l'analyse des créations des invités.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 1**
-> "Faucons Chasseurs"
->
-> Contexte : Faucons Chasseurs...
-
-**Tour 2**
-> "Faucons Chasseurs"
->
-> Contexte : Faucons Chasseurs...
 
 **Tour 3**
 > "Faucons Chasseurs"
 >
-> Contexte : Faucons Chasseurs...
+> Contexte : lieux nommes...
 
-**Tour 5**
+**Tour 9**
 > "Faucons Chasseurs"
 >
-> Contexte : Faucons Chasseurs...
+> Contexte : non mentionnés ici mais exemple...
 
-**Tour 8**
+**Tour 15**
 > "Faucons Chasseurs"
 >
-> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+> Contexte : groupes de chasseurs...
+
+**Tour 16**
+> "Faucons Chasseurs"
+>
+> Contexte : groupe de faucons chasseurs que de les traquer...
+
+**Tour 18**
+> "Faucons Chasseurs"
+>
+> Contexte : redoublent d'audace dans leur traque...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 1**
-
-    **Tour 2**
-
     **Tour 3**
 
-    **Tour 5**
-
-    **Tour 8**
-
-    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+    > ...lieux nommes...
 
     **Tour 9**
 
-    > ...Les Faucons Chasseurs sont mentionnés dans le texte, mais pas explicitement comme entité...
+    > ...non mentionnés ici mais exemple...
 
-    **Tour 10**
+    **Tour 15**
 
-    **Tour 11**
+    > ...groupes de chasseurs...
 
-    > ..., les accusations qui fusent, la suspicion qui divise déjà nos peuples. Cette nuit d'orage ne doit pas devenir celle de notre fracture. Je m'avance dans le cercle et lève la main pour apaiser les voix. Les ancêtres me soufflent que de cette tragédie doit naître une voie nouvelle. Nous ne pouvons nous contenter de la vengeance aveugle ni de l'indécision paralysante. Que naissent dès cette nuit les Faucons Chasseurs ! Je désigne parmi les ciels-clairs ceux dont le courage, la force et la droiture sont reconnus de tous. L'Assemblée des Chefs les guidera, mais leur mission commence maintenant : rassembler chaque indice, interroger chaque témoin avec l'aide des Regards-Libres, reconstituer la vérité de cette nuit funeste. Car avant de juger, nous devons savoir. Et ils devront aussi capturer dans nos montagnes u...
-
-    **Tour 12**
-
-    > ...te de comprendre ce qui menace nos colonies souterraines. L'heure n'est ni à la panique ni à l'insouciance, mais à l'action mesurée et organisée. En tant qu'Arbitre des Esprits, il est de mon devoir de descendre personnellement coordonner cette mission. Si un danger rôde dans nos profondeurs, nous devons l'affronter avec courage et sagesse. Organisation : Quatre équipes de 6 personnes chacune - 3 Faucons Chasseurs, 2 Enfants des Échos armés, 1 Aile-Grise avec rhombes pour les rituels et communications. Je mène l'équipe 1. Communication : Système de rhombes espacés entre les équipes et vers la surface. Codes simples pour signaler la situation. Progression : Mon équipe et l'équipe 2 explorent deux branches différentes. L'équipe 3 sécurise l'entrée des galeries. L'équipe 4 reste en réserve au village, prête à...
-
-    **Tour 13**
-
-    **Tour 14**
+    **Tour 16**
 
     > **Option 1:** Il faut être prudent, s'il venait à revenir, la consigne doit être partagée parmi les pécheurs qu'ils doivent se cacher avant d'être aperçus. On ne connaît rien de ces hommes ni de leur intention. Ce sera le rôle d'un groupe de faucons chasseurs que de les traquer et voir d'où ils viennent
+
+    **Tour 18**
+
+    > ...rtisans s'intéressent à la construction de bois, repêchée dans la vase et acheminée jusqu'ici avec beaucoup de difficulté. Il y a assez peu de respect pour cette construction qui ne montre aucun amour pour la matière où le travail effectué. Certains enfants du courant montrent malgré tout une certaine admiration quant à la technique elle-même qui donne un bois si lisse. Dans leurs hivernages, les faucons chasseurs redoublent d'audace dans leur traque. C'est pourtant un moment où les animaux se font plus rares, plus dangereux. Mais chacun cherchent à prouver à leur confrère qu'ils ont en eux la force de les diriger. Beaucoup viennent à toi comme pour te prendre à témoins de leur succès ou pour officialiser leur autorité. Tu ne te doutes pas que dès l'hiver passé, ils seront immédiatement sollicités.
+
+    **Tour 19**
+
+    > ...ent avec attention les navires dans la baie. Ceux-ci sont restés à distance respectable du rivage et une poignée de gardes surveillent les radeaux qu'ils ont utilisés pour rejoindre vos terres. Heureusement, il ne semble pas y avoir de désaccords quant au fait que ces terres sont bien les vôtres. Un aréopage d'artisans observe minutieusement les créations flottantes de vos invités, avec l'aide de faucons chasseurs à l'œil acérés et en faisant la dictée a des … appliqués. Il y a une certaine morgue dans leurs observations, face à la qualité du travail de leurs homologues venus d'ailleurs. Emplis de certitudes, ils se voient déjà altérer la conception de ces engins pour les faires leur.

@@ -1,32 +1,30 @@
-# Lances
+# lances
 
 *Technologie* -- Civilisation de la Confluence
 
 | | |
 |---|---|
-| **Acquisition** | Tour 6 |
+| **Acquisition** | Tour 1 |
 | **Categorie** | Outils de chasse |
-| **Re-mentionne** | Tours 6, 9, 11, 14 |
+| **Re-mentionne** | Tours 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19 |
 | **Fiche narrative** | [Voir la page entite](../../entities/lances.md) |
 
-## Acquis en meme temps (Tour 6)
+## Acquis en meme temps (Tour 1)
 
-- [Larmes du Ciel](larmes-du-ciel.md)
-- [Hameçons et casiers à poisson](hamecons-et-casiers-a-poisson.md)
+- [burin en pierre](burin-en-pierre.md)
+- [maillets en bois](maillets-en-bois.md)
+- [ciseaux de bois au dents d obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md)
+- [rhombes](rhombes.md)
+- [argile vive](argile-vive.md)
 
 ## Arbre chronologique
 
-**Tour 5** (precedent) : [Pointes de flèches](pointes-de-fleches.md)
-**Tour 6** (actuel) : **Lances**
-**Tour 7** (suivant) : [Rhombes](rhombes.md)
-
-## Meme categorie : Outils de chasse
-
-- [Gourdins](gourdins.md) (Tour 2)
+**Tour 1** (actuel) : **lances**
+**Tour 3** (suivant) : [ciseaux de bois au dents d'obsidienne](ciseaux-de-bois-au-dents-d-obsidienne.md)
 
 ## Extrait narratif
 
-> ...veaux outils et les techniques de polissage nécessitent de préparer les roches striés sur lesquels ils sont travaillés. Du filet de pêche lesté, à la lance à la pointe polie, aux serpes grossières taillées dans des os en passant par les délicats hameçons et casiers à poisson.
+> Blanc sur blanc. Ton premier souvenir, est blanc. Pas un blanc éclatant, non. Un blanc grisâtre. De la neige jusqu'à l'horizon. Et au-delà: un ciel terne e...
 
 ---
 [Retour a l'arbre technologique](../technologies.md)

@@ -46,8 +46,12 @@ def detect_turn_boundaries(
 
 def _is_turn_boundary(prev: RawMessage, curr: RawMessage, gm_author_id: str) -> bool:
     """Determine if a message starts a new turn."""
-    # GM posting after a non-GM message = new turn
+    # GM posting after a non-GM message = start of new GM turn
     if curr.author_id == gm_author_id and prev.author_id != gm_author_id:
+        return True
+    # Non-GM posting after GM = player response starts its own chunk.
+    # Keeps MJ and PJ content separate so extraction runs on each independently.
+    if prev.author_id == gm_author_id and curr.author_id != gm_author_id:
         return True
     # TODO: Time gap detection
     # TODO: Content marker detection (headers, separators)

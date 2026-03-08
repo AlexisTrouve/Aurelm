@@ -27,7 +27,7 @@ from .loader import load_directory
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
-from .summarizer import summarize_turn, AuthorContent
+from .summarizer import summarize_turn, AuthorContent, TECH_ERAS, FANTASY_LEVELS
 from .entity_profiler import build_entity_profiles
 from .alias_resolver import resolve_aliases
 from .fact_extractor import FactExtractor
@@ -188,6 +188,11 @@ def run_pipeline(
         # Index matches build_turn_pairs() sequential numbering.
         gm_seq_to_turn_id: dict[int, int] = {}
 
+        # Tech/fantasy context carried forward turn by turn.
+        # Seeded from the last processed turn in DB (for incremental runs),
+        # or defaults to neolithique/realiste for a fresh run.
+        prev_tech_era, prev_fantasy_level = _get_last_turn_context(conn, civ_id)
+
         for i, chunk in enumerate(chunks):
             turn_text = "\n\n".join(m.content for m in chunk.messages)
             raw_ids = json.dumps([m.id for m in chunk.messages])
@@ -221,6 +226,8 @@ def run_pipeline(
                     segment_dicts, raw_content,
                     entity_lookup=entity_lookup,
                     validation_model=validation_model,
+                    prev_tech_era=prev_tech_era,
+                    prev_fantasy_level=prev_fantasy_level,
                 )
                 usage_after = llm_provider.get_usage_snapshot()
 
@@ -290,20 +297,30 @@ def run_pipeline(
 
             # Summarize -- multi-call: 1 LLM call per author
             author_contents = _split_by_author(chunk.messages, gm_author_id)
+            # Summarize + tag in a single GM LLM call (merged prompt).
+            # prev_tech_era/prev_fantasy_level are carried forward turn by turn
+            # so the LLM can reason about progression from the previous turn.
             summary = summarize_turn(
                 turn_text, model=summarization_model, use_llm=use_llm,
                 civ_name=civ_name, player_name=player_name,
                 author_contents=author_contents if use_llm else None,
                 provider=llm_provider,
+                prev_tech_era=prev_tech_era,
+                prev_fantasy_level=prev_fantasy_level,
             )
 
-            # Persist summary + structured facts
+            # Persist summary + structured facts + tags (all from summary object)
             update_fields = {
                 "summary": summary.short_summary,
                 "detailed_summary": summary.detailed_summary,
                 "key_events": json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
                 "choices_made": json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
                 "processed_at": datetime.now().isoformat(),
+                "thematic_tags": json.dumps(summary.thematic_tags, ensure_ascii=False),
+                "tech_era": summary.tech_era,
+                "tech_era_reasoning": summary.tech_era_reasoning,
+                "fantasy_level": summary.fantasy_level,
+                "fantasy_level_reasoning": summary.fantasy_level_reasoning,
             }
 
             if structured_facts:
@@ -319,7 +336,9 @@ def run_pipeline(
                    SET summary = ?, detailed_summary = ?,
                        key_events = ?, choices_made = ?, processed_at = ?,
                        media_links = ?, technologies = ?, resources = ?,
-                       beliefs = ?, geography = ?, choices_proposed = ?
+                       beliefs = ?, geography = ?, choices_proposed = ?,
+                       thematic_tags = ?, tech_era = ?, tech_era_reasoning = ?,
+                       fantasy_level = ?, fantasy_level_reasoning = ?
                    WHERE id = ?""",
                 (
                     update_fields["summary"],
@@ -333,9 +352,18 @@ def run_pipeline(
                     update_fields.get("beliefs"),
                     update_fields.get("geography"),
                     update_fields.get("choices_proposed"),
+                    update_fields["thematic_tags"],
+                    update_fields["tech_era"],
+                    update_fields["tech_era_reasoning"],
+                    update_fields["fantasy_level"],
+                    update_fields["fantasy_level_reasoning"],
                     turn_id,
                 ),
             )
+
+            # Carry forward context for the next turn
+            prev_tech_era = summary.tech_era
+            prev_fantasy_level = summary.fantasy_level
 
             # Mark turn as processed
             mark_turn_processed(conn, turn_id, run_id)
@@ -907,6 +935,23 @@ def _get_next_turn_number(conn, civ_id: int) -> int:
         (civ_id,),
     ).fetchone()
     return row[0]
+
+
+def _get_last_turn_context(conn, civ_id: int) -> tuple[str, str]:
+    """Retrieve tech_era and fantasy_level from the most recent processed turn.
+
+    Used to seed the carry-forward context at the start of a run.
+    Falls back to defaults (neolithique / realiste) if no prior turns exist.
+    """
+    row = conn.execute(
+        """SELECT tech_era, fantasy_level FROM turn_turns
+           WHERE civ_id = ? AND tech_era IS NOT NULL
+           ORDER BY turn_number DESC LIMIT 1""",
+        (civ_id,),
+    ).fetchone()
+    if row:
+        return row[0] or "neolithique", row[1] or "realiste"
+    return "neolithique", "realiste"
 
 
 def _is_better_display_name(new_name: str, stored_name: str) -> bool:

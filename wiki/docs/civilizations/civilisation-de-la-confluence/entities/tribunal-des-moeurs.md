@@ -1,4 +1,4 @@
-# Tribunal des Moeurs
+# Tribunal des mœurs
 
 *Institutions* -- Civilisation de la Confluence
 
@@ -7,92 +7,93 @@
 | | |
 |---|---|
 | **Mentions totales** | 7 |
-| **Tours actifs** | 4-14 (11 tours) |
-| **Pic d'activite** | Tour 8 (2 mentions) |
-| **Moyenne** | 1.2 mentions/tour |
+| **Tours actifs** | 7-15 (9 tours) |
+| **Pic d'activite** | Tour 7 (2 mentions) |
+| **Moyenne** | 1.4 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  4  ██████████          
-Tour  8  ████████████████████  ← Pic
-Tour 11  ██████████          
-Tour 12  ██████████          
-Tour 13  ██████████          
-Tour 14  ██████████          
+Tour  7  ████████████████████  ← Pic
+Tour  8  ██████████          
+Tour  9  ██████████          
+Tour 12  ████████████████████
+Tour 15  ██████████          
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Cercle des Sages** (Institutions) — 5 tours
-- 🔵 **Faucons Chasseurs** (Castes) — 4 tours
-- 🔵 **Loi du Sang et de la Bete** (Belief) — 3 tours
-- 🔵 **Assemblée des Chefs** (Institutions) — 2 tours
-- 🔵 **Arbitre des Esprits** (Personnages) — 2 tours
+- 🔵 **Enfants du Courant** (Castes) — 4 tours
+- 🔵 **Rhombes miniatures** (Technologies) — 4 tours
+- 🔵 **Regards-Libres** (Creatures) — 4 tours
+- 🔵 **Cercle des Sages** (Institutions) — 4 tours
+- 🔵 **Rhombes** (Technologies) — 4 tours
 
 ## Description
 
-Le Tribunal des Mœurs est une institution chargée de juger les affaires morales. Il s'agit d'un tribunal spécial créé en dehors du cercle des sages, qui a pour rôle de déterminer la culpabilité dans les cas où une vie est ôtée sans cause juste. Ses décisions sont influencées par les Lois du Sang et de la Bête, qui prévoient l'épreuve de l'arène pour établir la vérité.
+Le Tribunal des mœurs est une institution chargée de rendre des décisions importantes concernant les comportements et les conflits au sein de la tribu. Il est composé de sages qui sont courus par les membres de la tribu, et il joue un rôle central dans la résolution des disputes, notamment celles impliquant des actes graves comme l'assassinat. Il est mentionné comme étant un lieu de création, mais son fonctionnement est encore en évolution, car les lois et traditions ne sont pas prêtes à gérer certains cas complexes.
 
 ## Chronologie
 
-**Tour 4: Un tribunal spécial est créé, en dehors du cercle des sages.**
+**Tour 7: Le Tribunal des mœurs prend une place croissante dans la tribu, avec des places de plus en plus importantes. Les membres de la tribu s'organisent en groupes pour influencer ses décisions collectivement.**
 
-**Tour 8: Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant, tandis que le Tribunal des Mœurs est mentionné comme un entité qui valide chacune des décisions avec l'aide de l'Aurore.**
+**Tour 8: Le Tribunal des mœurs est impliqué dans la prise de décisions importantes, bien que le texte ne précise pas le contenu de ces décisions.**
 
-**Tour 11: Le Tribunal des Mœurs doit évoluer pour répondre au défi sans précédent posé par une affaire mortelle. Le tribunal nomme des Proclamateurs selon la droiture de leur cœur, qui appliqueront les Lois du Sang et de la Bête.**
+**Tour 9: Le Tribunal des mœurs est décrit comme un lieu de création, bien que le contexte exact de cette création ne soit pas détaillé.**
 
-**Tour 14: Un tribunal qui juge les affaires morales est mentionné dans le contexte de l'Assemblée des Chefs**
+**Tour 12: Le Tribunal des mœurs doit statuer sur une affaire grave impliquant un meurtre, mais les lois et traditions ne sont pas préparées à gérer ce type de cas.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 4**
+**Tour 7**
+> "Tribunal des mœurs"
+>
+> Contexte : places au tribunal des mœurs...
+
+**Tour 7**
 > "Tribunal des Moeurs"
 >
-> Contexte : Un tribunal spécial est créé, en dehors du cercle des sages...
+> Contexte : places importantes...
 
 **Tour 8**
 > "Tribunal des Moeurs"
 >
-> Contexte : Tribunal des Moeurs...
+> Contexte : décisions du Tribunal de moeurs...
 
-**Tour 8**
-> "Tribunal de Moeurs"
->
-> Contexte : Tribunal de Moeurs...
-
-**Tour 11**
+**Tour 9**
 > "Tribunal des Mœurs"
 >
-> Contexte : Gardien de la justice...
+> Contexte : lieu de création...
 
 **Tour 12**
-> "Tribunal des Moeurs"
+> "Tribunal des mœurs"
 >
-> Contexte : pas mentionné explicitement mais évoqué dans le contexte de l'Assemblée des Chefs...
+> Contexte : le Tribunal des mœurs devra bientôt statuer...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 4**
+    **Tour 7**
 
-    > ...Un tribunal spécial est créé, en dehors du cercle des sages...
+    > Ces derniers sont uniquement issus des rends du peuple des cieux. Naturellement, ils prennent une place plus importante dans le fonctionnement de la tribus qui se fait sans cesse plus large. Le cercle de ses sages se faits courtisés, les places au tribunal des mœurs se font plus importantes, des groupes se rapprochent les uns des autres pour pouvoir porter leur voix collectivement plutôt que d'être étouffé parmis toutes les autres.
+
+    > ...places importantes...
 
     **Tour 8**
 
-    > Au son des rhombes, les processions rituelles se multiplient alors que les nombreuses institutions que tu as participé à établir entre en concurrence. Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant. Les voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs. Les Gardiens de la confluence de par leur position estiment être indépendants de toutes les décisions des villageois. Anticipant le conflit, tu leur indique par voie de présages que …
+    > ...décisions du Tribunal de moeurs...
 
-    **Tour 11**
+    **Tour 9**
 
-    > ...idera, mais leur mission commence maintenant : rassembler chaque indice, interroger chaque témoin avec l'aide des Regards-Libres, reconstituer la vérité de cette nuit funeste. Car avant de juger, nous devons savoir. Et ils devront aussi capturer dans nos montagnes une bête sacrée - car si la culpabilité est établie, seule l'épreuve de l'arène révélera si les ancêtres protègent encore l'accusé. Le Tribunal des Mœurs doit évoluer pour ce défi sans précédent. J'y nomme des Proclamateurs selon la droiture de leur cœur - ils appliqueront les Lois du Sang et de la Bête que je révèle maintenant : quand une vie est ôtée sans cause juste, l'enquête doit établir la vérité, puis l'épreuve de l'arène trancher ce que les hommes ne peuvent. Si l'accusé survit au combat contre la bête, c'est que les ancêtres le protègent...
+    > ...lieu de création...
 
     **Tour 12**
 
-    > ...pas mentionné explicitement mais évoqué dans le contexte de l'Assemblée des Chefs...
+    > ...cusé lui, quand il ne murmure pas au sujet d'un accident, se mure dans le mutisme. L'inimitié entre les deux aurait été connue de tous. Le couteau, un artefact passé de génération en génération parmi les enfants du courant aurait été un fruit de la discorde parmi d'autres. L'idée que l'un des tiens puisse ôter la vie sans nécessité te plonge dans la stupeur. Mais tu dois reprendre tes esprits. Le Tribunal des mœurs devra bientôt statuer sur la question et rien ne l'a préparé, dans les lois ou dans les traditions, pour la décision qu'il va devoir prendre.
 
-    **Tour 13**
+    > ...devra statuer sur la question...
 
-    **Tour 14**
+    **Tour 15**
 
-    > ...un tribunal qui juge les affaires morales...
+    > ...phrase courte...

@@ -1,38 +1,50 @@
 # Oracle
 
-*Personnages* -- Civilisation de la Confluence
+*Belief* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
-| **Mentions totales** | 1 |
-| **Tours actifs** | 6-6 (1 tours) |
-| **Pic d'activite** | Tour 6 (1 mentions) |
+| **Mentions totales** | 2 |
+| **Tours actifs** | 4-6 (3 tours) |
+| **Pic d'activite** | Tour 4 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  6  ████████████████████  ← Pic
+Tour  4  ████████████████████  ← Pic
+Tour  6  ████████████████████
 ```
 
 ## Description
 
-L'Oracle est une entité mystérieuse qui joue un rôle important dans la communauté sans-ciels. Elle est rarement vue et son visage est presque inconnu. Les villageois semblent avoir un grand respect pour elle.
+L'Oracle est une entité vénérée comme quasi divine par les membres de la tribu. Elle est perçue comme une figure de sagesse et de guidance, bien que son influence soit exercée de manière discrète. Elle est associée aux sages et à la transmission de connaissances, et son visage reste inconnu à la plupart des villageois. Son rôle est de guider la tribu, même à distance, et elle est respectée mais peu connue de visage.
 
 ## Chronologie
 
-**Tour 6: Les villageois semblent avoir peur ou respect pour la présence de l'Oracle dans leur communauté.**
+**Tour 4: L'Oracle est vénérée comme une entité divine par les nouvelles générations. Elle continue d'influencer la tribu à travers le cercle des sages, bien que de manière discrète. Un homme transi de froid vient la trouver, ce qui interrompt ses méditations au sommet des montagnes.**
+
+**Tour 6: L'Oracle est anonyme et peu connue de visage, même dans les villages. Elle est respectée mais pas reconnue par les villageois. Elle observe les villageois qui cuisinent des poissons et interagissent avec des animaux anciennement farouches, maintenant plus proches de l'homme.**
 
 ## 💬 Mentions avec contexte
+
+**Tour 4**
+> "Oracle"
+>
+> Contexte : entité quasi divine vénérée par la tribu...
 
 **Tour 6**
 > "Oracle"
 >
-> Contexte : l'Oracle de leur vie...
+> Contexte : figure mystérieuse et respectée...
 
 ??? note "Sources -- Passages originaux"
+
+    **Tour 4**
+
+    > Le temps passe, et ceux qui t'ont connus de leur vivant laissent la place à une nouvelle génération qui te voit comme une entité quasi divine qu'ils appellent "l'Oracle". A travers le cercle des sages, tu continue cependant à exercer ton influence sur la tribus et à la guider, même si c'est de manière plus discrète. Tu es cependant surpris un jour de voir un homme transi de froid arriver à ta rencontre. Tes méditations au sommet des montagnes interrompus, tu l'interroges sur la raison de sa présence. Il se présente avec révérence comme un membre du cercle. Tu ap...
 
     **Tour 6**
 

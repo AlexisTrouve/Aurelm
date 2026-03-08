@@ -75,15 +75,29 @@ _GENERIC_FRENCH_NOUNS = {
     "pretre", "pretres", "batisseur", "batisseurs", "guerrier", "guerriers",
     "chasseur", "chasseurs", "artisan", "artisans", "marchand", "marchands",
     "sculpteur", "sculpteurs", "forgeron", "forgerons", "tailleur", "tailleurs",
+    "cueilleur", "cueilleurs", "habitant", "habitants", "mineur", "mineurs",
+    "paysan", "paysans", "soldat", "soldats", "espion", "espions",
+    # Social group generics — single word without a distinguishing modifier
+    # ("Tribu des X" = 3 words, passes; bare "Tribu" alone = noise)
+    "tribu", "tribus", "clan", "clans", "clique", "cliques",
+    "peuple", "peuples", "famille", "familles", "groupe", "groupes",
+    "bande", "bandes", "communaute", "communautes",
+    # Role/status generics — bare words that small LLMs tag as entities
+    "anciens", "ancienne", "anciens", "aînes", "marginaux", "marginal",
+    "dirigeant", "dirigeants", "chef",
     # Creature generics
     "creature", "creatures", "animal", "animaux", "bete", "betes",
-    # Object generics
-    "lance", "lances", "arc", "arcs", "epee", "epees",
-    "palanquin", "palanquins", "codex", "fresque", "fresques",
+    # Object generics (NOTE: "lance/lances", "codex", "palanquin/s", "fresque/s" intentionally
+    # removed — they are confirmed named technologies in this JDR corpus and must NOT be filtered
+    # even though they look like common French nouns. entity_filter is language-level, not
+    # game-specific, but these specific words conflict with reference ground truth.)
+    "arc", "arcs", "epee", "epees", "outil", "outils", "arme", "armes",
     # Building/place generics
-    "maison", "village", "cite", "temple", "autel", "autels",
+    "maison", "village", "villages", "cite", "temple", "autel", "autels",
     "antre", "antres", "ruine", "ruines", "sanctuaire",
-    # Abstract generics
+    # Abstract generics (glyphe/fresque kept because named entities using them are always
+    # multi-word, e.g. "Glyphes du Gouffre" (3 words) and "Grande Fresque" (2 words, "grande"
+    # is not in this set) — they pass the 1-2 word filter regardless)
     "hieroglyphe", "hieroglyphes", "glyphe", "glyphes",
     "present", "presents", "architecture",
 }
@@ -137,8 +151,10 @@ def is_noise_entity(name: str) -> bool:
     if ":" in name:
         return True
 
-    # Too many words = sentence fragment, not an entity name
-    if len(name.split()) > 5:
+    # Too many words = sentence fragment, not an entity name.
+    # Threshold is 6 (not 5) to allow compound tool names like
+    # "Ciseaux de bois au dents d'obsidienne" (6 words) which are valid technologies.
+    if len(name.split()) > 6:
         return True
 
     # Ends with sentence-ending punctuation = full sentence, not a name

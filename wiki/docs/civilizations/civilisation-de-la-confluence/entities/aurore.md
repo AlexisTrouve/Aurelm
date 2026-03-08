@@ -6,54 +6,33 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 3 |
-| **Tours actifs** | 8-9 (2 tours) |
-| **Pic d'activite** | Tour 8 (2 mentions) |
-| **Moyenne** | 1.5 mentions/tour |
+| **Mentions totales** | 1 |
+| **Tours actifs** | 9-9 (1 tours) |
+| **Pic d'activite** | Tour 9 (1 mentions) |
+| **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  8  ████████████████████  ← Pic
-Tour  9  ██████████          
+Tour  9  ████████████████████  ← Pic
 ```
 
-## 🔗 Reseau relationnel
+## Description
 
-**Entites souvent mentionnees ensemble :**
-
-- 🔵 **Ailes-Grises** (Castes) — 2 tours
-- 🔵 **Regards-Libres** (Creatures) — 2 tours
-- 🔵 **Faucons Chasseurs** (Creatures) — 2 tours
+L'Aurore est une entité spirituelle ou divinatoire qui semble jouer un rôle de guide ou d'inspiration dans la société. Elle est associée aux voix qui orientent les explorations et les recherches des individus, comme les artisans et les pêcheurs. Elle est perçue comme une source de sagesse ou de direction, utilisée par les Regards-libres pour étendre l'influence des tiens. Son nom suggère une connexion avec l'aube, la lumière ou le renouveau.
 
 ## Chronologie
 
-**Tour 8: L'Aurore est mentionnée comme une entité qui valide les décisions du Tribunal de moeurs.**
-
-**Tour 9: Tu utilise les voix de l'Aurore pour guider les explorations des artisans et pécheurs.**
+**Tour 9: L'Aurore est utilisée pour guider les explorations des individus, tels que les artisans et les pêcheurs, à travers ses voix. Elle joue un rôle central dans l'extension de l'influence des tiens, sous la direction des Regards-libres.**
 
 ## 💬 Mentions avec contexte
-
-**Tour 8**
-> "Aurore"
->
-> Contexte : Les voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs....
-
-**Tour 8**
-> "Aurore"
->
-> Contexte : Aurore...
 
 **Tour 9**
 > "Aurore"
 >
-> Contexte : Les yeux des enfants du peuple du ciel se parent de toutes les couleurs de l'aurore...
+> Contexte : voix de l'Aurore...
 
 ??? note "Sources -- Passages originaux"
-
-    **Tour 8**
-
-    > Au son des rhombes, les processions rituelles se multiplient alors que les nombreuses institutions que tu as participé à établir entre en concurrence. Le cercle des sages essaye de faire valoir sa juridiction sur les enfants du courant. Les voix de l'Aurore veulent valider chacune des décisions du Tribunal de moeurs. Les Gardiens de la confluence de par leur position estiment être indépendants de toutes les décisions des villageois. Anticipant le conflit, tu leur indique par voie de présages que …
 
     **Tour 9**
 

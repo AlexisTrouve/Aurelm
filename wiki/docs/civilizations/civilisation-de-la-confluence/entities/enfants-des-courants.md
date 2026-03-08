@@ -1,6 +1,6 @@
 # Enfants des courants
 
-*Personnages* -- Civilisation de la Confluence
+*Castes* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,18 +19,18 @@ Tour 10  ████████████████████  ← Pic
 
 ## Description
 
-Les Enfants des courants sont une entité qui vit dans les zones inférieures, ayant des membres allongés et des doigts effilés. Ils sont souvent décrits comme étant différents des créatures cauchemardesques que l'on imagine habituellement.
+Les Enfants des courants sont une caste vivant dans des zones inférieures, dans des chambres et grottes qu'ils explorent. Ils sont souvent décrits comme aveugles, avec un teint blafard et une peau translucide. Leur apparence est parfois utilisée pour intimider les autres, notamment les Enfants des échos. Malgré leur apparence fragile, ils sont considérés comme des membres de la même communauté, et leur apparence peut susciter de la pitié.
 
 ## Chronologie
 
-**Tour 10: Lorsque le joueur se rapproche du Enfant des courants aveugle, il est pris de pitié pour son apparence. L'expression de celui-ci reste neutre.**
+**Tour 10: Un Enfant des courants est observé dans l'obscurité, aveugle et translucide. Son apparence est utilisée comme menace par les Enfants des échos. Malgré cela, il est décrit comme peu cauchemardesque et suscite de l'attendrissement. Un vieil homme, buriné, est mentionné comme faisant partie de leur groupe.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 10**
 > "Enfants des courants"
 >
-> Contexte : Prends garde, où l'un d'eux viendra t'emporter dans les grottes...
+> Contexte : croyances/lois/rituels nommes...
 
 ??? note "Sources -- Passages originaux"
 
