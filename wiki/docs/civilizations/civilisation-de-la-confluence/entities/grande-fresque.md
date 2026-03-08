@@ -1,35 +1,39 @@
 # Grande Fresque
 
-*Technologies* -- Civilisation de la Confluence
-
-!!! info "Technologie active"
-    Cette entite est aussi une technologie developpee. Voir la [fiche technologique](../knowledge/tech/grande-fresque.md).
+*Lieux* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
 | **Mentions totales** | 1 |
-| **Tours actifs** | 14-14 (1 tours) |
-| **Pic d'activite** | Tour 14 (1 mentions) |
+| **Tours actifs** | 15-15 (1 tours) |
+| **Pic d'activite** | Tour 15 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour 14  ████████████████████  ← Pic
+Tour 15  ████████████████████  ← Pic
 ```
+
+## Description
+
+La Grande Fresque est un chef-d'œuvre artistique situé dans le Gouffre Humide. Elle est créée avec des techniques avancées qui dépassent les capacités de la civilisation du joueur. Son influence persiste durablement, apparaissant dans l'iconographie de cette civilisation. Elle semble avoir un rôle symbolique ou spirituel, servant d'avertissement ou de source d'inspiration.
+
+## Chronologie
+
+**Tour 15: Éclairée par des feux, la Grande Fresque est observée et méditée par les personnages. Elle contient des mystères qui dépassent les connaissances de leur peuple. Son influence est durable et se retrouve dans l'iconographie de leur civilisation.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 14**
+**Tour 15**
 > "Grande Fresque"
 >
-> Contexte : Grande Fresque...
+> Contexte : endommagée par un aspirant maladroit...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 14**
+    **Tour 15**
 
-    > ...ceux qui veulent porter un regard libre doivent entreprendre.
-    Éclairé simplement par des feux, ils méditent, observent, cherchent à comprendre les mystères que cachent ce chef d'œuvre. Cet avertissement ? Les techniques utilisées dépassent tout ce dont est capable ton peuple, mais l'inspire durablement. On retrouve longtemps dans toutes l'iconographie des tiens, l'influence et des références à la Grande Fresque de Gouffre Humide. Et les images sont nombreuses. Des animaux qui, pour certains, ont des ressemblances avec ceux que vous pouvez observer dans la vallée, mais dont la variété improbable excite les imaginations. Certains pensent qu'il s'agit de bêtes mythiques qui marchaient parmi les Premiers Ancêtres, d'autres qu'ils doivent exister de par le monde. Les Premiers Ancêtres se représentent marchan...
+    > Éclairé simplement par des feux, ils méditent, observent, cherchent à comprendre les mystères que cachent ce chef d'œuvre. Cet avertissement ? Les techniques utilisées dépassent tout ce dont est capable ton peuple, mais l'inspire durablement. On retrouve longtemps dans toutes l'iconographie des tiens, l'influence et des références à la Grande Fresque de Gouffre Humide.

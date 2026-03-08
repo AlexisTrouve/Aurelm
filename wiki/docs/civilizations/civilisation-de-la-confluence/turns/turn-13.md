@@ -1,86 +1,127 @@
 # Tour 13
 
-📅 **19/08/2025** | 📊 **2 segments** | 🎯 **0 nouvelles entités**
+📅 **17/07/2025** | 📊 **12 segments** | 🎯 **4 nouvelles entités**
 
-> Après un discours intimidant, le groupe a pénétré dans la structure souterraine, où ils ont découvert des gravures et des peintures sur les parois. Ils ont également trouvé un bol couvert de poussière et plusieurs artefacts abandonnés. Cependant, leur exploration a été interrompue par l'écoulement d'un lac souterrain et un éboulement qui leur a coupé la voie. Alors qu'ils rebroussaient chemin, ils ont entendu un appel à l'aide provenant de loin, ce qui les a conduits vers une grotte où ils ont trouvé deux groupes de personnes affaiblies et plusieurs squelettes.
+> L'escalade des marches vers Gouffre Humide révèle l'importance du poisson de la confluence pour la survie des habitants des antres, qui souffrent de maladies et de déformations physiques en cas de privation. Une galerie abandonnée, découverte par des mineurs, semble plus vaste que les antres habituels, et ses explorateurs n'ont pas revu. Cette découverte inquiétante a poussé les ailes grises à envoyer un messager pour prévenir, et le MJ doit décider de la manière d'aborder cette galerie inexplorée.
 
 ## 📊 Statistiques du tour
 
-- **Entités découvertes** : aucune
-- **Mentions totales** : 4
-- **Technologies** : 3
-- **Ressources** : 0
-- **Densité narrative** : 1 narratifs, 1 choix, 0 conséquences
+- **Entités découvertes** : `Maladie des Antres`, `Mineurs`, `Colonies`, `Gouffre Humide`
+- **Mentions totales** : 11
+- **Technologies** : 6
+- **Ressources** : 1
+- **Densité narrative** : 4 narratifs, 8 choix, 0 conséquences
 
 ## 🎭 Question du Maître du Jeu
 
 ### 📖 Récit
 
-Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée. Elles détiennent les clés du savoir de ce people, et de leur chute. Une atmosphère d'enfer Choix : Sauvetage à la corde et Maîtrise des Profondeurs (Option libre) Face à cette découverte qui dépasse tout ce que nous avons connu, je refuse d'abandonner mes hommes à leur sort. Ces galeries recèlent des secrets que notre peuple doit percer, mais d'abord, nous devons comprendre ce qui les menace. J'ordonne l'évacuation immédiate des équipes 1 ainsi que du survivant de l'équipe 2. Je descends personnellement avec l'équipe 4 pour coordonner le sauvetage des endormis. Chaque membre sera attaché à une corde (l'Arbitre inclut) - nous ne laisserons personne derrière nous, mais nous ne répéterons pas les erreurs de ceux qui nous ont précédés. L'équipe 3 sécurise l'entrée et se tient prête à toute éventualité. Cette civilisation maîtrisait des techniques que nous ne faisons qu'entrevoir. Leurs pigments, leurs artefacts translucides, leur techniques de creusage. tout cela représente un bond en avant pour notre peuple. Mais ils ont succombé à quelque chose dans ces profondeurs, et nous devons découvrir quoi. Une fois nos hommes secourus, nous mènerons une investigation méthodique : tests avec animaux, cartographie des courants d'air par la fumée de petit feu de camp, étude des zones dangereuses. Nous apprendrons de leurs erreurs pour éviter leur destin. Ces galeries ne seront pas notre tombeau, mais le berceau de notre grandeur future. Ce que cette civilisation n'a pu achever, nous le terminerons.
+Marche après marche, tu grimpes le flanc de la montagne. C'est une forme de méditation que de les grimper les unes après les autres. Observer la pierre qui les forment, déjà couverte d'une patine qui lustre chacune d'entre elles. C'est le fruit d'un travail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pulmonaires. Douleur musculaire ou spasme et fatigues et des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes, rendant l'accouchement difficile. Certains pensent que les changements physiques chez les enfants des échos ont aussi pour cause cette distance avec les fleuves d'où viennent l'énergie qui fait vivre. Par exemple des jambes arqués, des fronts larges, et une petite taille caractéristique. Plus rarement, mais bien plus souvent que ceux de la surface, un développement intellectuel limité. Ces jeunes légèrement stupides sont souvent utilisés pour les tâches ingrates et physiques. Le poisson devient le seul moyen pour les enfants des échos de rester en connexion avec les fleuves et de récupérer cette énergie vitale qui leur manque. Avec le temps …
+
+Et on aime pas ceux d'la surface ……
+
+Mais si tu monte ces marches, ce n'est pas pour les observer une par une, ou admirer Gouffre Humide, ses statues, ses bas reliefs, sont sol que l'on dit si lisse qu'on peut y observer son reflet mieux que dans les rivières. Ce n'est pas pour en apprendre plus au sujet de leur grands ateliers qui délivrent une quantité sans-cesse plus importante d'outils, souvent d'excellente base pour des artefacts. Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utilisent leur grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent. Non, tu as été approché par des ailes grises, envoyés pour te rapporter des nouvelles inquiétantes qu'ils sont parvenus jusqu'à présent à garder secret. L'image te revient en tête, tous, le visage fermé, assis en tailleurs devant toi en train de te raconter le récit d'un mineur dans l'antre des échos où tu te rends. Un homme inspiré, travailleurs et qui a, dit-on, le don particulier d'écouter les pierres là où les siens ne font habituellement que leur parler. Il est apprécié des siens, ils trouvent toujours un chemin où la pierre ne résistera pas. A ce rythme, Gouffre Humide sera bientôt la colonie la plus large et la plus profonde des douzes.
+
+Il n'est pas inhabituel pour les mineurs d'émerger dans des grottes souterraines, qu'il leur suffit alors d'agrandir plutôt que de creuser directement. C'est d'ailleurs la manière la plus simple d'étendre leur surface. Elles sont aussi parfois une nouvelle source d'eau sur laquelle peuvent compter les habitants. Ils ont donc pensé qu'il s'agissait d'une nouvelle grotte quand ils sont tombés dessus. Mais rapidement, ils se sont aperçus qu'il s'agissait d'une galerie. Ils ont d'abord pensé qu'à force de creuser ils étaient finalement tombés sur une autre colonie souterraine. Mais celle-ci est non seulement abandonnée, elle semble bien plus grande que la plupart des antres des échos. Impossible de savoir à quel point puisque les seuls à être partit l'explorer ne sont jamais revenu. Conscient de la gravité de la situation, tu t'empresses donc de les rejoindre …
 
 ### ⚖️ Choix proposés
 
-Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en place une méthode que tu as inculquée aux braves qui t'ont rejoints. Et finalement, ton discours s'épuise. Vous vous regardez longuement, et finalement, comme tu leur as promis, tu prends leur tête. Vous entrez dans la galerie et commencez à vous séparer comme anticipé. Vous vous engagez avec précaution. Les parois, bien que couvertes d'aspérité, restent étrangement consistantes. Un murmure à l'avant du groupe attire ton attention, ils se sont immobilisés. L'espace d'un instant, tu te tends avec anticipation, mais finalement on t'appelle. L'un d'eux brandit le flambeau qu'il tient d'une main et éclaire le mur, dévoilant des gravures et des peintures comme on en trouve dans certaines colonies souterraines. Leur couleur s'éloignent de la palette d'ocre et de noir. Vous reconnaissez des bêtes et des hommes, mais le sens de ces fresques vous éludent en majorité. Un sujet d'étude qui occupera longtemps les ailes grises dont la conclusion sera que cette structure est …
-Lootbox
-Un leg des ancêtres, qu'il convient de préserver et de vénérer. Un temple comme une gemme dans les profondeurs
-Un artefact, que vous devez vous approprier à votre tour. Ces parois sont nues pour une nouvelle génération d'artisans.
-Un lieu d'oubli. S'il a été enfermé si loin, c'est qu'aucun regard ne devait se poser à nouveau sur lui.
-Autres [ libre ]
-Vous faites demi-tour un peu plus loin, contraint par un lac souterrain qui s'est emparé ici de la galerie. A un autre endroit, c'est un éboulement qui vous coupe la voie. Ils sont nombreux, et l'un d'eux expose une chambre qui serait restée secrète autrement. Vous pouvez tout juste glisser une main à l'intérieur. En ratissant large, ta main se pose sur quelque chose. Tu le tires à toi et découvre une sorte de bol couvert de poussière, mais qui laisse passer la lumière de ton flambeau. C'est le premier d'une multitude d'artefacts assez peu élaborés qui ont été abandonnés ici par leur propriétaire. Peut-être est-ce ces derniers que vous croisez au détours d'une galerie. Des squelettes, par centaines, alignés sur ce qui devait être leur dos. La découverte fait tomber un silence pesant sur le groupe. Il y a ici plus de morts que de vivants dans un village entier. Ils sont semblables à ceux abandonnés depuis quelques semaines. Ceux-là n'ont pas eu la chance de recevoir un rite funéraire digne de ce nom et leurs âmes n'ont pû être emportées. Alors que vous vous approchez, un bruit lointain fait paniquer ceux qui t'accompagnent, qui sursautent en pensant avoir dérangé les morts. Il n'y a pas de trace de violence sur ces squelettes, mais il n'y a pas de jeunes. Les os en eux même ont une étrange apparence, tu espères qu'il ne s'agit pas d'une maladie. Habituellement, les animaux les font disparaître en quelques saisons, mais ceux-là ont l'air bien plus anciens.
-Un nouveau bruit retentit et c'est là que vous comprenez qu'il s'agit de l'appel distordu d'une rhombe au loin. Vous tendez l'oreille quelques instants avant de comprendre le message que le vent porte. C'est un appel à l'aide. Vous rebroussez chemin et vous dirigez aussi vite que possible vers l'origine du son. Vous croisez à cette occasion le troisième groupe qui, contrairement à ses prérogatives, s'est lui aussi dirigé vers l'origine du bruit. Vous entrez dans la grotte ou un enfant des échos agite difficilement la rhombe de son groupe. En vous voyant arriver, il remercie les ancêtres et pointe un flambeau en train de s'éteindre. Ses compagnons, allongés un peu plus loin. Mais ils ne sont pas seuls. D'autres squelettes, ceux-là bien moins ordonnés que ceux que vous avez découverts, sont étendus au milieu d'artefacts. A bout de souffle, il vous explique rapidement la situation. Ils ont découverts ceux qui avaient disparu, endormi, un peu plus loin. Mais en cherchant à les réveiller, un à un, ils ont été affligés par la fatigue. L'aile grise à été le premier à s'endormir à son tour. Ils ont réalisés que quelque chose n'allait pas quand ils ont été incapable de le ramener à lui. Il est le seul à rebrousser chemin. Trop fatigué, il a décidé d'utiliser la rhombe pour appeler à l'aide. Un murmure terrifié traverse le groupe.
-Une atmosphère d'enfer
-Il faut aller leur porter secours, mais sans perdre de temps. Ramassez les et courrez vers la sortie
-Une malédiction habite ces lieux. Les morts n'apprécient pas d'être dérangé. Il faut rester éloigné de cet endroit et en interdire l'accès.
-Il est peut-être possible avec les cordes que vous avez emporté de les attraper un à un et les tirer jusqu'à vous, loin des squelettes
-Autres [ libre ]
+**Choix 1** : Les passes-biens gagnent une influence décisives sur les colonies sous-terraine, gagnant un monopole et exerçant un contrôle toujours plus direct sur les enfants des échos.
+
+**Choix 2** : Les enfants des échos profitent des richesses qu'ils produisent pour imposer un rapport de forces avec les passes-biens, forçant des négociations ardues qui leur permettent d'être chaque jour un peu plus indépendant.
+
+**Choix 3** : Les enfants des échos trouvent dans les cercles des vigiles, des intermédiaires qui de par leur rôle spirituel s'efforcent de trouver des compromis satisfaisant pour tous. Le contact direct avec les antres des échos s'étiole, celui-ci ne passant plus que par l'intermédiaire des ciels-clairs.
+
+**Choix 4** : Autres [ libre ]
+
+**Choix 1** : Ils ont creusé trop avidement et trop profondément — accompagné d'un entourage de faucons chasseur, pour explorer les profondeurs.
+
+**Choix 2** : avec la ferme intention de leur faire murer cette galerie avant que quelque chose de grave n'arrive.
+
+**Choix 3** : à la tête de prisonniers promis aux arènes auquel tu as promis l'indulgence s'ils explorent ces étranges galeries.
+
+**Choix 4** : Autres [ libre ]
 
 
 ## 💬 Réponse de Rubanc
 
-Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée. Elles détiennent les clés du savoir de ce people, et de leur chute. Une atmosphère d'enfer Choix : Sauvetage à la corde et Maîtrise des Profondeurs (Option libre) Face à cette découverte qui dépasse tout ce que nous avons connu, je refuse d'abandonner mes hommes à leur sort. Ces galeries recèlent des secrets que notre peuple doit percer, mais d'abord, nous devons comprendre ce qui les menace. J'ordonne l'évacuation immédiate des équipes 1 ainsi que du survivant de l'équipe 2. Je descends personnellement avec l'équipe 4 pour coordonner le sauvetage des endormis. Chaque membre sera attaché à une corde (l'Arbitre inclut) - nous ne laisserons personne derrière nous, mais nous ne répéterons pas les erreurs de ceux qui nous ont précédés. L'équipe 3 sécurise l'entrée et se tient prête à toute éventualité. Cette civilisation maîtrisait des techniques que nous ne faisons qu'entrevoir. Leurs pigments, leurs artefacts translucides, leur techniques de creusage. tout cela représente un bond en avant pour notre peuple. Mais ils ont succombé à quelque chose dans ces profondeurs, et nous devons découvrir quoi. Une fois nos hommes secourus, nous mènerons une investigation méthodique : tests avec animaux, cartographie des courants d'air par la fumée de petit feu de camp, étude des zones dangereuses. Nous apprendrons de leurs erreurs pour éviter leur destin. Ces galeries ne seront pas notre tombeau, mais le berceau de notre grandeur future. Ce que cette civilisation n'a pu achever, nous le terminerons.
+Marche après marche, tu grimpes le flanc de la montagne. C'est une forme de méditation que de les grimper les unes après les autres. Observer la pierre qui les forment, déjà couverte d'une patine qui lustre chacune d'entre elles. C'est le fruit d'un travail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pulmonaires. Douleur musculaire ou spasme et fatigues et des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes, rendant l'accouchement difficile. Certains pensent que les changements physiques chez les enfants des échos ont aussi pour cause cette distance avec les fleuves d'où viennent l'énergie qui fait vivre. Par exemple des jambes arqués, des fronts larges, et une petite taille caractéristique. Plus rarement, mais bien plus souvent que ceux de la surface, un développement intellectuel limité. Ces jeunes légèrement stupides sont souvent utilisés pour les tâches ingrates et physiques. Le poisson devient le seul moyen pour les enfants des échos de rester en connexion avec les fleuves et de récupérer cette énergie vitale qui leur manque. Avec le temps …
+Et on aime pas ceux d'la surface ……
+**Choix 1** : Les passes-biens gagnent une influence décisives sur les colonies sous-terraine, gagnant un monopole et exerçant un contrôle toujours plus direct sur les enfants des échos.
+**Choix 2** : Les enfants des échos profitent des richesses qu'ils produisent pour imposer un rapport de forces avec les passes-biens, forçant des négociations ardues qui leur permettent d'être chaque jour un peu plus indépendant.
+**Choix 3** : Les enfants des échos trouvent dans les cercles des vigiles, des intermédiaires qui de par leur rôle spirituel s'efforcent de trouver des compromis satisfaisant pour tous. Le contact direct avec les antres des échos s'étiole, celui-ci ne passant plus que par l'intermédiaire des ciels-clairs.
+**Choix 4** : Autres [ libre ]
+Mais si tu monte ces marches, ce n'est pas pour les observer une par une, ou admirer Gouffre Humide, ses statues, ses bas reliefs, sont sol que l'on dit si lisse qu'on peut y observer son reflet mieux que dans les rivières. Ce n'est pas pour en apprendre plus au sujet de leur grands ateliers qui délivrent une quantité sans-cesse plus importante d'outils, souvent d'excellente base pour des artefacts. Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utilisent leur grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent. Non, tu as été approché par des ailes grises, envoyés pour te rapporter des nouvelles inquiétantes qu'ils sont parvenus jusqu'à présent à garder secret. L'image te revient en tête, tous, le visage fermé, assis en tailleurs devant toi en train de te raconter le récit d'un mineur dans l'antre des échos où tu te rends. Un homme inspiré, travailleurs et qui a, dit-on, le don particulier d'écouter les pierres là où les siens ne font habituellement que leur parler. Il est apprécié des siens, ils trouvent toujours un chemin où la pierre ne résistera pas. A ce rythme, Gouffre Humide sera bientôt la colonie la plus large et la plus profonde des douzes.
+Il n'est pas inhabituel pour les mineurs d'émerger dans des grottes souterraines, qu'il leur suffit alors d'agrandir plutôt que de creuser directement. C'est d'ailleurs la manière la plus simple d'étendre leur surface. Elles sont aussi parfois une nouvelle source d'eau sur laquelle peuvent compter les habitants. Ils ont donc pensé qu'il s'agissait d'une nouvelle grotte quand ils sont tombés dessus. Mais rapidement, ils se sont aperçus qu'il s'agissait d'une galerie. Ils ont d'abord pensé qu'à force de creuser ils étaient finalement tombés sur une autre colonie souterraine. Mais celle-ci est non seulement abandonnée, elle semble bien plus grande que la plupart des antres des échos. Impossible de savoir à quel point puisque les seuls à être partit l'explorer ne sont jamais revenu. Conscient de la gravité de la situation, tu t'empresses donc de les rejoindre …
+**Choix 1** : Ils ont creusé trop avidement et trop profondément — accompagné d'un entourage de faucons chasseur, pour explorer les profondeurs.
+**Choix 2** : avec la ferme intention de leur faire murer cette galerie avant que quelque chose de grave n'arrive.
+**Choix 3** : à la tête de prisonniers promis aux arènes auquel tu as promis l'indulgence s'ils explorent ces étranges galeries.
 
 ## 🔍 Découvertes
 
 ### 🗺️ Géographie
 
 - Gouffre Humide
+- confluence
+- Antres des Echos
 
 ### 🔧 Technologies
 
-- pigments
-- artefacts translucides
-- techniques de creusage
+- burin en pierre
+- maillets en bois
+- ciseaux de bois au dents d'obsidienne
+- rhombes
+- lances
+- argile vive
+
+### 🌾 Ressources
+
+- poisson
+
+### ✨ Croyances
+
+- maladie des Antres
+- connexion avec les fleuves
+- écoute des pierres
 
 ## 🏷️ Entités mentionnées
 
-**Cercle des Sages** (Civilisations) — 1 mentions
+**Maladie des Antres** (Belief) — 1 mentions ⭐ *Première apparition*
 
-**Faucons Chasseurs** (Creatures) — 1 mentions
+**Ailes-Grises** (Castes) — 1 mentions
 
-**Gouffre Humide** (Lieux) — 1 mentions
+**Enfants des échos** (Castes) — 1 mentions
 
-**Argile Vivante** (Ressources) — 1 mentions
+**Mineurs** (Castes) — 1 mentions ⭐ *Première apparition*
+
+**Passes-bien** (Castes) — 1 mentions
+
+**Tailleurs de pierre** (Castes) — 1 mentions
+
+**Antres des Echos** (Lieux) — 1 mentions
+
+**Colonies** (Lieux) — 1 mentions ⭐ *Première apparition*
+
+**Confluence** (Lieux) — 1 mentions
+
+**Gorge Profonde** (Lieux) — 1 mentions
+
+**Gouffre Humide** (Lieux) — 1 mentions ⭐ *Première apparition*
 
 ---
 
 ## 📜 Messages Discord originaux
 
-### Maître du Jeu
+### Arthur Ignatus (17/07/2025
 
-Tu répètes tes instructions aux groupes qui te font face. La gravité avec laquelle tu traite la situation les intimident clairement. Tu préfères qu'ils soient intimidés plutôt qu'insouciant. Il a fallu du temps pour mobiliser autant de monde. Ceux de la surface ne sont clairement pas à l'aise dans les profondeurs qui leur sont inconnues. La simple descente dans les entrailles de Gouffre Humide en fait une expérience mystique. Même les ailes grises peinent à maintenir un masque de sérénité. A côté d'eux, les enfants des échos manipulent nerveusement leurs armes de fortunes : pioches et ciseaux à pierre. Tu comptes sur le fait que le groupe disparu avait des vivres à sa disposition pour compenser le retard pris dans les opérations de recherches. Tu as eu le temps de réfléchir, mettre en place une méthode que tu as inculquée aux braves qui t'ont rejoints. Et finalement, ton discours s'épuise. Vous vous regardez longuement, et finalement, comme tu leur as promis, tu prends leur tête. Vous entrez dans la galerie et commencez à vous séparer comme anticipé. Vous vous engagez avec précaution. Les parois, bien que couvertes d'aspérité, restent étrangement consistantes. Un murmure à l'avant du groupe attire ton attention, ils se sont immobilisés. L'espace d'un instant, tu te tends avec anticipation, mais finalement on t'appelle. L'un d'eux brandit le flambeau qu'il tient d'une main et éclaire le mur, dévoilant des gravures et des peintures comme on en trouve dans certaines colonies souterraines. Leur couleur s'éloignent de la palette d'ocre et de noir. Vous reconnaissez des bêtes et des hommes, mais le sens de ces fresques vous éludent en majorité. Un sujet d'étude qui occupera longtemps les ailes grises dont la conclusion sera que cette structure est …
-Lootbox
-Un leg des ancêtres, qu'il convient de préserver et de vénérer. Un temple comme une gemme dans les profondeurs
-Un artefact, que vous devez vous approprier à votre tour. Ces parois sont nues pour une nouvelle génération d'artisans.
-Un lieu d'oubli. S'il a été enfermé si loin, c'est qu'aucun regard ne devait se poser à nouveau sur lui.
-Autres [ libre ]
-Vous faites demi-tour un peu plus loin, contraint par un lac souterrain qui s'est emparé ici de la galerie. A un autre endroit, c'est un éboulement qui vous coupe la voie. Ils sont nombreux, et l'un d'eux expose une chambre qui serait restée secrète autrement. Vous pouvez tout juste glisser une main à l'intérieur. En ratissant large, ta main se pose sur quelque chose. Tu le tires à toi et découvre une sorte de bol couvert de poussière, mais qui laisse passer la lumière de ton flambeau. C'est le premier d'une multitude d'artefacts assez peu élaborés qui ont été abandonnés ici par leur propriétaire. Peut-être est-ce ces derniers que vous croisez au détours d'une galerie. Des squelettes, par centaines, alignés sur ce qui devait être leur dos. La découverte fait tomber un silence pesant sur le groupe. Il y a ici plus de morts que de vivants dans un village entier. Ils sont semblables à ceux abandonnés depuis quelques semaines. Ceux-là n'ont pas eu la chance de recevoir un rite funéraire digne de ce nom et leurs âmes n'ont pû être emportées. Alors que vous vous approchez, un bruit lointain fait paniquer ceux qui t'accompagnent, qui sursautent en pensant avoir dérangé les morts. Il n'y a pas de trace de violence sur ces squelettes, mais il n'y a pas de jeunes. Les os en eux même ont une étrange apparence, tu espères qu'il ne s'agit pas d'une maladie. Habituellement, les animaux les font disparaître en quelques saisons, mais ceux-là ont l'air bien plus anciens.
-Un nouveau bruit retentit et c'est là que vous comprenez qu'il s'agit de l'appel distordu d'une rhombe au loin. Vous tendez l'oreille quelques instants avant de comprendre le message que le vent porte. C'est un appel à l'aide. Vous rebroussez chemin et vous dirigez aussi vite que possible vers l'origine du son. Vous croisez à cette occasion le troisième groupe qui, contrairement à ses prérogatives, s'est lui aussi dirigé vers l'origine du bruit. Vous entrez dans la grotte ou un enfant des échos agite difficilement la rhombe de son groupe. En vous voyant arriver, il remercie les ancêtres et pointe un flambeau en train de s'éteindre. Ses compagnons, allongés un peu plus loin. Mais ils ne sont pas seuls. D'autres squelettes, ceux-là bien moins ordonnés que ceux que vous avez découverts, sont étendus au milieu d'artefacts. A bout de souffle, il vous explique rapidement la situation. Ils ont découverts ceux qui avaient disparu, endormi, un peu plus loin. Mais en cherchant à les réveiller, un à un, ils ont été affligés par la fatigue. L'aile grise à été le premier à s'endormir à son tour. Ils ont réalisés que quelque chose n'allait pas quand ils ont été incapable de le ramener à lui. Il est le seul à rebrousser chemin. Trop fatigué, il a décidé d'utiliser la rhombe pour appeler à l'aide. Un murmure terrifié traverse le groupe.
-Une atmosphère d'enfer
-Il faut aller leur porter secours, mais sans perdre de temps. Ramassez les et courrez vers la sortie
-Une malédiction habite ces lieux. Les morts n'apprécient pas d'être dérangé. Il faut rester éloigné de cet endroit et en interdire l'accès.
-Il est peut-être possible avec les cordes que vous avez emporté de les attraper un à un et les tirer jusqu'à vous, loin des squelettes
-Autres [ libre ]
-
-### Rubanc
-
-Lootbox Choix : Mise en pause (Option libre) l'étude des fresques sera notre première priorité une fois la sécurité assurée. Elles détiennent les clés du savoir de ce people, et de leur chute. Une atmosphère d'enfer Choix : Sauvetage à la corde et Maîtrise des Profondeurs (Option libre) Face à cette découverte qui dépasse tout ce que nous avons connu, je refuse d'abandonner mes hommes à leur sort. Ces galeries recèlent des secrets que notre peuple doit percer, mais d'abord, nous devons comprendre ce qui les menace. J'ordonne l'évacuation immédiate des équipes 1 ainsi que du survivant de l'équipe 2. Je descends personnellement avec l'équipe 4 pour coordonner le sauvetage des endormis. Chaque membre sera attaché à une corde (l'Arbitre inclut) - nous ne laisserons personne derrière nous, mais nous ne répéterons pas les erreurs de ceux qui nous ont précédés. L'équipe 3 sécurise l'entrée et se tient prête à toute éventualité. Cette civilisation maîtrisait des techniques que nous ne faisons qu'entrevoir. Leurs pigments, leurs artefacts translucides, leur techniques de creusage. tout cela représente un bond en avant pour notre peuple. Mais ils ont succombé à quelque chose dans ces profondeurs, et nous devons découvrir quoi. Une fois nos hommes secourus, nous mènerons une investigation méthodique : tests avec animaux, cartographie des courants d'air par la fumée de petit feu de camp, étude des zones dangereuses. Nous apprendrons de leurs erreurs pour éviter leur destin. Ces galeries ne seront pas notre tombeau, mais le berceau de notre grandeur future. Ce que cette civilisation n'a pu achever, nous le terminerons.
+Marche après marche, tu grimpes le flanc de la montagne. C'est une forme de méditation que de les grimper les unes après les autres. Observer la pierre qui les forment, déjà couverte d'une patine qui lustre chacune d'entre elles. C'est le fruit d'un travail multi-générationnel de Passes-bien que tu foules des pieds. Paraissant presque absurde quand ils ont commencé, emportant chacun quelques pierres en plus de ce qu'ils devaient déjà porter. Puis ça a été le tour des tailleurs de pierre de venir aplanir les surfaces, tailler là où il n'y avait pas de terre pour construire l'escalier. Et maintenant, chacun des pas, depuis la confluence jusqu'à Gouffre Humide, une antre des échos maintenant matures, sont couverts. Accélérant le trafic piéton entre les deux. Il faut dire que ces échanges sont vitaux pour l'antre. Si les villages aux sorties des galeries facilitent l'auto-suffisance de ces colonies, il suffit de quelques semaines sans le poisson de la confluence pour que les habitants des profondeurs commencent à développer la maladie des Antres. Des difficultés à respirer ou des infections pulmonaires. Douleur musculaire ou spasme et fatigues et des douleurs osseuses au niveau du bassin, surtout chez les femmes enceintes, rendant l'accouchement difficile. Certains pensent que les changements physiques chez les enfants des échos ont aussi pour cause cette distance avec les fleuves d'où viennent l'énergie qui fait vivre. Par exemple des jambes arqués, des fronts larges, et une petite taille caractéristique. Plus rarement, mais bien plus souvent que ceux de la surface, un développement intellectuel limité. Ces jeunes légèrement stupides sont souvent utilisés pour les tâches ingrates et physiques. Le poisson devient le seul moyen pour les enfants des échos de rester en connexion avec les fleuves et de récupérer cette énergie vitale qui leur manque. Avec le temps …
+Et on aime pas ceux d'la surface ……
+**Choix 1** : Les passes-biens gagnent une influence décisives sur les colonies sous-terraine, gagnant un monopole et exerçant un contrôle toujours plus direct sur les enfants des échos.
+**Choix 2** : Les enfants des échos profitent des richesses qu'ils produisent pour imposer un rapport de forces avec les passes-biens, forçant des négociations ardues qui leur permettent d'être chaque jour un peu plus indépendant.
+**Choix 3** : Les enfants des échos trouvent dans les cercles des vigiles, des intermédiaires qui de par leur rôle spirituel s'efforcent de trouver des compromis satisfaisant pour tous. Le contact direct avec les antres des échos s'étiole, celui-ci ne passant plus que par l'intermédiaire des ciels-clairs.
+**Choix 4** : Autres [ libre ]
+Mais si tu monte ces marches, ce n'est pas pour les observer une par une, ou admirer Gouffre Humide, ses statues, ses bas reliefs, sont sol que l'on dit si lisse qu'on peut y observer son reflet mieux que dans les rivières. Ce n'est pas pour en apprendre plus au sujet de leur grands ateliers qui délivrent une quantité sans-cesse plus importante d'outils, souvent d'excellente base pour des artefacts. Ce n'est pas plus pour t'enquérir de leurs mœurs musicaux et spirituels, la rumeur disant qu'ils utilisent leur grandes grottes pour amplifier les voix jusqu'à en faire vibrer la tête et communiquer avec les roches qui les entourent. Non, tu as été approché par des ailes grises, envoyés pour te rapporter des nouvelles inquiétantes qu'ils sont parvenus jusqu'à présent à garder secret. L'image te revient en tête, tous, le visage fermé, assis en tailleurs devant toi en train de te raconter le récit d'un mineur dans l'antre des échos où tu te rends. Un homme inspiré, travailleurs et qui a, dit-on, le don particulier d'écouter les pierres là où les siens ne font habituellement que leur parler. Il est apprécié des siens, ils trouvent toujours un chemin où la pierre ne résistera pas. A ce rythme, Gouffre Humide sera bientôt la colonie la plus large et la plus profonde des douzes.
+Il n'est pas inhabituel pour les mineurs d'émerger dans des grottes souterraines, qu'il leur suffit alors d'agrandir plutôt que de creuser directement. C'est d'ailleurs la manière la plus simple d'étendre leur surface. Elles sont aussi parfois une nouvelle source d'eau sur laquelle peuvent compter les habitants. Ils ont donc pensé qu'il s'agissait d'une nouvelle grotte quand ils sont tombés dessus. Mais rapidement, ils se sont aperçus qu'il s'agissait d'une galerie. Ils ont d'abord pensé qu'à force de creuser ils étaient finalement tombés sur une autre colonie souterraine. Mais celle-ci est non seulement abandonnée, elle semble bien plus grande que la plupart des antres des échos. Impossible de savoir à quel point puisque les seuls à être partit l'explorer ne sont jamais revenu. Conscient de la gravité de la situation, tu t'empresses donc de les rejoindre …
+**Choix 1** : Ils ont creusé trop avidement et trop profondément — accompagné d'un entourage de faucons chasseur, pour explorer les profondeurs.
+**Choix 2** : avec la ferme intention de leur faire murer cette galerie avant que quelque chose de grave n'arrive.
+**Choix 3** : à la tête de prisonniers promis aux arènes auquel tu as promis l'indulgence s'ils explorent ces étranges galeries.

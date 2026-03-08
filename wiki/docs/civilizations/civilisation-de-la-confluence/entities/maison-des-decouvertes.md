@@ -6,34 +6,56 @@
 
 | | |
 |---|---|
-| **Mentions totales** | 1 |
-| **Tours actifs** | 11-11 (1 tours) |
-| **Pic d'activite** | Tour 11 (1 mentions) |
+| **Mentions totales** | 2 |
+| **Tours actifs** | 9-15 (7 tours) |
+| **Pic d'activite** | Tour 9 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour 11  ████████████████████  ← Pic
+Tour  9  ████████████████████  ← Pic
+Tour 15  ████████████████████
 ```
+
+## 🔗 Reseau relationnel
+
+**Entites souvent mentionnees ensemble :**
+
+- 🔵 **Assemblée des Chefs** (Institutions) — 2 tours
+- 🔵 **Explorateurs** (Castes) — 2 tours
+- 🔵 **Enfants du Courant** (Castes) — 2 tours
+- 🔵 **Rhombes miniatures** (Technologies) — 2 tours
+- 🔵 **Tribunal des mœurs** (Institutions) — 2 tours
 
 ## Description
 
-La Maison des Découvertes est une institution qui représente l'arbre de toutes les possibilités, symbole de la diversité et de la force éternelle. Elle est associée à la confluence, où l'eau chante. Sa demeure terrestre est un grand cercle de pierre, d'argile et de bois.
+La Maison des Découvertes est une institution située dans un lieu de création. Elle semble jouer un rôle important dans la recherche ou la préservation de connaissances, probablement liée à des découvertes ou à des études. Son rôle est mentionné brièvement dans un tour ultérieur, suggérant une fonction spécifique ou un événement associé. Ses caractéristiques notables ne sont pas détaillées dans les extraits fournis.
 
 ## Chronologie
 
-**Tour 11: Dans les visions du narrateur, il a vu l'arbre de toutes les possibilités, dont la Maison des Découvertes est la demeure terrestre. La maison sera bâtie près de la confluence.**
+**Tour 9: La Maison des Découvertes est mentionnée comme étant un lieu de création, ce qui indique qu'elle pourrait être un centre de recherche, d'innovation ou de documentation.**
+
+**Tour 15: Une phrase courte évoque la Maison des Découvertes, suggérant qu'elle est impliquée dans un événement ou une action spécifique, bien que les détails soient manquants.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 11**
+**Tour 9**
 > "Maison des Découvertes"
 >
-> Contexte : la maison où les artisans travaillent...
+> Contexte : lieu de création...
+
+**Tour 15**
+> "Maison des Decouvertes"
+>
+> Contexte : phrase courte...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 11**
+    **Tour 9**
 
-    > Deuxième Révélation : La Maison des Découvertes Dans mes visions, j'ai vu l'arbre de toutes les possibilités. Ses racines plongent dans l'argile vivante, ses branches touchent les quatre vents. Chaque saison lui apporte une nature différente, et c'est dans cette diversité qu'il trouve sa force éternelle. Nous bâtirons sa demeure terrestre près de la confluence, là où l'eau chante. Un grand cercle de pierre, d'argile et de bois, miroir de la vo...
+    > ...lieu de création...
+
+    **Tour 15**
+
+    > ...phrase courte...

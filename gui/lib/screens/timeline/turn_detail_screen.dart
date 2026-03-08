@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,16 +10,41 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
 
-/// Full turn detail — shows title, summary, and all classified segments.
-/// Navigated to from the timeline when a turn card is tapped.
-class TurnDetailScreen extends ConsumerWidget {
+/// Full turn detail — GM segments with type labels, PJ content as a single
+/// readable block. Search bar highlights matches across all text.
+class TurnDetailScreen extends ConsumerStatefulWidget {
   final int turnId;
 
   const TurnDetailScreen({super.key, required this.turnId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dataAsync = ref.watch(turnDetailDataProvider(turnId));
+  ConsumerState<TurnDetailScreen> createState() => _TurnDetailScreenState();
+}
+
+class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
+  bool _searchVisible = false;
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _searchVisible = !_searchVisible;
+      if (!_searchVisible) {
+        _searchCtrl.clear();
+        _query = '';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dataAsync = ref.watch(turnDetailDataProvider(widget.turnId));
 
     return dataAsync.when(
       loading: () => const Scaffold(body: LoadingIndicator()),
@@ -32,167 +58,164 @@ class TurnDetailScreen extends ConsumerWidget {
         }
 
         final t = data.turn;
-        final typeColor =
-            AppColors.turnTypeColors[t.turnType] ?? Colors.grey;
-
-        // Split segments by source (migration 007: 'gm' vs 'pj')
-        final gmSegs =
-            data.segments.where((s) => s.source == 'gm').toList();
-        final pjSegs =
-            data.segments.where((s) => s.source == 'pj').toList();
+        final typeColor = AppColors.turnTypeColors[t.turnType] ?? Colors.grey;
+        // Merge GM and PJ segments into single blocks each
+        final gmText = data.segments
+            .where((s) => s.source == 'gm')
+            .map((s) => s.content)
+            .join('\n\n');
+        final pjText = data.segments
+            .where((s) => s.source == 'pj')
+            .map((s) => s.content)
+            .join('\n\n');
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(t.title ?? 'Tour ${t.turnNumber}',
-                overflow: TextOverflow.ellipsis),
+            title: _searchVisible
+                ? TextField(
+                    controller: _searchCtrl,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      hintText: 'Rechercher dans ce tour…',
+                      border: InputBorder.none,
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    onChanged: (v) => setState(() => _query = v),
+                  )
+                : Text(t.title ?? 'Tour ${t.turnNumber}',
+                    overflow: TextOverflow.ellipsis),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/timeline'),
             ),
+            actions: [
+              IconButton(
+                icon: Icon(_searchVisible ? Icons.close : Icons.search),
+                tooltip: _searchVisible ? 'Fermer' : 'Rechercher',
+                onPressed: _toggleSearch,
+              ),
+            ],
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header metadata row
+                // Header badges
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    // Turn number badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: typeColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Tour ${t.turnNumber}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelLarge
-                            ?.copyWith(
-                                color: typeColor,
-                                fontWeight: FontWeight.bold),
-                      ),
+                    _Badge(
+                      label: 'Tour ${t.turnNumber}',
+                      color: typeColor,
+                      bold: true,
                     ),
-                    // Type badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: typeColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: typeColor.withValues(alpha: 0.4)),
-                      ),
-                      child: Text(
-                        t.turnType.replaceAll('_', ' '),
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(color: typeColor),
-                      ),
+                    _Badge(
+                      label: t.turnType.replaceAll('_', ' '),
+                      color: typeColor,
+                      outlined: true,
                     ),
-                    // Civ badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        data.civName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant),
-                      ),
+                    _Badge(
+                      label: data.civName,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      surface: true,
                     ),
-                    // Entity count
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${data.entityCount} entités',
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant),
-                      ),
+                    _Badge(
+                      label: '${data.entityCount} entités',
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      surface: true,
                     ),
                   ],
                 ),
 
-                // Summary (condensed AI summary)
+                // AI summary
                 if (t.summary != null && t.summary!.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   const SectionHeader(title: 'Résumé'),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Theme.of(context)
                           .colorScheme
                           .surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      t.summary!,
+                    child: _SearchableText(
+                      text: t.summary!,
+                      query: _query,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontStyle: FontStyle.italic,
+                            height: 1.6,
                           ),
                     ),
                   ),
                 ],
 
-                // GM narrative segments
-                if (gmSegs.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                // GM block — single merged markdown block
+                if (gmText.isNotEmpty) ...[
+                  const SizedBox(height: 28),
                   const SectionHeader(title: 'Tour MJ'),
-                  const SizedBox(height: 8),
-                  ...gmSegs.map((seg) => _SegmentCard(segment: seg)),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: typeColor.withValues(alpha: 0.6),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: _SearchableText(
+                      text: gmText,
+                      query: _query,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.7),
+                    ),
+                  ),
                 ],
 
-                // PJ response segments (migration 007 fusion)
-                if (pjSegs.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                // PJ block — single merged markdown block
+                if (pjText.isNotEmpty) ...[
+                  const SizedBox(height: 28),
                   const SectionHeader(title: 'Réponse Joueur'),
-                  const SizedBox(height: 8),
-                  ...pjSegs.map((seg) => _SegmentCard(
-                        segment: seg,
-                        isPj: true,
-                      )),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: Colors.purple.withValues(alpha: 0.6),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: _SearchableText(
+                      text: pjText,
+                      query: _query,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.7),
+                    ),
+                  ),
                 ],
 
-                // Fallback: segments with no source distinction (pre-migration)
-                if (gmSegs.isEmpty && pjSegs.isEmpty && data.segments.isNotEmpty) ...[
-                  const SizedBox(height: 24),
+                // Fallback pre-migration (no source column)
+                if (gmText.isEmpty && pjText.isEmpty && data.segments.isNotEmpty) ...[
+                  const SizedBox(height: 28),
                   const SectionHeader(title: 'Contenu du tour'),
-                  const SizedBox(height: 8),
-                  ...data.segments.map((seg) => _SegmentCard(segment: seg)),
+                  const SizedBox(height: 10),
+                  _SearchableText(
+                    text: data.segments.map((s) => s.content).join('\n\n'),
+                    query: _query,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.7),
+                  ),
                 ],
 
-                // Game date if available
+                // Game date
                 if (t.gameDateStart != null) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
                     'Période : ${t.gameDateStart}'
                     '${t.gameDateEnd != null ? ' → ${t.gameDateEnd}' : ''}',
@@ -213,59 +236,133 @@ class TurnDetailScreen extends ConsumerWidget {
   }
 }
 
-/// One segment card — uses color-coded left border per segment type.
-/// [isPj] tints the background slightly purple to distinguish player content.
-class _SegmentCard extends StatelessWidget {
-  final SegmentRow segment;
-  final bool isPj;
+// ---------------------------------------------------------------------------
+// MD-aware text — renders Markdown when no search, highlights when searching
+// ---------------------------------------------------------------------------
 
-  const _SegmentCard({super.key, required this.segment, this.isPj = false});
+class _SearchableText extends StatelessWidget {
+  final String text;
+  final String query;
+  final TextStyle? style;
+  // If true, use a dialogue-style markdown sheet (colored bullets for choices)
+  final bool isChoice;
+
+  const _SearchableText({
+    required this.text,
+    required this.query,
+    this.style,
+    this.isChoice = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = isPj
-        ? Colors.purple
-        : AppColors.segmentTypeColors[segment.segmentType] ?? Colors.grey;
-    final typeLabel = switch (segment.segmentType) {
-      'narrative' => 'Narration',
-      'choice' => 'Choix',
-      'consequence' => 'Conséquence',
-      'ooc' => 'Hors-Jeu',
-      'description' => 'Description',
-      _ => segment.segmentType,
-    };
+    final theme = Theme.of(context);
+    final base = style ?? theme.textTheme.bodyMedium!;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: color, width: 3),
-        ),
+    // When searching: strip MD and highlight matches in plain text
+    if (query.isNotEmpty) {
+      final plain = text
+          .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'$1')
+          .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
+          .replaceAll(RegExp(r'#{1,6}\s+'), '')
+          .replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '');
+      final lower = plain.toLowerCase();
+      final lowerQ = query.toLowerCase();
+      final spans = <TextSpan>[];
+      int start = 0;
+      while (true) {
+        final idx = lower.indexOf(lowerQ, start);
+        if (idx == -1) break;
+        if (idx > start) spans.add(TextSpan(text: plain.substring(start, idx)));
+        spans.add(TextSpan(
+          text: plain.substring(idx, idx + query.length),
+          style: const TextStyle(
+            backgroundColor: Color(0xFFFFE066),
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ));
+        start = idx + query.length;
+      }
+      if (start < plain.length) spans.add(TextSpan(text: plain.substring(start)));
+      return SelectableText.rich(TextSpan(children: spans, style: base));
+    }
+
+    // No search: full Markdown rendering
+    final sheet = _buildStyleSheet(context, base);
+    return MarkdownBody(
+      data: text,
+      selectable: true,
+      styleSheet: sheet,
+    );
+  }
+
+  MarkdownStyleSheet _buildStyleSheet(BuildContext context, TextStyle base) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    // Choice segments get orange/amber bullets; PJ gets purple; default neutral
+    final bulletColor = isChoice
+        ? Colors.orange.shade300
+        : cs.onSurfaceVariant;
+
+    return MarkdownStyleSheet(
+      p: base,
+      strong: base.copyWith(fontWeight: FontWeight.w700, color: cs.onSurface),
+      em: base.copyWith(fontStyle: FontStyle.italic),
+      h1: base.copyWith(fontSize: (base.fontSize ?? 14) + 4, fontWeight: FontWeight.bold),
+      h2: base.copyWith(fontSize: (base.fontSize ?? 14) + 2, fontWeight: FontWeight.bold,
+          color: cs.primary),
+      h3: base.copyWith(fontSize: (base.fontSize ?? 14) + 1, fontWeight: FontWeight.w600,
+          color: cs.primary),
+      listBullet: base.copyWith(color: bulletColor),
+      blockquote: base.copyWith(color: cs.onSurfaceVariant, fontStyle: FontStyle.italic),
+      blockquoteDecoration: BoxDecoration(
+        border: Border(left: BorderSide(color: cs.outlineVariant, width: 3)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Segment type label
-            Text(
-              typeLabel,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
+      blockquotePadding: const EdgeInsets.only(left: 12),
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: cs.outlineVariant)),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Small header badge
+// ---------------------------------------------------------------------------
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool bold;
+  final bool outlined;
+  final bool surface;
+
+  const _Badge({
+    required this.label,
+    required this.color,
+    this.bold = false,
+    this.outlined = false,
+    this.surface = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: surface
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : color.withValues(alpha: outlined ? 0.08 : 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: outlined ? Border.all(color: color.withValues(alpha: 0.4)) : null,
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
-            const SizedBox(height: 6),
-            // Full content
-            SelectableText(
-              segment.content,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    height: 1.5,
-                  ),
-            ),
-          ],
-        ),
       ),
     );
   }

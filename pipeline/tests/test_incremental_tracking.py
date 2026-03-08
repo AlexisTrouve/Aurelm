@@ -15,6 +15,8 @@ from pipeline.db import (
     mark_all_turns_unprocessed,
     update_progress,
     register_civilization,
+    insert_turn_stats,
+    update_run_usage,
 )
 
 
@@ -215,6 +217,179 @@ def test_update_progress(temp_db):
     ).fetchone()
     assert row["current_unit"] == 10
     assert row["status"] == "completed"
+
+    conn.close()
+
+
+def test_turn_stats_table_exists(temp_db):
+    """Verify that migration 008 created pipeline_turn_stats and added columns to pipeline_runs."""
+    conn = get_connection(temp_db)
+
+    # Table exists
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='pipeline_turn_stats'"
+    ).fetchone()
+    assert row is not None, "pipeline_turn_stats table should exist after migrations"
+
+    # Key columns exist (SQLite PRAGMA returns one row per column)
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(pipeline_turn_stats)").fetchall()}
+    for expected in ("run_id", "turn_id", "source", "text_chars", "sys_prompt_chars",
+                     "chunks", "raw_entities", "after_dedup", "final_entities",
+                     "est_tokens", "est_cost_usd"):
+        assert expected in cols, f"Column '{expected}' missing from pipeline_turn_stats"
+
+    # Columns added to pipeline_runs
+    run_cols = {r["name"] for r in conn.execute("PRAGMA table_info(pipeline_runs)").fetchall()}
+    assert "total_tokens" in run_cols
+    assert "total_cost_usd" in run_cols
+
+    conn.close()
+
+
+def test_insert_turn_stats_gm(temp_db):
+    """Test inserting GM extraction stats for a turn."""
+    conn = get_connection(temp_db)
+
+    civ_id = register_civilization(temp_db, "Test Civ")
+    cursor = conn.execute(
+        "INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type) VALUES (?, ?, '[]', 'standard')",
+        (civ_id, 1),
+    )
+    turn_id = cursor.lastrowid
+    cursor = conn.execute("INSERT INTO pipeline_runs (status) VALUES ('running')")
+    run_id = cursor.lastrowid
+    conn.commit()
+
+    insert_turn_stats(
+        conn, run_id, turn_id, "gm",
+        text_chars=2500,
+        sys_prompt_chars=800,
+        chunks=3,
+        raw_entities=12,
+        after_dedup=9,
+        final_entities=7,
+        est_tokens=950,
+        est_cost_usd=0.0019,
+    )
+    conn.commit()
+
+    row = conn.execute(
+        "SELECT * FROM pipeline_turn_stats WHERE run_id=? AND turn_id=? AND source='gm'",
+        (run_id, turn_id),
+    ).fetchone()
+
+    assert row is not None
+    assert row["text_chars"] == 2500
+    assert row["sys_prompt_chars"] == 800
+    assert row["chunks"] == 3
+    assert row["raw_entities"] == 12
+    assert row["after_dedup"] == 9
+    assert row["final_entities"] == 7
+    assert row["est_tokens"] == 950
+    assert abs(row["est_cost_usd"] - 0.0019) < 1e-9
+
+    conn.close()
+
+
+def test_insert_turn_stats_pj(temp_db):
+    """Test inserting PJ stats — zero entity counts, just text metrics."""
+    conn = get_connection(temp_db)
+
+    civ_id = register_civilization(temp_db, "Test Civ")
+    cursor = conn.execute(
+        "INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type) VALUES (?, ?, '[]', 'standard')",
+        (civ_id, 2),
+    )
+    turn_id = cursor.lastrowid
+    cursor = conn.execute("INSERT INTO pipeline_runs (status) VALUES ('running')")
+    run_id = cursor.lastrowid
+    conn.commit()
+
+    insert_turn_stats(
+        conn, run_id, turn_id, "pj",
+        text_chars=1800,
+        sys_prompt_chars=0,
+        chunks=1,
+        raw_entities=0,
+        after_dedup=0,
+        final_entities=0,
+        est_tokens=450,
+        est_cost_usd=0.0,
+    )
+    conn.commit()
+
+    row = conn.execute(
+        "SELECT source, raw_entities, final_entities FROM pipeline_turn_stats WHERE run_id=? AND turn_id=?",
+        (run_id, turn_id),
+    ).fetchone()
+
+    assert row is not None
+    assert row["source"] == "pj"
+    assert row["raw_entities"] == 0
+    assert row["final_entities"] == 0
+
+    conn.close()
+
+
+def test_insert_turn_stats_idempotent(temp_db):
+    """INSERT OR REPLACE: re-inserting same (run_id, turn_id, source) updates the row."""
+    conn = get_connection(temp_db)
+
+    civ_id = register_civilization(temp_db, "Test Civ")
+    cursor = conn.execute(
+        "INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type) VALUES (?, ?, '[]', 'standard')",
+        (civ_id, 1),
+    )
+    turn_id = cursor.lastrowid
+    cursor = conn.execute("INSERT INTO pipeline_runs (status) VALUES ('running')")
+    run_id = cursor.lastrowid
+    conn.commit()
+
+    # First insert
+    insert_turn_stats(conn, run_id, turn_id, "gm",
+        text_chars=100, sys_prompt_chars=0, chunks=1,
+        raw_entities=2, after_dedup=2, final_entities=2,
+        est_tokens=50, est_cost_usd=0.001)
+    conn.commit()
+
+    # Second insert with different values (simulates re-run)
+    insert_turn_stats(conn, run_id, turn_id, "gm",
+        text_chars=200, sys_prompt_chars=50, chunks=2,
+        raw_entities=5, after_dedup=4, final_entities=3,
+        est_tokens=120, est_cost_usd=0.002)
+    conn.commit()
+
+    # Should have exactly one row, with the updated values
+    rows = conn.execute(
+        "SELECT * FROM pipeline_turn_stats WHERE run_id=? AND turn_id=? AND source='gm'",
+        (run_id, turn_id),
+    ).fetchall()
+    assert len(rows) == 1
+    assert rows[0]["final_entities"] == 3
+    assert rows[0]["text_chars"] == 200
+
+    conn.close()
+
+
+def test_update_run_usage(temp_db):
+    """Test updating total token and cost counters on a pipeline run."""
+    conn = get_connection(temp_db)
+
+    cursor = conn.execute("INSERT INTO pipeline_runs (status) VALUES ('running')")
+    run_id = cursor.lastrowid
+    conn.commit()
+
+    update_run_usage(conn, run_id, total_tokens=42000, total_cost_usd=0.0168)
+    conn.commit()
+
+    row = conn.execute(
+        "SELECT total_tokens, total_cost_usd FROM pipeline_runs WHERE id=?",
+        (run_id,),
+    ).fetchone()
+
+    assert row is not None
+    assert row["total_tokens"] == 42000
+    assert abs(row["total_cost_usd"] - 0.0168) < 1e-9
 
     conn.close()
 

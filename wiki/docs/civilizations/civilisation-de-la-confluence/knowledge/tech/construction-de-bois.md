@@ -4,17 +4,18 @@
 
 | | |
 |---|---|
-| **Acquisition** | Tour 14 |
+| **Acquisition** | Tour 18 |
 | **Categorie** | Construction |
+| **Fiche narrative** | [Voir la page entite](../../entities/construction-de-bois.md) |
 
 ## Arbre chronologique
 
-**Tour 13** (precedent) : [fresques](fresques.md), [pigments](pigments.md), [artefacts translucides](artefacts-translucides.md), [techniques de creusage](techniques-de-creusage.md)
-**Tour 14** (actuel) : **construction de bois**
+**Tour 16** (precedent) : [idéoglyphes](ideoglyphes.md), [peinture de la voix](peinture-de-la-voix.md)
+**Tour 18** (actuel) : **construction de bois**
 
 ## Extrait narratif
 
-> ...révoir. Essayez de percer des galeries secondaires à aussi échoué pour la simple et bonne raison que la majorité de la roche qui sert d'écrin à cette construction est bien trop dure pour vous outils. C'est d'ailleurs certainement pour cette raison qu'elle a été choisie. Là où ce n'est pas la pierre qui vous blo...
+> Tes artisans s'intéressent à la construction de bois, repêchée dans la vase et acheminée jusqu'ici avec beaucoup de difficulté. Il y a assez peu de respect pour cette construction qui ne montre aucun am...
 
 ---
 [Retour a l'arbre technologique](../technologies.md)

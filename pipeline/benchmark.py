@@ -54,9 +54,18 @@ def normalize(text: str) -> str:
 
 
 def find_gm_author_id(messages: list) -> str:
-    """Find the GM's author_id from messages."""
+    """Find the GM's author_id from messages.
+
+    Uses prefix matching so "Arthur Ignatus (03/09/2024)" matches "Arthur Ignatus".
+    Skips synthetic __player__ placeholders.
+    """
     for msg in messages:
-        if msg.author_name in GM_AUTHORS:
+        name_lower = msg.author_name.lower()
+        if any(name_lower.startswith(gm.lower()) for gm in GM_AUTHORS):
+            return msg.author_id
+    # Fallback: first non-synthetic message
+    for msg in messages:
+        if msg.author_name != "__player__":
             return msg.author_id
     return messages[0].author_id if messages else "unknown"
 
@@ -145,9 +154,18 @@ def score_extraction(
 
 
 def parse_turn_arg(turn_arg: str, num_turns: int) -> list[int]:
-    """Parse --turn argument into list of 0-based turn indices."""
+    """Parse --turn argument into list of 0-based turn indices.
+
+    Accepts:
+      'last'  → last turn only
+      'all'   → every turn (for full-corpus aggregate scoring)
+      '14'    → turn 14 (1-based)
+      '1,5,14' → multiple turns
+    """
     if turn_arg == "last":
         return [num_turns - 1]
+    if turn_arg == "all":
+        return list(range(num_turns))
     indices = []
     for part in turn_arg.split(","):
         part = part.strip()
@@ -192,6 +210,11 @@ def run_benchmark(
 
         gm_id = find_gm_author_id(messages)
         turns = detect_turn_boundaries(messages, gm_id)
+        # Filter out synthetic player-only boundary markers inserted by new-layout loader.
+        # New layout: loader inserts a fake "__player__" message before each mj file to trigger
+        # GM-after-player detection. That creates a leading chunk[0] with is_gm_post=False
+        # (content = "[Tour N]") which shifts all real turn indices by +1 without this filter.
+        turns = [t for t in turns if t.is_gm_post]
         print(f"Detected {len(turns)} turns (GM author: {gm_id})")
 
         # 3. Select turns
@@ -377,7 +400,7 @@ def main():
     elif not args.llm_provider:
         parser.error("--llm-provider is required unless --llm-config is used")
 
-    run_benchmark(
+    results = run_benchmark(
         data_dir=args.data_dir,
         civ_name=args.civ,
         model=config.default_model if config else args.model,
@@ -388,6 +411,22 @@ def main():
         llm_provider=args.llm_provider or (config.provider_name if config else "ollama"),
         llm_config=config,
     )
+
+    # Aggregate across all turns when multiple turns are processed
+    if results and len(results) > 1:
+        total_tp = sum(r["n_tp"] for r in results)
+        total_fp = sum(r["n_fp"] for r in results)
+        total_fn = sum(r["n_fn"] for r in results)
+        agg_p = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0
+        agg_r = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0
+        agg_f1 = 2 * agg_p * agg_r / (agg_p + agg_r) if (agg_p + agg_r) > 0 else 0
+        total_words = sum(r.get("word_count", 0) for r in results)
+        print(f"\n{'='*60}")
+        print(f"AGGREGATE ({len(results)} turns, {total_words:,} words)")
+        print(f"{'='*60}")
+        print(f"Precision: {agg_p:.1%}  ({total_tp}/{total_tp+total_fp})")
+        print(f"Recall:    {agg_r:.1%}  ({total_tp}/{total_tp+total_fn})")
+        print(f"F1:        {agg_f1:.1%}")
 
 
 if __name__ == "__main__":

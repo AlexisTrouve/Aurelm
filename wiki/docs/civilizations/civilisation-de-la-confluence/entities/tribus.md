@@ -20,25 +20,25 @@ Tour  5  ████████████████████
 
 ## Description
 
-La tribu est une collectivité humaine qui vit dans cette terre, ils ont leurs propres rites et croyances. Ils croient que les oiseaux emportent l'âme des défunts vers le ciel. Les membres de la tribu se sentent responsables de faire fructifier leur territoire en honneur aux ancêtres.
+La Tribus est une civilisation organisée autour de croyances religieuses et de pratiques rituelles liées à la mort et à la nature. Elle est caractérisée par des rites funéraires où les corps des défunts sont déposés sur les crêtes pour être emportés par les oiseaux vers le ciel. La Tribus a une structure sociale hiérarchisée, où les individus se battent pour s'accaparer les femmes et où les « sans-ciel » sont progressivement exclus. Elle considère la terre comme un don sacré à cultiver.
 
 ## Chronologie
 
-**Tour 3: La tribu a développé un rite où les défunts sont emmenés aux sommets pour être déposés. Les membres de la tribu croient que les oiseaux récupèrent morceau par morceau le mort pour l'emmener au ciel.**
+**Tour 3: Dans la Tribus, les rites funéraires impliquent de déposer les corps des morts sur les crêtes, en fonction de leur statut. Une croyance religieuse stipule que les oiseaux emportent les âmes vers le ciel, tandis que les restes sèchent et disparaissent. La Tribus relie ainsi la mort à une ascension spirituelle.**
 
-**Tour 5: La tribu est censée faire fructifier leur territoire, ce qui a conduit à une concurrence féroce entre les hommes pour s'accaparer les femmes. Les sans-ciel sont exclus au fil du temps.**
+**Tour 5: La Tribu, sous l'influence des ancêtres, se sent obligée de cultiver la terre sacrée qu'elle a héritée. La concurrence entre les hommes pour les femmes devient féroce, et les « sans-ciel » sont progressivement exclus de la communauté, menaçant l'avenir de la Tribu.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 3**
 > "Tribus"
 >
-> Contexte : une communauté qui suit des rites et des croyances spécifiques...
+> Contexte : groupe humain qui suit les rites et croyances...
 
 **Tour 5**
 > "Tribu"
 >
-> Contexte : Tribu...
+> Contexte : la tribu doit croître au sein de cette terre...
 
 ??? note "Sources -- Passages originaux"
 

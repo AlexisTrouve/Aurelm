@@ -21,6 +21,57 @@ class TurnSummary:
     key_events: list[str] = field(default_factory=list)
     entities_mentioned: list[str] = field(default_factory=list)
     choices_made: list[str] = field(default_factory=list)
+    # Descriptors — generated in the same GM call as the summary
+    thematic_tags: list[str] = field(default_factory=list)
+    tech_era: str = "neolithique"
+    tech_era_reasoning: str = ""
+    fantasy_level: str = "realiste"
+    fantasy_level_reasoning: str = ""
+
+
+# Predefined thematic tag vocabulary — exhaustive list given to the LLM.
+# The LLM picks only from these; no free-form tags allowed.
+THEMATIC_TAGS = [
+    "technologie",    # new tool, technique or infrastructure developed
+    "ressource",      # resource discovery, exploitation or scarcity
+    "diplomatie",     # inter-civ contact, alliance, negotiation, trade deal
+    "commerce",       # exchange of goods, markets, trade routes
+    "crise",          # disaster, famine, disease, internal conflict
+    "combat",         # war, raid, battle, violence
+    "religion",       # ritual, belief, cult, oracle, spiritual event
+    "culture",        # art, music, fresco, storytelling, identity
+    "exploration",    # territorial expansion, scouting, prospection
+    "politique",      # governance, law, institution creation or crisis
+    "migration",      # population movement, settlement, diaspora
+    "decouverte",     # significant find (artefact, ruin, species, place)
+    "construction",   # building, infrastructure, monument
+    "agriculture",    # farming, herding, food production
+    "science",        # systematic knowledge, writing, classification
+    "mort",           # death, mourning, funerary rite, epidemic
+]
+
+# Ordered tech era labels — LLM picks one and may advance/retreat vs prev turn.
+TECH_ERAS = [
+    "paleolithique",   # flint, hunting, no settlement
+    "mesolithique",    # micro-tools, fishing, semi-nomadic
+    "neolithique",     # polished stone, farming, permanent villages
+    "chalcolithique",  # copper, early metallurgy
+    "age-du-bronze",   # bronze, complex cities, writing emerging
+    "age-du-fer",      # iron, armies, roads
+    "antiquite",       # empires, philosophy, engineering
+    "moyen-age",       # feudalism, castles, religion dominant
+    "renaissance",     # printing, humanism, early science
+    "pre-industriel",  # proto-industry, global trade
+]
+
+# Fantasy level labels — LLM assesses based on supernatural elements in the turn.
+FANTASY_LEVELS = [
+    "realiste",          # zero supernatural — pure human drama
+    "low-fantasy",       # subtle: prophecy, spiritual presence, unexplained but rare
+    "balanced-fantasy",  # magic/supernatural present and accepted, not dominant
+    "high-fantasy",      # magic central to the narrative and society
+    "epic-fantasy",      # pervasive magic, divine intervention, legendary scale
+]
 
 
 @dataclass
@@ -41,21 +92,49 @@ MAX_CONTENT_CHARS = 16000
 
 
 GM_PROMPT = """Tu es un archiviste expert pour un JDR de civilisation.
-Resume la narration du Maitre du Jeu pour ce tour.{civ_context}
+Resume la narration du Maitre du Jeu pour ce tour et attribue des descripteurs.{civ_context}
+
+Niveau technologique du tour precedent : {prev_tech_era}
+Niveau fantastique du tour precedent : {prev_fantasy_level}
+
+Tags thematiques disponibles (choisis 1 a 5 UNIQUEMENT parmi cette liste) :
+{thematic_tags_list}
+
+Niveaux technologiques (du plus bas au plus haut) :
+{tech_eras_list}
+
+Niveaux fantastiques (du plus bas au plus haut) :
+{fantasy_levels_list}
 
 Extrais :
 1. Un resume court (1-2 phrases, factuel, ce qui se passe dans le monde)
 2. Un resume detaille (1 paragraphe complet couvrant la narration)
 3. Les evenements cles (liste de phrases courtes -- uniquement les faits importants)
 4. Les entites mentionnees (noms propres : personnes, lieux, technologies, institutions, castes)
+5. Tags thematiques (1 a 5 tags de la liste fournie)
+6. Niveau technologique : raisonnement + label exact de la liste
+7. Niveau fantastique : raisonnement + label exact de la liste
 
 Regles :
 - Le resume court et le resume detaille doivent etre DIFFERENTS
 - Utilise les noms propres exacts du texte
 - Ignore les liens YouTube, timestamps, et notes hors-jeu
 - Ecris du point de vue du Maitre du Jeu
+- tech_era et fantasy_level : utilise EXACTEMENT un label de la liste, rien d'autre
+- En cas de doute sur la progression, maintiens le niveau du tour precedent
 
-Reponds UNIQUEMENT en JSON : {{"short_summary": "...", "detailed_summary": "...", "key_events": [...], "entities_mentioned": [...]}}
+Reponds UNIQUEMENT en JSON :
+{{
+  "short_summary": "...",
+  "detailed_summary": "...",
+  "key_events": [...],
+  "entities_mentioned": [...],
+  "thematic_tags": ["tag1", "tag2"],
+  "tech_era_reasoning": "2-3 phrases justifiant le niveau tech",
+  "tech_era": "label-exact",
+  "fantasy_level_reasoning": "2-3 phrases justifiant le niveau fantastique",
+  "fantasy_level": "label-exact"
+}}
 
 Narration du MJ :
 {text}"""
@@ -111,12 +190,15 @@ def summarize_turn(
     player_name: str | None = None,
     author_contents: list[AuthorContent] | None = None,
     provider: LLMProvider | None = None,
+    prev_tech_era: str = "neolithique",
+    prev_fantasy_level: str = "realiste",
 ) -> TurnSummary:
-    """Generate a structured summary of a game turn.
+    """Generate a structured summary + descriptors for a game turn.
 
-    If author_contents is provided and use_llm is True, uses multi-call
-    architecture (1 call per author). Otherwise falls back to single-call
-    or extractive summary.
+    The GM call produces both narrative summary and turn descriptors (thematic
+    tags, tech era, fantasy level) in a single LLM call. prev_tech_era and
+    prev_fantasy_level are passed so the LLM can reason about progression.
+    Falls back to extractive summary (no tags) if LLM is unavailable.
     """
     if not use_llm:
         return _extractive_summary(turn_text, civ_name=civ_name)
@@ -128,7 +210,8 @@ def summarize_turn(
         if author_contents and len(author_contents) > 0:
             result = _multi_call_summary(
                 author_contents, model, civ_name=civ_name, player_name=player_name,
-                provider=llm,
+                provider=llm, prev_tech_era=prev_tech_era,
+                prev_fantasy_level=prev_fantasy_level,
             )
         else:
             result = _single_call_summary(
@@ -150,8 +233,14 @@ def _multi_call_summary(
     civ_name: str | None = None,
     player_name: str | None = None,
     provider: LLMProvider | None = None,
+    prev_tech_era: str = "neolithique",
+    prev_fantasy_level: str = "realiste",
 ) -> TurnSummary:
-    """Multi-call: one LLM call per author, then merge."""
+    """Multi-call: one LLM call per author, then merge.
+
+    The GM call includes tag/era descriptors in the same JSON response.
+    The player call is unchanged (choices only).
+    """
     civ_context = ""
     if civ_name:
         civ_context = f'\nCe tour concerne la civilisation "{civ_name}".'
@@ -167,6 +256,11 @@ def _multi_call_summary(
         if ac.is_gm:
             prompt = GM_PROMPT.format(
                 civ_context=civ_context,
+                prev_tech_era=prev_tech_era,
+                prev_fantasy_level=prev_fantasy_level,
+                thematic_tags_list=", ".join(THEMATIC_TAGS),
+                tech_eras_list=" < ".join(TECH_ERAS),
+                fantasy_levels_list=" < ".join(FANTASY_LEVELS),
                 text=text,
             )
             data = _call_llm(model, prompt, provider)
@@ -199,9 +293,14 @@ def _coerce_str_list(val: object) -> list[str]:
     return []
 
 
-def _merge_summaries(gm_parts: list[dict], player_parts: list[dict]) -> TurnSummary:
-    """Merge GM and player LLM outputs into a single TurnSummary."""
-    # GM: narrative summary, key events, entities
+def _merge_summaries(gm_parts: list[dict], player_parts: list[dict],
+                     prev_tech_era: str = "neolithique",
+                     prev_fantasy_level: str = "realiste") -> TurnSummary:
+    """Merge GM and player LLM outputs into a single TurnSummary.
+
+    Tags and era descriptors come from the GM call (first gm_part wins).
+    """
+    # GM: narrative summary, key events, entities, descriptors
     gm_short = " ".join(d.get("short_summary", "") for d in gm_parts).strip()
     gm_detailed = " ".join(d.get("detailed_summary", "") for d in gm_parts).strip()
     key_events = []
@@ -218,7 +317,6 @@ def _merge_summaries(gm_parts: list[dict], player_parts: list[dict]) -> TurnSumm
     entities = []
     for d in gm_parts + player_parts:
         entities.extend(_coerce_str_list(d.get("entities_mentioned")))
-    # Deduplicate preserving order
     seen: set[str] = set()
     unique_entities = []
     for e in entities:
@@ -232,12 +330,30 @@ def _merge_summaries(gm_parts: list[dict], player_parts: list[dict]) -> TurnSumm
     else:
         short_summary = gm_short or player_short
 
+    # Descriptors — from first GM part, validated against allowed vocabularies
+    first_gm = gm_parts[0] if gm_parts else {}
+    raw_tags = _coerce_str_list(first_gm.get("thematic_tags"))
+    thematic_tags = [t for t in raw_tags if t in THEMATIC_TAGS]
+
+    tech_era = first_gm.get("tech_era", "")
+    if tech_era not in TECH_ERAS:
+        tech_era = prev_tech_era
+
+    fantasy_level = first_gm.get("fantasy_level", "")
+    if fantasy_level not in FANTASY_LEVELS:
+        fantasy_level = prev_fantasy_level
+
     return TurnSummary(
         short_summary=short_summary,
         detailed_summary=gm_detailed,
         key_events=key_events,
         entities_mentioned=unique_entities,
         choices_made=choices_made,
+        thematic_tags=thematic_tags,
+        tech_era=tech_era,
+        tech_era_reasoning=first_gm.get("tech_era_reasoning", ""),
+        fantasy_level=fantasy_level,
+        fantasy_level_reasoning=first_gm.get("fantasy_level_reasoning", ""),
     )
 
 

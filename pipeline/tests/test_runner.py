@@ -149,6 +149,50 @@ class TestFullPipeline:
         not CIVJDR_DIR.is_dir(),
         reason="civjdr/Background directory not available"
     )
+    def test_pipeline_saves_pj_turn_stats(self):
+        """Verify PJ extraction stats are persisted to pipeline_turn_stats even without LLM."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+            db_path = f.name
+        try:
+            run_pipeline(
+                data_dir=str(CIVJDR_DIR),
+                db_path=db_path,
+                civ_name="Civilisation de la Confluence",
+                use_llm=False,
+                extraction_version="v1-baseline",
+            )
+
+            conn = get_connection(db_path)
+
+            # pipeline_turn_stats table must exist (migration 008)
+            table_exists = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='pipeline_turn_stats'"
+            ).fetchone()
+            assert table_exists is not None
+
+            # At least one PJ row should have been inserted (source='pj')
+            pj_count = conn.execute(
+                "SELECT COUNT(*) FROM pipeline_turn_stats WHERE source='pj'"
+            ).fetchone()[0]
+            assert pj_count > 0, "Expected PJ turn stats to be recorded"
+
+            # PJ rows should have text_chars > 0 (player text was read)
+            # and zero entity counts (no extraction on PJ text)
+            row = conn.execute(
+                "SELECT text_chars, raw_entities, final_entities FROM pipeline_turn_stats WHERE source='pj' LIMIT 1"
+            ).fetchone()
+            assert row["text_chars"] > 0
+            assert row["raw_entities"] == 0
+            assert row["final_entities"] == 0
+
+            conn.close()
+        finally:
+            os.unlink(db_path)
+
+    @pytest.mark.skipif(
+        not CIVJDR_DIR.is_dir(),
+        reason="civjdr/Background directory not available"
+    )
     def test_pipeline_creates_summaries(self):
         """Check that extractive summaries are created for turns."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:

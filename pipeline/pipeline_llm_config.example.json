@@ -1,11 +1,15 @@
 {
+  "_comment": "Example config for Arthur's machine (RTX 5070 Ti 16GB — Ollama local). Copy to pipeline_llm_config.json and adjust.",
   "provider": "ollama",
   "default_model": "qwen3:14b",
   "stages": {
-    "extraction": { "model": "qwen3:14b" },
+    "extraction":    { "model": "qwen3:14b" },
+    "focus":         { "model": "qwen3:14b" },
+    "validation":    { "model": "llama3.1:8b" },
     "summarization": { "model": "llama3.1:8b" },
-    "profiling": { "model": "qwen3:8b" },
-    "aliases": { "model": "qwen/qwen3-14b", "prompt_version": "v12-desc-first-tuned", "score_threshold": 0.7 },
-    "validation": { "model": "qwen3:14b" }
+    "profiling":     { "model": "qwen3:14b" },
+    "aliases":       { "model": "qwen3:14b", "prompt_version": "v12-desc-first-tuned", "score_threshold": 0.7 },
+    "subjects":      { "model": "qwen3:14b" }
   }
 }
+

@@ -11,20 +11,19 @@
 
 - [filet de pêche lesté](filet-de-peche-leste.md)
 - [serpes grossières taillées dans des os](serpes-grossieres-taillees-dans-des-os.md)
-- [hameçons et casiers à poisson](hamecons-et-casiers-a-poisson.md)
+- [hameçons délicats](hamecons-delicats.md)
+- [casiers à poisson](casiers-a-poisson.md)
+- [techniques de polissage](techniques-de-polissage.md)
 
 ## Arbre chronologique
 
-**Tour 5** (precedent) : [pointes de flèches](pointes-de-fleches.md), [roches striées](roches-striees.md)
+**Tour 5** (precedent) : [techniques de chasse](techniques-de-chasse.md), [savoir des cycles de reproductions](savoir-des-cycles-de-reproductions.md), [outils et armes perfectionnés](outils-et-armes-perfectionnes.md)
 **Tour 6** (actuel) : **lance à la pointe polie**
-**Tour 7** (suivant) : [rhombes en pierre](rhombes-en-pierre.md), [pipeau en bambou](pipeau-en-bambou.md)
+**Tour 9** (suivant) : [arts propres aux peuples](arts-propres-aux-peuples.md), [outils des rituels sacrés](outils-des-rituels-sacres.md), [arts et musique](arts-et-musique.md)
 
 ## Meme categorie : Outils de chasse
 
 - [gourdins](gourdins.md) (Tour 2)
-- [pieux](pieux.md) (Tour 2)
-- [lance](lance.md) (Tour 9)
-- [Faucons Chasseurs](faucons-chasseurs.md) (Tour 11)
 
 ## Extrait narratif
 

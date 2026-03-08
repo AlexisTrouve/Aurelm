@@ -1,42 +1,44 @@
 # Réseau d'Entités
 
-## Hub central : Cercle des Sages (13 mentions)
+## Hub central : Ailes-Grises (13 mentions)
 
 ```
-Cercle des Sages (civilisations)
-├─ Faucons Chasseurs (creatures) — 9 tours ensemble
-├─ Gouffre Humide (lieux) — 9 tours ensemble
-├─ Argile Vivante (ressources) — 8 tours ensemble
-├─ Cheveux de Sang (creatures) — 3 tours ensemble
-└─ Ailes-Grises (castes) — 3 tours ensemble
+Ailes-Grises (castes)
+├─ Enfants des échos (castes) — 6 tours ensemble
+├─ Gouffre Humide (lieux) — 5 tours ensemble
+├─ Tailleurs de pierre (castes) — 5 tours ensemble
+├─ Passes-bien (castes) — 5 tours ensemble
+└─ Sans-ciels (castes) — 5 tours ensemble
 ```
 
 ## Clusters par type
 
 ### Castes
 
-- Ailes-Grises ↔ Cercle des Sages (3 tours)
-- Ailes-Grises ↔ Faucons Chasseurs (3 tours)
-- Ailes-Grises ↔ Regards-Libres (3 tours)
+- Ailes-Grises ↔ Enfants des échos (6 tours)
+- Ailes-Grises ↔ Gouffre Humide (5 tours)
+- Ailes-Grises ↔ Passes-bien (5 tours)
 
 ### Lieux
 
-- Gouffre Humide ↔ Cercle des Sages (9 tours)
-- Gouffre Humide ↔ Faucons Chasseurs (9 tours)
-- Gouffre Humide ↔ Argile Vivante (8 tours)
+- Gouffre Humide ↔ Ailes-Grises (5 tours)
+- Antres des Echos ↔ Ailes-Grises (5 tours)
+- Antres des Echos ↔ Enfants du Courant (5 tours)
+
+### Technologies
+
+- Rhombes ↔ Antres des Echos (5 tours)
+- Rhombes ↔ Rhombes miniatures (5 tours)
+- Rhombes miniatures ↔ Ailes-Grises (4 tours)
 
 ### Institutions
 
-- Tribunal de moeurs ↔ Faucons Chasseurs (2 tours)
+- Cercle des Sages ↔ Regards-Libres (4 tours)
+- Cercle des Sages ↔ Rhombes miniatures (4 tours)
+- Cercle des Sages ↔ Tribunal des mœurs (4 tours)
 
 ### Civilisations
 
-- Cercle des Sages ↔ Faucons Chasseurs (9 tours)
-- Cercle des Sages ↔ Gouffre Humide (9 tours)
-- Cercle des Sages ↔ Argile Vivante (8 tours)
-
-### Ressources
-
-- Argile Vivante ↔ Faucons Chasseurs (8 tours)
-- Argile Vivante ↔ Cercle des Sages (8 tours)
-- Argile Vivante ↔ Gouffre Humide (8 tours)
+- Nanzagouet ↔ Faucons Chasseurs (2 tours)
+- Pouleheimos ↔ Faucons Chasseurs (2 tours)
+- Pouleheimos ↔ Nantons (2 tours)

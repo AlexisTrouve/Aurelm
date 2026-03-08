@@ -5,8 +5,13 @@ from __future__ import annotations
 _counts: dict[str, int] = {
     "fact_extraction": 0,
     "entity_extraction": 0,
+    "mark_extraction": 0,
+    "focused_extraction": 0,
+    "entity_validation": 0,
     "summarization": 0,
     "entity_profiling": 0,
+    "subject_extraction": 0,
+    "subject_resolution": 0,
 }
 
 

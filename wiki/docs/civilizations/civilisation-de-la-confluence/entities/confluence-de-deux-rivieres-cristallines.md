@@ -19,20 +19,18 @@ Tour  2  ████████████████████  ← Pic
 
 ## Description
 
-La Confluence de deux rivières cristallines est un endroit où deux rivières se rencontrent. Elle est située dans une large vallée et est décrite comme étant encaissée, avec des rivières cristallines qui y coulent. Il s'agit d'un lieu de vie pour les générations futures, où les personnages sont enfin en sécurité.
+La Confluence de deux rivières cristallines est un lieu naturel situé en bordure d'une large vallée, caractérisé par la rencontre de deux rivières dont l'eau est cristalline. Ce lieu est perçu comme un refuge et un lieu de sécurité après un long voyage éprouvant. Il joue un rôle essentiel dans la survie et le rétablissement d'un groupe de personnes épuisées, offrant des ressources comme de l'eau, des poissons et des plantes comestibles.
 
 ## Chronologie
 
-**Tour 2: Les personnages arrivent au lieu après un long et ardu chemin, épuisés mais ravis de trouver refuge dans la Confluence. Ils s'installent en bord de rivière et commencent à repousser leur fatigue et leur faim.**
-
-**Tour 5: La description de la Confluence est utilisée comme définition d'une terre de beauté, démontrant son importance pour les personnages.**
+**Tour 2: La Confluence de deux rivières cristallines est le lieu final vers lequel le groupe se dirige après un voyage pénible. Arrivés là, les survivants s'installent en bord de rivière, trop épuisés pour contester l'idée d'une terre de beauté. Ce lieu devient leur nouveau foyer, bien que leur récovery soit lente et difficile.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 2**
 > "Confluence de deux rivières cristallines"
 >
-> Contexte : Confluence de deux rivières cristallines...
+> Contexte : lieu de settlement...
 
 ??? note "Sources -- Passages originaux"
 

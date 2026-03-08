@@ -1,6 +1,6 @@
 # Ancêtres
 
-*Institutions* -- Civilisation de la Confluence
+*Belief* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
@@ -19,20 +19,18 @@ Tour  5  ████████████████████  ← Pic
 
 ## Description
 
-Les Ancêtres sont une institution qui représente la tradition et les valeurs de la tribu. Ils jouent un rôle crucial dans le maintien de l'harmonie avec la nature et la protection des femmes du village. Les Ancêtres sont censés guider les générations futures sur leur voie, en leur transmettant les connaissances et les légendes de leurs ancêtres.
+Les Ancêtres sont une entité spirituelle ou mythique au cœur des croyances de la tribu. Ils sont perçus comme des figures sacrées qui ont sacrifié leur vie pour permettre à la tribu de prospérer sur la terre. Leur parole est transmise par les membres de la tribu, qui se sentent guidés par leur devoir sacré de faire fructifier l'eden. Leur influence est profonde, dictant les lois sociales et les comportements, notamment la concurrence entre les hommes pour s'accaparer les femmes. Les sans-ciel, qui ne semblent pas être reconnus comme membres de la tribu, sont exclus progressivement.
 
 ## Chronologie
 
-**Tour 1: Le visiteur qui vient consulter le joueur est influencé par la crainte et le regret, mais il se ressouvient de la parole des Ancêtres peu après.**
-
-**Tour 5: La parole des Ancêtres est transmise à la tribu, rappelant leur devoir sacré de faire fructifier l'Eden. Cela suscite une concurrence féroce entre les hommes pour s'accaparer les femmes et créer des descendants.**
+**Tour 5: Dans ce tour, un individu vient consulter l'archiviste, transmettant ensuite la parole des Ancêtres. Cette parole rappelle le devoir sacré de la tribu de faire fructifier la terre, héritée des Ancêtres. Ce devoir est devenu un élément central de la vie sociale, avec une concurrence féroce entre les hommes pour s'accaparer les femmes, excluant progressivement les sans-ciel.**
 
 ## 💬 Mentions avec contexte
 
 **Tour 5**
 > "Ancêtres"
 >
-> Contexte : Ancêtres...
+> Contexte : esprits qui veillent sur la tribu...
 
 ??? note "Sources -- Passages originaux"
 

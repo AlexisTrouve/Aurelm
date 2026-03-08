@@ -1,29 +1,31 @@
 # Civilisation de la Confluence
 
-**Tours de jeu** : 14
+**Joueur** : Rubanc
+
+**Tours de jeu** : 19
 
 ## Entites par type
 
 | Type | Nombre |
 |---|---|
-| Civilisations | 10 |
-| Lieux | 7 |
-| Personnages | 7 |
-| Institutions | 6 |
-| Creatures | 6 |
-| Technologies | 3 |
+| Castes | 21 |
+| Technologies | 20 |
+| Lieux | 16 |
+| Institutions | 12 |
+| Evenements | 12 |
+| Belief | 9 |
+| Civilisations | 7 |
+| Creatures | 4 |
 | Ressources | 2 |
-| Evenements | 2 |
-| Castes | 2 |
-| Belief | 2 |
+| Personnages | 1 |
 
 ## Derniers tours
 
-- **Tour 10** -- La narration concerne la visite d'un ermite dans une colonie sous-terrestre de la civilisation des enfants des échos. Le...
-- **Tour 11** -- La civilisation de la Confluence poursuit ses travaux d'aménagement dans les nouvelles Antres, tandis que le peuple trav...
-- **Tour 12** -- Un cadavre a été découvert dans le village de la Confluence, et des accusations ont été portées contre un homme sans-cie...
-- **Tour 13** -- Le groupe a découvert une ancienne structure souterraine contenant des gravures, des peintures et des artefacts. Ils ont...
-- **Tour 14** -- La civilisation de la Confluence explore les ruines de Gouffre Humide, un ancien site sacré où se trouvent des fresques ...
+- **Tour 15** -- La civilisation de la Confluence explore les ruines de Gouffre Humide, un site sacré où les fresques des Premiers Ancêtr...
+- **Tour 16** -- La civilisation de la Confluence assiste à l'émergence d'une nouvelle forme d'écriture, la peinture de la voix, issue de...
+- **Tour 17** -- La civilisation de la Confluence tente de capturer des étrangers appelés 'cheveux de sang', mais le plan échoue partiell...
+- **Tour 18** -- La civilisation de la Confluence explore les glyphes des sommets tout en préparant la réception des Nanzagouets, un peup...
+- **Tour 19** -- Les plénipotentiaires Nanzagouets, des Mériadoques, sont accueillis dans la colonie pour une rencontre diplomatique, mar...
 
 ## Pages
 

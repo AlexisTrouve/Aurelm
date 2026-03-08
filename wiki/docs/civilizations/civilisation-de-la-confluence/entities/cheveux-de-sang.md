@@ -1,72 +1,73 @@
 # Cheveux de Sang
 
-*Creatures* -- Civilisation de la Confluence
+*Castes* -- Civilisation de la Confluence
 
 ## 📊 Vue d'ensemble
 
 | | |
 |---|---|
 | **Mentions totales** | 3 |
-| **Tours actifs** | 8-14 (7 tours) |
-| **Pic d'activite** | Tour 8 (1 mentions) |
+| **Tours actifs** | 1-17 (17 tours) |
+| **Pic d'activite** | Tour 1 (1 mentions) |
 | **Moyenne** | 1.0 mentions/tour |
 
 ## 📈 Graphe d'activite
 
 ```
-Tour  8  ████████████████████  ← Pic
-Tour 12  ████████████████████
-Tour 14  ████████████████████
+Tour  1  ████████████████████  ← Pic
+Tour  9  ████████████████████
+Tour 17  ████████████████████
 ```
 
 ## 🔗 Reseau relationnel
 
 **Entites souvent mentionnees ensemble :**
 
-- 🔵 **Faucons Chasseurs** (Creatures) — 3 tours
-- 🔵 **Cercle des Sages** (Civilisations) — 3 tours
-- 🔵 **Gouffre Humide** (Lieux) — 3 tours
-- 🔵 **Argile Vivante** (Ressources) — 2 tours
+- 🔵 **Ailes-Grises** (Castes) — 2 tours
+- 🔵 **Regards-Libres** (Creatures) — 2 tours
+- 🔵 **Sans-ciels** (Castes) — 2 tours
+- 🔵 **Maillets en bois** (Technologies) — 2 tours
+- 🔵 **Burin en pierre** (Technologies) — 2 tours
 
 ## Description
 
-Les Cheveux de Sang sont une créature décrite comme ayant des cheveux rouges comme un soleil qui se couche. Ils semblent être un peuple ou une entité étrangère, inconnue des Gardiens de la Confluence et des autres habitants du monde.
+Les 'Cheveux de Sang' sont une caste mystérieuse et mobile, probablement liée à des pratiques aquatiques ou à une dépendance en eau douce. Ils se déplacent souvent dans des environnements aquatiques, ce qui suggère une adaptation particulière à ces lieux. Leur présence est discrète et difficile à surprendre, ce qui indique une organisation ou une vigilance accrue. Ils semblent avoir un besoin régulier d'accéder à la terre pour se réapprovisionner en eau douce, ce qui pourrait révéler une dépendance ou une limitation de leur environnement naturel.
 
 ## Chronologie
 
-**Tour 8: Aucune mention spécifique des Cheveux de Sang**
+**Tour 1: Les 'Cheveux de Sang' sont mentionnés dans le contexte du groupe social, ce qui suggère qu'ils forment une catégorie ou une strate particulière au sein de la société.**
 
-**Tour 12: Aucune mention spécifique des Cheveux de Sang**
+**Tour 9: Les 'Cheveux de Sang' sont mentionnés dans le contexte des ancêtres, ce qui pourrait indiquer un lien historique, culturel ou génétique avec des figures passées.**
 
-**Tour 14: Les Cheveux de Sang sont décrits comme un peuple étranger aux intentions mystérieuses. Les Premiers Ancêtres ont laissé un avertissement gravé dans la pierre pour les prévenir d'ignorer l'inconnu.**
+**Tour 17: Les 'Cheveux de Sang' sont observés plus régulièrement, notamment grâce à des regards-libres et des traqueurs. Ils effectuent des pérégrinations aquatiques et doivent régulièrement rejoindre la terre pour obtenir de l'eau douce. Leur mobilité et leur discrétion rendent leur surveillance difficile.**
 
 ## 💬 Mentions avec contexte
 
-**Tour 8**
+**Tour 1**
 > "Cheveux de Sang"
 >
-> Contexte : Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+> Contexte : groupe social...
 
-**Tour 12**
+**Tour 9**
 > "Cheveux de Sang"
 >
-> Contexte : un cadavre de ciel-clair...
+> Contexte : mentionné dans le contexte des ancêtres...
 
-**Tour 14**
-> "Cheveux de Sang"
+**Tour 17**
+> "Cheveux de sang"
 >
-> Contexte : peuple qui a construit la bateau...
+> Contexte : créatures observées et poursuivies...
 
 ??? note "Sources -- Passages originaux"
 
-    **Tour 8**
+    **Tour 1**
 
-    > ...Même les Gardiens de la Confluence créent des artefacts qui portent la mémoire des échanges entre les peuples. Posséder un tel objet ancien, c'est hériter non seulement de son savoir, mais aussi du pr...
+    > ...groupe social...
 
-    **Tour 12**
+    **Tour 9**
 
-    > ...un cadavre de ciel-clair...
+    > ...mentionné dans le contexte des ancêtres...
 
-    **Tour 14**
+    **Tour 17**
 
-    > Ces étrangers aux cheveux rouges comme un soleil qui se couche... Certains des nôtres les nomment déjà "Cheveux de Sang". **Nous voici face à l'Autre - celui que nous ne comprenons pas, celui qui ne partage ni nos ancêtres, ni notre langue, ni nos intentions.** Les Premiers Ancêtres nous ont laissé leur avertissement gravé dans la pierre. L'ignorance face à l'inconnu peut nous détruire.
+    > L'observation des cheveux de sang se fait plus régulière et à l'aide de regard-libres et de traqueurs, vous parvenez à les suivre dans leur pérégrination aquatique sans, vous l'espérez, vous trahir. Cependant, ces étrangers ne laissent guère d'occasion de les surprendre. Ils semblent cependant avoir à régulièrement rejoindre la terre pour restaurer leur réserve d'eau douce. Montés sur une créature plus petite, certains d'entre eu...

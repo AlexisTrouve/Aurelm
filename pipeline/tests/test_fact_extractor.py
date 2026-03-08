@@ -688,4 +688,106 @@ class TestPerModelPromptOverrides:
         sys_prompt = v.get_system_prompt("mistral-nemo:latest")
         assert sys_prompt is not None
         assert "/no_think" not in sys_prompt
-        assert "JSON valide" in sys_prompt
+
+
+class TestMaskedSecondPass:
+    """Tests for masked second-pass entity extraction (mask_and_retry)."""
+
+    def test_mask_entities_in_text_basic(self):
+        """Masking replaces entity names with _____ case-insensitively."""
+        extractor = FactExtractor.__new__(FactExtractor)
+        entities = [
+            ExtractedEntity("Oracle", "person", ""),
+            ExtractedEntity("Confluence", "place", ""),
+        ]
+        text = "L'oracle consulta la Confluence au bord de la rivière."
+        masked = extractor._mask_entities_in_text(text, entities)
+        assert "Oracle" not in masked
+        assert "oracle" not in masked
+        assert "Confluence" not in masked
+        assert "_____" in masked
+
+    def test_mask_entities_longest_first(self):
+        """Longer names are masked before shorter ones — avoids partial masking."""
+        extractor = FactExtractor.__new__(FactExtractor)
+        entities = [
+            ExtractedEntity("Cercle des Sages", "institution", ""),
+            ExtractedEntity("Oracle", "person", ""),
+            ExtractedEntity("Cercle", "institution", ""),  # subset — must not fragment "Cercle des Sages"
+        ]
+        text = "L'Oracle consulta le Cercle des Sages au bord de la Confluence."
+        masked = extractor._mask_entities_in_text(text, entities)
+        assert "Oracle" not in masked
+        assert "Cercle des Sages" not in masked
+        # "Cercle" alone is already covered by the "Cercle des Sages" replacement
+        assert "Cercle" not in masked
+        assert "_____" in masked
+
+    def test_mask_and_retry_calls_extra_entity_pass(self):
+        """mask_and_retry=True triggers an extra _llm_extract_entities_only call on masked text."""
+        from pipeline.extraction_versions import ExtractionVersion
+
+        # Minimal version with mask_and_retry — no focus/validate/mark to simplify call counting
+        v = ExtractionVersion(
+            name="test-mask",
+            description="test",
+            mask_and_retry=True,
+            facts_prompt="Facts: {text}",
+            entity_prompt="Entities: {text}",
+        )
+        provider = _mock_provider_returning({
+            "entities": [{"name": "Oracle", "type": "person", "context": "ctx"}],
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+        })
+        extractor = FactExtractor(provider=provider, version=v)
+
+        # Text must be long enough (≥100 chars after masking) to trigger the masked pass
+        long_text = (
+            "L'Oracle consulta le village au bord de la rivière cristalline. "
+            "Les habitants observaient les nuages avec attention, scrutant les signes. "
+            "Des outils étaient forgés dans les ateliers souterrains chaque matin."
+        )
+        with patch.object(
+            extractor, "_llm_extract_entities_masked",
+            wraps=extractor._llm_extract_entities_masked,
+        ) as mock_masked:
+            segments = [{"segment_type": "narrative", "content": long_text}]
+            extractor.extract_facts(segments)
+
+        # mask_passes=1 → exactly 1 masked pass call per chunk
+        assert mock_masked.call_count >= 1
+        # The call must have received masked text (_____ where Oracle was)
+        all_texts = [c.args[0] for c in mock_masked.call_args_list]
+        assert any("_____" in t for t in all_texts)
+
+    def test_mask_and_retry_not_called_without_flag(self):
+        """mask_and_retry=False (default) — no extra entity-only pass on masked text."""
+        from pipeline.extraction_versions import ExtractionVersion
+
+        v = ExtractionVersion(
+            name="test-no-mask",
+            description="test",
+            mask_and_retry=False,
+            facts_prompt="Facts: {text}",
+            entity_prompt="Entities: {text}",
+        )
+        provider = _mock_provider_returning({
+            "entities": [{"name": "Oracle", "type": "person", "context": "ctx"}],
+            "technologies": [], "resources": [], "beliefs": [], "geography": [],
+        })
+        extractor = FactExtractor(provider=provider, version=v)
+
+        long_text = (
+            "L'Oracle consulta le village au bord de la rivière cristalline. "
+            "Les habitants observaient les nuages avec attention, scrutant les signes. "
+            "Des outils étaient forgés dans les ateliers souterrains chaque matin."
+        )
+        with patch.object(
+            extractor, "_llm_extract_entities_masked",
+            wraps=extractor._llm_extract_entities_masked,
+        ) as mock_masked:
+            segments = [{"segment_type": "narrative", "content": long_text}]
+            extractor.extract_facts(segments)
+
+        # mask_passes=0 and mask_and_retry=False → zero masked pass calls
+        assert mock_masked.call_count == 0

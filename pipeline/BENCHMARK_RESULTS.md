@@ -726,3 +726,47 @@ Doublons/alias : `Cercle` (alias de `Cercle des Sages`), `Confluents`, `Réserve
 1. Le pipeline ignorait les fichiers PJ depuis le début — entités joueur (Morsure-des-Ancêtres, Larmes du Ciel, Paniers immergés) invisibles.
 2. Les options non retenues des `## Choix` MJ polluaient l'extraction (Tambours, Guimbardes = jamais adoptés).
 3. Avec ces deux fix, recall=100% sur 31 entités. Les 15 FPs résiduels sont du bruit PJ sans validate — acceptable en prod (alias resolver + entity_filter les consolident).
+
+---
+
+## v22.2.1-pastlevel — Test T1-T8 (ref=31)
+
+Run date: 2026-03-08 | Ollama local | qwen3:14b | ref T1-T8 = **31 entités**
+
+**Nouveautés v22.x** :
+- Prompts sans aucun nom d'entité hardcodé (correction hallucination : "Grande Prospection", "Maladie des Antres" extraites sur T02 alors qu'elles n'y apparaissent pas → fix en remplaçant les exemples concrets par des patterns structurels)
+- Support type `event` : faits historiques avec nom propre littéral dans le texte
+- Carry-forward contexte tour par tour : `prev_tech_era` + `prev_fantasy_level` injectés dans le system prompt d'extraction
+- Tags LLM générés dans le résumé GM : `thematic_tags` (16 catégories), `tech_era` (10 niveaux), `fantasy_level` (5 niveaux) — résumé et tags fusionnés en un seul appel LLM
+- Migration 010 : 5 nouvelles colonnes sur `turn_turns` (thematic_tags, tech_era, tech_era_reasoning, fantasy_level, fantasy_level_reasoning)
+
+| Metric | Value |
+|--------|-------|
+| **F1** | **66.7%** |
+| Precision | 51.5% |
+| Recall | 94.6% |
+| TP | 35 |
+| FP | 33 |
+| FN | 2 |
+| Ref | 31 |
+| Extracted | 68 |
+
+### FN (2) — résistants
+`culte des ancetres` — croyance implicite, non nommée explicitement dans le texte
+`rites de deposition des morts` — idem, paraphrasé différemment selon les tours
+
+### FP notables (33)
+Trop génériques : `Sagesse`, `Défunts`, `Mères`, `Nouveau-nés`, `Parents`, `Crues`, `Nuages`, `Lieu de vie`, `Village temporaire`, `Piété filiale`, `Respect aux défunts`
+Variantes trop larges : `Art de la chasse`, `Outils et armes`, `Techniques de chasses`, `Outils de chasse`
+Doublons : `Cercle de ses sages` (variante de `Cercle des Sages`), `Rhombes sacrés` (alias de `Rhombes`)
+Autres : `Rituel funéraire`, `Rituels des crêtes`, `Radeaux amarrés`, `Passerelles`
+
+### Analyse
+
+- Recall quasi-identique au meilleur (94.6% vs 100%) malgré la suppression de tous les noms hardcodés — **non-régression validée**
+- Précision en chute (51.5% vs 70.0%) : sans validate nemo, les termes génériques ne sont pas filtrés
+- **Régression nette vs v22.0+PJ+no-choice (82.4%)** : la différence vient de l'absence de validate nemo + la suppression des exemples négatifs concrets qui guidaient le LLM
+- Non-régression sur l'event type : `Grande Prospection de la vallée basse` correctement capturé sur T18
+
+### Prochaine étape recommandée
+Ajouter validate nemo en v22.3 (même architecture que v18.4.2-nemo) pour filtrer les FPs génériques sans toucher aux vrais positifs.
