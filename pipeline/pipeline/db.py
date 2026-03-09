@@ -54,13 +54,20 @@ def run_migrations(db_path: str) -> None:
             if sql_file.name in applied:
                 continue
             sql = sql_file.read_text(encoding="utf-8")
-            # Run each statement individually to handle "duplicate column" gracefully
+            # Run each statement individually to handle "duplicate column" gracefully.
+            # Strip comment lines before checking emptiness — a statement may start
+            # with -- comment lines followed by actual SQL (e.g. ALTER TABLE).
             for statement in sql.split(";"):
-                statement = statement.strip()
-                if not statement or statement.startswith("--"):
+                # Remove comment lines, keep actual SQL lines
+                sql_lines = [
+                    line for line in statement.splitlines()
+                    if line.strip() and not line.strip().startswith("--")
+                ]
+                sql_only = "\n".join(sql_lines).strip()
+                if not sql_only:
                     continue
                 try:
-                    conn.execute(statement)
+                    conn.execute(sql_only)
                 except sqlite3.OperationalError as e:
                     if "duplicate column" in str(e):
                         continue  # Column already exists (fresh DB from updated schema)

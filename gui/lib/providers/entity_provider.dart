@@ -76,6 +76,14 @@ final turnEntitiesProvider =
 });
 
 /// All unique semantic tags across active entities, for the entity filter bar.
+/// Naming history for a single entity — aliases sorted chronologically with turn info.
+final namingHistoryProvider =
+    FutureProvider.family<List<AliasHistoryEntry>, int>((ref, entityId) async {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return [];
+  return db.entityDao.getNamingHistory(entityId);
+});
+
 final entityTagsProvider = FutureProvider<List<String>>((ref) async {
   final db = ref.watch(databaseProvider);
   if (db == null) return [];

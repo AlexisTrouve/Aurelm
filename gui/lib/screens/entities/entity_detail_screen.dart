@@ -8,7 +8,7 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/entity_type_badge.dart';
 import '../../widgets/common/section_header.dart';
-import 'widgets/alias_chips.dart';
+import 'widgets/naming_history.dart';
 import 'widgets/relation_list.dart';
 import 'widgets/mention_timeline.dart';
 
@@ -155,12 +155,10 @@ class EntityDetailScreen extends ConsumerWidget {
                   Text(entity.entity.description!),
                 ],
 
-                // Aliases
-                if (entity.aliases.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  const SectionHeader(title: 'Aliases'),
-                  AliasChips(aliases: entity.aliases),
-                ],
+                // Naming history — chronological alias chain with turn links
+                const SizedBox(height: 24),
+                const SectionHeader(title: 'Historique des noms'),
+                NamingHistory(entityId: entityId),
 
                 // Relations
                 const SizedBox(height: 24),

@@ -283,6 +283,62 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     ));
   }
 
+  /// Returns the naming history for an entity — all aliases with their first
+  /// appearance turn, sorted chronologically (nulls last).
+  /// Used to display the naming lineage: "Nés sans ciel (T3) → Sans-Ciel (T7)".
+  Future<List<AliasHistoryEntry>> getNamingHistory(int entityId) async {
+    // Canonical name + first seen turn for the primary entity
+    final entity = await (select(entityEntities)
+          ..where((t) => t.id.equals(entityId)))
+        .getSingleOrNull();
+    if (entity == null) return [];
+
+    // Fetch aliases with their first_seen_turn_id and the turn number
+    final rows = await customSelect(
+      '''
+      SELECT ea.alias, ea.first_seen_turn_id, t.turn_number
+      FROM entity_aliases ea
+      LEFT JOIN turn_turns t ON t.id = ea.first_seen_turn_id
+      WHERE ea.entity_id = ?
+      ORDER BY t.turn_number ASC NULLS LAST
+      ''',
+      variables: [Variable.withInt(entityId)],
+      readsFrom: {entityAliases, turnTurns},
+    ).get();
+
+    // The canonical name entry (the entity itself)
+    final List<AliasHistoryEntry> history = [
+      AliasHistoryEntry(
+        name: entity.canonicalName,
+        turnId: entity.firstSeenTurn,
+        turnNumber: null, // resolved separately if needed
+        isCurrent: true,
+      ),
+    ];
+
+    // Add all aliases sorted by turn number
+    for (final row in rows) {
+      history.add(AliasHistoryEntry(
+        name: row.read<String>('alias'),
+        turnId: row.read<int?>('first_seen_turn_id'),
+        turnNumber: row.read<int?>('turn_number'),
+        isCurrent: false,
+      ));
+    }
+
+    // Sort: entries with turn numbers first (ascending), then null-turn entries
+    history.sort((a, b) {
+      final ta = a.turnNumber;
+      final tb = b.turnNumber;
+      if (ta == null && tb == null) return 0;
+      if (ta == null) return 1;
+      if (tb == null) return -1;
+      return ta.compareTo(tb);
+    });
+
+    return history;
+  }
+
   /// Returns all unique semantic tags across active entities, sorted by frequency.
   Future<List<String>> allEntityTags() async {
     final rows = await (selectOnly(entityEntities)
@@ -303,6 +359,22 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.map((e) => e.key).toList();
   }
+}
+
+/// One entry in an entity's naming history.
+/// Represents either the canonical name or an alias, with optional turn info.
+class AliasHistoryEntry {
+  final String name;
+  final int? turnId;      // DB id of the turn where this name first appeared
+  final int? turnNumber;  // Human-readable turn number (e.g. 3 for "Tour 3")
+  final bool isCurrent;   // True for the canonical (current) name
+
+  const AliasHistoryEntry({
+    required this.name,
+    required this.turnId,
+    required this.turnNumber,
+    required this.isCurrent,
+  });
 }
 
 class MentionWithContext {
