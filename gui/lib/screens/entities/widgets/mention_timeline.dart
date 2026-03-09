@@ -7,8 +7,10 @@ import '../../../widgets/common/civ_badge.dart';
 
 class MentionTimeline extends ConsumerWidget {
   final int entityId;
+  // Used as highlight text when navigating to the turn detail
+  final String entityName;
 
-  const MentionTimeline({super.key, required this.entityId});
+  const MentionTimeline({super.key, required this.entityId, required this.entityName});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,8 +56,11 @@ class MentionTimeline extends ConsumerWidget {
                         style: const TextStyle(fontStyle: FontStyle.italic),
                       ),
                 trailing: CivBadge(civName: m.civName),
-                // Fast travel → turn detail
-                onTap: () => context.push('/turns/${m.mention.turnId}'),
+                // Fast travel → turn detail, auto-highlight the entity name
+                onTap: () => context.push(
+                  '/turns/${m.mention.turnId}',
+                  extra: {'highlight': m.mention.mentionText ?? entityName},
+                ),
               );
             }).toList(),
           ),

@@ -168,7 +168,7 @@ class EntityDetailScreen extends ConsumerWidget {
                 // Mention timeline
                 const SizedBox(height: 24),
                 const SectionHeader(title: 'Mentions'),
-                MentionTimeline(entityId: entityId),
+                MentionTimeline(entityId: entityId, entityName: entity.entity.canonicalName),
               ],
             ),
           ),
