@@ -37,7 +37,7 @@ class TopEntitiesList extends ConsumerWidget {
                   '${e.mentionCount} mentions',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                onTap: () => context.go('/entities/${e.entity.id}'),
+                onTap: () => context.push('/entities/${e.entity.id}'),
               );
             }).toList(),
           ),

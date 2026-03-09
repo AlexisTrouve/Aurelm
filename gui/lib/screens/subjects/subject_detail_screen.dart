@@ -52,7 +52,7 @@ class _SubjectDetailView extends StatelessWidget {
         title: Text(s.title, overflow: TextOverflow.ellipsis),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/subjects'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/subjects'),
         ),
       ),
       body: SingleChildScrollView(
@@ -68,7 +68,8 @@ class _SubjectDetailView extends StatelessWidget {
                 _DirectionBadge(isMjToPj: isMjToPj),
                 _CategoryBadge(category: s.category),
                 _StatusBadge(status: s.status),
-                _MetaChip(
+                _TurnChip(
+                    turnId: detail.sourceTurnId,
                     label: 'T${detail.sourceTurnNumber} · ${detail.civName}'),
               ],
             ),
@@ -253,12 +254,19 @@ class _ResolutionCard extends StatelessWidget {
                     ),
               ),
               const SizedBox(width: 10),
-              Text(
-                'T${resolution.turnNumber}',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+              InkWell(
+                onTap: () => context.push('/turns/${resolution.turnId}'),
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'T${resolution.turnNumber}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                  ),
+                ),
               ),
               if (isAccepted) ...[
                 const SizedBox(width: 6),
@@ -384,6 +392,44 @@ class _MetaChip extends StatelessWidget {
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               )),
+    );
+  }
+}
+
+/// Chip de tour cliquable — fast travel vers le turn detail.
+class _TurnChip extends StatelessWidget {
+  final int turnId;
+  final String label;
+  const _TurnChip({required this.turnId, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => context.push('/turns/$turnId'),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.open_in_new,
+                size: 10,
+                color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(label,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    )),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../providers/entity_provider.dart';
 import '../../../widgets/common/civ_badge.dart';
@@ -53,6 +54,8 @@ class MentionTimeline extends ConsumerWidget {
                         style: const TextStyle(fontStyle: FontStyle.italic),
                       ),
                 trailing: CivBadge(civName: m.civName),
+                // Fast travel → turn detail
+                onTap: () => context.push('/turns/${m.mention.turnId}'),
               );
             }).toList(),
           ),

@@ -284,13 +284,13 @@ def run_pipeline(
                     f"{density:.1f}/K | {cost_str}"
                 )
 
-            # Extract entities from LLM results
+            # Extract entities from LLM results — tagged as GM source
             if structured_facts and structured_facts.entities:
                 for ent in structured_facts.entities:
                     entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                     conn.execute(
-                        """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
-                           VALUES (?, ?, ?, ?)""",
+                        """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context, source)
+                           VALUES (?, ?, ?, ?, 'gm')""",
                         (entity_id, turn_id, ent.text, ent.context),
                     )
                     stats["entities_extracted"] += 1
@@ -671,8 +671,8 @@ def _insert_pj_segments(
             for ent in pj_entities:
                 entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                 conn.execute(
-                    """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
-                       VALUES (?, ?, ?, ?)""",
+                    """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context, source)
+                       VALUES (?, ?, ?, ?, 'pj')""",
                     (entity_id, turn_id, ent.text, ent.context),
                 )
             pj_entity_count = len(pj_entities)
@@ -1278,7 +1278,7 @@ def _build_civ_entity_lookup(conn, civ_id: int) -> dict:
     """
     lookup: dict = {}
     rows = conn.execute(
-        "SELECT canonical_name, entity_type FROM entity_entities WHERE civ_id = ? AND is_active = 1",
+        "SELECT canonical_name, entity_type FROM entity_entities WHERE civ_id = ? AND is_active = 1 AND disabled = 0",
         (civ_id,),
     ).fetchall()
     for r in rows:
@@ -1567,13 +1567,13 @@ def run_pipeline_for_channels(
                     )
                     civ_stats["segments_created"] += 1
 
-                # Extract entities from LLM results
+                # Extract entities from LLM results — tagged as GM source
                 if structured_facts and structured_facts.entities:
                     for ent in structured_facts.entities:
                         entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                         conn.execute(
-                            """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context)
-                               VALUES (?, ?, ?, ?)""",
+                            """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context, source)
+                               VALUES (?, ?, ?, ?, 'gm')""",
                             (entity_id, turn_id, ent.text, ent.context),
                         )
                         civ_stats["entities_extracted"] += 1

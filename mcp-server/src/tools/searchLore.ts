@@ -35,7 +35,7 @@ export function searchLore(
     FROM entity_entities e
     LEFT JOIN civ_civilizations c ON e.civ_id = c.id
     LEFT JOIN entity_aliases a ON a.entity_id = e.id
-    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
+    WHERE e.disabled = 0 AND (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
   `;
   const escaped = escapeLike(query);
   const params: unknown[] = [`%${escaped}%`, `%${escaped}%`, `%${escaped}%`, `%${escaped}%`];

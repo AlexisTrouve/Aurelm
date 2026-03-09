@@ -26,12 +26,12 @@ export function getCivState(db: Database.Database, civId: number, civName: strin
   ).count;
 
   const totalEntities = (
-    db.prepare("SELECT COUNT(*) AS count FROM entity_entities WHERE civ_id = ?").get(civId) as { count: number }
+    db.prepare("SELECT COUNT(*) AS count FROM entity_entities WHERE civ_id = ? AND disabled = 0").get(civId) as { count: number }
   ).count;
 
   // Entity breakdown by type
   const breakdown = db.prepare(
-    "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? GROUP BY entity_type ORDER BY count DESC"
+    "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? AND disabled = 0 GROUP BY entity_type ORDER BY count DESC"
   ).all(civId) as EntityBreakdown[];
 
   // Recent 5 turns
@@ -44,7 +44,7 @@ export function getCivState(db: Database.Database, civId: number, civName: strin
     SELECT e.canonical_name, e.entity_type,
            (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mention_count
     FROM entity_entities e
-    WHERE e.civ_id = ?
+    WHERE e.civ_id = ? AND e.disabled = 0
     ORDER BY mention_count DESC
     LIMIT 10
   `).all(civId) as RecentEntity[];

@@ -78,7 +78,7 @@ export function getTurnDetail(
     SELECT e.canonical_name, e.entity_type, COUNT(*) AS mention_count
     FROM entity_mentions m
     JOIN entity_entities e ON m.entity_id = e.id
-    WHERE m.turn_id = ?
+    WHERE m.turn_id = ? AND e.disabled = 0
     GROUP BY e.id
     ORDER BY mention_count DESC
   `).all(turn.id) as MentionedEntity[];

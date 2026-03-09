@@ -389,6 +389,12 @@ class $TurnTurnsTable extends TurnTurns
   late final GeneratedColumn<String> summary = GeneratedColumn<String>(
       'summary', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _detailedSummaryMeta =
+      const VerificationMeta('detailedSummary');
+  @override
+  late final GeneratedColumn<String> detailedSummary = GeneratedColumn<String>(
+      'detailed_summary', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _rawMessageIdsMeta =
       const VerificationMeta('rawMessageIds');
   @override
@@ -427,6 +433,66 @@ class $TurnTurnsTable extends TurnTurns
   late final GeneratedColumn<String> processedAt = GeneratedColumn<String>(
       'processed_at', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _thematicTagsMeta =
+      const VerificationMeta('thematicTags');
+  @override
+  late final GeneratedColumn<String> thematicTags = GeneratedColumn<String>(
+      'thematic_tags', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _technologiesMeta =
+      const VerificationMeta('technologies');
+  @override
+  late final GeneratedColumn<String> technologies = GeneratedColumn<String>(
+      'technologies', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _resourcesMeta =
+      const VerificationMeta('resources');
+  @override
+  late final GeneratedColumn<String> resources = GeneratedColumn<String>(
+      'resources', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _beliefsMeta =
+      const VerificationMeta('beliefs');
+  @override
+  late final GeneratedColumn<String> beliefs = GeneratedColumn<String>(
+      'beliefs', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _geographyMeta =
+      const VerificationMeta('geography');
+  @override
+  late final GeneratedColumn<String> geography = GeneratedColumn<String>(
+      'geography', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _keyEventsMeta =
+      const VerificationMeta('keyEvents');
+  @override
+  late final GeneratedColumn<String> keyEvents = GeneratedColumn<String>(
+      'key_events', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _choicesMadeMeta =
+      const VerificationMeta('choicesMade');
+  @override
+  late final GeneratedColumn<String> choicesMade = GeneratedColumn<String>(
+      'choices_made', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _choicesProposedMeta =
+      const VerificationMeta('choicesProposed');
+  @override
+  late final GeneratedColumn<String> choicesProposed = GeneratedColumn<String>(
+      'choices_proposed', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _techEraMeta =
+      const VerificationMeta('techEra');
+  @override
+  late final GeneratedColumn<String> techEra = GeneratedColumn<String>(
+      'tech_era', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fantasyLevelMeta =
+      const VerificationMeta('fantasyLevel');
+  @override
+  late final GeneratedColumn<String> fantasyLevel = GeneratedColumn<String>(
+      'fantasy_level', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -434,12 +500,23 @@ class $TurnTurnsTable extends TurnTurns
         turnNumber,
         title,
         summary,
+        detailedSummary,
         rawMessageIds,
         turnType,
         gameDateStart,
         gameDateEnd,
         createdAt,
-        processedAt
+        processedAt,
+        thematicTags,
+        technologies,
+        resources,
+        beliefs,
+        geography,
+        keyEvents,
+        choicesMade,
+        choicesProposed,
+        techEra,
+        fantasyLevel
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -475,6 +552,12 @@ class $TurnTurnsTable extends TurnTurns
     if (data.containsKey('summary')) {
       context.handle(_summaryMeta,
           summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta));
+    }
+    if (data.containsKey('detailed_summary')) {
+      context.handle(
+          _detailedSummaryMeta,
+          detailedSummary.isAcceptableOrUnknown(
+              data['detailed_summary']!, _detailedSummaryMeta));
     }
     if (data.containsKey('raw_message_ids')) {
       context.handle(
@@ -512,6 +595,56 @@ class $TurnTurnsTable extends TurnTurns
           processedAt.isAcceptableOrUnknown(
               data['processed_at']!, _processedAtMeta));
     }
+    if (data.containsKey('thematic_tags')) {
+      context.handle(
+          _thematicTagsMeta,
+          thematicTags.isAcceptableOrUnknown(
+              data['thematic_tags']!, _thematicTagsMeta));
+    }
+    if (data.containsKey('technologies')) {
+      context.handle(
+          _technologiesMeta,
+          technologies.isAcceptableOrUnknown(
+              data['technologies']!, _technologiesMeta));
+    }
+    if (data.containsKey('resources')) {
+      context.handle(_resourcesMeta,
+          resources.isAcceptableOrUnknown(data['resources']!, _resourcesMeta));
+    }
+    if (data.containsKey('beliefs')) {
+      context.handle(_beliefsMeta,
+          beliefs.isAcceptableOrUnknown(data['beliefs']!, _beliefsMeta));
+    }
+    if (data.containsKey('geography')) {
+      context.handle(_geographyMeta,
+          geography.isAcceptableOrUnknown(data['geography']!, _geographyMeta));
+    }
+    if (data.containsKey('key_events')) {
+      context.handle(_keyEventsMeta,
+          keyEvents.isAcceptableOrUnknown(data['key_events']!, _keyEventsMeta));
+    }
+    if (data.containsKey('choices_made')) {
+      context.handle(
+          _choicesMadeMeta,
+          choicesMade.isAcceptableOrUnknown(
+              data['choices_made']!, _choicesMadeMeta));
+    }
+    if (data.containsKey('choices_proposed')) {
+      context.handle(
+          _choicesProposedMeta,
+          choicesProposed.isAcceptableOrUnknown(
+              data['choices_proposed']!, _choicesProposedMeta));
+    }
+    if (data.containsKey('tech_era')) {
+      context.handle(_techEraMeta,
+          techEra.isAcceptableOrUnknown(data['tech_era']!, _techEraMeta));
+    }
+    if (data.containsKey('fantasy_level')) {
+      context.handle(
+          _fantasyLevelMeta,
+          fantasyLevel.isAcceptableOrUnknown(
+              data['fantasy_level']!, _fantasyLevelMeta));
+    }
     return context;
   }
 
@@ -531,6 +664,8 @@ class $TurnTurnsTable extends TurnTurns
           .read(DriftSqlType.string, data['${effectivePrefix}title']),
       summary: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}summary']),
+      detailedSummary: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}detailed_summary']),
       rawMessageIds: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}raw_message_ids'])!,
       turnType: attachedDatabase.typeMapping
@@ -543,6 +678,26 @@ class $TurnTurnsTable extends TurnTurns
           .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
       processedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}processed_at']),
+      thematicTags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}thematic_tags']),
+      technologies: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}technologies']),
+      resources: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}resources']),
+      beliefs: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}beliefs']),
+      geography: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}geography']),
+      keyEvents: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}key_events']),
+      choicesMade: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}choices_made']),
+      choicesProposed: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}choices_proposed']),
+      techEra: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tech_era']),
+      fantasyLevel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}fantasy_level']),
     );
   }
 
@@ -558,24 +713,46 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
   final int turnNumber;
   final String? title;
   final String? summary;
+  final String? detailedSummary;
   final String rawMessageIds;
   final String turnType;
   final String? gameDateStart;
   final String? gameDateEnd;
   final String createdAt;
   final String? processedAt;
+  final String? thematicTags;
+  final String? technologies;
+  final String? resources;
+  final String? beliefs;
+  final String? geography;
+  final String? keyEvents;
+  final String? choicesMade;
+  final String? choicesProposed;
+  final String? techEra;
+  final String? fantasyLevel;
   const TurnRow(
       {required this.id,
       required this.civId,
       required this.turnNumber,
       this.title,
       this.summary,
+      this.detailedSummary,
       required this.rawMessageIds,
       required this.turnType,
       this.gameDateStart,
       this.gameDateEnd,
       required this.createdAt,
-      this.processedAt});
+      this.processedAt,
+      this.thematicTags,
+      this.technologies,
+      this.resources,
+      this.beliefs,
+      this.geography,
+      this.keyEvents,
+      this.choicesMade,
+      this.choicesProposed,
+      this.techEra,
+      this.fantasyLevel});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -588,6 +765,9 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
     if (!nullToAbsent || summary != null) {
       map['summary'] = Variable<String>(summary);
     }
+    if (!nullToAbsent || detailedSummary != null) {
+      map['detailed_summary'] = Variable<String>(detailedSummary);
+    }
     map['raw_message_ids'] = Variable<String>(rawMessageIds);
     map['turn_type'] = Variable<String>(turnType);
     if (!nullToAbsent || gameDateStart != null) {
@@ -599,6 +779,36 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
     map['created_at'] = Variable<String>(createdAt);
     if (!nullToAbsent || processedAt != null) {
       map['processed_at'] = Variable<String>(processedAt);
+    }
+    if (!nullToAbsent || thematicTags != null) {
+      map['thematic_tags'] = Variable<String>(thematicTags);
+    }
+    if (!nullToAbsent || technologies != null) {
+      map['technologies'] = Variable<String>(technologies);
+    }
+    if (!nullToAbsent || resources != null) {
+      map['resources'] = Variable<String>(resources);
+    }
+    if (!nullToAbsent || beliefs != null) {
+      map['beliefs'] = Variable<String>(beliefs);
+    }
+    if (!nullToAbsent || geography != null) {
+      map['geography'] = Variable<String>(geography);
+    }
+    if (!nullToAbsent || keyEvents != null) {
+      map['key_events'] = Variable<String>(keyEvents);
+    }
+    if (!nullToAbsent || choicesMade != null) {
+      map['choices_made'] = Variable<String>(choicesMade);
+    }
+    if (!nullToAbsent || choicesProposed != null) {
+      map['choices_proposed'] = Variable<String>(choicesProposed);
+    }
+    if (!nullToAbsent || techEra != null) {
+      map['tech_era'] = Variable<String>(techEra);
+    }
+    if (!nullToAbsent || fantasyLevel != null) {
+      map['fantasy_level'] = Variable<String>(fantasyLevel);
     }
     return map;
   }
@@ -613,6 +823,9 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       summary: summary == null && nullToAbsent
           ? const Value.absent()
           : Value(summary),
+      detailedSummary: detailedSummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detailedSummary),
       rawMessageIds: Value(rawMessageIds),
       turnType: Value(turnType),
       gameDateStart: gameDateStart == null && nullToAbsent
@@ -625,6 +838,36 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       processedAt: processedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(processedAt),
+      thematicTags: thematicTags == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thematicTags),
+      technologies: technologies == null && nullToAbsent
+          ? const Value.absent()
+          : Value(technologies),
+      resources: resources == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resources),
+      beliefs: beliefs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(beliefs),
+      geography: geography == null && nullToAbsent
+          ? const Value.absent()
+          : Value(geography),
+      keyEvents: keyEvents == null && nullToAbsent
+          ? const Value.absent()
+          : Value(keyEvents),
+      choicesMade: choicesMade == null && nullToAbsent
+          ? const Value.absent()
+          : Value(choicesMade),
+      choicesProposed: choicesProposed == null && nullToAbsent
+          ? const Value.absent()
+          : Value(choicesProposed),
+      techEra: techEra == null && nullToAbsent
+          ? const Value.absent()
+          : Value(techEra),
+      fantasyLevel: fantasyLevel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fantasyLevel),
     );
   }
 
@@ -637,12 +880,23 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       turnNumber: serializer.fromJson<int>(json['turnNumber']),
       title: serializer.fromJson<String?>(json['title']),
       summary: serializer.fromJson<String?>(json['summary']),
+      detailedSummary: serializer.fromJson<String?>(json['detailedSummary']),
       rawMessageIds: serializer.fromJson<String>(json['rawMessageIds']),
       turnType: serializer.fromJson<String>(json['turnType']),
       gameDateStart: serializer.fromJson<String?>(json['gameDateStart']),
       gameDateEnd: serializer.fromJson<String?>(json['gameDateEnd']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       processedAt: serializer.fromJson<String?>(json['processedAt']),
+      thematicTags: serializer.fromJson<String?>(json['thematicTags']),
+      technologies: serializer.fromJson<String?>(json['technologies']),
+      resources: serializer.fromJson<String?>(json['resources']),
+      beliefs: serializer.fromJson<String?>(json['beliefs']),
+      geography: serializer.fromJson<String?>(json['geography']),
+      keyEvents: serializer.fromJson<String?>(json['keyEvents']),
+      choicesMade: serializer.fromJson<String?>(json['choicesMade']),
+      choicesProposed: serializer.fromJson<String?>(json['choicesProposed']),
+      techEra: serializer.fromJson<String?>(json['techEra']),
+      fantasyLevel: serializer.fromJson<String?>(json['fantasyLevel']),
     );
   }
   @override
@@ -654,12 +908,23 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       'turnNumber': serializer.toJson<int>(turnNumber),
       'title': serializer.toJson<String?>(title),
       'summary': serializer.toJson<String?>(summary),
+      'detailedSummary': serializer.toJson<String?>(detailedSummary),
       'rawMessageIds': serializer.toJson<String>(rawMessageIds),
       'turnType': serializer.toJson<String>(turnType),
       'gameDateStart': serializer.toJson<String?>(gameDateStart),
       'gameDateEnd': serializer.toJson<String?>(gameDateEnd),
       'createdAt': serializer.toJson<String>(createdAt),
       'processedAt': serializer.toJson<String?>(processedAt),
+      'thematicTags': serializer.toJson<String?>(thematicTags),
+      'technologies': serializer.toJson<String?>(technologies),
+      'resources': serializer.toJson<String?>(resources),
+      'beliefs': serializer.toJson<String?>(beliefs),
+      'geography': serializer.toJson<String?>(geography),
+      'keyEvents': serializer.toJson<String?>(keyEvents),
+      'choicesMade': serializer.toJson<String?>(choicesMade),
+      'choicesProposed': serializer.toJson<String?>(choicesProposed),
+      'techEra': serializer.toJson<String?>(techEra),
+      'fantasyLevel': serializer.toJson<String?>(fantasyLevel),
     };
   }
 
@@ -669,18 +934,32 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           int? turnNumber,
           Value<String?> title = const Value.absent(),
           Value<String?> summary = const Value.absent(),
+          Value<String?> detailedSummary = const Value.absent(),
           String? rawMessageIds,
           String? turnType,
           Value<String?> gameDateStart = const Value.absent(),
           Value<String?> gameDateEnd = const Value.absent(),
           String? createdAt,
-          Value<String?> processedAt = const Value.absent()}) =>
+          Value<String?> processedAt = const Value.absent(),
+          Value<String?> thematicTags = const Value.absent(),
+          Value<String?> technologies = const Value.absent(),
+          Value<String?> resources = const Value.absent(),
+          Value<String?> beliefs = const Value.absent(),
+          Value<String?> geography = const Value.absent(),
+          Value<String?> keyEvents = const Value.absent(),
+          Value<String?> choicesMade = const Value.absent(),
+          Value<String?> choicesProposed = const Value.absent(),
+          Value<String?> techEra = const Value.absent(),
+          Value<String?> fantasyLevel = const Value.absent()}) =>
       TurnRow(
         id: id ?? this.id,
         civId: civId ?? this.civId,
         turnNumber: turnNumber ?? this.turnNumber,
         title: title.present ? title.value : this.title,
         summary: summary.present ? summary.value : this.summary,
+        detailedSummary: detailedSummary.present
+            ? detailedSummary.value
+            : this.detailedSummary,
         rawMessageIds: rawMessageIds ?? this.rawMessageIds,
         turnType: turnType ?? this.turnType,
         gameDateStart:
@@ -688,6 +967,21 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
         gameDateEnd: gameDateEnd.present ? gameDateEnd.value : this.gameDateEnd,
         createdAt: createdAt ?? this.createdAt,
         processedAt: processedAt.present ? processedAt.value : this.processedAt,
+        thematicTags:
+            thematicTags.present ? thematicTags.value : this.thematicTags,
+        technologies:
+            technologies.present ? technologies.value : this.technologies,
+        resources: resources.present ? resources.value : this.resources,
+        beliefs: beliefs.present ? beliefs.value : this.beliefs,
+        geography: geography.present ? geography.value : this.geography,
+        keyEvents: keyEvents.present ? keyEvents.value : this.keyEvents,
+        choicesMade: choicesMade.present ? choicesMade.value : this.choicesMade,
+        choicesProposed: choicesProposed.present
+            ? choicesProposed.value
+            : this.choicesProposed,
+        techEra: techEra.present ? techEra.value : this.techEra,
+        fantasyLevel:
+            fantasyLevel.present ? fantasyLevel.value : this.fantasyLevel,
       );
   TurnRow copyWithCompanion(TurnTurnsCompanion data) {
     return TurnRow(
@@ -697,6 +991,9 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           data.turnNumber.present ? data.turnNumber.value : this.turnNumber,
       title: data.title.present ? data.title.value : this.title,
       summary: data.summary.present ? data.summary.value : this.summary,
+      detailedSummary: data.detailedSummary.present
+          ? data.detailedSummary.value
+          : this.detailedSummary,
       rawMessageIds: data.rawMessageIds.present
           ? data.rawMessageIds.value
           : this.rawMessageIds,
@@ -709,6 +1006,25 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       processedAt:
           data.processedAt.present ? data.processedAt.value : this.processedAt,
+      thematicTags: data.thematicTags.present
+          ? data.thematicTags.value
+          : this.thematicTags,
+      technologies: data.technologies.present
+          ? data.technologies.value
+          : this.technologies,
+      resources: data.resources.present ? data.resources.value : this.resources,
+      beliefs: data.beliefs.present ? data.beliefs.value : this.beliefs,
+      geography: data.geography.present ? data.geography.value : this.geography,
+      keyEvents: data.keyEvents.present ? data.keyEvents.value : this.keyEvents,
+      choicesMade:
+          data.choicesMade.present ? data.choicesMade.value : this.choicesMade,
+      choicesProposed: data.choicesProposed.present
+          ? data.choicesProposed.value
+          : this.choicesProposed,
+      techEra: data.techEra.present ? data.techEra.value : this.techEra,
+      fantasyLevel: data.fantasyLevel.present
+          ? data.fantasyLevel.value
+          : this.fantasyLevel,
     );
   }
 
@@ -720,29 +1036,52 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           ..write('turnNumber: $turnNumber, ')
           ..write('title: $title, ')
           ..write('summary: $summary, ')
+          ..write('detailedSummary: $detailedSummary, ')
           ..write('rawMessageIds: $rawMessageIds, ')
           ..write('turnType: $turnType, ')
           ..write('gameDateStart: $gameDateStart, ')
           ..write('gameDateEnd: $gameDateEnd, ')
           ..write('createdAt: $createdAt, ')
-          ..write('processedAt: $processedAt')
+          ..write('processedAt: $processedAt, ')
+          ..write('thematicTags: $thematicTags, ')
+          ..write('technologies: $technologies, ')
+          ..write('resources: $resources, ')
+          ..write('beliefs: $beliefs, ')
+          ..write('geography: $geography, ')
+          ..write('keyEvents: $keyEvents, ')
+          ..write('choicesMade: $choicesMade, ')
+          ..write('choicesProposed: $choicesProposed, ')
+          ..write('techEra: $techEra, ')
+          ..write('fantasyLevel: $fantasyLevel')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      civId,
-      turnNumber,
-      title,
-      summary,
-      rawMessageIds,
-      turnType,
-      gameDateStart,
-      gameDateEnd,
-      createdAt,
-      processedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        civId,
+        turnNumber,
+        title,
+        summary,
+        detailedSummary,
+        rawMessageIds,
+        turnType,
+        gameDateStart,
+        gameDateEnd,
+        createdAt,
+        processedAt,
+        thematicTags,
+        technologies,
+        resources,
+        beliefs,
+        geography,
+        keyEvents,
+        choicesMade,
+        choicesProposed,
+        techEra,
+        fantasyLevel
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -752,12 +1091,23 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           other.turnNumber == this.turnNumber &&
           other.title == this.title &&
           other.summary == this.summary &&
+          other.detailedSummary == this.detailedSummary &&
           other.rawMessageIds == this.rawMessageIds &&
           other.turnType == this.turnType &&
           other.gameDateStart == this.gameDateStart &&
           other.gameDateEnd == this.gameDateEnd &&
           other.createdAt == this.createdAt &&
-          other.processedAt == this.processedAt);
+          other.processedAt == this.processedAt &&
+          other.thematicTags == this.thematicTags &&
+          other.technologies == this.technologies &&
+          other.resources == this.resources &&
+          other.beliefs == this.beliefs &&
+          other.geography == this.geography &&
+          other.keyEvents == this.keyEvents &&
+          other.choicesMade == this.choicesMade &&
+          other.choicesProposed == this.choicesProposed &&
+          other.techEra == this.techEra &&
+          other.fantasyLevel == this.fantasyLevel);
 }
 
 class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
@@ -766,24 +1116,46 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
   final Value<int> turnNumber;
   final Value<String?> title;
   final Value<String?> summary;
+  final Value<String?> detailedSummary;
   final Value<String> rawMessageIds;
   final Value<String> turnType;
   final Value<String?> gameDateStart;
   final Value<String?> gameDateEnd;
   final Value<String> createdAt;
   final Value<String?> processedAt;
+  final Value<String?> thematicTags;
+  final Value<String?> technologies;
+  final Value<String?> resources;
+  final Value<String?> beliefs;
+  final Value<String?> geography;
+  final Value<String?> keyEvents;
+  final Value<String?> choicesMade;
+  final Value<String?> choicesProposed;
+  final Value<String?> techEra;
+  final Value<String?> fantasyLevel;
   const TurnTurnsCompanion({
     this.id = const Value.absent(),
     this.civId = const Value.absent(),
     this.turnNumber = const Value.absent(),
     this.title = const Value.absent(),
     this.summary = const Value.absent(),
+    this.detailedSummary = const Value.absent(),
     this.rawMessageIds = const Value.absent(),
     this.turnType = const Value.absent(),
     this.gameDateStart = const Value.absent(),
     this.gameDateEnd = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.processedAt = const Value.absent(),
+    this.thematicTags = const Value.absent(),
+    this.technologies = const Value.absent(),
+    this.resources = const Value.absent(),
+    this.beliefs = const Value.absent(),
+    this.geography = const Value.absent(),
+    this.keyEvents = const Value.absent(),
+    this.choicesMade = const Value.absent(),
+    this.choicesProposed = const Value.absent(),
+    this.techEra = const Value.absent(),
+    this.fantasyLevel = const Value.absent(),
   });
   TurnTurnsCompanion.insert({
     this.id = const Value.absent(),
@@ -791,12 +1163,23 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     required int turnNumber,
     this.title = const Value.absent(),
     this.summary = const Value.absent(),
+    this.detailedSummary = const Value.absent(),
     required String rawMessageIds,
     this.turnType = const Value.absent(),
     this.gameDateStart = const Value.absent(),
     this.gameDateEnd = const Value.absent(),
     required String createdAt,
     this.processedAt = const Value.absent(),
+    this.thematicTags = const Value.absent(),
+    this.technologies = const Value.absent(),
+    this.resources = const Value.absent(),
+    this.beliefs = const Value.absent(),
+    this.geography = const Value.absent(),
+    this.keyEvents = const Value.absent(),
+    this.choicesMade = const Value.absent(),
+    this.choicesProposed = const Value.absent(),
+    this.techEra = const Value.absent(),
+    this.fantasyLevel = const Value.absent(),
   })  : civId = Value(civId),
         turnNumber = Value(turnNumber),
         rawMessageIds = Value(rawMessageIds),
@@ -807,12 +1190,23 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     Expression<int>? turnNumber,
     Expression<String>? title,
     Expression<String>? summary,
+    Expression<String>? detailedSummary,
     Expression<String>? rawMessageIds,
     Expression<String>? turnType,
     Expression<String>? gameDateStart,
     Expression<String>? gameDateEnd,
     Expression<String>? createdAt,
     Expression<String>? processedAt,
+    Expression<String>? thematicTags,
+    Expression<String>? technologies,
+    Expression<String>? resources,
+    Expression<String>? beliefs,
+    Expression<String>? geography,
+    Expression<String>? keyEvents,
+    Expression<String>? choicesMade,
+    Expression<String>? choicesProposed,
+    Expression<String>? techEra,
+    Expression<String>? fantasyLevel,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -820,12 +1214,23 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
       if (turnNumber != null) 'turn_number': turnNumber,
       if (title != null) 'title': title,
       if (summary != null) 'summary': summary,
+      if (detailedSummary != null) 'detailed_summary': detailedSummary,
       if (rawMessageIds != null) 'raw_message_ids': rawMessageIds,
       if (turnType != null) 'turn_type': turnType,
       if (gameDateStart != null) 'game_date_start': gameDateStart,
       if (gameDateEnd != null) 'game_date_end': gameDateEnd,
       if (createdAt != null) 'created_at': createdAt,
       if (processedAt != null) 'processed_at': processedAt,
+      if (thematicTags != null) 'thematic_tags': thematicTags,
+      if (technologies != null) 'technologies': technologies,
+      if (resources != null) 'resources': resources,
+      if (beliefs != null) 'beliefs': beliefs,
+      if (geography != null) 'geography': geography,
+      if (keyEvents != null) 'key_events': keyEvents,
+      if (choicesMade != null) 'choices_made': choicesMade,
+      if (choicesProposed != null) 'choices_proposed': choicesProposed,
+      if (techEra != null) 'tech_era': techEra,
+      if (fantasyLevel != null) 'fantasy_level': fantasyLevel,
     });
   }
 
@@ -835,24 +1240,46 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
       Value<int>? turnNumber,
       Value<String?>? title,
       Value<String?>? summary,
+      Value<String?>? detailedSummary,
       Value<String>? rawMessageIds,
       Value<String>? turnType,
       Value<String?>? gameDateStart,
       Value<String?>? gameDateEnd,
       Value<String>? createdAt,
-      Value<String?>? processedAt}) {
+      Value<String?>? processedAt,
+      Value<String?>? thematicTags,
+      Value<String?>? technologies,
+      Value<String?>? resources,
+      Value<String?>? beliefs,
+      Value<String?>? geography,
+      Value<String?>? keyEvents,
+      Value<String?>? choicesMade,
+      Value<String?>? choicesProposed,
+      Value<String?>? techEra,
+      Value<String?>? fantasyLevel}) {
     return TurnTurnsCompanion(
       id: id ?? this.id,
       civId: civId ?? this.civId,
       turnNumber: turnNumber ?? this.turnNumber,
       title: title ?? this.title,
       summary: summary ?? this.summary,
+      detailedSummary: detailedSummary ?? this.detailedSummary,
       rawMessageIds: rawMessageIds ?? this.rawMessageIds,
       turnType: turnType ?? this.turnType,
       gameDateStart: gameDateStart ?? this.gameDateStart,
       gameDateEnd: gameDateEnd ?? this.gameDateEnd,
       createdAt: createdAt ?? this.createdAt,
       processedAt: processedAt ?? this.processedAt,
+      thematicTags: thematicTags ?? this.thematicTags,
+      technologies: technologies ?? this.technologies,
+      resources: resources ?? this.resources,
+      beliefs: beliefs ?? this.beliefs,
+      geography: geography ?? this.geography,
+      keyEvents: keyEvents ?? this.keyEvents,
+      choicesMade: choicesMade ?? this.choicesMade,
+      choicesProposed: choicesProposed ?? this.choicesProposed,
+      techEra: techEra ?? this.techEra,
+      fantasyLevel: fantasyLevel ?? this.fantasyLevel,
     );
   }
 
@@ -874,6 +1301,9 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     if (summary.present) {
       map['summary'] = Variable<String>(summary.value);
     }
+    if (detailedSummary.present) {
+      map['detailed_summary'] = Variable<String>(detailedSummary.value);
+    }
     if (rawMessageIds.present) {
       map['raw_message_ids'] = Variable<String>(rawMessageIds.value);
     }
@@ -892,6 +1322,36 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     if (processedAt.present) {
       map['processed_at'] = Variable<String>(processedAt.value);
     }
+    if (thematicTags.present) {
+      map['thematic_tags'] = Variable<String>(thematicTags.value);
+    }
+    if (technologies.present) {
+      map['technologies'] = Variable<String>(technologies.value);
+    }
+    if (resources.present) {
+      map['resources'] = Variable<String>(resources.value);
+    }
+    if (beliefs.present) {
+      map['beliefs'] = Variable<String>(beliefs.value);
+    }
+    if (geography.present) {
+      map['geography'] = Variable<String>(geography.value);
+    }
+    if (keyEvents.present) {
+      map['key_events'] = Variable<String>(keyEvents.value);
+    }
+    if (choicesMade.present) {
+      map['choices_made'] = Variable<String>(choicesMade.value);
+    }
+    if (choicesProposed.present) {
+      map['choices_proposed'] = Variable<String>(choicesProposed.value);
+    }
+    if (techEra.present) {
+      map['tech_era'] = Variable<String>(techEra.value);
+    }
+    if (fantasyLevel.present) {
+      map['fantasy_level'] = Variable<String>(fantasyLevel.value);
+    }
     return map;
   }
 
@@ -903,12 +1363,23 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
           ..write('turnNumber: $turnNumber, ')
           ..write('title: $title, ')
           ..write('summary: $summary, ')
+          ..write('detailedSummary: $detailedSummary, ')
           ..write('rawMessageIds: $rawMessageIds, ')
           ..write('turnType: $turnType, ')
           ..write('gameDateStart: $gameDateStart, ')
           ..write('gameDateEnd: $gameDateEnd, ')
           ..write('createdAt: $createdAt, ')
-          ..write('processedAt: $processedAt')
+          ..write('processedAt: $processedAt, ')
+          ..write('thematicTags: $thematicTags, ')
+          ..write('technologies: $technologies, ')
+          ..write('resources: $resources, ')
+          ..write('beliefs: $beliefs, ')
+          ..write('geography: $geography, ')
+          ..write('keyEvents: $keyEvents, ')
+          ..write('choicesMade: $choicesMade, ')
+          ..write('choicesProposed: $choicesProposed, ')
+          ..write('techEra: $techEra, ')
+          ..write('fantasyLevel: $fantasyLevel')
           ..write(')'))
         .toString();
   }
@@ -1325,6 +1796,31 @@ class $EntityEntitiesTable extends EntityEntities
   late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
       'updated_at', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
+  @override
+  late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
+      'hidden', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("hidden" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _disabledMeta =
+      const VerificationMeta('disabled');
+  @override
+  late final GeneratedColumn<bool> disabled = GeneratedColumn<bool>(
+      'disabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("disabled" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _disabledAtMeta =
+      const VerificationMeta('disabledAt');
+  @override
+  late final GeneratedColumn<String> disabledAt = GeneratedColumn<String>(
+      'disabled_at', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1336,7 +1832,10 @@ class $EntityEntitiesTable extends EntityEntities
         lastSeenTurn,
         isActive,
         createdAt,
-        updatedAt
+        updatedAt,
+        hidden,
+        disabled,
+        disabledAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1405,6 +1904,20 @@ class $EntityEntitiesTable extends EntityEntities
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('hidden')) {
+      context.handle(_hiddenMeta,
+          hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta));
+    }
+    if (data.containsKey('disabled')) {
+      context.handle(_disabledMeta,
+          disabled.isAcceptableOrUnknown(data['disabled']!, _disabledMeta));
+    }
+    if (data.containsKey('disabled_at')) {
+      context.handle(
+          _disabledAtMeta,
+          disabledAt.isAcceptableOrUnknown(
+              data['disabled_at']!, _disabledAtMeta));
+    }
     return context;
   }
 
@@ -1434,6 +1947,12 @@ class $EntityEntitiesTable extends EntityEntities
           .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}updated_at'])!,
+      hidden: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}hidden'])!,
+      disabled: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}disabled'])!,
+      disabledAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}disabled_at']),
     );
   }
 
@@ -1454,6 +1973,9 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
   final int isActive;
   final String createdAt;
   final String updatedAt;
+  final bool hidden;
+  final bool disabled;
+  final String? disabledAt;
   const EntityRow(
       {required this.id,
       required this.canonicalName,
@@ -1464,7 +1986,10 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       this.lastSeenTurn,
       required this.isActive,
       required this.createdAt,
-      required this.updatedAt});
+      required this.updatedAt,
+      required this.hidden,
+      required this.disabled,
+      this.disabledAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1486,6 +2011,11 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
     map['is_active'] = Variable<int>(isActive);
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
+    map['hidden'] = Variable<bool>(hidden);
+    map['disabled'] = Variable<bool>(disabled);
+    if (!nullToAbsent || disabledAt != null) {
+      map['disabled_at'] = Variable<String>(disabledAt);
+    }
     return map;
   }
 
@@ -1508,6 +2038,11 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       isActive: Value(isActive),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      hidden: Value(hidden),
+      disabled: Value(disabled),
+      disabledAt: disabledAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disabledAt),
     );
   }
 
@@ -1525,6 +2060,9 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       isActive: serializer.fromJson<int>(json['isActive']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      hidden: serializer.fromJson<bool>(json['hidden']),
+      disabled: serializer.fromJson<bool>(json['disabled']),
+      disabledAt: serializer.fromJson<String?>(json['disabledAt']),
     );
   }
   @override
@@ -1541,6 +2079,9 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       'isActive': serializer.toJson<int>(isActive),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
+      'hidden': serializer.toJson<bool>(hidden),
+      'disabled': serializer.toJson<bool>(disabled),
+      'disabledAt': serializer.toJson<String?>(disabledAt),
     };
   }
 
@@ -1554,7 +2095,10 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           Value<int?> lastSeenTurn = const Value.absent(),
           int? isActive,
           String? createdAt,
-          String? updatedAt}) =>
+          String? updatedAt,
+          bool? hidden,
+          bool? disabled,
+          Value<String?> disabledAt = const Value.absent()}) =>
       EntityRow(
         id: id ?? this.id,
         canonicalName: canonicalName ?? this.canonicalName,
@@ -1568,6 +2112,9 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
         isActive: isActive ?? this.isActive,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        hidden: hidden ?? this.hidden,
+        disabled: disabled ?? this.disabled,
+        disabledAt: disabledAt.present ? disabledAt.value : this.disabledAt,
       );
   EntityRow copyWithCompanion(EntityEntitiesCompanion data) {
     return EntityRow(
@@ -1589,6 +2136,10 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      hidden: data.hidden.present ? data.hidden.value : this.hidden,
+      disabled: data.disabled.present ? data.disabled.value : this.disabled,
+      disabledAt:
+          data.disabledAt.present ? data.disabledAt.value : this.disabledAt,
     );
   }
 
@@ -1604,14 +2155,29 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           ..write('lastSeenTurn: $lastSeenTurn, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('hidden: $hidden, ')
+          ..write('disabled: $disabled, ')
+          ..write('disabledAt: $disabledAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, canonicalName, entityType, civId,
-      description, firstSeenTurn, lastSeenTurn, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      canonicalName,
+      entityType,
+      civId,
+      description,
+      firstSeenTurn,
+      lastSeenTurn,
+      isActive,
+      createdAt,
+      updatedAt,
+      hidden,
+      disabled,
+      disabledAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1625,7 +2191,10 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           other.lastSeenTurn == this.lastSeenTurn &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.hidden == this.hidden &&
+          other.disabled == this.disabled &&
+          other.disabledAt == this.disabledAt);
 }
 
 class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
@@ -1639,6 +2208,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
   final Value<int> isActive;
   final Value<String> createdAt;
   final Value<String> updatedAt;
+  final Value<bool> hidden;
+  final Value<bool> disabled;
+  final Value<String?> disabledAt;
   const EntityEntitiesCompanion({
     this.id = const Value.absent(),
     this.canonicalName = const Value.absent(),
@@ -1650,6 +2222,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.hidden = const Value.absent(),
+    this.disabled = const Value.absent(),
+    this.disabledAt = const Value.absent(),
   });
   EntityEntitiesCompanion.insert({
     this.id = const Value.absent(),
@@ -1662,6 +2237,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     this.isActive = const Value.absent(),
     required String createdAt,
     required String updatedAt,
+    this.hidden = const Value.absent(),
+    this.disabled = const Value.absent(),
+    this.disabledAt = const Value.absent(),
   })  : canonicalName = Value(canonicalName),
         entityType = Value(entityType),
         createdAt = Value(createdAt),
@@ -1677,6 +2255,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     Expression<int>? isActive,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
+    Expression<bool>? hidden,
+    Expression<bool>? disabled,
+    Expression<String>? disabledAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1689,6 +2270,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (hidden != null) 'hidden': hidden,
+      if (disabled != null) 'disabled': disabled,
+      if (disabledAt != null) 'disabled_at': disabledAt,
     });
   }
 
@@ -1702,7 +2286,10 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       Value<int?>? lastSeenTurn,
       Value<int>? isActive,
       Value<String>? createdAt,
-      Value<String>? updatedAt}) {
+      Value<String>? updatedAt,
+      Value<bool>? hidden,
+      Value<bool>? disabled,
+      Value<String?>? disabledAt}) {
     return EntityEntitiesCompanion(
       id: id ?? this.id,
       canonicalName: canonicalName ?? this.canonicalName,
@@ -1714,6 +2301,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      hidden: hidden ?? this.hidden,
+      disabled: disabled ?? this.disabled,
+      disabledAt: disabledAt ?? this.disabledAt,
     );
   }
 
@@ -1750,6 +2340,15 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
+    if (hidden.present) {
+      map['hidden'] = Variable<bool>(hidden.value);
+    }
+    if (disabled.present) {
+      map['disabled'] = Variable<bool>(disabled.value);
+    }
+    if (disabledAt.present) {
+      map['disabled_at'] = Variable<String>(disabledAt.value);
+    }
     return map;
   }
 
@@ -1765,7 +2364,10 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
           ..write('lastSeenTurn: $lastSeenTurn, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('hidden: $hidden, ')
+          ..write('disabled: $disabled, ')
+          ..write('disabledAt: $disabledAt')
           ..write(')'))
         .toString();
   }
@@ -2030,9 +2632,16 @@ class $EntityMentionsTable extends EntityMentions
   late final GeneratedColumn<String> context = GeneratedColumn<String>(
       'context', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('gm'));
   @override
   List<GeneratedColumn> get $columns =>
-      [id, entityId, turnId, segmentId, mentionText, context];
+      [id, entityId, turnId, segmentId, mentionText, context, source];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2074,6 +2683,10 @@ class $EntityMentionsTable extends EntityMentions
       context.handle(_contextMeta,
           this.context.isAcceptableOrUnknown(data['context']!, _contextMeta));
     }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    }
     return context;
   }
 
@@ -2095,6 +2708,8 @@ class $EntityMentionsTable extends EntityMentions
           .read(DriftSqlType.string, data['${effectivePrefix}mention_text'])!,
       context: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}context']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
     );
   }
 
@@ -2111,13 +2726,15 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
   final int? segmentId;
   final String mentionText;
   final String? context;
+  final String source;
   const MentionRow(
       {required this.id,
       required this.entityId,
       required this.turnId,
       this.segmentId,
       required this.mentionText,
-      this.context});
+      this.context,
+      required this.source});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2131,6 +2748,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
     if (!nullToAbsent || context != null) {
       map['context'] = Variable<String>(context);
     }
+    map['source'] = Variable<String>(source);
     return map;
   }
 
@@ -2146,6 +2764,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
       context: context == null && nullToAbsent
           ? const Value.absent()
           : Value(context),
+      source: Value(source),
     );
   }
 
@@ -2159,6 +2778,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
       segmentId: serializer.fromJson<int?>(json['segmentId']),
       mentionText: serializer.fromJson<String>(json['mentionText']),
       context: serializer.fromJson<String?>(json['context']),
+      source: serializer.fromJson<String>(json['source']),
     );
   }
   @override
@@ -2171,6 +2791,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
       'segmentId': serializer.toJson<int?>(segmentId),
       'mentionText': serializer.toJson<String>(mentionText),
       'context': serializer.toJson<String?>(context),
+      'source': serializer.toJson<String>(source),
     };
   }
 
@@ -2180,7 +2801,8 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
           int? turnId,
           Value<int?> segmentId = const Value.absent(),
           String? mentionText,
-          Value<String?> context = const Value.absent()}) =>
+          Value<String?> context = const Value.absent(),
+          String? source}) =>
       MentionRow(
         id: id ?? this.id,
         entityId: entityId ?? this.entityId,
@@ -2188,6 +2810,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
         segmentId: segmentId.present ? segmentId.value : this.segmentId,
         mentionText: mentionText ?? this.mentionText,
         context: context.present ? context.value : this.context,
+        source: source ?? this.source,
       );
   MentionRow copyWithCompanion(EntityMentionsCompanion data) {
     return MentionRow(
@@ -2198,6 +2821,7 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
       mentionText:
           data.mentionText.present ? data.mentionText.value : this.mentionText,
       context: data.context.present ? data.context.value : this.context,
+      source: data.source.present ? data.source.value : this.source,
     );
   }
 
@@ -2209,14 +2833,15 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
           ..write('turnId: $turnId, ')
           ..write('segmentId: $segmentId, ')
           ..write('mentionText: $mentionText, ')
-          ..write('context: $context')
+          ..write('context: $context, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, entityId, turnId, segmentId, mentionText, context);
+  int get hashCode => Object.hash(
+      id, entityId, turnId, segmentId, mentionText, context, source);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2226,7 +2851,8 @@ class MentionRow extends DataClass implements Insertable<MentionRow> {
           other.turnId == this.turnId &&
           other.segmentId == this.segmentId &&
           other.mentionText == this.mentionText &&
-          other.context == this.context);
+          other.context == this.context &&
+          other.source == this.source);
 }
 
 class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
@@ -2236,6 +2862,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
   final Value<int?> segmentId;
   final Value<String> mentionText;
   final Value<String?> context;
+  final Value<String> source;
   const EntityMentionsCompanion({
     this.id = const Value.absent(),
     this.entityId = const Value.absent(),
@@ -2243,6 +2870,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
     this.segmentId = const Value.absent(),
     this.mentionText = const Value.absent(),
     this.context = const Value.absent(),
+    this.source = const Value.absent(),
   });
   EntityMentionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2251,6 +2879,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
     this.segmentId = const Value.absent(),
     required String mentionText,
     this.context = const Value.absent(),
+    this.source = const Value.absent(),
   })  : entityId = Value(entityId),
         turnId = Value(turnId),
         mentionText = Value(mentionText);
@@ -2261,6 +2890,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
     Expression<int>? segmentId,
     Expression<String>? mentionText,
     Expression<String>? context,
+    Expression<String>? source,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2269,6 +2899,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
       if (segmentId != null) 'segment_id': segmentId,
       if (mentionText != null) 'mention_text': mentionText,
       if (context != null) 'context': context,
+      if (source != null) 'source': source,
     });
   }
 
@@ -2278,7 +2909,8 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
       Value<int>? turnId,
       Value<int?>? segmentId,
       Value<String>? mentionText,
-      Value<String?>? context}) {
+      Value<String?>? context,
+      Value<String>? source}) {
     return EntityMentionsCompanion(
       id: id ?? this.id,
       entityId: entityId ?? this.entityId,
@@ -2286,6 +2918,7 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
       segmentId: segmentId ?? this.segmentId,
       mentionText: mentionText ?? this.mentionText,
       context: context ?? this.context,
+      source: source ?? this.source,
     );
   }
 
@@ -2310,6 +2943,9 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
     if (context.present) {
       map['context'] = Variable<String>(context.value);
     }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
     return map;
   }
 
@@ -2321,7 +2957,8 @@ class EntityMentionsCompanion extends UpdateCompanion<MentionRow> {
           ..write('turnId: $turnId, ')
           ..write('segmentId: $segmentId, ')
           ..write('mentionText: $mentionText, ')
-          ..write('context: $context')
+          ..write('context: $context, ')
+          ..write('source: $source')
           ..write(')'))
         .toString();
   }
@@ -4732,12 +5369,23 @@ typedef $$TurnTurnsTableCreateCompanionBuilder = TurnTurnsCompanion Function({
   required int turnNumber,
   Value<String?> title,
   Value<String?> summary,
+  Value<String?> detailedSummary,
   required String rawMessageIds,
   Value<String> turnType,
   Value<String?> gameDateStart,
   Value<String?> gameDateEnd,
   required String createdAt,
   Value<String?> processedAt,
+  Value<String?> thematicTags,
+  Value<String?> technologies,
+  Value<String?> resources,
+  Value<String?> beliefs,
+  Value<String?> geography,
+  Value<String?> keyEvents,
+  Value<String?> choicesMade,
+  Value<String?> choicesProposed,
+  Value<String?> techEra,
+  Value<String?> fantasyLevel,
 });
 typedef $$TurnTurnsTableUpdateCompanionBuilder = TurnTurnsCompanion Function({
   Value<int> id,
@@ -4745,12 +5393,23 @@ typedef $$TurnTurnsTableUpdateCompanionBuilder = TurnTurnsCompanion Function({
   Value<int> turnNumber,
   Value<String?> title,
   Value<String?> summary,
+  Value<String?> detailedSummary,
   Value<String> rawMessageIds,
   Value<String> turnType,
   Value<String?> gameDateStart,
   Value<String?> gameDateEnd,
   Value<String> createdAt,
   Value<String?> processedAt,
+  Value<String?> thematicTags,
+  Value<String?> technologies,
+  Value<String?> resources,
+  Value<String?> beliefs,
+  Value<String?> geography,
+  Value<String?> keyEvents,
+  Value<String?> choicesMade,
+  Value<String?> choicesProposed,
+  Value<String?> techEra,
+  Value<String?> fantasyLevel,
 });
 
 class $$TurnTurnsTableFilterComposer
@@ -4777,6 +5436,10 @@ class $$TurnTurnsTableFilterComposer
   ColumnFilters<String> get summary => $composableBuilder(
       column: $table.summary, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get detailedSummary => $composableBuilder(
+      column: $table.detailedSummary,
+      builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get rawMessageIds => $composableBuilder(
       column: $table.rawMessageIds, builder: (column) => ColumnFilters(column));
 
@@ -4794,6 +5457,37 @@ class $$TurnTurnsTableFilterComposer
 
   ColumnFilters<String> get processedAt => $composableBuilder(
       column: $table.processedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get thematicTags => $composableBuilder(
+      column: $table.thematicTags, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get technologies => $composableBuilder(
+      column: $table.technologies, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get resources => $composableBuilder(
+      column: $table.resources, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get beliefs => $composableBuilder(
+      column: $table.beliefs, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get geography => $composableBuilder(
+      column: $table.geography, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get keyEvents => $composableBuilder(
+      column: $table.keyEvents, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get choicesMade => $composableBuilder(
+      column: $table.choicesMade, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get choicesProposed => $composableBuilder(
+      column: $table.choicesProposed,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get techEra => $composableBuilder(
+      column: $table.techEra, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fantasyLevel => $composableBuilder(
+      column: $table.fantasyLevel, builder: (column) => ColumnFilters(column));
 }
 
 class $$TurnTurnsTableOrderingComposer
@@ -4820,6 +5514,10 @@ class $$TurnTurnsTableOrderingComposer
   ColumnOrderings<String> get summary => $composableBuilder(
       column: $table.summary, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get detailedSummary => $composableBuilder(
+      column: $table.detailedSummary,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get rawMessageIds => $composableBuilder(
       column: $table.rawMessageIds,
       builder: (column) => ColumnOrderings(column));
@@ -4839,6 +5537,40 @@ class $$TurnTurnsTableOrderingComposer
 
   ColumnOrderings<String> get processedAt => $composableBuilder(
       column: $table.processedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get thematicTags => $composableBuilder(
+      column: $table.thematicTags,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get technologies => $composableBuilder(
+      column: $table.technologies,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get resources => $composableBuilder(
+      column: $table.resources, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get beliefs => $composableBuilder(
+      column: $table.beliefs, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get geography => $composableBuilder(
+      column: $table.geography, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get keyEvents => $composableBuilder(
+      column: $table.keyEvents, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get choicesMade => $composableBuilder(
+      column: $table.choicesMade, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get choicesProposed => $composableBuilder(
+      column: $table.choicesProposed,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get techEra => $composableBuilder(
+      column: $table.techEra, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fantasyLevel => $composableBuilder(
+      column: $table.fantasyLevel,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$TurnTurnsTableAnnotationComposer
@@ -4865,6 +5597,9 @@ class $$TurnTurnsTableAnnotationComposer
   GeneratedColumn<String> get summary =>
       $composableBuilder(column: $table.summary, builder: (column) => column);
 
+  GeneratedColumn<String> get detailedSummary => $composableBuilder(
+      column: $table.detailedSummary, builder: (column) => column);
+
   GeneratedColumn<String> get rawMessageIds => $composableBuilder(
       column: $table.rawMessageIds, builder: (column) => column);
 
@@ -4882,6 +5617,36 @@ class $$TurnTurnsTableAnnotationComposer
 
   GeneratedColumn<String> get processedAt => $composableBuilder(
       column: $table.processedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get thematicTags => $composableBuilder(
+      column: $table.thematicTags, builder: (column) => column);
+
+  GeneratedColumn<String> get technologies => $composableBuilder(
+      column: $table.technologies, builder: (column) => column);
+
+  GeneratedColumn<String> get resources =>
+      $composableBuilder(column: $table.resources, builder: (column) => column);
+
+  GeneratedColumn<String> get beliefs =>
+      $composableBuilder(column: $table.beliefs, builder: (column) => column);
+
+  GeneratedColumn<String> get geography =>
+      $composableBuilder(column: $table.geography, builder: (column) => column);
+
+  GeneratedColumn<String> get keyEvents =>
+      $composableBuilder(column: $table.keyEvents, builder: (column) => column);
+
+  GeneratedColumn<String> get choicesMade => $composableBuilder(
+      column: $table.choicesMade, builder: (column) => column);
+
+  GeneratedColumn<String> get choicesProposed => $composableBuilder(
+      column: $table.choicesProposed, builder: (column) => column);
+
+  GeneratedColumn<String> get techEra =>
+      $composableBuilder(column: $table.techEra, builder: (column) => column);
+
+  GeneratedColumn<String> get fantasyLevel => $composableBuilder(
+      column: $table.fantasyLevel, builder: (column) => column);
 }
 
 class $$TurnTurnsTableTableManager extends RootTableManager<
@@ -4912,12 +5677,23 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             Value<int> turnNumber = const Value.absent(),
             Value<String?> title = const Value.absent(),
             Value<String?> summary = const Value.absent(),
+            Value<String?> detailedSummary = const Value.absent(),
             Value<String> rawMessageIds = const Value.absent(),
             Value<String> turnType = const Value.absent(),
             Value<String?> gameDateStart = const Value.absent(),
             Value<String?> gameDateEnd = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String?> processedAt = const Value.absent(),
+            Value<String?> thematicTags = const Value.absent(),
+            Value<String?> technologies = const Value.absent(),
+            Value<String?> resources = const Value.absent(),
+            Value<String?> beliefs = const Value.absent(),
+            Value<String?> geography = const Value.absent(),
+            Value<String?> keyEvents = const Value.absent(),
+            Value<String?> choicesMade = const Value.absent(),
+            Value<String?> choicesProposed = const Value.absent(),
+            Value<String?> techEra = const Value.absent(),
+            Value<String?> fantasyLevel = const Value.absent(),
           }) =>
               TurnTurnsCompanion(
             id: id,
@@ -4925,12 +5701,23 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             turnNumber: turnNumber,
             title: title,
             summary: summary,
+            detailedSummary: detailedSummary,
             rawMessageIds: rawMessageIds,
             turnType: turnType,
             gameDateStart: gameDateStart,
             gameDateEnd: gameDateEnd,
             createdAt: createdAt,
             processedAt: processedAt,
+            thematicTags: thematicTags,
+            technologies: technologies,
+            resources: resources,
+            beliefs: beliefs,
+            geography: geography,
+            keyEvents: keyEvents,
+            choicesMade: choicesMade,
+            choicesProposed: choicesProposed,
+            techEra: techEra,
+            fantasyLevel: fantasyLevel,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -4938,12 +5725,23 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             required int turnNumber,
             Value<String?> title = const Value.absent(),
             Value<String?> summary = const Value.absent(),
+            Value<String?> detailedSummary = const Value.absent(),
             required String rawMessageIds,
             Value<String> turnType = const Value.absent(),
             Value<String?> gameDateStart = const Value.absent(),
             Value<String?> gameDateEnd = const Value.absent(),
             required String createdAt,
             Value<String?> processedAt = const Value.absent(),
+            Value<String?> thematicTags = const Value.absent(),
+            Value<String?> technologies = const Value.absent(),
+            Value<String?> resources = const Value.absent(),
+            Value<String?> beliefs = const Value.absent(),
+            Value<String?> geography = const Value.absent(),
+            Value<String?> keyEvents = const Value.absent(),
+            Value<String?> choicesMade = const Value.absent(),
+            Value<String?> choicesProposed = const Value.absent(),
+            Value<String?> techEra = const Value.absent(),
+            Value<String?> fantasyLevel = const Value.absent(),
           }) =>
               TurnTurnsCompanion.insert(
             id: id,
@@ -4951,12 +5749,23 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             turnNumber: turnNumber,
             title: title,
             summary: summary,
+            detailedSummary: detailedSummary,
             rawMessageIds: rawMessageIds,
             turnType: turnType,
             gameDateStart: gameDateStart,
             gameDateEnd: gameDateEnd,
             createdAt: createdAt,
             processedAt: processedAt,
+            thematicTags: thematicTags,
+            technologies: technologies,
+            resources: resources,
+            beliefs: beliefs,
+            geography: geography,
+            keyEvents: keyEvents,
+            choicesMade: choicesMade,
+            choicesProposed: choicesProposed,
+            techEra: techEra,
+            fantasyLevel: fantasyLevel,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5172,6 +5981,9 @@ typedef $$EntityEntitiesTableCreateCompanionBuilder = EntityEntitiesCompanion
   Value<int> isActive,
   required String createdAt,
   required String updatedAt,
+  Value<bool> hidden,
+  Value<bool> disabled,
+  Value<String?> disabledAt,
 });
 typedef $$EntityEntitiesTableUpdateCompanionBuilder = EntityEntitiesCompanion
     Function({
@@ -5185,6 +5997,9 @@ typedef $$EntityEntitiesTableUpdateCompanionBuilder = EntityEntitiesCompanion
   Value<int> isActive,
   Value<String> createdAt,
   Value<String> updatedAt,
+  Value<bool> hidden,
+  Value<bool> disabled,
+  Value<String?> disabledAt,
 });
 
 class $$EntityEntitiesTableFilterComposer
@@ -5225,6 +6040,15 @@ class $$EntityEntitiesTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get disabled => $composableBuilder(
+      column: $table.disabled, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get disabledAt => $composableBuilder(
+      column: $table.disabledAt, builder: (column) => ColumnFilters(column));
 }
 
 class $$EntityEntitiesTableOrderingComposer
@@ -5268,6 +6092,15 @@ class $$EntityEntitiesTableOrderingComposer
 
   ColumnOrderings<String> get updatedAt => $composableBuilder(
       column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get hidden => $composableBuilder(
+      column: $table.hidden, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get disabled => $composableBuilder(
+      column: $table.disabled, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get disabledAt => $composableBuilder(
+      column: $table.disabledAt, builder: (column) => ColumnOrderings(column));
 }
 
 class $$EntityEntitiesTableAnnotationComposer
@@ -5308,6 +6141,15 @@ class $$EntityEntitiesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get hidden =>
+      $composableBuilder(column: $table.hidden, builder: (column) => column);
+
+  GeneratedColumn<bool> get disabled =>
+      $composableBuilder(column: $table.disabled, builder: (column) => column);
+
+  GeneratedColumn<String> get disabledAt => $composableBuilder(
+      column: $table.disabledAt, builder: (column) => column);
 }
 
 class $$EntityEntitiesTableTableManager extends RootTableManager<
@@ -5347,6 +6189,9 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             Value<int> isActive = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String> updatedAt = const Value.absent(),
+            Value<bool> hidden = const Value.absent(),
+            Value<bool> disabled = const Value.absent(),
+            Value<String?> disabledAt = const Value.absent(),
           }) =>
               EntityEntitiesCompanion(
             id: id,
@@ -5359,6 +6204,9 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             isActive: isActive,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            hidden: hidden,
+            disabled: disabled,
+            disabledAt: disabledAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5371,6 +6219,9 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             Value<int> isActive = const Value.absent(),
             required String createdAt,
             required String updatedAt,
+            Value<bool> hidden = const Value.absent(),
+            Value<bool> disabled = const Value.absent(),
+            Value<String?> disabledAt = const Value.absent(),
           }) =>
               EntityEntitiesCompanion.insert(
             id: id,
@@ -5383,6 +6234,9 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             isActive: isActive,
             createdAt: createdAt,
             updatedAt: updatedAt,
+            hidden: hidden,
+            disabled: disabled,
+            disabledAt: disabledAt,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5546,6 +6400,7 @@ typedef $$EntityMentionsTableCreateCompanionBuilder = EntityMentionsCompanion
   Value<int?> segmentId,
   required String mentionText,
   Value<String?> context,
+  Value<String> source,
 });
 typedef $$EntityMentionsTableUpdateCompanionBuilder = EntityMentionsCompanion
     Function({
@@ -5555,6 +6410,7 @@ typedef $$EntityMentionsTableUpdateCompanionBuilder = EntityMentionsCompanion
   Value<int?> segmentId,
   Value<String> mentionText,
   Value<String?> context,
+  Value<String> source,
 });
 
 class $$EntityMentionsTableFilterComposer
@@ -5583,6 +6439,9 @@ class $$EntityMentionsTableFilterComposer
 
   ColumnFilters<String> get context => $composableBuilder(
       column: $table.context, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnFilters(column));
 }
 
 class $$EntityMentionsTableOrderingComposer
@@ -5611,6 +6470,9 @@ class $$EntityMentionsTableOrderingComposer
 
   ColumnOrderings<String> get context => $composableBuilder(
       column: $table.context, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get source => $composableBuilder(
+      column: $table.source, builder: (column) => ColumnOrderings(column));
 }
 
 class $$EntityMentionsTableAnnotationComposer
@@ -5639,6 +6501,9 @@ class $$EntityMentionsTableAnnotationComposer
 
   GeneratedColumn<String> get context =>
       $composableBuilder(column: $table.context, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
 }
 
 class $$EntityMentionsTableTableManager extends RootTableManager<
@@ -5674,6 +6539,7 @@ class $$EntityMentionsTableTableManager extends RootTableManager<
             Value<int?> segmentId = const Value.absent(),
             Value<String> mentionText = const Value.absent(),
             Value<String?> context = const Value.absent(),
+            Value<String> source = const Value.absent(),
           }) =>
               EntityMentionsCompanion(
             id: id,
@@ -5682,6 +6548,7 @@ class $$EntityMentionsTableTableManager extends RootTableManager<
             segmentId: segmentId,
             mentionText: mentionText,
             context: context,
+            source: source,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -5690,6 +6557,7 @@ class $$EntityMentionsTableTableManager extends RootTableManager<
             Value<int?> segmentId = const Value.absent(),
             required String mentionText,
             Value<String?> context = const Value.absent(),
+            Value<String> source = const Value.absent(),
           }) =>
               EntityMentionsCompanion.insert(
             id: id,
@@ -5698,6 +6566,7 @@ class $$EntityMentionsTableTableManager extends RootTableManager<
             segmentId: segmentId,
             mentionText: mentionText,
             context: context,
+            source: source,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

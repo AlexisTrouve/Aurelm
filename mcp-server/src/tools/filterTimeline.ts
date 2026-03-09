@@ -31,7 +31,7 @@ export function filterTimeline(
       LEFT JOIN entity_mentions m ON m.turn_id = t.id
       LEFT JOIN entity_entities e ON m.entity_id = e.id
       LEFT JOIN entity_aliases a ON a.entity_id = e.id
-      WHERE (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
+      WHERE e.disabled = 0 AND (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
     `;
     params.push(pattern, pattern);
   } else {

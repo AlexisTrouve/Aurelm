@@ -6,6 +6,7 @@ import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/civilization/civ_detail_screen.dart';
 import '../../screens/entities/entity_browser_screen.dart';
 import '../../screens/entities/entity_detail_screen.dart';
+import '../../screens/entities/disabled_entities_screen.dart';
 import '../../screens/timeline/timeline_screen.dart';
 import '../../screens/timeline/turn_detail_screen.dart';
 import '../../screens/graph/graph_screen.dart';
@@ -43,6 +44,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/entities',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: EntityBrowserScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/entities/disabled',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: DisabledEntitiesScreen(),
             ),
           ),
           GoRoute(

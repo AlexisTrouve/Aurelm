@@ -99,7 +99,7 @@ class _RelationTile extends StatelessWidget {
             : relation.relation.relationType.replaceAll('_', ' '),
       ),
       trailing: const Icon(Icons.chevron_right, size: 18),
-      onTap: () => context.go('/entities/${relation.relatedEntityId}'),
+      onTap: () => context.push('/entities/${relation.relatedEntityId}'),
     );
   }
 }

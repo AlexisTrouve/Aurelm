@@ -25,10 +25,22 @@ class EntityFilterNotifier extends StateNotifier<EntityFilterState> {
     state = state.copyWith(searchQuery: query);
   }
 
+  void toggleShowHidden() {
+    state = state.copyWith(showHidden: !state.showHidden);
+  }
+
   void reset() {
     state = const EntityFilterState();
   }
 }
+
+/// Provider for disabled (archived) entities, optionally filtered by civ
+final disabledEntitiesProvider =
+    StreamProvider.family<List<EntityWithDetails>, int?>((ref, civId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.entityDao.watchDisabledEntities(civId: civId);
+});
 
 final entityListProvider = StreamProvider<List<EntityWithDetails>>((ref) {
   final db = ref.watch(databaseProvider);
@@ -49,6 +61,14 @@ final entityMentionsProvider =
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   return db.entityDao.watchMentionsForEntity(entityId);
+});
+
+/// Entities mentioned in a specific turn — for TurnDetailScreen fast travel.
+final turnEntitiesProvider =
+    StreamProvider.family<List<EntityWithDetails>, int>((ref, turnId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.entityDao.watchEntitiesForTurn(turnId);
 });
 
 final topEntitiesProvider =

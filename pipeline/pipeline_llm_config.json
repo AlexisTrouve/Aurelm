@@ -1,0 +1,14 @@
+{
+  "_comment": "OpenRouter config for dev machine (no local GPU). Uses qwen3:14b via API.",
+  "provider": "openrouter",
+  "default_model": "qwen3:14b",
+  "stages": {
+    "extraction":    { "model": "qwen3:14b" },
+    "focus":         { "model": "qwen3:14b" },
+    "validation":    { "model": "qwen3:14b" },
+    "summarization": { "model": "qwen3:14b" },
+    "profiling":     { "model": "qwen3:14b" },
+    "aliases":       { "model": "qwen3:14b", "prompt_version": "v12-desc-first-tuned", "score_threshold": 0.7 },
+    "subjects":      { "model": "qwen3:14b" }
+  }
+}

@@ -71,7 +71,7 @@ export function sanityCheck(
     // Search canonical names
     const byName = db.prepare(`
       SELECT e.id FROM entity_entities e
-      WHERE e.canonical_name LIKE ? ESCAPE '!'
+      WHERE e.disabled = 0 AND e.canonical_name LIKE ? ESCAPE '!'
       ${civId !== null ? "AND e.civ_id = ?" : ""}
     `).all(...(civId !== null ? [pattern, civId] : [pattern])) as Array<{ id: number }>;
 
@@ -81,7 +81,7 @@ export function sanityCheck(
     const byAlias = db.prepare(`
       SELECT a.entity_id AS id FROM entity_aliases a
       JOIN entity_entities e ON a.entity_id = e.id
-      WHERE a.alias LIKE ? ESCAPE '!'
+      WHERE e.disabled = 0 AND a.alias LIKE ? ESCAPE '!'
       ${civId !== null ? "AND e.civ_id = ?" : ""}
     `).all(...(civId !== null ? [pattern, civId] : [pattern])) as Array<{ id: number }>;
 
@@ -151,7 +151,7 @@ export function sanityCheck(
     const inventory = db.prepare(`
       SELECT canonical_name, entity_type
       FROM entity_entities
-      WHERE civ_id = ?
+      WHERE civ_id = ? AND disabled = 0
       ORDER BY entity_type, canonical_name
       LIMIT 200
     `).all(civId) as InventoryEntry[];

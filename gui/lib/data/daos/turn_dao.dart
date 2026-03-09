@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../database.dart';
@@ -17,6 +19,7 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
   Stream<List<TurnWithEntities>> watchTimeline({
     int? civId,
     String? turnType,
+    String? selectedTag,
     int limit = 100,
   }) {
     var query = select(turnTurns).join([
@@ -27,9 +30,12 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
     if (civId != null) {
       query.where(turnTurns.civId.equals(civId));
     }
-    // Apply turnType filter (was previously ignored — fix)
     if (turnType != null) {
       query.where(turnTurns.turnType.equals(turnType));
+    }
+    // Tag filter: thematic_tags is a JSON array string — LIKE match on the tag value
+    if (selectedTag != null) {
+      query.where(turnTurns.thematicTags.like('%"$selectedTag"%'));
     }
 
     query
@@ -42,14 +48,26 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
         final turn = row.readTable(turnTurns);
         final civ = row.readTable(civCivilizations);
 
-        final mentionCount = await _countMentionsForTurn(turn.id);
-        final segTypes = await _segmentTypesForTurn(turn.id);
+        // Fetch all turn metadata in parallel for performance
+        final gmCount = _countMentionsBySource(turn.id, 'gm');
+        final pjCount = _countMentionsBySource(turn.id, 'pj');
+        final segTypes = _segmentTypesForTurn(turn.id);
+        final hasPj = _hasPjSegments(turn.id);
+        final resolved = await Future.wait([gmCount, pjCount, segTypes, hasPj]);
+
+        final gm = resolved[0] as int;
+        final pj = resolved[1] as int;
+        final segs = resolved[2] as List<String>;
+        final pjContent = resolved[3] as bool;
 
         results.add(TurnWithEntities(
           turn: turn,
           civName: civ.name,
-          entityCount: mentionCount,
-          segmentTypes: segTypes,
+          entityCount: gm + pj,
+          gmEntityCount: gm,
+          pjEntityCount: pj,
+          segmentTypes: segs,
+          hasPjContent: pjContent,
         ));
       }
       return results;
@@ -63,6 +81,26 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
           ..where(entityMentions.turnId.equals(turnId)))
         .getSingle();
     return row.read(countExpr) ?? 0;
+  }
+
+  /// Counts mentions by source ('gm' or 'pj') for a given turn.
+  Future<int> _countMentionsBySource(int turnId, String source) async {
+    final countExpr = entityMentions.id.count();
+    final row = await (selectOnly(entityMentions)
+          ..addColumns([countExpr])
+          ..where(entityMentions.turnId.equals(turnId) &
+              entityMentions.source.equals(source)))
+        .getSingle();
+    return row.read(countExpr) ?? 0;
+  }
+
+  /// Returns true if the turn has at least one segment with source='pj'.
+  Future<bool> _hasPjSegments(int turnId) async {
+    final result = await (select(turnSegments)
+          ..where((s) => s.turnId.equals(turnId) & s.source.equals('pj'))
+          ..limit(1))
+        .get();
+    return result.isNotEmpty;
   }
 
   Future<List<String>> _segmentTypesForTurn(int turnId) async {
@@ -120,6 +158,27 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
         entityCount: mentionCount,
       );
     });
+  }
+
+  /// Returns all unique thematic tags across all turns, sorted by frequency desc.
+  Future<List<String>> allThematicTags() async {
+    final rows = await (selectOnly(turnTurns)
+          ..addColumns([turnTurns.thematicTags])
+          ..where(turnTurns.thematicTags.isNotNull()))
+        .get();
+
+    final freq = <String, int>{};
+    for (final row in rows) {
+      final raw = row.read(turnTurns.thematicTags);
+      if (raw == null) continue;
+      for (final tag in (jsonDecode(raw) as List).cast<String>()) {
+        freq[tag] = (freq[tag] ?? 0) + 1;
+      }
+    }
+    // Sort by frequency descending, return tag names
+    final sorted = freq.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.map((e) => e.key).toList();
   }
 }
 
