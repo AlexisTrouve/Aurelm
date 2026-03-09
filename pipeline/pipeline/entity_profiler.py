@@ -20,6 +20,18 @@ from .db import get_connection, update_progress
 from .llm_provider import LLMProvider, OllamaProvider
 
 
+# Fixed vocabulary for entity semantic tags.
+# domain tags: what role/sphere does the entity belong to?
+# status tags: what is the entity's current state in the game world?
+ENTITY_TAG_VOCAB: list[str] = [
+    # domain
+    "militaire", "religieux", "politique", "economique",
+    "culturel", "diplomatique", "technologique", "mythologique",
+    # status
+    "actif", "disparu", "emergent", "legendaire",
+]
+
+
 @dataclass
 class EntityProfile:
     """Rich profile for a single entity, built from all its mentions."""
@@ -31,6 +43,7 @@ class EntityProfile:
     history: list[str] = field(default_factory=list)
     aliases_suggested: list[str] = field(default_factory=list)
     raw_relations: list[dict] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
     mention_count: int = 0
     mention_contexts: list[str] = field(default_factory=list)
 
@@ -50,6 +63,7 @@ Produis :
 2. **turn_summaries** : Pour CHAQUE tour où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité dans ce tour. Format : {{"Tour X": "résumé..."}}
 3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
 4. **relations** : Les relations avec d'autres entités NOMMÉES dans les extraits. Types possibles : located_in, member_of, created_by, allied_with, controls, part_of, produces, worships, enemy_of, trades_with. Format : [{{"target": "Nom exact de l'autre entité", "type": "type_relation", "description": "brève explication"}}]
+5. **tags** : Parmi ces tags uniquement : {tag_vocab} — choisis ceux qui s'appliquent à cette entité (0 à 4 max). Format : ["tag1", "tag2"]
 
 Règles :
 - Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
@@ -57,9 +71,10 @@ Règles :
 - Pour turn_summaries : résume le CONTEXTE et le RÔLE de l'entité, pas juste "elle est mentionnée"
 - Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
 - Pour les relations : ne liste que des relations EXPLICITES dans les extraits, avec le nom exact de l'entité cible
+- Pour les tags : choisis uniquement parmi la liste fournie, sois conservateur (mieux vaut moins que trop)
 
 Réponds UNIQUEMENT en JSON :
-{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}]}}"""
+{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}], "tags": ["..."]}}"""
 
 
 def _find_rich_context_for_mention(
@@ -258,6 +273,7 @@ def build_entity_profiles(
                     name=name,
                     entity_type=entity_type,
                     mentions=mentions_text,
+                    tag_vocab=", ".join(ENTITY_TAG_VOCAB),
                 )
 
                 # Use provided provider or fall back to default Ollama
@@ -295,6 +311,15 @@ def build_entity_profiles(
                                 r for r in raw_relations
                                 if isinstance(r, dict) and r.get("target") and r.get("type")
                             ]
+
+                        # Parse tags — validate against fixed vocab to avoid LLM hallucinations
+                        raw_tags = data.get("tags", [])
+                        if isinstance(raw_tags, list):
+                            profile.tags = [
+                                t for t in raw_tags
+                                if isinstance(t, str) and t in ENTITY_TAG_VOCAB
+                            ]
+
                         break  # Success, exit retry loop
                     except Exception as e:
                         if attempt < max_retries - 1:
@@ -333,11 +358,12 @@ def build_entity_profiles(
                 history_json = json.dumps(profile.history, ensure_ascii=False) if profile.history else None
                 final_description = profile.description if profile.description else existing_description
 
+            tags_json = json.dumps(profile.tags, ensure_ascii=False) if profile.tags else None
             conn.execute(
                 """UPDATE entity_entities
-                   SET description = ?, history = ?, updated_at = datetime('now')
+                   SET description = ?, history = ?, tags = ?, updated_at = datetime('now')
                    WHERE id = ?""",
-                (final_description, history_json, entity_id),
+                (final_description, history_json, tags_json, entity_id),
             )
 
         # Commit every 10 entities to avoid losing progress on crash

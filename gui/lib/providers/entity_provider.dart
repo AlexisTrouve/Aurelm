@@ -29,6 +29,10 @@ class EntityFilterNotifier extends StateNotifier<EntityFilterState> {
     state = state.copyWith(showHidden: !state.showHidden);
   }
 
+  void setSelectedTag(String? tag) {
+    state = state.copyWith(selectedTag: () => tag);
+  }
+
   void reset() {
     state = const EntityFilterState();
   }
@@ -69,6 +73,13 @@ final turnEntitiesProvider =
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   return db.entityDao.watchEntitiesForTurn(turnId);
+});
+
+/// All unique semantic tags across active entities, for the entity filter bar.
+final entityTagsProvider = FutureProvider<List<String>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return [];
+  return db.entityDao.allEntityTags();
 });
 
 final topEntitiesProvider =

@@ -34,12 +34,15 @@ class EntityFilterState {
   final String searchQuery;
   // When true, hidden entities appear in the list (with a visual badge)
   final bool showHidden;
+  // Semantic tag filter (migration 013) — null = no filter
+  final String? selectedTag;
 
   const EntityFilterState({
     this.entityType,
     this.civId,
     this.searchQuery = '',
     this.showHidden = false,
+    this.selectedTag,
   });
 
   EntityFilterState copyWith({
@@ -47,12 +50,14 @@ class EntityFilterState {
     int? Function()? civId,
     String? searchQuery,
     bool? showHidden,
+    String? Function()? selectedTag,
   }) {
     return EntityFilterState(
       entityType: entityType != null ? entityType() : this.entityType,
       civId: civId != null ? civId() : this.civId,
       searchQuery: searchQuery ?? this.searchQuery,
       showHidden: showHidden ?? this.showHidden,
+      selectedTag: selectedTag != null ? selectedTag() : this.selectedTag,
     );
   }
 }

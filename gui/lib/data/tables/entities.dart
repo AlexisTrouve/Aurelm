@@ -23,6 +23,8 @@ class EntityEntities extends Table {
   BoolColumn get disabled =>
       boolean().named('disabled').withDefault(const Constant(false))();
   TextColumn get disabledAt => text().named('disabled_at').nullable()();
+  // Semantic tags (migration 013) — JSON array of strings from fixed vocab
+  TextColumn get tags => text().named('tags').nullable()();
 }
 
 @DataClassName('AliasRow')
