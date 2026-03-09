@@ -60,7 +60,7 @@ export function compareCivs(
 
     // Entity breakdown (filtered by aspect types if specified)
     const breakdown = db.prepare(
-      "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? GROUP BY entity_type ORDER BY count DESC"
+      "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? AND disabled = 0 GROUP BY entity_type ORDER BY count DESC"
     ).all(civ.id) as Array<{ entity_type: string; count: number }>;
 
     const entityBreakdown: Record<string, number> = {};
@@ -73,7 +73,7 @@ export function compareCivs(
       SELECT e.canonical_name AS name, e.entity_type AS type,
              (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mentions
       FROM entity_entities e
-      WHERE e.civ_id = ?
+      WHERE e.civ_id = ? AND e.disabled = 0
     `;
     const entityParams: unknown[] = [civ.id];
 

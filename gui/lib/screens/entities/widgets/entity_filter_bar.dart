@@ -51,6 +51,21 @@ class EntityFilterBar extends ConsumerWidget {
 
         const SizedBox(width: 8),
 
+        // Toggle: show hidden entities
+        Tooltip(
+          message: filters.showHidden ? 'Masquer les entités cachées' : 'Afficher les entités cachées',
+          child: FilterChip(
+            avatar: const Icon(Icons.visibility_off, size: 16),
+            label: const Text('Cachées'),
+            selected: filters.showHidden,
+            onSelected: (_) {
+              ref.read(entityFilterProvider.notifier).toggleShowHidden();
+            },
+          ),
+        ),
+
+        const SizedBox(width: 8),
+
         // Civ dropdown
         civs.when(
           loading: () => const SizedBox.shrink(),

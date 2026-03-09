@@ -74,7 +74,7 @@ class _QuickSearchBarState extends ConsumerState<QuickSearchBar> {
                         title: Text(e.entity.canonicalName),
                         subtitle: Text(e.entity.entityType),
                         onTap: () {
-                          context.go('/entities/${e.entity.id}');
+                          context.push('/entities/${e.entity.id}');
                           _controller.clear();
                           setState(() => _showResults = false);
                           _focusNode.unfocus();

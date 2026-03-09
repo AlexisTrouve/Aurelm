@@ -24,7 +24,7 @@ function resolveEntity(
   let sql = `
     SELECT e.id, e.canonical_name, e.entity_type
     FROM entity_entities e
-    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+    WHERE e.disabled = 0 AND (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
       SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
     ))
   `;
@@ -65,13 +65,13 @@ export function exploreRelations(
            t.entity_type AS other_type, r.relation_type, r.description
     FROM entity_relations r
     JOIN entity_entities t ON r.target_entity_id = t.id
-    WHERE r.source_entity_id = ? AND r.is_active = 1
+    WHERE r.source_entity_id = ? AND r.is_active = 1 AND t.disabled = 0
     UNION ALL
     SELECT 'incoming' AS direction, s.id AS other_id, s.canonical_name AS other_name,
            s.entity_type AS other_type, r.relation_type, r.description
     FROM entity_relations r
     JOIN entity_entities s ON r.source_entity_id = s.id
-    WHERE r.target_entity_id = ? AND r.is_active = 1
+    WHERE r.target_entity_id = ? AND r.is_active = 1 AND s.disabled = 0
   `);
 
   while (queue.length > 0) {

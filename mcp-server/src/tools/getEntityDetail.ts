@@ -43,7 +43,7 @@ export function getEntityDetail(
     LEFT JOIN civ_civilizations c ON e.civ_id = c.id
     LEFT JOIN turn_turns ft ON e.first_seen_turn = ft.id
     LEFT JOIN turn_turns lt ON e.last_seen_turn = lt.id
-    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+    WHERE e.disabled = 0 AND (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
       SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
     ))
   `;
@@ -104,14 +104,14 @@ export function getEntityDetail(
       FROM entity_relations r
       JOIN entity_entities t ON r.target_entity_id = t.id
       LEFT JOIN turn_turns tt ON r.turn_id = tt.id
-      WHERE r.source_entity_id = ? AND r.is_active = 1
+      WHERE r.source_entity_id = ? AND r.is_active = 1 AND t.disabled = 0
       UNION ALL
       SELECT 'incoming' AS direction, s.canonical_name AS other_name, s.entity_type AS other_type,
              r.relation_type, r.description, tt.turn_number
       FROM entity_relations r
       JOIN entity_entities s ON r.source_entity_id = s.id
       LEFT JOIN turn_turns tt ON r.turn_id = tt.id
-      WHERE r.target_entity_id = ? AND r.is_active = 1
+      WHERE r.target_entity_id = ? AND r.is_active = 1 AND s.disabled = 0
     `).all(e.id, e.id) as RelationRow[];
 
     if (relations.length > 0) {

@@ -1,0 +1,1604 @@
+{
+  "meta": {
+    "description": "Ground truth T01-T19 merged",
+    "created": "2026-03-07",
+    "notes": [
+      "T01 has 0 entities — purely generic narrative intro, no named entities",
+      "Entities from PJ files included (Pilotis, Paniers immergés, Morsure-des-Ancêtres etc.) — pipeline gap area",
+      "Tribunal Spécial (T04) and Tribunal des Mœurs (T07) are the same institution at different stages",
+      "Ceux des cieux / Peuple des Cieux / Enfants du ciel clair are aliases for the same group",
+      "Sanciel (T04 agent) = singular form of Sans-ciel, likely alias",
+      "Regards-Libres classified as creature (T08 agent wrongly said caste — corrected here)",
+      "Enfants du Courant appears as both caste and institution depending on turn context — kept as institution",
+      "by_turn uses raw names as found per turn (before alias resolution)",
+      "2026-03-07 cleanup: removed 8 too-generic entities: Gourdins, Pieu (universal weapons), Fumage (universal technique), Poisson fumé (food item), Radeaux (universal tech), Vallée (common noun), Techniques de polissage (descriptive phrase), Passerelles (generic infrastructure)",
+      "2026-03-07 cleanup 2: removed Autels des Pionniers — first appears in PJ T15, not T01-T08 corpus",
+      "2026-03-07 cleanup 3: removed Pointes de flèches + Roches striées — generic material nouns, not stable named entities; validate systematically rejects them",
+      "T18 extracted from 42KB PJ file — Œil-de-Braise and Mâchoire-Serrée are named Faucons Chasseurs individuals",
+      "Transient entities dropped: Équipe 1/2/3/4 (T14 expedition groups), Survivant de l'Équipe 2, Squelettes (generic)",
+      "Role titles dropped: Chef du Cercle des Sages, Chef du Tribunal des Mœurs, Chef de la Maison des Découvertes (T11) — titles not names",
+      "Canonical names: Ailes-Grises, Passes-bien, Sans-ciels, Faucons Chasseurs, Nanzagouets",
+      "Ciels Clairs / Ciels Libres: T09 agent found both as separate castes — included pending Arthur validation",
+      "Pupupasu (T17): new civilization found by player, kept",
+      "Siliaska (T17): new civilization found by player, kept"
+    ]
+  },
+  "by_turn": {
+    "T01": [],
+    "T02": [
+      {
+        "name": "Confluence de deux rivières cristallines",
+        "type": "place"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Culte des Ancêtres",
+        "type": "belief"
+      }
+    ],
+    "T03": [
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Confluence",
+        "type": "place"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Oracle",
+        "type": "person"
+      },
+      {
+        "name": "Mémentos",
+        "type": "technology"
+      },
+      {
+        "name": "Rites de déposition des morts",
+        "type": "belief"
+      },
+      {
+        "name": "Culte des Ancêtres",
+        "type": "belief"
+      }
+    ],
+    "T04": [
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Sanciel",
+        "type": "caste"
+      },
+      {
+        "name": "Voix des Cieux",
+        "type": "belief"
+      },
+      {
+        "name": "Oracle",
+        "type": "person"
+      },
+      {
+        "name": "Ancêtres",
+        "type": "belief"
+      },
+      {
+        "name": "Fourche dans la Rivière",
+        "type": "place"
+      },
+      {
+        "name": "Tribunal Spécial",
+        "type": "institution"
+      },
+      {
+        "name": "Rituels de Fertilité",
+        "type": "belief"
+      }
+    ],
+    "T05": [
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Tribunal Spécial",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants du ciel clair",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants des nuages",
+        "type": "caste"
+      },
+      {
+        "name": "Peuple des eaux",
+        "type": "caste"
+      },
+      {
+        "name": "Pilotis",
+        "type": "technology"
+      },
+      {
+        "name": "Paniers immergés",
+        "type": "technology"
+      }
+    ],
+    "T06": [
+      {
+        "name": "Confluence",
+        "type": "place"
+      },
+      {
+        "name": "Oracle",
+        "type": "person"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Ceux des cieux",
+        "type": "caste"
+      },
+      {
+        "name": "Peuple des eaux",
+        "type": "caste"
+      },
+      {
+        "name": "Peuple du ciel clair",
+        "type": "caste"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Filet de pêche lesté",
+        "type": "technology"
+      },
+      {
+        "name": "Lance à la pointe polie",
+        "type": "technology"
+      },
+      {
+        "name": "Serpes grossières taillées dans des os",
+        "type": "technology"
+      },
+      {
+        "name": "Hameçons et casiers à poisson",
+        "type": "technology"
+      },
+      {
+        "name": "Morsure-des-Ancêtres",
+        "type": "technology"
+      },
+      {
+        "name": "Les Larmes du Ciel",
+        "type": "technology"
+      }
+    ],
+    "T07": [
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Shamans",
+        "type": "institution"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Tribunal des Mœurs",
+        "type": "institution"
+      },
+      {
+        "name": "Rhombes en pierre",
+        "type": "technology"
+      },
+      {
+        "name": "Pipeau en bambou",
+        "type": "technology"
+      },
+      {
+        "name": "Voix de l'Aurore",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Gardiens de la Confluence",
+        "type": "institution"
+      },
+      {
+        "name": "Peuple des Cieux",
+        "type": "caste"
+      }
+    ],
+    "T08": [
+      {
+        "name": "Rhombes",
+        "type": "technology"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Voix de l'Aurore",
+        "type": "institution"
+      },
+      {
+        "name": "Tribunal des Mœurs",
+        "type": "institution"
+      },
+      {
+        "name": "Gardiens de la Confluence",
+        "type": "institution"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      }
+    ],
+    "T09": [
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Ciels Clairs",
+        "type": "caste"
+      },
+      {
+        "name": "Ciels Libres",
+        "type": "caste"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Voix de l'Aurore",
+        "type": "institution"
+      },
+      {
+        "name": "Gardiens de la Confluence",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "100 vies pour un artefact",
+        "type": "belief"
+      },
+      {
+        "name": "Rituel du Regard Partagé",
+        "type": "belief"
+      },
+      {
+        "name": "Cercles de Vigile",
+        "type": "institution"
+      },
+      {
+        "name": "Antres des Échos",
+        "type": "place"
+      },
+      {
+        "name": "Façonneurs de Pierre",
+        "type": "caste"
+      },
+      {
+        "name": "Porteurs de Flamme",
+        "type": "institution"
+      }
+    ],
+    "T10": [
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Cercles de Vigile",
+        "type": "institution"
+      },
+      {
+        "name": "Porteurs de Flamme",
+        "type": "institution"
+      },
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Gorge Profonde",
+        "type": "place"
+      },
+      {
+        "name": "Antres des Échos",
+        "type": "place"
+      },
+      {
+        "name": "Argile Vive",
+        "type": "technology"
+      },
+      {
+        "name": "Confluence des Esprits",
+        "type": "belief"
+      },
+      {
+        "name": "Confluence des Biens",
+        "type": "belief"
+      },
+      {
+        "name": "Confluence des Formes",
+        "type": "belief"
+      },
+      {
+        "name": "Rhombes",
+        "type": "technology"
+      }
+    ],
+    "T11": [
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Argile Vive",
+        "type": "technology"
+      },
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Voix de l'Aurore",
+        "type": "institution"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Ciels-Libres",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Rhombes Miniatures",
+        "type": "technology"
+      },
+      {
+        "name": "Burin en Pierre",
+        "type": "technology"
+      },
+      {
+        "name": "Maillets en Bois",
+        "type": "technology"
+      },
+      {
+        "name": "Ciseaux de Bois aux Dents d'Obsidienne",
+        "type": "technology"
+      },
+      {
+        "name": "Confluence",
+        "type": "place"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Confluence des Échanges",
+        "type": "belief"
+      },
+      {
+        "name": "Maison des Découvertes",
+        "type": "institution"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Assemblée des Chefs",
+        "type": "institution"
+      },
+      {
+        "name": "Tribunal des Mœurs",
+        "type": "institution"
+      },
+      {
+        "name": "Arbitre des Esprits",
+        "type": "person"
+      }
+    ],
+    "T12": [
+      {
+        "name": "Tribunal des Mœurs",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Ciels-Clairs",
+        "type": "caste"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      },
+      {
+        "name": "Assemblée des Chefs",
+        "type": "institution"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Proclamateurs",
+        "type": "institution"
+      },
+      {
+        "name": "Lois du Sang et de la Bête",
+        "type": "belief"
+      },
+      {
+        "name": "Arène",
+        "type": "place"
+      },
+      {
+        "name": "Confluence",
+        "type": "place"
+      }
+    ],
+    "T13": [
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Maladie des Antres",
+        "type": "event"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Cercles de Vigile",
+        "type": "institution"
+      },
+      {
+        "name": "Ciels-Clairs",
+        "type": "caste"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      },
+      {
+        "name": "Arbitre des Esprits",
+        "type": "person"
+      },
+      {
+        "name": "Assemblée des Chefs",
+        "type": "institution"
+      },
+      {
+        "name": "L'Appel de l'Abysse",
+        "type": "belief"
+      },
+      {
+        "name": "Lait de Pierre",
+        "type": "technology"
+      },
+      {
+        "name": "Rhombes",
+        "type": "technology"
+      }
+    ],
+    "T14": [
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Lac Souterrain",
+        "type": "place"
+      },
+      {
+        "name": "Chambre Secrète",
+        "type": "place"
+      },
+      {
+        "name": "Rhombes",
+        "type": "technology"
+      },
+      {
+        "name": "Arbitre des Esprits",
+        "type": "person"
+      },
+      {
+        "name": "Maîtrise des Profondeurs",
+        "type": "technology"
+      },
+      {
+        "name": "Artefacts Translucides",
+        "type": "technology"
+      },
+      {
+        "name": "Techniques de Creusage",
+        "type": "technology"
+      }
+    ],
+    "T15": [
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Grande Fresque",
+        "type": "technology"
+      },
+      {
+        "name": "Ciels Clairs",
+        "type": "caste"
+      },
+      {
+        "name": "Voix de l'Aurore",
+        "type": "institution"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Maison des Découvertes",
+        "type": "institution"
+      },
+      {
+        "name": "Cosmologie Solaire",
+        "type": "belief"
+      },
+      {
+        "name": "Autels des Pionniers",
+        "type": "technology"
+      },
+      {
+        "name": "Fenêtres Temporelles",
+        "type": "technology"
+      }
+    ],
+    "T16": [
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Foyer du Savoir",
+        "type": "institution"
+      },
+      {
+        "name": "Fresque des Âges",
+        "type": "technology"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Premier Artefact",
+        "type": "technology"
+      },
+      {
+        "name": "Peinture de la Voix",
+        "type": "technology"
+      },
+      {
+        "name": "Idéoglyphes",
+        "type": "technology"
+      },
+      {
+        "name": "Caste de l'Éther",
+        "type": "caste"
+      },
+      {
+        "name": "Caste de l'Air",
+        "type": "caste"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      },
+      {
+        "name": "Cheveux de Sang",
+        "type": "civilization"
+      },
+      {
+        "name": "Glyphes du Gouffre",
+        "type": "technology"
+      },
+      {
+        "name": "Hall des Serments",
+        "type": "institution"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Rituel du Regard Partagé",
+        "type": "belief"
+      },
+      {
+        "name": "Autels des Pionniers",
+        "type": "technology"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      }
+    ],
+    "T17": [
+      {
+        "name": "Cheveux de Sang",
+        "type": "civilization"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Sans-ciels",
+        "type": "caste"
+      },
+      {
+        "name": "Confluence",
+        "type": "place"
+      },
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Nanzagouets",
+        "type": "civilization"
+      },
+      {
+        "name": "Arbitre des Esprits",
+        "type": "person"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      },
+      {
+        "name": "Ciels-Clairs",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Siliaska",
+        "type": "civilization"
+      },
+      {
+        "name": "Pupupasu",
+        "type": "civilization"
+      },
+      {
+        "name": "Rituel du Regard Partagé",
+        "type": "belief"
+      },
+      {
+        "name": "Grande Fresque",
+        "type": "technology"
+      },
+      {
+        "name": "Maison des Découvertes",
+        "type": "institution"
+      }
+    ],
+    "T18": [
+      {
+        "name": "Nanzagouets",
+        "type": "civilization"
+      },
+      {
+        "name": "Tlazhuaneca",
+        "type": "civilization"
+      },
+      {
+        "name": "Pouleheimos",
+        "type": "civilization"
+      },
+      {
+        "name": "Nantons",
+        "type": "creature"
+      },
+      {
+        "name": "Cornex",
+        "type": "technology"
+      },
+      {
+        "name": "Ailes-Grises",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants des Échos",
+        "type": "caste"
+      },
+      {
+        "name": "Enfants du Courant",
+        "type": "institution"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      },
+      {
+        "name": "Maison des Découvertes",
+        "type": "institution"
+      },
+      {
+        "name": "Cercle des Sages",
+        "type": "institution"
+      },
+      {
+        "name": "Gouffre Humide",
+        "type": "place"
+      },
+      {
+        "name": "Confluence",
+        "type": "place"
+      },
+      {
+        "name": "Grande Fresque",
+        "type": "technology"
+      },
+      {
+        "name": "Larmes du Ciel",
+        "type": "technology"
+      },
+      {
+        "name": "Argile Vivante",
+        "type": "technology"
+      },
+      {
+        "name": "Regards-Libres",
+        "type": "creature"
+      },
+      {
+        "name": "Arbitre des Esprits",
+        "type": "person"
+      },
+      {
+        "name": "Œil-de-Braise",
+        "type": "person"
+      },
+      {
+        "name": "Mâchoire-Serrée",
+        "type": "person"
+      },
+      {
+        "name": "Grande Prospection",
+        "type": "event"
+      },
+      {
+        "name": "Colliers de glyphes",
+        "type": "technology"
+      }
+    ],
+    "T19": [
+      {
+        "name": "Nanzagouets",
+        "type": "civilization"
+      },
+      {
+        "name": "Mériadoques",
+        "type": "institution"
+      },
+      {
+        "name": "Grazgouet",
+        "type": "institution"
+      },
+      {
+        "name": "Kultaisetmunat",
+        "type": "technology"
+      },
+      {
+        "name": "Pouleheimos",
+        "type": "civilization"
+      },
+      {
+        "name": "Nantons",
+        "type": "creature"
+      },
+      {
+        "name": "Passes-bien",
+        "type": "caste"
+      },
+      {
+        "name": "Faucons Chasseurs",
+        "type": "institution"
+      }
+    ]
+  },
+  "entities": [
+    {
+      "name": "Culte des Ancêtres",
+      "type": "belief",
+      "first_turn": "T02",
+      "aliases": []
+    },
+    {
+      "name": "Ancêtres",
+      "type": "belief",
+      "first_turn": "T04",
+      "aliases": []
+    },
+    {
+      "name": "Voix des Cieux",
+      "type": "belief",
+      "first_turn": "T04",
+      "aliases": []
+    },
+    {
+      "name": "Rites de déposition des morts",
+      "type": "belief",
+      "first_turn": "T03",
+      "aliases": []
+    },
+    {
+      "name": "Rituels de Fertilité",
+      "type": "belief",
+      "first_turn": "T04",
+      "aliases": []
+    },
+    {
+      "name": "Sans-ciels",
+      "type": "caste",
+      "first_turn": "T02",
+      "aliases": [
+        "Sans-ciel",
+        "Sans Ciel",
+        "Sanciel",
+        "Enfants des nuages",
+        "Peuple des eaux"
+      ]
+    },
+    {
+      "name": "Ailes-Grises",
+      "type": "caste",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Ceux des cieux",
+      "type": "caste",
+      "first_turn": "T06",
+      "aliases": [
+        "Peuple des Cieux",
+        "Enfants du ciel clair",
+        "Peuple du ciel clair"
+      ]
+    },
+    {
+      "name": "Enfants des nuages",
+      "type": "caste",
+      "first_turn": "T05",
+      "aliases": [
+        "Sans-ciels"
+      ]
+    },
+    {
+      "name": "Peuple des eaux",
+      "type": "caste",
+      "first_turn": "T05",
+      "aliases": [
+        "Sans-ciels"
+      ]
+    },
+    {
+      "name": "Regards-Libres",
+      "type": "creature",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Cercle des Sages",
+      "type": "institution",
+      "first_turn": "T03",
+      "aliases": [
+        "Cercle des Anciens"
+      ]
+    },
+    {
+      "name": "Tribunal des Mœurs",
+      "type": "institution",
+      "first_turn": "T07",
+      "aliases": [
+        "Tribunal Spécial"
+      ]
+    },
+    {
+      "name": "Tribunal Spécial",
+      "type": "institution",
+      "first_turn": "T04",
+      "aliases": [
+        "Tribunal des Mœurs"
+      ]
+    },
+    {
+      "name": "Shamans",
+      "type": "institution",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Voix de l'Aurore",
+      "type": "institution",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Gardiens de la Confluence",
+      "type": "institution",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Enfants du Courant",
+      "type": "institution",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Oracle",
+      "type": "person",
+      "first_turn": "T03",
+      "aliases": []
+    },
+    {
+      "name": "Confluence",
+      "type": "place",
+      "first_turn": "T02",
+      "aliases": [
+        "Confluence de deux rivières cristallines"
+      ]
+    },
+    {
+      "name": "Fourche dans la Rivière",
+      "type": "place",
+      "first_turn": "T04",
+      "aliases": []
+    },
+    {
+      "name": "Mémentos",
+      "type": "technology",
+      "first_turn": "T03",
+      "aliases": []
+    },
+    {
+      "name": "Pilotis",
+      "type": "technology",
+      "first_turn": "T05",
+      "aliases": []
+    },
+    {
+      "name": "Paniers immergés",
+      "type": "technology",
+      "first_turn": "T05",
+      "aliases": []
+    },
+    {
+      "name": "Filet de pêche lesté",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Lance à la pointe polie",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Serpes grossières taillées dans des os",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Hameçons et casiers à poisson",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": [
+        "Hameçons",
+        "Casiers à poisson"
+      ]
+    },
+    {
+      "name": "Morsure-des-Ancêtres",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Les Larmes du Ciel",
+      "type": "technology",
+      "first_turn": "T06",
+      "aliases": []
+    },
+    {
+      "name": "Rhombes en pierre",
+      "type": "technology",
+      "first_turn": "T07",
+      "aliases": [
+        "Rhombes"
+      ]
+    },
+    {
+      "name": "Pipeau en bambou",
+      "type": "technology",
+      "first_turn": "T07",
+      "aliases": []
+    },
+    {
+      "name": "Ailes-Grises",
+      "type": "caste",
+      "first_turn": "T07",
+      "aliases": [
+        "Aile-Grise",
+        "Ailes Grises"
+      ]
+    },
+    {
+      "name": "Sans-ciels",
+      "type": "caste",
+      "first_turn": "T02",
+      "aliases": [
+        "Sans-Ciel",
+        "Sans-ciels",
+        "Sanciel"
+      ]
+    },
+    {
+      "name": "Ciels Clairs",
+      "type": "caste",
+      "first_turn": "T09",
+      "aliases": [
+        "Ciels-Clairs",
+        "Ciel clair"
+      ]
+    },
+    {
+      "name": "Ciels Libres",
+      "type": "caste",
+      "first_turn": "T09",
+      "aliases": [
+        "Ciels-Libres"
+      ]
+    },
+    {
+      "name": "Passes-bien",
+      "type": "caste",
+      "first_turn": "T10",
+      "aliases": [
+        "Passes-Bien"
+      ]
+    },
+    {
+      "name": "Enfants des Échos",
+      "type": "caste",
+      "first_turn": "T10",
+      "aliases": [
+        "Enfants des Echos"
+      ]
+    },
+    {
+      "name": "Caste de l'Éther",
+      "type": "caste",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Caste de l'Air",
+      "type": "caste",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Façonneurs de Pierre",
+      "type": "caste",
+      "first_turn": "T09",
+      "aliases": []
+    },
+    {
+      "name": "Regards-Libres",
+      "type": "creature",
+      "first_turn": "T06",
+      "aliases": [
+        "Regards Libres"
+      ]
+    },
+    {
+      "name": "Nantons",
+      "type": "creature",
+      "first_turn": "T19",
+      "aliases": []
+    },
+    {
+      "name": "Cercles de Vigile",
+      "type": "institution",
+      "first_turn": "T09",
+      "aliases": [
+        "Cercle des vigiles",
+        "Cercles des Vigiles"
+      ]
+    },
+    {
+      "name": "Porteurs de Flamme",
+      "type": "institution",
+      "first_turn": "T09",
+      "aliases": []
+    },
+    {
+      "name": "Maison des Découvertes",
+      "type": "institution",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Assemblée des Chefs",
+      "type": "institution",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Faucons Chasseurs",
+      "type": "institution",
+      "first_turn": "T12",
+      "aliases": [
+        "Faucons chasseurs"
+      ]
+    },
+    {
+      "name": "Proclamateurs",
+      "type": "institution",
+      "first_turn": "T12",
+      "aliases": []
+    },
+    {
+      "name": "Foyer du Savoir",
+      "type": "institution",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Hall des Serments",
+      "type": "institution",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Mériadoques",
+      "type": "institution",
+      "first_turn": "T19",
+      "aliases": []
+    },
+    {
+      "name": "Grazgouet",
+      "type": "institution",
+      "first_turn": "T19",
+      "aliases": []
+    },
+    {
+      "name": "Arbitre des Esprits",
+      "type": "person",
+      "first_turn": "T11",
+      "aliases": [
+        "Arbitre"
+      ]
+    },
+    {
+      "name": "Antres des Échos",
+      "type": "place",
+      "first_turn": "T09",
+      "aliases": [
+        "Antres des Echos"
+      ]
+    },
+    {
+      "name": "Gorge Profonde",
+      "type": "place",
+      "first_turn": "T10",
+      "aliases": []
+    },
+    {
+      "name": "Gouffre Humide",
+      "type": "place",
+      "first_turn": "T13",
+      "aliases": []
+    },
+    {
+      "name": "Arène",
+      "type": "place",
+      "first_turn": "T12",
+      "aliases": []
+    },
+    {
+      "name": "Lac Souterrain",
+      "type": "place",
+      "first_turn": "T14",
+      "aliases": []
+    },
+    {
+      "name": "Chambre Secrète",
+      "type": "place",
+      "first_turn": "T14",
+      "aliases": []
+    },
+    {
+      "name": "Argile Vive",
+      "type": "technology",
+      "first_turn": "T10",
+      "aliases": [
+        "Argile vivante"
+      ]
+    },
+    {
+      "name": "Lait de Pierre",
+      "type": "technology",
+      "first_turn": "T13",
+      "aliases": []
+    },
+    {
+      "name": "Rhombes Miniatures",
+      "type": "technology",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Burin en Pierre",
+      "type": "technology",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Maillets en Bois",
+      "type": "technology",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Ciseaux de Bois aux Dents d'Obsidienne",
+      "type": "technology",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "Lois du Sang et de la Bête",
+      "type": "belief",
+      "first_turn": "T12",
+      "aliases": []
+    },
+    {
+      "name": "Maladie des Antres",
+      "type": "event",
+      "first_turn": "T13",
+      "aliases": []
+    },
+    {
+      "name": "Maîtrise des Profondeurs",
+      "type": "technology",
+      "first_turn": "T14",
+      "aliases": []
+    },
+    {
+      "name": "Artefacts Translucides",
+      "type": "technology",
+      "first_turn": "T14",
+      "aliases": []
+    },
+    {
+      "name": "Techniques de Creusage",
+      "type": "technology",
+      "first_turn": "T14",
+      "aliases": []
+    },
+    {
+      "name": "Grande Fresque",
+      "type": "technology",
+      "first_turn": "T15",
+      "aliases": [
+        "Fresque des Âges"
+      ]
+    },
+    {
+      "name": "Autels des Pionniers",
+      "type": "technology",
+      "first_turn": "T15",
+      "aliases": [
+        "Autel des Pionniers"
+      ]
+    },
+    {
+      "name": "Fenêtres Temporelles",
+      "type": "technology",
+      "first_turn": "T15",
+      "aliases": []
+    },
+    {
+      "name": "Fresque des Âges",
+      "type": "technology",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Premier Artefact",
+      "type": "technology",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Peinture de la Voix",
+      "type": "technology",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Idéoglyphes",
+      "type": "technology",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Glyphes du Gouffre",
+      "type": "technology",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Kultaisetmunat",
+      "type": "technology",
+      "first_turn": "T19",
+      "aliases": []
+    },
+    {
+      "name": "Rituel du Regard Partagé",
+      "type": "belief",
+      "first_turn": "T09",
+      "aliases": []
+    },
+    {
+      "name": "100 vies pour un artefact",
+      "type": "belief",
+      "first_turn": "T09",
+      "aliases": []
+    },
+    {
+      "name": "Confluence des Esprits",
+      "type": "belief",
+      "first_turn": "T10",
+      "aliases": []
+    },
+    {
+      "name": "Confluence des Biens",
+      "type": "belief",
+      "first_turn": "T10",
+      "aliases": []
+    },
+    {
+      "name": "Confluence des Formes",
+      "type": "belief",
+      "first_turn": "T10",
+      "aliases": []
+    },
+    {
+      "name": "Confluence des Échanges",
+      "type": "belief",
+      "first_turn": "T11",
+      "aliases": []
+    },
+    {
+      "name": "L'Appel de l'Abysse",
+      "type": "belief",
+      "first_turn": "T13",
+      "aliases": []
+    },
+    {
+      "name": "Cosmologie Solaire",
+      "type": "belief",
+      "first_turn": "T15",
+      "aliases": []
+    },
+    {
+      "name": "Nanzagouets",
+      "type": "civilization",
+      "first_turn": "T17",
+      "aliases": [
+        "Nanzagouet"
+      ]
+    },
+    {
+      "name": "Cheveux de Sang",
+      "type": "civilization",
+      "first_turn": "T16",
+      "aliases": []
+    },
+    {
+      "name": "Siliaska",
+      "type": "civilization",
+      "first_turn": "T17",
+      "aliases": []
+    },
+    {
+      "name": "Pupupasu",
+      "type": "civilization",
+      "first_turn": "T17",
+      "aliases": []
+    },
+    {
+      "name": "Pouleheimos",
+      "type": "civilization",
+      "first_turn": "T19",
+      "aliases": []
+    },
+    {
+      "name": "Tlazhuaneca",
+      "type": "civilization",
+      "first_turn": "T18",
+      "aliases": []
+    },
+    {
+      "name": "Cornex",
+      "type": "technology",
+      "first_turn": "T18",
+      "aliases": []
+    },
+    {
+      "name": "Colliers de glyphes",
+      "type": "technology",
+      "first_turn": "T18",
+      "aliases": []
+    },
+    {
+      "name": "Argile Vivante",
+      "type": "technology",
+      "first_turn": "T18",
+      "aliases": [
+        "Argile Vive",
+        "Argile vivante"
+      ]
+    },
+    {
+      "name": "Œil-de-Braise",
+      "type": "person",
+      "first_turn": "T18",
+      "aliases": []
+    },
+    {
+      "name": "Mâchoire-Serrée",
+      "type": "person",
+      "first_turn": "T18",
+      "aliases": []
+    },
+    {
+      "name": "Grande Prospection",
+      "type": "event",
+      "first_turn": "T18",
+      "aliases": []
+    }
+  ]
+}

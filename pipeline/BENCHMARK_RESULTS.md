@@ -770,3 +770,65 @@ Autres : `Rituel funéraire`, `Rituels des crêtes`, `Radeaux amarrés`, `Passer
 
 ### Prochaine étape recommandée
 Ajouter validate nemo en v22.3 (même architecture que v18.4.2-nemo) pour filtrer les FPs génériques sans toucher aux vrais positifs.
+
+---
+
+## Validate Prompt Benchmark — T1-T8 (ref=31, raw pool=76)
+
+Run date: 2026-03-08 | OpenRouter | qwen/qwen3-14b | raw entities from pipeline_llm_calls
+
+Infrastructure : `benchmark_validate.py` — charge entites brutes depuis pipeline_llm_calls
+(pre-validate), applique chaque prompt validate via LLM, score contre reference.
+
+| Version | Kept | TP | FP | FN | P% | R% | F1% |
+|---------|------|----|----|----|----|-----|-----|
+| baseline (no validate) | 76 | 38 | 38 | 1 | 50.0% | 97.4% | 66.1% |
+| v1-current | 75 | 38 | 37 | 1 | 50.7% | 97.4% | 66.7% |
+| **v2-strict** | **64** | **37** | **27** | **2** | **57.8%** | **94.9%** | **71.8%** |
+| v3-type-aware | 70 | 36 | 34 | 2 | 51.4% | 94.7% | 66.7% |
+| v4-no-text | 67 | 37 | 30 | 2 | 55.2% | 94.9% | 69.8% |
+
+**Winner : v2-strict** (+5.7 F1 vs baseline). Regle ajoutee : syntagmes generiques
+sans nom propre (lieu de vie, techniques de chasse, piete filiale, village temporaire).
+
+FP persistants dans tous les prompts (resistants) :
+`sagesse`, `defunts`, `meres`, `parents`, `enfants`, `nouveau-nes`,
+`croyance`, `croyance des oiseaux`, `rituels des cretes`, `rituel funeraire`,
+`art de la chasse`, `outils de chasse`, `techniques de chasses`,
+`passerelles`, `radeaux amarres`, `Cercle de ses sages` (doublon)
+
+FN (2, dans v2+) : `culte des ancetres`, `rites de deposition des morts`
+
+v3-type-aware : regresse vs v2 car les regles par type sont trop permissives
+sur [caste] (garde `memento` [belief] car mal type).
+v4-no-text : intermediaire, sans contexte textuel le LLM est moins precis.
+
+---
+
+## Validate Prompt Benchmark — T1-T8 (ref=25 entites nettoyees, raw pool=76)
+
+Run date: 2026-03-08 | OpenRouter | qwen/qwen3-14b
+Reference nettoyee : 32→25 entites (suppression des entites PJ-only et absent du corpus T1-T8)
+
+| Version | Kept | TP | FP | FN | P% | R% | F1% |
+|---------|------|----|----|----|----|-----|-----|
+| baseline (no validate) | 76 | 33 | 43 | 0 | 43.4% | 100.0% | 60.6% |
+| v1-current | 39 | 24 | 15 | 6 | 61.5% | 80.0% | 69.6% |
+| v9-type-safe | 35 | 23 | 12 | 6 | 65.7% | 79.3% | 71.9% |
+| **v10-best** | **36** | **24** | **12** | **5** | **66.7%** | **82.8%** | **73.8%** |
+
+### Analyse v10-best
+
+Fixe 2 FN de v1-current : Oracle [civilization] et Voix des cieux [belief] incorrectement droppes.
+v9 a regle Oracle mais cree un FN de regression sur "enfants du courant [caste]" (groupe social).
+v10 combine les deux corrections :
+- PROTECTION ABSOLUE [civilization] et [belief] : jamais supprimables
+- Restaure "pas un groupe social" dans la regle de drop pour les mots simples
+
+FN persistants (5) : enfants des nuages, gardiens de la confluence, rhombes en pierre, shamans, voix de l'aurore
+=> Ces 5 entites ne sont PAS dans le raw pool — extraction ne les trouve pas. Le validate ne peut pas recuperer ce qu'on n'a pas extrait.
+
+FP persistants (12) : Cercle de ses sages, croyance, dresseurs de regards-libres, la Vallee, le cercle, les villages, lieu de vie, outils et armes, piete filiale, rites, sagesse, techniques de chasses
+
+Prompt v10-best = _V20_4_VALIDATE_PROMPT dans extraction_versions/v20.py
+Integre dans v22.2.2-pastlevel (la version de prod recommandee).

@@ -17,6 +17,12 @@ class EntityEntities extends Table {
       integer().named('is_active').withDefault(const Constant(1))();
   TextColumn get createdAt => text().named('created_at')();
   TextColumn get updatedAt => text().named('updated_at')();
+  // Visibility flags (migration 011)
+  BoolColumn get hidden =>
+      boolean().named('hidden').withDefault(const Constant(false))();
+  BoolColumn get disabled =>
+      boolean().named('disabled').withDefault(const Constant(false))();
+  TextColumn get disabledAt => text().named('disabled_at').nullable()();
 }
 
 @DataClassName('AliasRow')

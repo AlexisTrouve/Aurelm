@@ -24,7 +24,7 @@ class SubjectListTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.go('/subjects/${s.id}'),
+        onTap: () => context.push('/subjects/${s.id}'),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(

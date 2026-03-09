@@ -99,8 +99,8 @@ def _upsert_entity(
         )
         entity_id = cursor.lastrowid
 
-    # Record mention
+    # Record mention — source defaults to 'gm' in exporter (batch import context)
     conn.execute(
-        "INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context) VALUES (?, ?, ?, ?)",
+        "INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context, source) VALUES (?, ?, ?, ?, 'gm')",
         (entity_id, turn_id, entity.text, entity.context),
     )

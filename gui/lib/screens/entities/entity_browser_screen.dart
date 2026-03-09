@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/entity_provider.dart';
 import '../../providers/database_provider.dart';
@@ -30,6 +31,13 @@ class EntityBrowserScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Entities'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.block),
+            tooltip: 'Entités désactivées',
+            onPressed: () => context.go('/entities/disabled'),
+          ),
+        ],
       ),
       body: Column(
         children: [

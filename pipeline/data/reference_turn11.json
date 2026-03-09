@@ -1,0 +1,212 @@
+{
+  "_meta": {
+    "turn": 11,
+    "title": "Printemps et Projets",
+    "sources": ["mj-T11", "pj-T11"],
+    "note": "Référence construite manuellement à partir des deux fichiers T11. Inclut uniquement les entités explicitement nommées dans le texte. Exclut: métaphores pures (arbuste à baie), titres génériques sans nom propre (Chef de la Maison), entités d'autres tours non mentionnées ici."
+  },
+  "entities": [
+    {
+      "name": "Enfants des Échos",
+      "type": "caste",
+      "aliases": ["enfants des echos", "Enfants des echos"]
+    },
+    {
+      "name": "Explorateurs",
+      "type": "caste",
+      "aliases": []
+    },
+    {
+      "name": "Tailleurs de pierre",
+      "type": "caste",
+      "aliases": ["tailleurs de pierre"]
+    },
+    {
+      "name": "Égalisateurs",
+      "type": "caste",
+      "aliases": ["egalisateurs"]
+    },
+    {
+      "name": "Dessinateurs",
+      "type": "caste",
+      "aliases": []
+    },
+    {
+      "name": "Sculpteurs",
+      "type": "caste",
+      "aliases": []
+    },
+    {
+      "name": "Peintres",
+      "type": "caste",
+      "aliases": []
+    },
+    {
+      "name": "Passe-bien",
+      "type": "caste",
+      "aliases": ["passes-bien", "passe-biens", "passes-biens", "les passe-bien"]
+    },
+    {
+      "name": "Ailes-Grises",
+      "type": "caste",
+      "aliases": ["Fiers ailes grises", "fiers ailes-grises", "ailes grises", "Ailes Grises"]
+    },
+    {
+      "name": "Sans-ciels",
+      "type": "caste",
+      "aliases": ["Sans-ciel", "sans ciel", "sans ciels"]
+    },
+    {
+      "name": "Enfants du Courant",
+      "type": "caste",
+      "aliases": ["enfants du courant", "enfants des courants"]
+    },
+    {
+      "name": "Ciels-libres",
+      "type": "caste",
+      "aliases": ["ciels libres", "ciel-libre", "Ciels libres"]
+    },
+    {
+      "name": "Regards-Libres",
+      "type": "caste",
+      "aliases": ["Regards libres", "regard-libre", "regards-libres"]
+    },
+    {
+      "name": "Burin en pierre",
+      "type": "technology",
+      "aliases": ["burin en pierre"]
+    },
+    {
+      "name": "Maillets en bois",
+      "type": "technology",
+      "aliases": ["maillets en bois"]
+    },
+    {
+      "name": "Ciseaux de bois aux dents d'obsidienne",
+      "type": "technology",
+      "aliases": [
+        "ciseaux de bois au dents d'obsidienne",
+        "ciseaux de bois",
+        "ciseaux a pierre"
+      ]
+    },
+    {
+      "name": "Argile vivante",
+      "type": "technology",
+      "aliases": ["argile vive", "argile qui vit", "argile vivante"]
+    },
+    {
+      "name": "Rhombes",
+      "type": "technology",
+      "aliases": ["rhombes miniatures", "Rhombes géants", "rhombes geants", "rhombes miniature"]
+    },
+    {
+      "name": "Antres des Échos",
+      "type": "place",
+      "aliases": [
+        "Antres des echos",
+        "antres des échos",
+        "les Antres",
+        "antre des échos",
+        "nouvelles Antres"
+      ]
+    },
+    {
+      "name": "Confluence",
+      "type": "place",
+      "aliases": ["la confluence"]
+    },
+    {
+      "name": "Zone humide",
+      "type": "place",
+      "aliases": ["zone humide"]
+    },
+    {
+      "name": "Zone chaude",
+      "type": "place",
+      "aliases": ["zone chaude"]
+    },
+    {
+      "name": "Zone sèche",
+      "type": "place",
+      "aliases": ["zone seche", "zone sèche"]
+    },
+    {
+      "name": "Zone froide",
+      "type": "place",
+      "aliases": ["zone froide"]
+    },
+    {
+      "name": "Ocre",
+      "type": "resource",
+      "aliases": ["ocre", "nuances d'ocre"]
+    },
+    {
+      "name": "Pierres blanches",
+      "type": "resource",
+      "aliases": ["pierres blanches", "pierre blanche"]
+    },
+    {
+      "name": "Voix de l'Aurore",
+      "type": "institution",
+      "aliases": ["voix de l'aurore", "les voix de l'Aurore", "les Voix de l'Aurore"]
+    },
+    {
+      "name": "Cercle des Sages",
+      "type": "institution",
+      "aliases": ["cercle des sages"]
+    },
+    {
+      "name": "Assemblée des Chefs",
+      "type": "institution",
+      "aliases": ["assemblee des chefs", "l'Assemblée des Chefs"]
+    },
+    {
+      "name": "Tribunal des Mœurs",
+      "type": "institution",
+      "aliases": ["tribunal des moeurs", "Tribunal des moeurs"]
+    },
+    {
+      "name": "Maison des Découvertes",
+      "type": "institution",
+      "aliases": [
+        "maison des découvertes",
+        "Maison des decouvertes",
+        "maison des decouvertes"
+      ]
+    },
+    {
+      "name": "Confluence des Échanges",
+      "type": "institution",
+      "aliases": [
+        "confluence des échanges",
+        "confluence des echanges"
+      ]
+    },
+    {
+      "name": "Arbitre des Esprits",
+      "type": "person",
+      "aliases": [
+        "l'Arbitre des Esprits",
+        "arbitre des esprits",
+        "l'Oracle",
+        "Oracle"
+      ]
+    },
+    {
+      "name": "Temple majestueux",
+      "type": "place",
+      "aliases": ["temple majestueux", "un temple majestueux"]
+    },
+    {
+      "name": "Maison des castes",
+      "type": "institution",
+      "aliases": ["maison des castes", "une maison des castes"]
+    },
+    {
+      "name": "Hall des passages",
+      "type": "place",
+      "aliases": ["hall des passages", "un hall des passages"]
+    }
+  ]
+}

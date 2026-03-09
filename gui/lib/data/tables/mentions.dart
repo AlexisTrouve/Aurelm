@@ -11,4 +11,6 @@ class EntityMentions extends Table {
   IntColumn get segmentId => integer().named('segment_id').nullable()();
   TextColumn get mentionText => text().named('mention_text')();
   TextColumn get context => text().nullable()();
+  // 'gm' = extrait du texte MJ, 'pj' = extrait du texte joueur
+  TextColumn get source => text().withDefault(const Constant('gm'))();
 }

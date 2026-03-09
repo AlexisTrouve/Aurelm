@@ -11,7 +11,7 @@ export function listCivs(db: Database.Database): string {
   const rows = db.prepare(`
     SELECT c.name, c.player_name,
            (SELECT COUNT(*) FROM turn_turns t WHERE t.civ_id = c.id) AS turn_count,
-           (SELECT COUNT(*) FROM entity_entities e WHERE e.civ_id = c.id) AS entity_count
+           (SELECT COUNT(*) FROM entity_entities e WHERE e.civ_id = c.id AND e.disabled = 0) AS entity_count
     FROM civ_civilizations c
     ORDER BY c.name
   `).all() as CivRow[];

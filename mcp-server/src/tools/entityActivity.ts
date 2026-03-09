@@ -25,7 +25,7 @@ function resolveEntity(
   let sql = `
     SELECT e.id, e.canonical_name, e.entity_type
     FROM entity_entities e
-    WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+    WHERE e.disabled = 0 AND (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
       SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
     ))
   `;

@@ -24,24 +24,26 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
           entityMentions, entityMentions.entityId.equalsExp(entityEntities.id)),
     ]);
 
-    Expression<bool>? whereExpr;
+    // Always exclude disabled entities from the main view
+    Expression<bool> whereExpr = entityEntities.disabled.equals(false);
+
+    // Exclude hidden unless the filter says to show them
+    if (!filters.showHidden) {
+      whereExpr = whereExpr & entityEntities.hidden.equals(false);
+    }
 
     if (filters.entityType != null) {
-      whereExpr = entityEntities.entityType.equals(filters.entityType!);
+      whereExpr = whereExpr & entityEntities.entityType.equals(filters.entityType!);
     }
     if (filters.civId != null) {
-      final civExpr = entityEntities.civId.equals(filters.civId!);
-      whereExpr = whereExpr == null ? civExpr : whereExpr & civExpr;
+      whereExpr = whereExpr & entityEntities.civId.equals(filters.civId!);
     }
     if (filters.searchQuery.isNotEmpty) {
-      final searchExpr =
+      whereExpr = whereExpr &
           entityEntities.canonicalName.like('%${filters.searchQuery}%');
-      whereExpr = whereExpr == null ? searchExpr : whereExpr & searchExpr;
     }
 
-    if (whereExpr != null) {
-      query.where(whereExpr);
-    }
+    query.where(whereExpr);
 
     query
       ..addColumns([mentionCountExpr])
@@ -61,7 +63,41 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     });
   }
 
+  /// All disabled entities (for the disabled/archived view + reactivation)
+  Stream<List<EntityWithDetails>> watchDisabledEntities({int? civId}) {
+    final mentionCountExpr = entityMentions.id.count();
+
+    var query = select(entityEntities).join([
+      leftOuterJoin(
+          entityMentions, entityMentions.entityId.equalsExp(entityEntities.id)),
+    ]);
+
+    Expression<bool> whereExpr = entityEntities.disabled.equals(true);
+    if (civId != null) {
+      whereExpr = whereExpr & entityEntities.civId.equals(civId);
+    }
+    query.where(whereExpr);
+
+    query
+      ..addColumns([mentionCountExpr])
+      ..groupBy([entityEntities.id])
+      ..orderBy([OrderingTerm.desc(entityEntities.disabledAt)]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final entity = row.readTable(entityEntities);
+        final count = row.read(mentionCountExpr) ?? 0;
+        return EntityWithDetails(
+          entity: entity,
+          aliases: [],
+          mentionCount: count,
+        );
+      }).toList();
+    });
+  }
+
   Stream<EntityWithDetails?> watchEntityDetail(int entityId) {
+    // Detail view shows any entity (including hidden) — used for cross-links
     return (select(entityEntities)..where((t) => t.id.equals(entityId)))
         .watchSingleOrNull()
         .asyncMap((entity) async {
@@ -112,6 +148,28 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     });
   }
 
+  /// All entities mentioned in a given turn, ordered by mention count desc.
+  /// Used for the "Entités du tour" section in TurnDetailScreen.
+  Stream<List<EntityWithDetails>> watchEntitiesForTurn(int turnId) {
+    final mentionCountExpr = entityMentions.id.count();
+
+    final query = select(entityEntities).join([
+      innerJoin(
+          entityMentions, entityMentions.entityId.equalsExp(entityEntities.id)),
+    ])
+      ..where(entityMentions.turnId.equals(turnId) &
+          entityEntities.disabled.equals(false))
+      ..addColumns([mentionCountExpr])
+      ..groupBy([entityEntities.id])
+      ..orderBy([OrderingTerm.desc(mentionCountExpr)]);
+
+    return query.watch().map((rows) => rows.map((row) {
+          final entity = row.readTable(entityEntities);
+          final count = row.read(mentionCountExpr) ?? 0;
+          return EntityWithDetails(entity: entity, aliases: [], mentionCount: count);
+        }).toList());
+  }
+
   Future<List<EntityWithDetails>> searchEntities(String query) async {
     if (query.isEmpty) return [];
 
@@ -120,7 +178,8 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       leftOuterJoin(
           entityMentions, entityMentions.entityId.equalsExp(entityEntities.id)),
     ])
-          ..where(entityEntities.canonicalName.like('%$query%'))
+          ..where(entityEntities.canonicalName.like('%$query%') &
+              entityEntities.disabled.equals(false))
           ..addColumns([mentionCountExpr])
           ..groupBy([entityEntities.id])
           ..orderBy([OrderingTerm.desc(mentionCountExpr)])
@@ -138,7 +197,7 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     }).toList();
   }
 
-  /// Top entities for a civ by mention count
+  /// Top entities for a civ by mention count (dashboard cards)
   Stream<List<EntityWithDetails>> watchTopEntitiesForCiv(int civId,
       {int limit = 10}) {
     final mentionCountExpr = entityMentions.id.count();
@@ -147,7 +206,9 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       leftOuterJoin(
           entityMentions, entityMentions.entityId.equalsExp(entityEntities.id)),
     ])
-      ..where(entityEntities.civId.equals(civId))
+      ..where(entityEntities.civId.equals(civId) &
+          entityEntities.disabled.equals(false) &
+          entityEntities.hidden.equals(false))
       ..addColumns([mentionCountExpr])
       ..groupBy([entityEntities.id])
       ..orderBy([OrderingTerm.desc(mentionCountExpr)])
@@ -166,12 +227,14 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     });
   }
 
-  /// Entity count by type for a civ (for pie/bar chart)
+  /// Entity count by type for a civ (bar chart) — excludes disabled + hidden
   Stream<Map<String, int>> watchEntityTypeBreakdown(int civId) {
     final countExpr = entityEntities.id.count();
     final query = selectOnly(entityEntities)
       ..addColumns([entityEntities.entityType, countExpr])
-      ..where(entityEntities.civId.equals(civId))
+      ..where(entityEntities.civId.equals(civId) &
+          entityEntities.disabled.equals(false) &
+          entityEntities.hidden.equals(false))
       ..groupBy([entityEntities.entityType]);
 
     return query.watch().map((rows) {
@@ -185,6 +248,32 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       }
       return map;
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // MJ actions: hide / disable / reactivate
+  // ---------------------------------------------------------------------------
+
+  /// Toggle hidden flag. Hidden entities stay in DB and cross-links work,
+  /// but they are filtered out of the main list unless showHidden is true.
+  Future<void> setEntityHidden(int entityId, {required bool hidden}) async {
+    await (update(entityEntities)..where((t) => t.id.equals(entityId)))
+        .write(EntityEntitiesCompanion(
+      hidden: Value(hidden),
+    ));
+  }
+
+  /// Disable an entity (requires confirmation in the UI).
+  /// Disabled entities are excluded from all queries and links are non-clickable.
+  Future<void> setEntityDisabled(int entityId, {required bool disabled}) async {
+    final now = disabled ? DateTime.now().toIso8601String() : null;
+    await (update(entityEntities)..where((t) => t.id.equals(entityId)))
+        .write(EntityEntitiesCompanion(
+      disabled: Value(disabled),
+      disabledAt: Value(now),
+      // Re-enabling also un-hides the entity
+      hidden: disabled ? const Value.absent() : const Value(false),
+    ));
   }
 }
 

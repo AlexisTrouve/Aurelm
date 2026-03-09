@@ -7,7 +7,8 @@ import '../data/database.dart';
 class SubjectWithDetails {
   final SubjectRow subject;
 
-  /// Turn number from source_turn (joined from turn_turns)
+  /// Turn ID and number from source_turn (joined from turn_turns)
+  final int sourceTurnId;
   final int sourceTurnNumber;
 
   /// Civilization name (joined from civ_civilizations)
@@ -27,6 +28,7 @@ class SubjectWithDetails {
 
   const SubjectWithDetails({
     required this.subject,
+    required this.sourceTurnId,
     required this.sourceTurnNumber,
     required this.civName,
     required this.options,
@@ -42,6 +44,7 @@ class SubjectDetail extends SubjectWithDetails {
 
   const SubjectDetail({
     required super.subject,
+    required super.sourceTurnId,
     required super.sourceTurnNumber,
     required super.civName,
     required super.options,
@@ -55,10 +58,12 @@ class SubjectDetail extends SubjectWithDetails {
 /// Resolution enriched with the turn number when it was detected.
 class ResolutionWithTurn {
   final SubjectResolutionRow resolution;
+  final int turnId;
   final int turnNumber;
 
   const ResolutionWithTurn({
     required this.resolution,
+    required this.turnId,
     required this.turnNumber,
   });
 }

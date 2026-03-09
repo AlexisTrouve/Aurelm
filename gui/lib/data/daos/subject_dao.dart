@@ -64,6 +64,7 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
 
         results.add(SubjectWithDetails(
           subject: subject,
+          sourceTurnId: turn.id,
           sourceTurnNumber: turn.turnNumber,
           civName: civ.name,
           options: options,
@@ -114,12 +115,14 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
       final allResolutions = resRows
           .map((r) => ResolutionWithTurn(
                 resolution: r.readTable(subjectResolutions),
+                turnId: r.readTable(turnTurns).id,
                 turnNumber: r.readTable(turnTurns).turnNumber,
               ))
           .toList();
 
       return SubjectDetail(
         subject: subject,
+        sourceTurnId: turn?.id ?? 0,
         sourceTurnNumber: turn?.turnNumber ?? 0,
         civName: civ?.name ?? 'Unknown',
         options: options,

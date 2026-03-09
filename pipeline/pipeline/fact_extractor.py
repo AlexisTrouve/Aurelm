@@ -284,22 +284,28 @@ class FactExtractor:
         # Validation pass (optional): LLM filters entities with a checklist
         # Skipped when certainty filtering is active (v14+) — the two are alternatives.
         # Priority: external config (self.validate_model) > version default > caller arg > extraction model.
-        elif self.version.validate_prompt:
-            text_for_validation = relevant_text[:3000]
+        validate_dropped_names: list[str] = []
+        if self.version.certainty_threshold <= 0 and self.version.validate_prompt:
+            before_validate = list(merged_entities)
             merged_entities = self._llm_validate_entities(
-                merged_entities, text_for_validation,
+                merged_entities, relevant_text[:3000],
                 model_override=self.validate_model or self.version.validate_model or validation_model,
             )
+            kept_names = {e.text.lower() for e in merged_entities}
+            validate_dropped_names = [e.text for e in before_validate if e.text.lower() not in kept_names]
+            if validate_dropped_names:
+                print(f"  Validate dropped ({len(validate_dropped_names)}): {validate_dropped_names}")
 
         # Populate last_stats for runner.py per-turn logging.
-        # Funnel: raw (post-noise-filter) -> dedup -> validate/certainty -> final
+        # Funnel: raw (post-noise-filter) -> dedup -> validate -> final
         self.last_stats = {
             "text_chars": len(relevant_text),
             "sys_prompt_chars": len(sys_prompt),
             "chunks": len(chunks),
-            "raw": raw_entity_count,          # after noise filter, before dedup
-            "after_dedup": after_dedup_count, # after accent-normalized dedup
-            "final": len(merged_entities),    # after validate/certainty pass
+            "raw": raw_entity_count,           # after noise filter, before dedup
+            "after_dedup": after_dedup_count,  # after accent-normalized dedup
+            "validate_dropped": validate_dropped_names,  # names dropped by validate
+            "final": len(merged_entities),     # after validate/certainty pass
         }
 
         return StructuredFacts(

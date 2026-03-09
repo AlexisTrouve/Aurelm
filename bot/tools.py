@@ -91,7 +91,7 @@ def list_civs(conn: sqlite3.Connection) -> str:
     rows = conn.execute("""
         SELECT c.name, c.player_name,
                (SELECT COUNT(*) FROM turn_turns t WHERE t.civ_id = c.id) AS turn_count,
-               (SELECT COUNT(*) FROM entity_entities e WHERE e.civ_id = c.id) AS entity_count
+               (SELECT COUNT(*) FROM entity_entities e WHERE e.civ_id = c.id AND e.disabled = 0) AS entity_count
         FROM civ_civilizations c
         ORDER BY c.name
     """).fetchall()
@@ -116,11 +116,11 @@ def get_civ_state(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
     ).fetchone()[0]
 
     entity_count = conn.execute(
-        "SELECT COUNT(*) FROM entity_entities WHERE civ_id = ?", (civ_id,)
+        "SELECT COUNT(*) FROM entity_entities WHERE civ_id = ? AND disabled = 0", (civ_id,)
     ).fetchone()[0]
 
     breakdown = conn.execute(
-        "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? GROUP BY entity_type ORDER BY count DESC",
+        "SELECT entity_type, COUNT(*) AS count FROM entity_entities WHERE civ_id = ? AND disabled = 0 GROUP BY entity_type ORDER BY count DESC",
         (civ_id,),
     ).fetchall()
 
@@ -133,7 +133,7 @@ def get_civ_state(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
         SELECT e.canonical_name, e.entity_type,
                (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mention_count
         FROM entity_entities e
-        WHERE e.civ_id = ?
+        WHERE e.civ_id = ? AND e.disabled = 0
         ORDER BY mention_count DESC
         LIMIT 10
     """, (civ_id,)).fetchall()
@@ -239,7 +239,7 @@ def get_turn_detail(
         SELECT e.canonical_name, e.entity_type, COUNT(*) AS mention_count
         FROM entity_mentions m
         JOIN entity_entities e ON m.entity_id = e.id
-        WHERE m.turn_id = ?
+        WHERE m.turn_id = ? AND e.disabled = 0
         GROUP BY e.id
         ORDER BY mention_count DESC
     """, (t_id,)).fetchall()
@@ -269,7 +269,8 @@ def search_lore(
         FROM entity_entities e
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN entity_aliases a ON a.entity_id = e.id
-        WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'
+        WHERE e.disabled = 0
+          AND (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'
                OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
     """
     pattern = f"%{_escape_like(query)}%"
@@ -346,7 +347,8 @@ def get_entity_detail(
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN turn_turns ft ON e.first_seen_turn = ft.id
         LEFT JOIN turn_turns lt ON e.last_seen_turn = lt.id
-        WHERE (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
+        WHERE e.disabled = 0
+          AND (e.canonical_name LIKE ? ESCAPE '!' OR e.id IN (
           SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ? ESCAPE '!'
         ))
     """
@@ -471,16 +473,16 @@ def sanity_check(
 
         if civ_id is not None:
             by_name = conn.execute(
-                "SELECT e.id FROM entity_entities e WHERE e.canonical_name LIKE ? AND e.civ_id = ?",
+                "SELECT e.id FROM entity_entities e WHERE e.canonical_name LIKE ? AND e.civ_id = ? AND e.disabled = 0",
                 (pattern, civ_id),
             ).fetchall()
             by_alias = conn.execute(
-                "SELECT a.entity_id AS id FROM entity_aliases a JOIN entity_entities e ON a.entity_id = e.id WHERE a.alias LIKE ? AND e.civ_id = ?",
+                "SELECT a.entity_id AS id FROM entity_aliases a JOIN entity_entities e ON a.entity_id = e.id WHERE a.alias LIKE ? AND e.civ_id = ? AND e.disabled = 0",
                 (pattern, civ_id),
             ).fetchall()
         else:
             by_name = conn.execute(
-                "SELECT e.id FROM entity_entities e WHERE e.canonical_name LIKE ?",
+                "SELECT e.id FROM entity_entities e WHERE e.canonical_name LIKE ? AND e.disabled = 0",
                 (pattern,),
             ).fetchall()
             by_alias = conn.execute(
@@ -538,7 +540,7 @@ def sanity_check(
     inventory_lines: list[str] = []
     if civ_id is not None:
         inventory = conn.execute(
-            "SELECT canonical_name, entity_type FROM entity_entities WHERE civ_id = ? ORDER BY entity_type, canonical_name LIMIT 200",
+            "SELECT canonical_name, entity_type FROM entity_entities WHERE civ_id = ? AND disabled = 0 ORDER BY entity_type, canonical_name LIMIT 200",
             (civ_id,),
         ).fetchall()
         if inventory:
@@ -730,7 +732,7 @@ def compare_civs(
         ).fetchone()[0]
 
         breakdown_rows = conn.execute(
-            "SELECT entity_type, COUNT(*) FROM entity_entities WHERE civ_id = ? GROUP BY entity_type ORDER BY COUNT(*) DESC",
+            "SELECT entity_type, COUNT(*) FROM entity_entities WHERE civ_id = ? AND disabled = 0 GROUP BY entity_type ORDER BY COUNT(*) DESC",
             (cid,),
         ).fetchall()
         entity_breakdown = {r[0]: r[1] for r in breakdown_rows}
@@ -740,7 +742,7 @@ def compare_civs(
             SELECT e.canonical_name AS name, e.entity_type AS type,
                    (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mentions
             FROM entity_entities e
-            WHERE e.civ_id = ?
+            WHERE e.civ_id = ? AND e.disabled = 0
         """
         entity_params: list = [cid]
         if aspects and relevant_types:
@@ -1001,7 +1003,8 @@ def _resolve_entity(
     sql = """
         SELECT e.id, e.canonical_name, e.entity_type
         FROM entity_entities e
-        WHERE (e.canonical_name LIKE ? OR e.id IN (
+        WHERE e.disabled = 0
+          AND (e.canonical_name LIKE ? OR e.id IN (
             SELECT a.entity_id FROM entity_aliases a WHERE a.alias LIKE ?
         ))
     """
@@ -1098,6 +1101,7 @@ def filter_timeline(
             LEFT JOIN entity_entities e ON m.entity_id = e.id
             LEFT JOIN entity_aliases a ON a.entity_id = e.id
             WHERE (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
+              AND (e.disabled IS NULL OR e.disabled = 0)
         """
         pattern = f"%{_escape_like(entity_name)}%"
         params: list = [pattern, pattern]

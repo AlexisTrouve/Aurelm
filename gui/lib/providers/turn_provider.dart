@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
@@ -22,6 +24,10 @@ class TimelineFilterNotifier extends StateNotifier<TimelineFilterState> {
     state = state.copyWith(turnType: () => type);
   }
 
+  void setSelectedTag(String? tag) {
+    state = state.copyWith(selectedTag: () => tag);
+  }
+
   void reset() {
     state = const TimelineFilterState();
   }
@@ -35,7 +41,15 @@ final timelineProvider = StreamProvider<List<TurnWithEntities>>((ref) {
   return db.turnDao.watchTimeline(
     civId: filters.civId,
     turnType: filters.turnType,
+    selectedTag: filters.selectedTag,
   );
+});
+
+/// All unique thematic tags from the DB, for the filter bar.
+final turnTagsProvider = FutureProvider<List<String>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return [];
+  return db.turnDao.allThematicTags();
 });
 
 final turnDetailProvider =

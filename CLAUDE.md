@@ -158,3 +158,21 @@ Flutter Desktop GUI (Dashboard)
 - `python -m pytest bot/tests/` — Bot tests (32 tests: tools, config, dispatch)
 - `cd gui && flutter test` — GUI tests (6 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing
+
+### ⚠️ Pipeline LLM runs — règles impératives
+
+**Ne JAMAIS lancer un full pipeline (19 tours) pour valider un changement. C'est long et ça coûte de l'argent.**
+
+Pour tester sur 2-3 tours seulement, copier les fichiers concernés dans un dossier temporaire :
+```bash
+mkdir /tmp/civjdr_t01t02
+cp "../civjdr/Background/"*T01* /tmp/civjdr_t01t02/
+cp "../civjdr/Background/"*T02* /tmp/civjdr_t01t02/
+py -3.12 -m pipeline.runner --data-dir /tmp/civjdr_t01t02 --civ Confluence --player Rubanc --db aurelm_test_quick.db --extraction-version v22.2.1-pastlevel --llm-provider openrouter --llm-config pipeline_llm_config.json
+```
+
+Le runner n'a pas de flag `--turns` — la seule façon de limiter est de limiter les fichiers en input.
+
+**Toujours demander confirmation à l'humain avant de lancer un run LLM complet.**
+
+**Pour valider un refactoring/changement technique** (imports, structure, DB) : `--no-llm` suffit. Vérifier que les segments/turns sont en DB, c'est bon. Un run LLM complet (extraction → subjects → profiling → aliases) ne sert que si on change la logique d'extraction ou les prompts.

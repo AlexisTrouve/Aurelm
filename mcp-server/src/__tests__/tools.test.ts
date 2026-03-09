@@ -73,6 +73,9 @@ function seedDb(db: Database.Database) {
       first_seen_turn INTEGER REFERENCES turn_turns(id),
       last_seen_turn INTEGER REFERENCES turn_turns(id),
       is_active INTEGER NOT NULL DEFAULT 1,
+      hidden INTEGER NOT NULL DEFAULT 0,
+      disabled INTEGER NOT NULL DEFAULT 0,
+      disabled_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       UNIQUE(canonical_name, civ_id)

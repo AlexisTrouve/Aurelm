@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -5,6 +7,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../models/turn_with_entities.dart';
 import '../../../widgets/common/civ_badge.dart';
 
+/// Affiche une ou deux cartes par tour selon si des segments PJ existent.
+/// - Carte MJ (gold) : narrative GM, entités GM, tags
+/// - Carte PJ (purple) : réponse joueur, entités PJ
 class TimelineTurnCard extends StatelessWidget {
   final TurnWithEntities turn;
 
@@ -12,135 +17,230 @@ class TimelineTurnCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final showPjCard = turn.hasPjContent;
+
+    return Column(
+      children: [
+        _TurnCard(
+          turn: turn,
+          source: 'mj',
+          entityCount: turn.gmEntityCount,
+          onTap: () => context.push('/turns/${turn.turn.id}'),
+        ),
+        if (showPjCard) ...[
+          const SizedBox(height: 4),
+          _TurnCard(
+            turn: turn,
+            source: 'pj',
+            entityCount: turn.pjEntityCount,
+            onTap: () => context.push('/turns/${turn.turn.id}'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _TurnCard extends StatelessWidget {
+  final TurnWithEntities turn;
+  final String source; // 'mj' or 'pj'
+  final int entityCount;
+  final VoidCallback onTap;
+
+  const _TurnCard({
+    required this.turn,
+    required this.source,
+    required this.entityCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final t = turn.turn;
-    final typeColor = AppColors.turnTypeColors[t.turnType] ?? Colors.grey;
+    final isMj = source == 'mj';
+
+    // MJ = gold/amber, PJ = purple
+    final typeColor = isMj
+        ? (AppColors.turnTypeColors[t.turnType] ?? Colors.amber)
+        : Colors.deepPurple;
+
+    final label = isMj ? 'MJ' : 'PJ';
+    final labelColor = isMj ? Colors.amber.shade700 : Colors.deepPurple;
+
+    // Parse thematic tags from JSON string (only shown on MJ card)
+    final tags = isMj && t.thematicTags != null
+        ? (jsonDecode(t.thematicTags!) as List).cast<String>()
+        : <String>[];
+
+    final showTags =
+        isMj && (tags.isNotEmpty || t.techEra != null || t.fantasyLevel != null);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 2),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.go('/turns/${t.id}'),
+        onTap: onTap,
         child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Turn number badge
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: typeColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '${t.turnNumber}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: typeColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.fromLTRB(isMj ? 16 : 32, 12, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Main info row ---
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          t.title ?? 'Turn ${t.turnNumber}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
+                  // Turn number badge (MJ) or source badge (PJ)
+                  if (isMj)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: typeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      CivBadge(civName: turn.civName),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (t.summary != null)
-                    Text(
-                      t.summary!,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${t.turnNumber}',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: typeColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: labelColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: labelColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
                     ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Turn type badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: typeColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // MJ/PJ badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: labelColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            label,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: labelColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
                         ),
-                        child: Text(
-                          t.turnType.replaceAll('_', ' '),
+
+
+                        const Spacer(),
+
+                        // Civ badge (MJ only)
+                        if (isMj) ...[
+                          CivBadge(civName: turn.civName),
+                          const SizedBox(width: 8),
+                        ],
+
+                        // Entity count
+                        Text(
+                          '$entityCount entities',
                           style:
                               Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: typeColor,
-                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Segment type badges
-                      ...turn.segmentTypes.map((st) {
-                        final stColor =
-                            AppColors.segmentTypeColors[st] ?? Colors.grey;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: stColor.withValues(alpha: 0.4)),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(
-                              st,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelSmall
-                                  ?.copyWith(
-                                    color: stColor,
-                                    fontSize: 9,
-                                  ),
-                            ),
-                          ),
-                        );
-                      }),
-                      const Spacer(),
-                      Text(
-                        '${turn.entityCount} entities',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+
+              // --- Tags row: tech_era + fantasy_level + thematic_tags (MJ only) ---
+              if (showTags) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: [
+                    if (t.techEra != null)
+                      _TagChip(label: t.techEra!, color: Colors.teal),
+                    if (t.fantasyLevel != null)
+                      _TagChip(label: t.fantasyLevel!, color: Colors.deepPurple),
+                    ...tags.map((tag) => _TagChip(label: tag, color: _tagColor(tag))),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
-      ), // InkWell child: Padding
-    ); // InkWell + Card
+    );
+  }
+}
+
+/// Couleur sémantique par tag thématique.
+Color _tagColor(String tag) => switch (tag) {
+      'religion' => Colors.indigo,
+      'culture' => Colors.amber,
+      'exploration' => Colors.cyan,
+      'construction' => Colors.brown,
+      'agriculture' => Colors.green,
+      'crise' => Colors.red,
+      'migration' => Colors.orange,
+      'decouverte' => Colors.lightBlue,
+      'politique' => Colors.purple,
+      'commerce' => Colors.yellow,
+      'technologie' => Colors.blueGrey,
+      'diplomatie' => Colors.pink,
+      'combat' => Colors.deepOrange,
+      'mort' => Colors.grey,
+      'ressource' => Colors.lime,
+      _ => Colors.blueGrey,
+    };
+
+/// Mini chip pour les tags de tour (tech_era, fantasy_level, thematic_tags).
+class _TagChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _TagChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color.withValues(alpha: 0.85),
+              fontSize: 9,
+            ),
+      ),
+    );
   }
 }
