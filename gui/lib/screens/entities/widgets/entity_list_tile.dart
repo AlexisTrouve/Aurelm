@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,23 @@ import '../../../models/entity_with_details.dart';
 import '../../../providers/database_provider.dart';
 import '../../../widgets/common/entity_type_icon.dart';
 import '../../../widgets/common/entity_type_badge.dart';
+
+/// Semantic tag color — matches entity_filter_bar.dart and entity_profiler.py vocab.
+Color _entityTagColor(String tag) => switch (tag) {
+      'militaire' => Colors.red,
+      'religieux' => Colors.indigo,
+      'politique' => Colors.purple,
+      'economique' => Colors.green,
+      'culturel' => Colors.amber,
+      'diplomatique' => Colors.pink,
+      'technologique' => Colors.blueGrey,
+      'mythologique' => Colors.deepPurple,
+      'actif' => Colors.teal,
+      'disparu' => Colors.grey,
+      'emergent' => Colors.cyan,
+      'legendaire' => Colors.orange,
+      _ => Colors.blueGrey,
+    };
 
 class EntityListTile extends ConsumerWidget {
   final EntityWithDetails entity;
@@ -43,6 +62,11 @@ class EntityListTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Parse semantic tags from JSON column (nullable — not yet tagged = empty)
+    final tags = entity.entity.tags != null
+        ? (jsonDecode(entity.entity.tags!) as List).cast<String>()
+        : <String>[];
+
     return Card(
       child: ListTile(
         leading: EntityTypeIcon(
@@ -53,25 +77,58 @@ class EntityListTile extends ConsumerWidget {
           entity.entity.canonicalName,
           style: const TextStyle(fontWeight: FontWeight.w500),
         ),
-        subtitle: Row(
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            EntityTypeBadge(
-              entityType: entity.entity.entityType,
-              compact: true,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${entity.mentionCount} mentions',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Row(
+              children: [
+                EntityTypeBadge(
+                  entityType: entity.entity.entityType,
+                  compact: true,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${entity.mentionCount} mentions',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                if (entity.entity.hidden) ...[
+                  const SizedBox(width: 8),
+                  const Tooltip(
+                    message: 'Entité cachée',
+                    child:
+                        Icon(Icons.visibility_off, size: 14, color: Colors.grey),
                   ),
+                ],
+              ],
             ),
-            // Badge visible only when showHidden is active
-            if (entity.entity.hidden) ...[
-              const SizedBox(width: 8),
-              const Tooltip(
-                message: 'Entité cachée',
-                child: Icon(Icons.visibility_off, size: 14, color: Colors.grey),
+            // Semantic tag chips (only shown when tags are assigned by pipeline)
+            if (tags.isNotEmpty) ...[
+              const SizedBox(height: 3),
+              Wrap(
+                spacing: 3,
+                runSpacing: 2,
+                children: tags.map((tag) {
+                  final color = _entityTagColor(tag);
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(3),
+                      border:
+                          Border.all(color: color.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      tag,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: color.withValues(alpha: 0.85),
+                            fontSize: 9,
+                          ),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
           ],
@@ -80,7 +137,6 @@ class EntityListTile extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Hide toggle — icône œil
             Tooltip(
               message: entity.entity.hidden
                   ? 'Afficher (retirer du masquage)'
@@ -101,7 +157,6 @@ class EntityListTile extends ConsumerWidget {
                 },
               ),
             ),
-            // Disable — icône block, avec confirmation
             Tooltip(
               message: 'Désactiver (retrait complet)',
               child: IconButton(

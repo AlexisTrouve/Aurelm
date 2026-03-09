@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../database.dart';
@@ -41,6 +43,11 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     if (filters.searchQuery.isNotEmpty) {
       whereExpr = whereExpr &
           entityEntities.canonicalName.like('%${filters.searchQuery}%');
+    }
+    // Tag filter — JSON LIKE match on the tags column
+    if (filters.selectedTag != null) {
+      whereExpr = whereExpr &
+          entityEntities.tags.like('%"${filters.selectedTag!}"%');
     }
 
     query.where(whereExpr);
@@ -274,6 +281,27 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       // Re-enabling also un-hides the entity
       hidden: disabled ? const Value.absent() : const Value(false),
     ));
+  }
+
+  /// Returns all unique semantic tags across active entities, sorted by frequency.
+  Future<List<String>> allEntityTags() async {
+    final rows = await (selectOnly(entityEntities)
+          ..addColumns([entityEntities.tags])
+          ..where(entityEntities.tags.isNotNull() &
+              entityEntities.disabled.equals(false)))
+        .get();
+
+    final freq = <String, int>{};
+    for (final row in rows) {
+      final raw = row.read(entityEntities.tags);
+      if (raw == null) continue;
+      for (final tag in (jsonDecode(raw) as List).cast<String>()) {
+        freq[tag] = (freq[tag] ?? 0) + 1;
+      }
+    }
+    final sorted = freq.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return sorted.map((e) => e.key).toList();
   }
 }
 

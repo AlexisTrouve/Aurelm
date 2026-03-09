@@ -1821,6 +1821,11 @@ class $EntityEntitiesTable extends EntityEntities
   late final GeneratedColumn<String> disabledAt = GeneratedColumn<String>(
       'disabled_at', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+      'tags', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1835,7 +1840,8 @@ class $EntityEntitiesTable extends EntityEntities
         updatedAt,
         hidden,
         disabled,
-        disabledAt
+        disabledAt,
+        tags
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1918,6 +1924,10 @@ class $EntityEntitiesTable extends EntityEntities
           disabledAt.isAcceptableOrUnknown(
               data['disabled_at']!, _disabledAtMeta));
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+          _tagsMeta, tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta));
+    }
     return context;
   }
 
@@ -1953,6 +1963,8 @@ class $EntityEntitiesTable extends EntityEntities
           .read(DriftSqlType.bool, data['${effectivePrefix}disabled'])!,
       disabledAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}disabled_at']),
+      tags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags']),
     );
   }
 
@@ -1976,6 +1988,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
   final bool hidden;
   final bool disabled;
   final String? disabledAt;
+  final String? tags;
   const EntityRow(
       {required this.id,
       required this.canonicalName,
@@ -1989,7 +2002,8 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       required this.updatedAt,
       required this.hidden,
       required this.disabled,
-      this.disabledAt});
+      this.disabledAt,
+      this.tags});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2015,6 +2029,9 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
     map['disabled'] = Variable<bool>(disabled);
     if (!nullToAbsent || disabledAt != null) {
       map['disabled_at'] = Variable<String>(disabledAt);
+    }
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
     }
     return map;
   }
@@ -2043,6 +2060,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       disabledAt: disabledAt == null && nullToAbsent
           ? const Value.absent()
           : Value(disabledAt),
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
     );
   }
 
@@ -2063,6 +2081,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       hidden: serializer.fromJson<bool>(json['hidden']),
       disabled: serializer.fromJson<bool>(json['disabled']),
       disabledAt: serializer.fromJson<String?>(json['disabledAt']),
+      tags: serializer.fromJson<String?>(json['tags']),
     );
   }
   @override
@@ -2082,6 +2101,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       'hidden': serializer.toJson<bool>(hidden),
       'disabled': serializer.toJson<bool>(disabled),
       'disabledAt': serializer.toJson<String?>(disabledAt),
+      'tags': serializer.toJson<String?>(tags),
     };
   }
 
@@ -2098,7 +2118,8 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           String? updatedAt,
           bool? hidden,
           bool? disabled,
-          Value<String?> disabledAt = const Value.absent()}) =>
+          Value<String?> disabledAt = const Value.absent(),
+          Value<String?> tags = const Value.absent()}) =>
       EntityRow(
         id: id ?? this.id,
         canonicalName: canonicalName ?? this.canonicalName,
@@ -2115,6 +2136,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
         hidden: hidden ?? this.hidden,
         disabled: disabled ?? this.disabled,
         disabledAt: disabledAt.present ? disabledAt.value : this.disabledAt,
+        tags: tags.present ? tags.value : this.tags,
       );
   EntityRow copyWithCompanion(EntityEntitiesCompanion data) {
     return EntityRow(
@@ -2140,6 +2162,7 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       disabled: data.disabled.present ? data.disabled.value : this.disabled,
       disabledAt:
           data.disabledAt.present ? data.disabledAt.value : this.disabledAt,
+      tags: data.tags.present ? data.tags.value : this.tags,
     );
   }
 
@@ -2158,7 +2181,8 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('hidden: $hidden, ')
           ..write('disabled: $disabled, ')
-          ..write('disabledAt: $disabledAt')
+          ..write('disabledAt: $disabledAt, ')
+          ..write('tags: $tags')
           ..write(')'))
         .toString();
   }
@@ -2177,7 +2201,8 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
       updatedAt,
       hidden,
       disabled,
-      disabledAt);
+      disabledAt,
+      tags);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2194,7 +2219,8 @@ class EntityRow extends DataClass implements Insertable<EntityRow> {
           other.updatedAt == this.updatedAt &&
           other.hidden == this.hidden &&
           other.disabled == this.disabled &&
-          other.disabledAt == this.disabledAt);
+          other.disabledAt == this.disabledAt &&
+          other.tags == this.tags);
 }
 
 class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
@@ -2211,6 +2237,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
   final Value<bool> hidden;
   final Value<bool> disabled;
   final Value<String?> disabledAt;
+  final Value<String?> tags;
   const EntityEntitiesCompanion({
     this.id = const Value.absent(),
     this.canonicalName = const Value.absent(),
@@ -2225,6 +2252,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     this.hidden = const Value.absent(),
     this.disabled = const Value.absent(),
     this.disabledAt = const Value.absent(),
+    this.tags = const Value.absent(),
   });
   EntityEntitiesCompanion.insert({
     this.id = const Value.absent(),
@@ -2240,6 +2268,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     this.hidden = const Value.absent(),
     this.disabled = const Value.absent(),
     this.disabledAt = const Value.absent(),
+    this.tags = const Value.absent(),
   })  : canonicalName = Value(canonicalName),
         entityType = Value(entityType),
         createdAt = Value(createdAt),
@@ -2258,6 +2287,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     Expression<bool>? hidden,
     Expression<bool>? disabled,
     Expression<String>? disabledAt,
+    Expression<String>? tags,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2273,6 +2303,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       if (hidden != null) 'hidden': hidden,
       if (disabled != null) 'disabled': disabled,
       if (disabledAt != null) 'disabled_at': disabledAt,
+      if (tags != null) 'tags': tags,
     });
   }
 
@@ -2289,7 +2320,8 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       Value<String>? updatedAt,
       Value<bool>? hidden,
       Value<bool>? disabled,
-      Value<String?>? disabledAt}) {
+      Value<String?>? disabledAt,
+      Value<String?>? tags}) {
     return EntityEntitiesCompanion(
       id: id ?? this.id,
       canonicalName: canonicalName ?? this.canonicalName,
@@ -2304,6 +2336,7 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
       hidden: hidden ?? this.hidden,
       disabled: disabled ?? this.disabled,
       disabledAt: disabledAt ?? this.disabledAt,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -2349,6 +2382,9 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
     if (disabledAt.present) {
       map['disabled_at'] = Variable<String>(disabledAt.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
     return map;
   }
 
@@ -2367,7 +2403,8 @@ class EntityEntitiesCompanion extends UpdateCompanion<EntityRow> {
           ..write('updatedAt: $updatedAt, ')
           ..write('hidden: $hidden, ')
           ..write('disabled: $disabled, ')
-          ..write('disabledAt: $disabledAt')
+          ..write('disabledAt: $disabledAt, ')
+          ..write('tags: $tags')
           ..write(')'))
         .toString();
   }
@@ -5984,6 +6021,7 @@ typedef $$EntityEntitiesTableCreateCompanionBuilder = EntityEntitiesCompanion
   Value<bool> hidden,
   Value<bool> disabled,
   Value<String?> disabledAt,
+  Value<String?> tags,
 });
 typedef $$EntityEntitiesTableUpdateCompanionBuilder = EntityEntitiesCompanion
     Function({
@@ -6000,6 +6038,7 @@ typedef $$EntityEntitiesTableUpdateCompanionBuilder = EntityEntitiesCompanion
   Value<bool> hidden,
   Value<bool> disabled,
   Value<String?> disabledAt,
+  Value<String?> tags,
 });
 
 class $$EntityEntitiesTableFilterComposer
@@ -6049,6 +6088,9 @@ class $$EntityEntitiesTableFilterComposer
 
   ColumnFilters<String> get disabledAt => $composableBuilder(
       column: $table.disabledAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnFilters(column));
 }
 
 class $$EntityEntitiesTableOrderingComposer
@@ -6101,6 +6143,9 @@ class $$EntityEntitiesTableOrderingComposer
 
   ColumnOrderings<String> get disabledAt => $composableBuilder(
       column: $table.disabledAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnOrderings(column));
 }
 
 class $$EntityEntitiesTableAnnotationComposer
@@ -6150,6 +6195,9 @@ class $$EntityEntitiesTableAnnotationComposer
 
   GeneratedColumn<String> get disabledAt => $composableBuilder(
       column: $table.disabledAt, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
 }
 
 class $$EntityEntitiesTableTableManager extends RootTableManager<
@@ -6192,6 +6240,7 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             Value<bool> hidden = const Value.absent(),
             Value<bool> disabled = const Value.absent(),
             Value<String?> disabledAt = const Value.absent(),
+            Value<String?> tags = const Value.absent(),
           }) =>
               EntityEntitiesCompanion(
             id: id,
@@ -6207,6 +6256,7 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             hidden: hidden,
             disabled: disabled,
             disabledAt: disabledAt,
+            tags: tags,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6222,6 +6272,7 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             Value<bool> hidden = const Value.absent(),
             Value<bool> disabled = const Value.absent(),
             Value<String?> disabledAt = const Value.absent(),
+            Value<String?> tags = const Value.absent(),
           }) =>
               EntityEntitiesCompanion.insert(
             id: id,
@@ -6237,6 +6288,7 @@ class $$EntityEntitiesTableTableManager extends RootTableManager<
             hidden: hidden,
             disabled: disabled,
             disabledAt: disabledAt,
+            tags: tags,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
