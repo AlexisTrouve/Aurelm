@@ -14,10 +14,16 @@ import '../../widgets/common/section_header.dart';
 
 /// Full turn detail — GM segments with type labels, PJ content as a single
 /// readable block. Search bar highlights matches across all text.
+/// [highlightText]: optional entity name to highlight on open (from naming history links).
 class TurnDetailScreen extends ConsumerStatefulWidget {
   final int turnId;
+  final String? highlightText;
 
-  const TurnDetailScreen({super.key, required this.turnId});
+  const TurnDetailScreen({
+    super.key,
+    required this.turnId,
+    this.highlightText,
+  });
 
   @override
   ConsumerState<TurnDetailScreen> createState() => _TurnDetailScreenState();
@@ -27,6 +33,17 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   bool _searchVisible = false;
   final TextEditingController _searchCtrl = TextEditingController();
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // If opened via a naming history link, pre-fill the search with the entity name
+    if (widget.highlightText != null) {
+      _searchVisible = true;
+      _query = widget.highlightText!;
+      _searchCtrl.text = widget.highlightText!;
+    }
+  }
 
   @override
   void dispose() {

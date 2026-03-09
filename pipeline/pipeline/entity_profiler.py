@@ -170,14 +170,18 @@ def build_entity_profiles(
             effective_run_id = row["max_id"] if row and row["max_id"] is not None else 0
         else:
             effective_run_id = run_id
+        # Primary set: entities with mentions in the current pipeline run.
+        # Also include never-profiled entities (description IS NULL) regardless of
+        # pipeline_turn_status — these were extracted in runs that crashed before
+        # stage 8, so their turns may not appear in pipeline_turn_status at all.
         entities = conn.execute("""
             SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.civ_id, e.history, e.description
             FROM entity_entities e
             JOIN entity_mentions m ON e.id = m.entity_id
             JOIN turn_turns t ON m.turn_id = t.id
-            JOIN pipeline_turn_status pts ON t.id = pts.turn_id
+            LEFT JOIN pipeline_turn_status pts ON t.id = pts.turn_id
             WHERE e.is_active = 1
-            AND pts.pipeline_run_id = ?
+            AND (pts.pipeline_run_id = ? OR e.description IS NULL)
             ORDER BY e.id
         """, (effective_run_id,)).fetchall()
     else:
@@ -203,9 +207,10 @@ def build_entity_profiles(
         existing_history = row["history"]
         existing_description = row["description"]
 
-        # In incremental mode, get only mentions from newly processed turns
-        # In full mode, get all mentions
-        if incremental and effective_run_id:
+        # In incremental mode, get only mentions from newly processed turns.
+        # Exception: if this entity has never been profiled (no description), load
+        # ALL its mentions so the LLM has full context even on first profile.
+        if incremental and effective_run_id and existing_description:
             mentions = conn.execute("""
                 SELECT m.mention_text, m.context, t.turn_number
                 FROM entity_mentions m

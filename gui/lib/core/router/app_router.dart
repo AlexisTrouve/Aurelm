@@ -69,7 +69,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/turns/:id',
             pageBuilder: (context, state) {
               final id = int.parse(state.pathParameters['id']!);
-              return NoTransitionPage(child: TurnDetailScreen(turnId: id));
+              // Optional highlight param: passed via context.push extra {'highlight': 'EntityName'}
+              final extra = state.extra as Map<String, dynamic>?;
+              final highlight = extra?['highlight'] as String?;
+              return NoTransitionPage(
+                child: TurnDetailScreen(turnId: id, highlightText: highlight),
+              );
             },
           ),
           GoRoute(

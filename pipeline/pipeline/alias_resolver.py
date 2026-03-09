@@ -1218,23 +1218,197 @@ def _decide_by_score(
 
 
 def store_aliases(db_path: str, aliases: list[ConfirmedAlias]) -> int:
-    """Store confirmed aliases in the entity_aliases table."""
+    """Store confirmed aliases and fully merge secondary entities into primaries.
+
+    For each confirmed alias pair:
+    1. Register the alias name in entity_aliases
+    2. Redirect all mentions from secondary → primary
+    3. Redirect all relations (source + target) from secondary → primary
+    4. Merge tags: union of both entities' tag lists on the primary
+    5. Deactivate the secondary entity (is_active = 0) to hide it everywhere
+
+    The secondary entity row is kept for traceability but invisible to all queries.
+    """
     conn = get_connection(db_path)
     stored = 0
 
     for alias in aliases:
+        pid = alias.primary_entity_id
+        sid = alias.alias_entity_id
+
         try:
-            conn.execute(
-                "INSERT OR IGNORE INTO entity_aliases (entity_id, alias) VALUES (?, ?)",
-                (alias.primary_entity_id, alias.alias_name),
+            # 1. Register alias name + capture when the secondary entity first appeared
+            # (first_seen_turn_id from entity_entities, used for the naming history UI)
+            first_seen = conn.execute(
+                "SELECT first_seen_turn FROM entity_entities WHERE id = ?", (sid,)
+            ).fetchone()
+            first_seen_turn_id = first_seen[0] if first_seen else None
+
+            # Check if first_seen_turn_id column exists (migration 014)
+            has_turn_col = any(
+                col[1] == "first_seen_turn_id"
+                for col in conn.execute("PRAGMA table_info(entity_aliases)").fetchall()
             )
+            if has_turn_col:
+                conn.execute(
+                    "INSERT OR IGNORE INTO entity_aliases (entity_id, alias, first_seen_turn_id) VALUES (?, ?, ?)",
+                    (pid, alias.alias_name, first_seen_turn_id),
+                )
+            else:
+                conn.execute(
+                    "INSERT OR IGNORE INTO entity_aliases (entity_id, alias) VALUES (?, ?)",
+                    (pid, alias.alias_name),
+                )
+
+            # 2. Redirect mentions
+            conn.execute(
+                "UPDATE entity_mentions SET entity_id = ? WHERE entity_id = ?",
+                (pid, sid),
+            )
+
+            # 3. Redirect relations (both directions)
+            conn.execute(
+                "UPDATE entity_relations SET source_entity_id = ? WHERE source_entity_id = ?",
+                (pid, sid),
+            )
+            conn.execute(
+                "UPDATE entity_relations SET target_entity_id = ? WHERE target_entity_id = ?",
+                (pid, sid),
+            )
+            # Remove self-relations created by the above redirects
+            conn.execute(
+                "DELETE FROM entity_relations WHERE source_entity_id = ? AND target_entity_id = ?",
+                (pid, pid),
+            )
+
+            # 4. Merge tags: union of primary + secondary tag lists
+            # (tags column may not exist on older DBs without migration 013)
+            try:
+                rows = conn.execute(
+                    "SELECT id, tags FROM entity_entities WHERE id IN (?, ?)",
+                    (pid, sid),
+                ).fetchall()
+            except Exception:
+                rows = []  # tags column not yet migrated — skip tag merge
+            combined_tags: list[str] = []
+            seen: set[str] = set()
+            for row in rows:
+                raw = row["tags"]
+                if raw:
+                    try:
+                        for t in json.loads(raw):
+                            if isinstance(t, str) and t not in seen:
+                                combined_tags.append(t)
+                                seen.add(t)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+            if rows:  # only write tags if the column exists (rows would be empty otherwise)
+                merged_tags_json = json.dumps(combined_tags, ensure_ascii=False) if combined_tags else None
+                try:
+                    conn.execute(
+                        "UPDATE entity_entities SET tags = ? WHERE id = ?",
+                        (merged_tags_json, pid),
+                    )
+                except Exception:
+                    pass  # tags column not yet migrated
+
+            # 5. Deactivate secondary entity
+            conn.execute(
+                "UPDATE entity_entities SET is_active = 0 WHERE id = ?",
+                (sid,),
+            )
+
             stored += 1
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"  Warning: failed to merge alias {alias.alias_name} -> id={pid}: {e}")
+
+    conn.commit()
+
+    # Post-processing: resolve orphan mentions/relations caused by chain merges.
+    # Example: A→B then B→C — after B is deactivated, mentions that were redirected
+    # to B (from A) are now orphaned. Follow the alias chain to find the active root.
+    _resolve_orphan_pointers(conn)
 
     conn.commit()
     conn.close()
     return stored
+
+
+def _resolve_orphan_pointers(conn) -> None:
+    """Redirect mentions/relations that point to inactive entities to their active root.
+
+    Handles chains: A→B→C. If B got deactivated after mentions were redirected to it,
+    follow the entity_aliases chain until we reach an active entity.
+    Max 10 iterations to avoid infinite loops on bad data.
+    """
+    for _ in range(10):
+        # Find mentions pointing to inactive entities
+        orphans = conn.execute("""
+            SELECT DISTINCT m.entity_id
+            FROM entity_mentions m
+            JOIN entity_entities e ON e.id = m.entity_id
+            WHERE e.is_active = 0
+        """).fetchall()
+        if not orphans:
+            break
+
+        for (orphan_id,) in orphans:
+            # Follow alias chain: find the active entity that owns this alias name
+            active_id = _find_active_root(conn, orphan_id)
+            if active_id and active_id != orphan_id:
+                conn.execute(
+                    "UPDATE entity_mentions SET entity_id = ? WHERE entity_id = ?",
+                    (active_id, orphan_id),
+                )
+                conn.execute(
+                    "UPDATE entity_relations SET source_entity_id = ? WHERE source_entity_id = ?",
+                    (active_id, orphan_id),
+                )
+                conn.execute(
+                    "UPDATE entity_relations SET target_entity_id = ? WHERE target_entity_id = ?",
+                    (active_id, orphan_id),
+                )
+                conn.execute(
+                    "DELETE FROM entity_relations WHERE source_entity_id = ? AND target_entity_id = ?",
+                    (active_id, active_id),
+                )
+
+
+def _find_active_root(conn, entity_id: int) -> int | None:
+    """Walk the entity_aliases chain upward to find the active entity owning this one.
+
+    Handles multi-level chains (A→B→C): even if the immediate owner is also
+    inactive, continues up until reaching an active entity.
+
+    Returns the active entity_id, or None if unresolvable.
+    """
+    visited: set[int] = {entity_id}
+    current_id = entity_id
+
+    for _ in range(10):  # max chain depth
+        # The canonical_name of current entity might be an alias of another entity
+        canonical = conn.execute(
+            "SELECT canonical_name, is_active FROM entity_entities WHERE id = ?", (current_id,)
+        ).fetchone()
+        if not canonical:
+            return None
+        if canonical[1] == 1:
+            # Current entity is active — it's the root
+            return current_id
+        # Find any entity that owns this name as an alias (active or not)
+        owner = conn.execute(
+            "SELECT entity_id FROM entity_aliases WHERE alias = ?",
+            (canonical[0],),
+        ).fetchone()
+        if not owner:
+            return None  # No owner in alias table — unresolvable
+        next_id = owner[0]
+        if next_id in visited:
+            return None  # Cycle — abort
+        visited.add(next_id)
+        current_id = next_id
+
+    return None  # Max depth exceeded
 
 
 def resolve_aliases(

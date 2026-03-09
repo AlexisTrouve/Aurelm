@@ -35,4 +35,7 @@ class EntityAliases extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get entityId => integer().named('entity_id')();
   TextColumn get alias => text()();
+  // Turn where this alias first appeared (migration 014) — used for naming history UI
+  IntColumn get firstSeenTurnId =>
+      integer().named('first_seen_turn_id').nullable()();
 }

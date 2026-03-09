@@ -348,3 +348,136 @@ class TestDecideByScore:
 def _pair(c: AliasCandidate) -> tuple[int, int]:
     a, b = c.entity_a.entity_id, c.entity_b.entity_id
     return (min(a, b), max(a, b))
+
+
+# ---------------------------------------------------------------------------
+# store_aliases — entity merge tests
+# ---------------------------------------------------------------------------
+
+class TestStoreAliases:
+    """Verify that store_aliases fully merges secondary entities into primaries."""
+
+    def _make_db(self, tmp_path):
+        """Create a minimal in-memory-like DB with required tables."""
+        import sqlite3, os
+        db_path = str(tmp_path / "test_alias.db")
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        conn.executescript("""
+            CREATE TABLE entity_entities (
+                id INTEGER PRIMARY KEY,
+                canonical_name TEXT,
+                is_active INTEGER DEFAULT 1,
+                tags TEXT
+            );
+            CREATE TABLE entity_mentions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entity_id INTEGER,
+                turn_id INTEGER
+            );
+            CREATE TABLE entity_relations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_entity_id INTEGER,
+                target_entity_id INTEGER,
+                relation_type TEXT
+            );
+            CREATE TABLE entity_aliases (
+                entity_id INTEGER,
+                alias TEXT,
+                UNIQUE(entity_id, alias)
+            );
+        """)
+        conn.commit()
+        conn.close()
+        return db_path
+
+    def test_merge_deactivates_secondary(self, tmp_path):
+        """Secondary entity should be is_active=0 after merge."""
+        import sqlite3
+        db_path = self._make_db(tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (1, 'Sans-Ciel'), (2, 'Nes-sans-ciel')")
+        conn.commit(); conn.close()
+
+        from pipeline.alias_resolver import store_aliases, ConfirmedAlias
+        store_aliases(db_path, [ConfirmedAlias(1, "Sans-Ciel", 2, "Nes-sans-ciel", "high", "")])
+
+        conn = sqlite3.connect(db_path); conn.row_factory = sqlite3.Row
+        rows = {r["id"]: r["is_active"] for r in conn.execute("SELECT id, is_active FROM entity_entities")}
+        conn.close()
+        assert rows[1] == 1   # primary stays active
+        assert rows[2] == 0   # secondary deactivated
+
+    def test_merge_redirects_mentions(self, tmp_path):
+        """All mentions of secondary should be redirected to primary."""
+        import sqlite3
+        db_path = self._make_db(tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (1, 'A'), (2, 'B')")
+        conn.execute("INSERT INTO entity_mentions (entity_id, turn_id) VALUES (2, 10), (2, 11)")
+        conn.commit(); conn.close()
+
+        from pipeline.alias_resolver import store_aliases, ConfirmedAlias
+        store_aliases(db_path, [ConfirmedAlias(1, "A", 2, "B", "high", "")])
+
+        conn = sqlite3.connect(db_path)
+        entity_ids = [r[0] for r in conn.execute("SELECT entity_id FROM entity_mentions")]
+        conn.close()
+        assert all(eid == 1 for eid in entity_ids)
+
+    def test_merge_redirects_relations(self, tmp_path):
+        """Relations involving secondary should be redirected to primary."""
+        import sqlite3
+        db_path = self._make_db(tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (1,'A'),(2,'B'),(3,'C')")
+        conn.execute("INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type) VALUES (2,3,'allied_with')")
+        conn.execute("INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type) VALUES (3,2,'controls')")
+        conn.commit(); conn.close()
+
+        from pipeline.alias_resolver import store_aliases, ConfirmedAlias
+        store_aliases(db_path, [ConfirmedAlias(1, "A", 2, "B", "high", "")])
+
+        conn = sqlite3.connect(db_path)
+        rels = [(r[0], r[1]) for r in conn.execute("SELECT source_entity_id, target_entity_id FROM entity_relations")]
+        conn.close()
+        assert (1, 3) in rels
+        assert (3, 1) in rels
+        assert (2, 3) not in rels
+
+    def test_merge_unions_tags(self, tmp_path):
+        """Tags from both entities should be merged (union, no duplicates)."""
+        import sqlite3, json
+        db_path = self._make_db(tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO entity_entities (id, canonical_name, tags) VALUES (1,'A','[\"militaire\",\"actif\"]')")
+        conn.execute("INSERT INTO entity_entities (id, canonical_name, tags) VALUES (2,'B','[\"actif\",\"religieux\"]')")
+        conn.commit(); conn.close()
+
+        from pipeline.alias_resolver import store_aliases, ConfirmedAlias
+        store_aliases(db_path, [ConfirmedAlias(1, "A", 2, "B", "high", "")])
+
+        conn = sqlite3.connect(db_path)
+        tags_json = conn.execute("SELECT tags FROM entity_entities WHERE id=1").fetchone()[0]
+        conn.close()
+        tags = json.loads(tags_json)
+        assert set(tags) == {"militaire", "actif", "religieux"}
+
+    def test_no_self_relations_after_merge(self, tmp_path):
+        """Self-relations (primary->primary) created by redirect must be deleted."""
+        import sqlite3
+        db_path = self._make_db(tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (1,'A'),(2,'B')")
+        # A->B and B->A become A->A after merge — both should be deleted
+        conn.execute("INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type) VALUES (1,2,'allied_with')")
+        conn.execute("INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type) VALUES (2,1,'allied_with')")
+        conn.commit(); conn.close()
+
+        from pipeline.alias_resolver import store_aliases, ConfirmedAlias
+        store_aliases(db_path, [ConfirmedAlias(1, "A", 2, "B", "high", "")])
+
+        conn = sqlite3.connect(db_path)
+        self_rels = conn.execute("SELECT * FROM entity_relations WHERE source_entity_id = target_entity_id").fetchall()
+        conn.close()
+        assert len(self_rels) == 0

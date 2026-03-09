@@ -2436,8 +2436,14 @@ class $EntityAliasesTable extends EntityAliases
   late final GeneratedColumn<String> alias = GeneratedColumn<String>(
       'alias', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _firstSeenTurnIdMeta =
+      const VerificationMeta('firstSeenTurnId');
   @override
-  List<GeneratedColumn> get $columns => [id, entityId, alias];
+  late final GeneratedColumn<int> firstSeenTurnId = GeneratedColumn<int>(
+      'first_seen_turn_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [id, entityId, alias, firstSeenTurnId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2463,6 +2469,12 @@ class $EntityAliasesTable extends EntityAliases
     } else if (isInserting) {
       context.missing(_aliasMeta);
     }
+    if (data.containsKey('first_seen_turn_id')) {
+      context.handle(
+          _firstSeenTurnIdMeta,
+          firstSeenTurnId.isAcceptableOrUnknown(
+              data['first_seen_turn_id']!, _firstSeenTurnIdMeta));
+    }
     return context;
   }
 
@@ -2478,6 +2490,8 @@ class $EntityAliasesTable extends EntityAliases
           .read(DriftSqlType.int, data['${effectivePrefix}entity_id'])!,
       alias: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}alias'])!,
+      firstSeenTurnId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}first_seen_turn_id']),
     );
   }
 
@@ -2491,14 +2505,21 @@ class AliasRow extends DataClass implements Insertable<AliasRow> {
   final int id;
   final int entityId;
   final String alias;
+  final int? firstSeenTurnId;
   const AliasRow(
-      {required this.id, required this.entityId, required this.alias});
+      {required this.id,
+      required this.entityId,
+      required this.alias,
+      this.firstSeenTurnId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['entity_id'] = Variable<int>(entityId);
     map['alias'] = Variable<String>(alias);
+    if (!nullToAbsent || firstSeenTurnId != null) {
+      map['first_seen_turn_id'] = Variable<int>(firstSeenTurnId);
+    }
     return map;
   }
 
@@ -2507,6 +2528,9 @@ class AliasRow extends DataClass implements Insertable<AliasRow> {
       id: Value(id),
       entityId: Value(entityId),
       alias: Value(alias),
+      firstSeenTurnId: firstSeenTurnId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstSeenTurnId),
     );
   }
 
@@ -2517,6 +2541,7 @@ class AliasRow extends DataClass implements Insertable<AliasRow> {
       id: serializer.fromJson<int>(json['id']),
       entityId: serializer.fromJson<int>(json['entityId']),
       alias: serializer.fromJson<String>(json['alias']),
+      firstSeenTurnId: serializer.fromJson<int?>(json['firstSeenTurnId']),
     );
   }
   @override
@@ -2526,19 +2551,31 @@ class AliasRow extends DataClass implements Insertable<AliasRow> {
       'id': serializer.toJson<int>(id),
       'entityId': serializer.toJson<int>(entityId),
       'alias': serializer.toJson<String>(alias),
+      'firstSeenTurnId': serializer.toJson<int?>(firstSeenTurnId),
     };
   }
 
-  AliasRow copyWith({int? id, int? entityId, String? alias}) => AliasRow(
+  AliasRow copyWith(
+          {int? id,
+          int? entityId,
+          String? alias,
+          Value<int?> firstSeenTurnId = const Value.absent()}) =>
+      AliasRow(
         id: id ?? this.id,
         entityId: entityId ?? this.entityId,
         alias: alias ?? this.alias,
+        firstSeenTurnId: firstSeenTurnId.present
+            ? firstSeenTurnId.value
+            : this.firstSeenTurnId,
       );
   AliasRow copyWithCompanion(EntityAliasesCompanion data) {
     return AliasRow(
       id: data.id.present ? data.id.value : this.id,
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
       alias: data.alias.present ? data.alias.value : this.alias,
+      firstSeenTurnId: data.firstSeenTurnId.present
+          ? data.firstSeenTurnId.value
+          : this.firstSeenTurnId,
     );
   }
 
@@ -2547,55 +2584,66 @@ class AliasRow extends DataClass implements Insertable<AliasRow> {
     return (StringBuffer('AliasRow(')
           ..write('id: $id, ')
           ..write('entityId: $entityId, ')
-          ..write('alias: $alias')
+          ..write('alias: $alias, ')
+          ..write('firstSeenTurnId: $firstSeenTurnId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, entityId, alias);
+  int get hashCode => Object.hash(id, entityId, alias, firstSeenTurnId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AliasRow &&
           other.id == this.id &&
           other.entityId == this.entityId &&
-          other.alias == this.alias);
+          other.alias == this.alias &&
+          other.firstSeenTurnId == this.firstSeenTurnId);
 }
 
 class EntityAliasesCompanion extends UpdateCompanion<AliasRow> {
   final Value<int> id;
   final Value<int> entityId;
   final Value<String> alias;
+  final Value<int?> firstSeenTurnId;
   const EntityAliasesCompanion({
     this.id = const Value.absent(),
     this.entityId = const Value.absent(),
     this.alias = const Value.absent(),
+    this.firstSeenTurnId = const Value.absent(),
   });
   EntityAliasesCompanion.insert({
     this.id = const Value.absent(),
     required int entityId,
     required String alias,
+    this.firstSeenTurnId = const Value.absent(),
   })  : entityId = Value(entityId),
         alias = Value(alias);
   static Insertable<AliasRow> custom({
     Expression<int>? id,
     Expression<int>? entityId,
     Expression<String>? alias,
+    Expression<int>? firstSeenTurnId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (entityId != null) 'entity_id': entityId,
       if (alias != null) 'alias': alias,
+      if (firstSeenTurnId != null) 'first_seen_turn_id': firstSeenTurnId,
     });
   }
 
   EntityAliasesCompanion copyWith(
-      {Value<int>? id, Value<int>? entityId, Value<String>? alias}) {
+      {Value<int>? id,
+      Value<int>? entityId,
+      Value<String>? alias,
+      Value<int?>? firstSeenTurnId}) {
     return EntityAliasesCompanion(
       id: id ?? this.id,
       entityId: entityId ?? this.entityId,
       alias: alias ?? this.alias,
+      firstSeenTurnId: firstSeenTurnId ?? this.firstSeenTurnId,
     );
   }
 
@@ -2611,6 +2659,9 @@ class EntityAliasesCompanion extends UpdateCompanion<AliasRow> {
     if (alias.present) {
       map['alias'] = Variable<String>(alias.value);
     }
+    if (firstSeenTurnId.present) {
+      map['first_seen_turn_id'] = Variable<int>(firstSeenTurnId.value);
+    }
     return map;
   }
 
@@ -2619,7 +2670,8 @@ class EntityAliasesCompanion extends UpdateCompanion<AliasRow> {
     return (StringBuffer('EntityAliasesCompanion(')
           ..write('id: $id, ')
           ..write('entityId: $entityId, ')
-          ..write('alias: $alias')
+          ..write('alias: $alias, ')
+          ..write('firstSeenTurnId: $firstSeenTurnId')
           ..write(')'))
         .toString();
   }
@@ -6317,12 +6369,14 @@ typedef $$EntityAliasesTableCreateCompanionBuilder = EntityAliasesCompanion
   Value<int> id,
   required int entityId,
   required String alias,
+  Value<int?> firstSeenTurnId,
 });
 typedef $$EntityAliasesTableUpdateCompanionBuilder = EntityAliasesCompanion
     Function({
   Value<int> id,
   Value<int> entityId,
   Value<String> alias,
+  Value<int?> firstSeenTurnId,
 });
 
 class $$EntityAliasesTableFilterComposer
@@ -6342,6 +6396,10 @@ class $$EntityAliasesTableFilterComposer
 
   ColumnFilters<String> get alias => $composableBuilder(
       column: $table.alias, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get firstSeenTurnId => $composableBuilder(
+      column: $table.firstSeenTurnId,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$EntityAliasesTableOrderingComposer
@@ -6361,6 +6419,10 @@ class $$EntityAliasesTableOrderingComposer
 
   ColumnOrderings<String> get alias => $composableBuilder(
       column: $table.alias, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get firstSeenTurnId => $composableBuilder(
+      column: $table.firstSeenTurnId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$EntityAliasesTableAnnotationComposer
@@ -6380,6 +6442,9 @@ class $$EntityAliasesTableAnnotationComposer
 
   GeneratedColumn<String> get alias =>
       $composableBuilder(column: $table.alias, builder: (column) => column);
+
+  GeneratedColumn<int> get firstSeenTurnId => $composableBuilder(
+      column: $table.firstSeenTurnId, builder: (column) => column);
 }
 
 class $$EntityAliasesTableTableManager extends RootTableManager<
@@ -6409,21 +6474,25 @@ class $$EntityAliasesTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> entityId = const Value.absent(),
             Value<String> alias = const Value.absent(),
+            Value<int?> firstSeenTurnId = const Value.absent(),
           }) =>
               EntityAliasesCompanion(
             id: id,
             entityId: entityId,
             alias: alias,
+            firstSeenTurnId: firstSeenTurnId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int entityId,
             required String alias,
+            Value<int?> firstSeenTurnId = const Value.absent(),
           }) =>
               EntityAliasesCompanion.insert(
             id: id,
             entityId: entityId,
             alias: alias,
+            firstSeenTurnId: firstSeenTurnId,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
