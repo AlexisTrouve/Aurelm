@@ -49,7 +49,7 @@ Flutter Desktop GUI (Dashboard)
 
 ### Directory Layout
 
-- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 68 source files, 6 tests. **Flutter not installed on dev machine** — CI builds via GitHub Actions. Run `flutter create --platforms=windows .` in gui/ when Flutter is available locally.
+- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. Flutter 3.38.8 installed locally. CI also builds via GitHub Actions. Run `dart run build_runner build --delete-conflicting-outputs` after any schema/DAO change.
 - **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 9 tools ported from MCP server, aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API. 32 tests passing.
 - **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline. `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **wiki/**: MkDocs Material — auto-generated game wiki
@@ -79,7 +79,24 @@ Flutter Desktop GUI (Dashboard)
 - [x] **Step 8b**: Subject tracking (MJ↔PJ) — migration 006 (subject_subjects, subject_options, subject_resolutions tables), new pipeline stage [7/10] between extraction and profiling, `subject_extractor.py` (4 LLM calls/turn: MJ choices, PJ initiatives, resolution matching, consequence detection), `subject_helpers.py` (DB helpers), wiki subjects page under Connaissances. 195 pipeline tests passing (8 new).
   - **Tuning session**: confidence threshold 0.7 (default), ALL resolution attempts stored in DB regardless of threshold (for transparency/reporting), `num_ctx=32768` (full 32K context window), text truncation removed. `loader.py` bug fixed: `parse_format_c()` was splitting content at first `##` heading, silently truncating files like T18 PJ (41K→85 chars). MJ prompt updated to detect implicit narrative choices (not just explicit `## Choix` sections) — e.g. multiple artisan observations presented as alternatives.
 
+- [x] **Step 8c**: Flutter GUI improvements — Subjects screen (list + detail), turn detail (GM/PJ blocks, Markdown), timeline filter fix, entity names in mentions, GitHub link.
+
+- [x] **Step 8d**: GM/PJ turn fusion — migration 007, runner.py PJ segment insertion, Flutter turn detail shows both sections with colored left-border.
+
+- [x] **Step 8e**: Turn detail UX — single GM/PJ blocks, Markdown rendering via flutter_markdown, search with highlight fallback, entity fast travel chips.
+
+- [x] **Step 8f**: Alias entity merge + GUI enhancements:
+  - **Full alias merge** (`alias_resolver.py`) — redirect mentions + relations, union tags, deactivate secondary, orphan chain resolution (`_resolve_orphan_pointers`, `_find_active_root`). 44 alias resolver tests.
+  - **Migration 014** — `first_seen_turn_id` on `entity_aliases`
+  - **Naming history** Flutter widget — chronological alias chain with turn links + auto-highlight on open (`NamingHistory` widget, `namingHistoryProvider`)
+  - **Entity tags** — LLM-assigned semantic tags (`ENTITY_TAG_VOCAB` in profiler), migration 013, Flutter tag chips + filter
+  - **Ctrl+F search** in turn detail — keyboard shortcut, multi-highlight (fuzzy regex: space/hyphen interchangeable + optional plural), match count badge, scroll-to-first-match via `GlobalKey + Scrollable.ensureVisible`
+  - **Entity→turn fast travel** — `MentionTimeline` passes `mentionText` as highlight, auto-focuses search on arrival
+  - **Fixed `run_migrations()`** — comment lines before SQL no longer cause ALTER TABLE to be skipped
+  - **Fixed incremental profiler** — LEFT JOIN + `description IS NULL` covers entities from crashed runs
+
 ### Next Steps
+- [ ] **Step 8g**: Graph redesign — current force-directed graph unusable, needs rethink
 - [ ] **Step 9**: Deployment — packaging, Arthur's machine setup, Discord bot invite
 
 ## Environment Notes (Dev Machine)
@@ -87,7 +104,7 @@ Flutter Desktop GUI (Dashboard)
 - **OS**: Windows 10/11
 - **Node.js**: v25.2.1 (mcp-server ready)
 - **Python**: 3.12 (pipeline ready)
-- **Flutter**: NOT installed — gui/ is placeholder only
+- **Flutter**: 3.38.8 installed locally. Drift codegen: `dart run build_runner build --delete-conflicting-outputs` après tout changement table/DAO.
 - **Ollama**: v0.15.6 installed, `qwen3:8b` + `llama3.1:8b` pulled. Default dev model: `qwen3:8b`
 - **Arthur's machine**: RTX 5070 Ti 16GB VRAM — `ollama pull qwen3:14b` (12GB VRAM, 100% GPU, excellent French)
 - **Proxy required** for external HTTPS: `http://127.0.0.1:7897`

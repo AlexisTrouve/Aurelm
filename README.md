@@ -9,11 +9,11 @@ Aurelm ingests game turns from Discord, structures them through a local ML pipel
 ```
 Flutter Desktop GUI (Dashboard)
         │
-        ├── Discord Sync (read-only bot)
-        ├── ML Pipeline (spaCy + GPT-OSS 20B via Ollama)
+        ├── Discord Sync (read-only bot + HTTP API)
+        ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
-        ├── SQLite Database
-        └── OpenClaw Agent (Claude API primary, GPT-OSS 20B fallback)
+        ├── SQLite Database (14 migrations)
+        └── OpenClaw Agent (Claude API primary, local LLM fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -21,21 +21,23 @@ Flutter Desktop GUI (Dashboard)
 
 | Component | Technology |
 |---|---|
-| GUI | Flutter Desktop (Dart), Riverpod 3.0 |
-| ML Pipeline | Python (spaCy, custom NER) |
-| Local LLM | GPT-OSS 20B via Ollama |
+| GUI | Flutter Desktop (Dart), Riverpod 2.6, Drift ORM, GoRouter |
+| ML Pipeline | Python 3.12, Ollama client, httpx |
+| Local LLM | qwen3:8b (dev, 5.2GB VRAM) / qwen3:14b (prod, 12GB VRAM) |
+| Cloud LLM | OpenRouter (dev inference, no proxy needed) |
 | Wiki | MkDocs Material (auto-generated markdown) |
-| Database | SQLite |
-| MCP Server | TypeScript |
-| Agent | OpenClaw + Claude API (primary) + local fallback |
-| Discord | discord.py (read-only) |
+| Database | SQLite (single file, 14 migrations) |
+| MCP Server | TypeScript (strict, ES2022) |
+| Agent | OpenClaw + Claude API (primary) + local LLM fallback |
+| Discord | discord.py (read-only) + aiohttp HTTP API |
 
 ## Project Structure
 
 ```
 Aurelm/
-├── gui/                    # Flutter Desktop dashboard
-├── pipeline/               # ML preprocessing pipeline (Python)
+├── gui/                    # Flutter Desktop dashboard (Windows)
+├── pipeline/               # ML pipeline — ingestion, extraction, profiling, subjects
+├── bot/                    # Python Discord bot + HTTP API + Claude agent
 ├── wiki/                   # Auto-generated MkDocs wiki
 ├── mcp-server/             # MCP server for OpenClaw (TypeScript)
 ├── openclaw-config/        # OpenClaw skill + config templates
@@ -43,45 +45,64 @@ Aurelm/
 └── docs/                   # Developer documentation
 ```
 
+## Key Features
+
+- **10-stage ML pipeline** — markdown ingestion → LLM entity extraction (v22.2.2) → summarization → subject tracking (MJ↔PJ) → entity profiling with tags → alias resolution with full entity merge
+- **Entity system** — canonical names, alias history with naming timeline, semantic tags, hide/disable, mention tracking
+- **Subject tracking** — open threads between GM and players (choices awaiting response, player initiatives awaiting GM treatment), confidence-filtered resolution matching
+- **Flutter dashboard** — entity browser with tag filters, turn timeline with Ctrl+F search + fuzzy highlight, entity→turn fast travel with auto-scroll, force-directed relation graph, subjects screen
+- **Discord bot** — syncs channel history, runs pipeline, answers GM queries via Claude agent
+
 ## Quick Start
 
 ### Prerequisites
 
 - **Node.js** >= 20 (for MCP server)
-- **Python** >= 3.11 (for ML pipeline)
+- **Python** >= 3.12 (for ML pipeline)
 - **Flutter** >= 3.x (for GUI)
-- **Ollama** with GPT-OSS 20B model pulled
-- **NVIDIA GPU** with 16GB+ VRAM (recommended: RTX 5070 Ti)
+- **Ollama** with `qwen3:8b` pulled — `ollama pull qwen3:8b`
+- **NVIDIA GPU** with 8GB+ VRAM (16GB recommended for qwen3:14b)
 
 ### Setup
 
 ```bash
 # 1. MCP Server
-cd mcp-server
-npm install
-npm run build
+cd mcp-server && npm install && npm run build
 
 # 2. ML Pipeline
-cd pipeline
-pip install -r requirements.txt
-python -m spacy download fr_core_news_lg
+cd pipeline && pip install -r requirements.txt
 
 # 3. Wiki
-cd wiki
-pip install mkdocs-material
-mkdocs serve
+cd wiki && pip install mkdocs-material && mkdocs serve
 
 # 4. Flutter GUI
-cd gui
-flutter pub get
+cd gui && flutter pub get
+dart run build_runner build --delete-conflicting-outputs
 flutter run -d windows
+```
+
+### Run the pipeline
+
+```bash
+# On 2-3 turns (dev)
+py -3.12 -m pipeline.runner \
+  --data-dir /path/to/turns \
+  --civ Confluence --player Rubanc \
+  --db aurelm.db \
+  --extraction-version v22.2.2-pastlevel \
+  --llm-provider openrouter \
+  --llm-config pipeline_llm_config.json
+
+# Launch GUI (Windows — env var required)
+$env:AURELM_DB_PATH = 'C:\path\to\aurelm.db'
+Start-Process gui\build\windows\x64\runner\Debug\aurelm_gui.exe
 ```
 
 ### Configuration
 
 1. Copy `openclaw-config/openclaw.json.template` to your OpenClaw config directory
-2. Set your Claude API key and Discord bot token in environment variables
-3. Configure channel IDs in the dashboard
+2. Set `DISCORD_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables
+3. Create `aurelm_config.json` next to your DB with channel IDs
 
 ## Design Principles
 

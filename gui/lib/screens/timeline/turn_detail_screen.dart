@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,33 +33,80 @@ class TurnDetailScreen extends ConsumerStatefulWidget {
 class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   bool _searchVisible = false;
   final TextEditingController _searchCtrl = TextEditingController();
+  final FocusNode _scaffoldFocus = FocusNode();
+  final FocusNode _searchFocus = FocusNode();
+  final ScrollController _scrollCtrl = ScrollController();
+  // GlobalKeys to locate each text block for scroll-to-first-match
+  final GlobalKey _summaryKey = GlobalKey();
+  final GlobalKey _gmKey = GlobalKey();
+  final GlobalKey _pjKey = GlobalKey();
+  // Set in initState when opened with highlightText; cleared after first scroll
+  bool _pendingScrollToMatch = false;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    // If opened via a naming history link, pre-fill the search with the entity name
+    // If opened via a naming history / mention link, pre-fill search and
+    // schedule a scroll to the first match once data is loaded
     if (widget.highlightText != null) {
       _searchVisible = true;
       _query = widget.highlightText!;
       _searchCtrl.text = widget.highlightText!;
+      _pendingScrollToMatch = true;
     }
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _scaffoldFocus.dispose();
+    _searchFocus.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
+  }
+
+  /// Scroll the view so the first text block containing [query] is centered.
+  /// [keys] are tried in order — first non-null context with a match wins.
+  void _scrollToFirstMatch(
+      String query, List<({GlobalKey key, String text})> blocks) {
+    if (query.isEmpty) return;
+    final regex = _fuzzyRegex(query);
+    for (final block in blocks) {
+      if (regex.hasMatch(block.text)) {
+        final ctx = block.key.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.3, // place match ~30% from top of viewport
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOut,
+          );
+        }
+        return;
+      }
+    }
   }
 
   void _toggleSearch() {
     setState(() {
       _searchVisible = !_searchVisible;
-      if (!_searchVisible) {
+      if (_searchVisible) {
+        // Focus the search field after the frame rebuilds
+        WidgetsBinding.instance.addPostFrameCallback((_) => _searchFocus.requestFocus());
+      } else {
         _searchCtrl.clear();
         _query = '';
+        // Return focus to scaffold so Ctrl+F keeps working
+        _scaffoldFocus.requestFocus();
       }
     });
+  }
+
+  /// Count all non-overlapping fuzzy matches of [query] in [text].
+  int _countMatches(String text, String query) {
+    if (query.isEmpty) return 0;
+    return _fuzzyRegex(query).allMatches(text).length;
   }
 
   @override
@@ -96,19 +144,69 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             .map((s) => s.content)
             .join('\n\n');
 
-        return Scaffold(
+        // Once data loads: scroll to first block containing the highlight query
+        if (_pendingScrollToMatch) {
+          _pendingScrollToMatch = false; // clear before addPostFrameCallback to avoid re-fire
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _scrollToFirstMatch(_query, [
+              (key: _summaryKey, text: t.summary ?? ''),
+              (key: _gmKey,      text: gmText),
+              (key: _pjKey,      text: pjText),
+            ]);
+          });
+        }
+
+        // Total match count across all text blocks — shown in search bar
+        final totalMatches = _query.isEmpty ? 0 :
+            _countMatches(t.summary ?? '', _query) +
+            _countMatches(gmText, _query) +
+            _countMatches(pjText, _query);
+
+        // Ctrl+F intercepted at scaffold level — works when search bar is not focused
+        return Focus(
+          focusNode: _scaffoldFocus,
+          autofocus: !_searchVisible, // don't steal focus from pre-filled search
+          onKeyEvent: (_, event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.keyF &&
+                HardwareKeyboard.instance.isControlPressed) {
+              _toggleSearch();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: Scaffold(
           appBar: AppBar(
             title: _searchVisible
-                ? TextField(
-                    controller: _searchCtrl,
-                    autofocus: true,
-                    decoration: const InputDecoration(
-                      hintText: 'Rechercher dans ce tour…',
-                      border: InputBorder.none,
+                ? Row(children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchCtrl,
+                        focusNode: _searchFocus,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Rechercher dans ce tour… (Ctrl+F)',
+                          border: InputBorder.none,
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        onChanged: (v) => setState(() => _query = v),
+                      ),
                     ),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    onChanged: (v) => setState(() => _query = v),
-                  )
+                    // Match count badge
+                    if (_query.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '$totalMatches résultat${totalMatches != 1 ? 's' : ''}',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: totalMatches > 0
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                  ])
                 : Text(t.title ?? 'Tour ${t.turnNumber}',
                     overflow: TextOverflow.ellipsis),
             leading: IconButton(
@@ -118,12 +216,13 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             actions: [
               IconButton(
                 icon: Icon(_searchVisible ? Icons.close : Icons.search),
-                tooltip: _searchVisible ? 'Fermer' : 'Rechercher',
+                tooltip: _searchVisible ? 'Fermer (Ctrl+F)' : 'Rechercher (Ctrl+F)',
                 onPressed: _toggleSearch,
               ),
             ],
           ),
           body: SingleChildScrollView(
+            controller: _scrollCtrl,
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,6 +261,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                   const SectionHeader(title: 'Résumé'),
                   const SizedBox(height: 8),
                   Container(
+                    key: _summaryKey,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: Theme.of(context)
@@ -187,6 +287,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                   const SectionHeader(title: 'Tour MJ'),
                   const SizedBox(height: 10),
                   Container(
+                    key: _gmKey,
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                     decoration: BoxDecoration(
@@ -212,6 +313,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                   const SectionHeader(title: 'Réponse Joueur'),
                   const SizedBox(height: 10),
                   Container(
+                    key: _pjKey,
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                     decoration: BoxDecoration(
@@ -266,7 +368,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
               ],
             ),
           ),
-        );
+        )); // closes Focus + Scaffold
       },
     );
   }
@@ -436,6 +538,28 @@ class _TurnEntitiesSection extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Fuzzy match helper — space/hyphen interchangeable, optional plural on last word
+// "Sans ciel" matches "sans-ciels", "sans ciels", "Sans-Ciel", etc.
+// ---------------------------------------------------------------------------
+
+RegExp _fuzzyRegex(String query) {
+  final words = query
+      .trim()
+      .split(RegExp(r'[\s\-]+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (words.isEmpty) return RegExp(RegExp.escape(query), caseSensitive: false);
+  final pattern = [
+    for (int i = 0; i < words.length; i++)
+      // Last word gets optional plural 's' — handles "sans-ciels" for query "sans ciel"
+      i == words.length - 1
+          ? '${RegExp.escape(words[i])}s?'
+          : RegExp.escape(words[i]),
+  ].join(r'[\s\-]+');
+  return RegExp(pattern, caseSensitive: false);
+}
+
+// ---------------------------------------------------------------------------
 // MD-aware text — renders Markdown when no search, highlights when searching
 // ---------------------------------------------------------------------------
 
@@ -490,30 +614,29 @@ class _SearchableText extends StatelessWidget {
     final theme = Theme.of(context);
     final base = style ?? theme.textTheme.bodyMedium!;
 
-    // When searching: strip MD and highlight matches in plain text
+    // When searching: strip MD and highlight all fuzzy matches in plain text
     if (query.isNotEmpty) {
       final plain = text
           .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'$1')
           .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
           .replaceAll(RegExp(r'#{1,6}\s+'), '')
           .replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '');
-      final lower = plain.toLowerCase();
-      final lowerQ = query.toLowerCase();
+      final regex = _fuzzyRegex(query);
       final spans = <TextSpan>[];
       int start = 0;
-      while (true) {
-        final idx = lower.indexOf(lowerQ, start);
-        if (idx == -1) break;
-        if (idx > start) spans.add(TextSpan(text: plain.substring(start, idx)));
+      for (final match in regex.allMatches(plain)) {
+        if (match.start > start) {
+          spans.add(TextSpan(text: plain.substring(start, match.start)));
+        }
         spans.add(TextSpan(
-          text: plain.substring(idx, idx + query.length),
+          text: plain.substring(match.start, match.end),
           style: const TextStyle(
             backgroundColor: Color(0xFFFFE066),
             color: Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ));
-        start = idx + query.length;
+        start = match.end;
       }
       if (start < plain.length) spans.add(TextSpan(text: plain.substring(start)));
       return SelectableText.rich(TextSpan(children: spans, style: base));
