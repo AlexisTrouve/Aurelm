@@ -104,12 +104,14 @@ class EgoPainter extends CustomPainter {
   final GraphData data;
   final EgoGraphLayout layout;
   final int? hoveredId;
+  final Set<int> expandedIds;
   final ColorScheme colors;
 
   EgoPainter({
     required this.data,
     required this.layout,
     this.hoveredId,
+    this.expandedIds = const {},
     required this.colors,
   });
 
@@ -189,6 +191,19 @@ class EgoPainter extends CustomPainter {
       final color = AppColors.entityColor(node.entityType);
       final isCenter = node.depth == 0;
       final isHovered = node.id == hoveredId;
+      final isExpanded = expandedIds.contains(node.id);
+
+      // Outer ring on expanded depth-1 nodes to signal they have visible children.
+      if (isExpanded) {
+        canvas.drawCircle(
+          pos,
+          r + 5,
+          Paint()
+            ..color = color.withValues(alpha: 0.35)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5,
+        );
+      }
 
       // Shadow/glow for center and hovered
       if (isCenter || isHovered) {

@@ -59,8 +59,6 @@ class _GraphScreenState extends ConsumerState<GraphScreen> {
       appBar: AppBar(
         title: const Text('Graphe des relations'),
         actions: [
-          // Depth toggle
-          _DepthToggle(),
           // Relation type filter
           _RelTypeFilter(),
           // Legend toggle
@@ -212,10 +210,53 @@ class _EgoGraphPanel extends ConsumerStatefulWidget {
 class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
   int? _hoveredId;
 
+  /// Depth-1 nodes whose depth-2 connections are currently shown (single click toggles).
+  final Set<int> _expandedNodes = {};
+
+  /// Tap timing for manual double-click detection.
+  DateTime? _lastTapTime;
+  int? _lastTappedId;
+
+  /// Filters graphData to only show depth-2 nodes whose depth-1 parent is expanded.
+  GraphData _filterVisible(GraphData data) {
+    final depth1Ids = {for (final n in data.nodes) if (n.depth == 1) n.id};
+    final depth2Ids = {for (final n in data.nodes) if (n.depth == 2) n.id};
+    // Map each depth-2 node to its depth-1 parent via shared edges.
+    final parentOf = <int, int>{};
+    for (final e in data.edges) {
+      if (depth2Ids.contains(e.sourceId) && depth1Ids.contains(e.targetId)) {
+        parentOf[e.sourceId] = e.targetId;
+      } else if (depth2Ids.contains(e.targetId) && depth1Ids.contains(e.sourceId)) {
+        parentOf[e.targetId] = e.sourceId;
+      }
+    }
+    final visibleIds = <int>{};
+    for (final n in data.nodes) {
+      if (n.depth < 2) {
+        visibleIds.add(n.id);
+      } else {
+        final parent = parentOf[n.id];
+        if (parent != null && _expandedNodes.contains(parent)) visibleIds.add(n.id);
+      }
+    }
+    return GraphData(
+      nodes: data.nodes.where((n) => visibleIds.contains(n.id)).toList(),
+      edges: data.edges
+          .where((e) => visibleIds.contains(e.sourceId) && visibleIds.contains(e.targetId))
+          .toList(),
+      centerId: data.centerId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedId = ref.watch(graphSelectedEntityProvider);
     final graphAsync = ref.watch(egoGraphDataProvider);
+
+    // Reset expanded nodes whenever the center entity changes.
+    ref.listen(graphSelectedEntityProvider, (_, __) {
+      setState(() => _expandedNodes.clear());
+    });
 
     if (selectedId == null) {
       return const EmptyState(
@@ -243,6 +284,9 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
           );
         }
 
+        // Apply expand/collapse filter before layout.
+        final visible = _filterVisible(graphData);
+
         // LayoutBuilder wraps everything so canvasSize and layout are computed
         // once per build and passed to all handlers — no instance-variable side effects.
         return LayoutBuilder(builder: (ctx, constraints) {
@@ -250,7 +294,7 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
             constraints.maxWidth.isFinite ? constraints.maxWidth : 1200,
             constraints.maxHeight.isFinite ? constraints.maxHeight : 800,
           );
-          final layout = EgoGraphLayout.compute(canvasSize, graphData);
+          final layout = EgoGraphLayout.compute(canvasSize, visible);
 
           return Stack(
             children: [
@@ -260,16 +304,17 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
                 minScale: 0.3,
                 maxScale: 4.0,
                 child: GestureDetector(
-                  onTapUp: (details) => _handleTap(details.localPosition, graphData, layout),
+                  onTapUp: (details) => _handleTap(details.localPosition, graphData, visible, layout),
                   child: MouseRegion(
-                    onHover: (event) => _handleHover(event.localPosition, graphData, layout),
+                    onHover: (event) => _handleHover(event.localPosition, visible, layout),
                     onExit: (_) { if (mounted) setState(() => _hoveredId = null); },
                     child: SizedBox.expand(
                       child: CustomPaint(
                         painter: EgoPainter(
-                          data: graphData,
+                          data: visible,
                           layout: layout,
                           hoveredId: _hoveredId,
+                          expandedIds: _expandedNodes,
                           colors: Theme.of(context).colorScheme,
                         ),
                       ),
@@ -282,7 +327,7 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
                 const Positioned(right: 16, bottom: 16, child: GraphLegend()),
               // Hovered node tooltip
               if (_hoveredId != null)
-                _buildTooltip(context, graphData, layout, canvasSize),
+                _buildTooltip(context, visible, layout, canvasSize),
             ],
           );
         });
@@ -290,16 +335,43 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
     );
   }
 
-  void _handleTap(Offset pos, GraphData graphData, EgoGraphLayout layout) {
-    final hit = _hitTest(pos, graphData, layout);
-    if (hit != null && hit != graphData.centerId) {
-      ref.read(graphSelectedEntityProvider.notifier).state = hit;
-    } else if (hit != null) {
-      context.push('/entities/$hit');
+  void _handleTap(Offset pos, GraphData fullData, GraphData visible, EgoGraphLayout layout) {
+    final hit = _hitTest(pos, visible, layout);
+    if (hit == null) return;
+
+    final now = DateTime.now();
+    final isDouble = _lastTappedId == hit &&
+        _lastTapTime != null &&
+        now.difference(_lastTapTime!) < const Duration(milliseconds: 300);
+
+    // Reset tracking (avoid triple-tap triggering another double).
+    _lastTappedId = hit;
+    _lastTapTime = isDouble ? null : now;
+
+    if (isDouble) {
+      // Double click: switch focus to this node, or open entity detail if it's the center.
+      if (hit == fullData.centerId) {
+        context.push('/entities/$hit');
+      } else {
+        ref.read(graphSelectedEntityProvider.notifier).state = hit;
+      }
+    } else {
+      // Single click on depth-1 node: toggle expand/collapse its depth-2 connections.
+      // Single click on center: no action.
+      final node = visible.nodes.where((n) => n.id == hit).firstOrNull;
+      if (node != null && node.depth == 1) {
+        setState(() {
+          if (_expandedNodes.contains(hit)) {
+            _expandedNodes.remove(hit);
+          } else {
+            _expandedNodes.add(hit);
+          }
+        });
+      }
     }
   }
 
-  void _handleHover(Offset pos, GraphData graphData, EgoGraphLayout layout) {
+  void _handleHover(Offset pos, GraphData graphData, EgoGraphLayout layout) {  // graphData = visible subset
     if (!mounted) return;
     final hit = _hitTest(pos, graphData, layout);
     if (hit != _hoveredId) {
@@ -350,42 +422,30 @@ class _EgoGraphPanelState extends ConsumerState<_EgoGraphPanel> {
                     style: TextStyle(
                         fontSize: 10,
                         color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                if (node.depth > 0)
-                  Text('Clic → recentrer',
+                if (node.depth == 1) ...[
+                  Text(
+                    _expandedNodes.contains(node.id) ? 'Clic → réduire · Dbl → recentrer' : 'Clic → déplier · Dbl → recentrer',
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: Theme.of(context).colorScheme.primary,
+                        fontStyle: FontStyle.italic),
+                  ),
+                ] else if (node.depth == 2) ...[
+                  Text('Dbl → recentrer',
                       style: TextStyle(
                           fontSize: 9,
                           color: Theme.of(context).colorScheme.primary,
                           fontStyle: FontStyle.italic)),
+                ] else if (node.depth == 0) ...[
+                  Text('Dbl → ouvrir la fiche',
+                      style: TextStyle(
+                          fontSize: 9,
+                          color: Theme.of(context).colorScheme.primary,
+                          fontStyle: FontStyle.italic)),
+                ],
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Depth toggle (1 / 2)
-// ---------------------------------------------------------------------------
-
-class _DepthToggle extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final depth = ref.watch(graphDepthProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: SegmentedButton<int>(
-        segments: const [
-          ButtonSegment(value: 1, label: Text('Profondeur 1')),
-          ButtonSegment(value: 2, label: Text('Profondeur 2')),
-        ],
-        selected: {depth},
-        onSelectionChanged: (s) =>
-            ref.read(graphDepthProvider.notifier).state = s.first,
-        style: ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11)),
         ),
       ),
     );
