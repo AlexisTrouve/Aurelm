@@ -86,7 +86,7 @@ class EntityDetailScreen extends ConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.hub),
                 tooltip: 'View in graph',
-                onPressed: () => context.go('/graph'),
+                onPressed: () => context.go('/graph', extra: {'entityId': entityId}),
               ),
               // Hide toggle
               IconButton(

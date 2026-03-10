@@ -6,6 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/constants/app_constants.dart';
 import '../data/database.dart';
 
+final _logFile = File(r'C:\Users\alexi\Documents\projects\Aurelm\flutter_errors.log');
+void _log(String msg) => _logFile.writeAsStringSync(
+    '[${DateTime.now().toIso8601String()}] $msg\n',
+    mode: FileMode.append, flush: true);
+
 const _dbPathPrefKey = 'aurelm_db_path';
 
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
@@ -28,13 +33,17 @@ class DbPathNotifier extends StateNotifier<String?> {
     // Check env var first
     final envPath = Platform.environment[AppConstants.envDbPathKey];
     if (envPath != null && File(envPath).existsSync()) {
+      _log('DB loaded from env: $envPath');
       state = envPath;
       return;
     }
     // Fallback to saved preference
     final savedPath = _prefs.getString(_dbPathPrefKey);
     if (savedPath != null && File(savedPath).existsSync()) {
+      _log('DB loaded from prefs: $savedPath');
       state = savedPath;
+    } else {
+      _log('DB not found — envPath=$envPath savedPath=$savedPath');
     }
   }
 

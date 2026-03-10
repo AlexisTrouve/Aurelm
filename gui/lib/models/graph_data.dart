@@ -4,6 +4,8 @@ class GraphNode {
   final String entityType;
   final int mentionCount;
   final int? civId;
+  /// Distance from ego center: 0 = center, 1 = direct neighbor, 2 = extended
+  final int depth;
 
   const GraphNode({
     required this.id,
@@ -11,6 +13,7 @@ class GraphNode {
     required this.entityType,
     required this.mentionCount,
     this.civId,
+    this.depth = 1,
   });
 }
 
@@ -31,8 +34,10 @@ class GraphEdge {
 class GraphData {
   final List<GraphNode> nodes;
   final List<GraphEdge> edges;
+  /// ID of the ego center node (null in non-ego contexts)
+  final int? centerId;
 
-  const GraphData({required this.nodes, required this.edges});
+  const GraphData({required this.nodes, required this.edges, this.centerId});
 
   static const empty = GraphData(nodes: [], edges: []);
 }

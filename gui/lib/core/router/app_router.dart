@@ -21,7 +21,7 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/',
+    initialLocation: '/entities', // DEV: start on entities for faster testing
     routes: [
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -79,9 +79,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/graph',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: GraphScreen(),
-            ),
+            pageBuilder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              final entityId = extra?['entityId'] as int?;
+              return NoTransitionPage(child: GraphScreen(initialEntityId: entityId));
+            },
           ),
           GoRoute(
             path: '/subjects',

@@ -84,6 +84,95 @@ class RelationDao extends DatabaseAccessor<AurelmDatabase>
     });
   }
 
+  /// Ego-graph centered on [centerId].
+  /// Depth 1 = direct neighbors. Depth 2 = also neighbors-of-neighbors.
+  /// Optionally filter by [relationType].
+  Stream<GraphData> watchEgoGraph({
+    required int centerId,
+    int depth = 1,
+    String? relationType,
+  }) {
+    // Re-query whenever relations change
+    return watchRelationsForEntity(centerId).asyncMap((_) async {
+      final allRelations = await (select(entityRelations)
+            ..where((t) => t.isActive.equals(1)))
+          .get();
+
+      // Helper: get all neighbor IDs for a given entity
+      List<int> neighborsOf(int id) {
+        return allRelations
+            .where((r) =>
+                (r.sourceEntityId == id || r.targetEntityId == id) &&
+                (relationType == null || r.relationType == relationType))
+            .map((r) => r.sourceEntityId == id ? r.targetEntityId : r.sourceEntityId)
+            .where((nId) => nId != id)
+            .toList();
+      }
+
+      // Collect all node IDs to include
+      final depth1Ids = neighborsOf(centerId).toSet();
+      final depth2Ids = <int>{};
+      if (depth >= 2) {
+        for (final d1Id in depth1Ids) {
+          depth2Ids.addAll(neighborsOf(d1Id).where((id) => id != centerId));
+        }
+        depth2Ids.removeAll(depth1Ids);
+      }
+
+      final allIds = {centerId, ...depth1Ids, ...depth2Ids};
+
+      // Load entity data for all nodes
+      final entities = await (select(entityEntities)
+            ..where((t) => t.id.isIn(allIds))
+            ..where((t) => t.isActive.equals(1)))
+          .get();
+
+      // Build mention counts
+      final mentionCounts = <int, int>{};
+      for (final id in allIds) {
+        final count = await (select(entityMentions)
+              ..where((t) => t.entityId.equals(id)))
+            .get()
+            .then((rows) => rows.length);
+        mentionCounts[id] = count;
+      }
+
+      final entityMap = {for (final e in entities) e.id: e};
+      final nodes = allIds
+          .where((id) => entityMap.containsKey(id))
+          .map((id) {
+            final e = entityMap[id]!;
+            return GraphNode(
+              id: e.id,
+              name: e.canonicalName,
+              entityType: e.entityType,
+              mentionCount: mentionCounts[id] ?? 0,
+              civId: e.civId,
+              // depth from center (0=center, 1=direct, 2=extended)
+              depth: id == centerId ? 0 : depth1Ids.contains(id) ? 1 : 2,
+            );
+          })
+          .toList();
+
+      // Only edges between visible nodes
+      final visibleIds = {for (final n in nodes) n.id};
+      final edges = allRelations
+          .where((r) =>
+              visibleIds.contains(r.sourceEntityId) &&
+              visibleIds.contains(r.targetEntityId) &&
+              (relationType == null || r.relationType == relationType))
+          .map((r) => GraphEdge(
+                sourceId: r.sourceEntityId,
+                targetId: r.targetEntityId,
+                relationType: r.relationType,
+                description: r.description,
+              ))
+          .toList();
+
+      return GraphData(nodes: nodes, edges: edges, centerId: centerId);
+    });
+  }
+
   Stream<GraphData> watchGraphData({int? civId, int entityLimit = 50}) {
     final mentionCountExpr = entityMentions.id.count();
 
