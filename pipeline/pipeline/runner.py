@@ -779,6 +779,7 @@ def _run_subject_extraction(
                             "subject_id": r.subject_id,
                             "resolution_text": r.resolution_text,
                             "confidence": r.confidence,
+                            "source_quote": r.source_quote,
                         }
                         for r in mj_consequences
                     ],
@@ -793,6 +794,7 @@ def _run_subject_extraction(
                     "title": subj.title,
                     "description": subj.description,
                     "category": subj.category,
+                    "source_quote": subj.source_quote,
                     "options": [
                         {
                             "number": opt.number,
@@ -825,6 +827,7 @@ def _run_subject_extraction(
                                 "chosen_option_label": r.chosen_option_label,
                                 "is_libre": r.is_libre,
                                 "confidence": r.confidence,
+                                "source_quote": r.source_quote,
                             }
                             for r in resolutions
                         ],
@@ -840,6 +843,7 @@ def _run_subject_extraction(
                         "title": subj.title,
                         "description": subj.description,
                         "category": subj.category,
+                        "source_quote": subj.source_quote,
                         "options": [],
                     }
                     insert_subject(conn, subj_dict, civ_id, turn_id)

@@ -3976,6 +3976,12 @@ class $SubjectSubjectsTable extends SubjectSubjects
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
       'description', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceQuoteMeta =
+      const VerificationMeta('sourceQuote');
+  @override
+  late final GeneratedColumn<String> sourceQuote = GeneratedColumn<String>(
+      'source_quote', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _categoryMeta =
       const VerificationMeta('category');
   @override
@@ -4009,6 +4015,7 @@ class $SubjectSubjectsTable extends SubjectSubjects
         direction,
         title,
         description,
+        sourceQuote,
         category,
         status,
         createdAt,
@@ -4059,6 +4066,12 @@ class $SubjectSubjectsTable extends SubjectSubjects
           description.isAcceptableOrUnknown(
               data['description']!, _descriptionMeta));
     }
+    if (data.containsKey('source_quote')) {
+      context.handle(
+          _sourceQuoteMeta,
+          sourceQuote.isAcceptableOrUnknown(
+              data['source_quote']!, _sourceQuoteMeta));
+    }
     if (data.containsKey('category')) {
       context.handle(_categoryMeta,
           category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
@@ -4102,6 +4115,8 @@ class $SubjectSubjectsTable extends SubjectSubjects
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       description: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      sourceQuote: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_quote']),
       category: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       status: attachedDatabase.typeMapping
@@ -4129,6 +4144,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
   final String title;
   final String? description;
 
+  /// Verbatim phrase from the source turn text — used for auto-highlight on navigation.
+  final String? sourceQuote;
+
   /// 'choice' | 'question' | 'initiative' | 'request'
   final String category;
 
@@ -4143,6 +4161,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       required this.direction,
       required this.title,
       this.description,
+      this.sourceQuote,
       required this.category,
       required this.status,
       required this.createdAt,
@@ -4157,6 +4176,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || sourceQuote != null) {
+      map['source_quote'] = Variable<String>(sourceQuote);
     }
     map['category'] = Variable<String>(category);
     map['status'] = Variable<String>(status);
@@ -4175,6 +4197,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      sourceQuote: sourceQuote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceQuote),
       category: Value(category),
       status: Value(status),
       createdAt: Value(createdAt),
@@ -4192,6 +4217,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       direction: serializer.fromJson<String>(json['direction']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
+      sourceQuote: serializer.fromJson<String?>(json['sourceQuote']),
       category: serializer.fromJson<String>(json['category']),
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
@@ -4208,6 +4234,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       'direction': serializer.toJson<String>(direction),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
+      'sourceQuote': serializer.toJson<String?>(sourceQuote),
       'category': serializer.toJson<String>(category),
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<String>(createdAt),
@@ -4222,6 +4249,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           String? direction,
           String? title,
           Value<String?> description = const Value.absent(),
+          Value<String?> sourceQuote = const Value.absent(),
           String? category,
           String? status,
           String? createdAt,
@@ -4233,6 +4261,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
         direction: direction ?? this.direction,
         title: title ?? this.title,
         description: description.present ? description.value : this.description,
+        sourceQuote: sourceQuote.present ? sourceQuote.value : this.sourceQuote,
         category: category ?? this.category,
         status: status ?? this.status,
         createdAt: createdAt ?? this.createdAt,
@@ -4249,6 +4278,8 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       title: data.title.present ? data.title.value : this.title,
       description:
           data.description.present ? data.description.value : this.description,
+      sourceQuote:
+          data.sourceQuote.present ? data.sourceQuote.value : this.sourceQuote,
       category: data.category.present ? data.category.value : this.category,
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -4265,6 +4296,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           ..write('direction: $direction, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
+          ..write('sourceQuote: $sourceQuote, ')
           ..write('category: $category, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -4275,7 +4307,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
 
   @override
   int get hashCode => Object.hash(id, civId, sourceTurnId, direction, title,
-      description, category, status, createdAt, updatedAt);
+      description, sourceQuote, category, status, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4286,6 +4318,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           other.direction == this.direction &&
           other.title == this.title &&
           other.description == this.description &&
+          other.sourceQuote == this.sourceQuote &&
           other.category == this.category &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
@@ -4299,6 +4332,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   final Value<String> direction;
   final Value<String> title;
   final Value<String?> description;
+  final Value<String?> sourceQuote;
   final Value<String> category;
   final Value<String> status;
   final Value<String> createdAt;
@@ -4310,6 +4344,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     this.direction = const Value.absent(),
     this.title = const Value.absent(),
     this.description = const Value.absent(),
+    this.sourceQuote = const Value.absent(),
     this.category = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -4322,6 +4357,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     required String direction,
     required String title,
     this.description = const Value.absent(),
+    this.sourceQuote = const Value.absent(),
     required String category,
     this.status = const Value.absent(),
     required String createdAt,
@@ -4340,6 +4376,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     Expression<String>? direction,
     Expression<String>? title,
     Expression<String>? description,
+    Expression<String>? sourceQuote,
     Expression<String>? category,
     Expression<String>? status,
     Expression<String>? createdAt,
@@ -4352,6 +4389,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       if (direction != null) 'direction': direction,
       if (title != null) 'title': title,
       if (description != null) 'description': description,
+      if (sourceQuote != null) 'source_quote': sourceQuote,
       if (category != null) 'category': category,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
@@ -4366,6 +4404,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       Value<String>? direction,
       Value<String>? title,
       Value<String?>? description,
+      Value<String?>? sourceQuote,
       Value<String>? category,
       Value<String>? status,
       Value<String>? createdAt,
@@ -4377,6 +4416,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       direction: direction ?? this.direction,
       title: title ?? this.title,
       description: description ?? this.description,
+      sourceQuote: sourceQuote ?? this.sourceQuote,
       category: category ?? this.category,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
@@ -4405,6 +4445,9 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (sourceQuote.present) {
+      map['source_quote'] = Variable<String>(sourceQuote.value);
+    }
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
@@ -4429,6 +4472,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
           ..write('direction: $direction, ')
           ..write('title: $title, ')
           ..write('description: $description, ')
+          ..write('sourceQuote: $sourceQuote, ')
           ..write('category: $category, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -4825,6 +4869,12 @@ class $SubjectResolutionsTable extends SubjectResolutions
   late final GeneratedColumn<String> resolutionText = GeneratedColumn<String>(
       'resolution_text', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceQuoteMeta =
+      const VerificationMeta('sourceQuote');
+  @override
+  late final GeneratedColumn<String> sourceQuote = GeneratedColumn<String>(
+      'source_quote', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isLibreMeta =
       const VerificationMeta('isLibre');
   @override
@@ -4856,6 +4906,7 @@ class $SubjectResolutionsTable extends SubjectResolutions
         resolvedByTurnId,
         chosenOptionId,
         resolutionText,
+        sourceQuote,
         isLibre,
         confidence,
         createdAt
@@ -4902,6 +4953,12 @@ class $SubjectResolutionsTable extends SubjectResolutions
     } else if (isInserting) {
       context.missing(_resolutionTextMeta);
     }
+    if (data.containsKey('source_quote')) {
+      context.handle(
+          _sourceQuoteMeta,
+          sourceQuote.isAcceptableOrUnknown(
+              data['source_quote']!, _sourceQuoteMeta));
+    }
     if (data.containsKey('is_libre')) {
       context.handle(_isLibreMeta,
           isLibre.isAcceptableOrUnknown(data['is_libre']!, _isLibreMeta));
@@ -4937,6 +4994,8 @@ class $SubjectResolutionsTable extends SubjectResolutions
           .read(DriftSqlType.int, data['${effectivePrefix}chosen_option_id']),
       resolutionText: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}resolution_text'])!,
+      sourceQuote: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_quote']),
       isLibre: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_libre'])!,
       confidence: attachedDatabase.typeMapping
@@ -4960,6 +5019,9 @@ class SubjectResolutionRow extends DataClass
   final int? chosenOptionId;
   final String resolutionText;
 
+  /// Verbatim phrase from the player/GM text — used for auto-highlight on navigation.
+  final String? sourceQuote;
+
   /// 1 = player chose the free-form "libre" option
   final bool isLibre;
 
@@ -4972,6 +5034,7 @@ class SubjectResolutionRow extends DataClass
       required this.resolvedByTurnId,
       this.chosenOptionId,
       required this.resolutionText,
+      this.sourceQuote,
       required this.isLibre,
       required this.confidence,
       required this.createdAt});
@@ -4985,6 +5048,9 @@ class SubjectResolutionRow extends DataClass
       map['chosen_option_id'] = Variable<int>(chosenOptionId);
     }
     map['resolution_text'] = Variable<String>(resolutionText);
+    if (!nullToAbsent || sourceQuote != null) {
+      map['source_quote'] = Variable<String>(sourceQuote);
+    }
     map['is_libre'] = Variable<bool>(isLibre);
     map['confidence'] = Variable<double>(confidence);
     map['created_at'] = Variable<String>(createdAt);
@@ -5000,6 +5066,9 @@ class SubjectResolutionRow extends DataClass
           ? const Value.absent()
           : Value(chosenOptionId),
       resolutionText: Value(resolutionText),
+      sourceQuote: sourceQuote == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceQuote),
       isLibre: Value(isLibre),
       confidence: Value(confidence),
       createdAt: Value(createdAt),
@@ -5015,6 +5084,7 @@ class SubjectResolutionRow extends DataClass
       resolvedByTurnId: serializer.fromJson<int>(json['resolvedByTurnId']),
       chosenOptionId: serializer.fromJson<int?>(json['chosenOptionId']),
       resolutionText: serializer.fromJson<String>(json['resolutionText']),
+      sourceQuote: serializer.fromJson<String?>(json['sourceQuote']),
       isLibre: serializer.fromJson<bool>(json['isLibre']),
       confidence: serializer.fromJson<double>(json['confidence']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
@@ -5029,6 +5099,7 @@ class SubjectResolutionRow extends DataClass
       'resolvedByTurnId': serializer.toJson<int>(resolvedByTurnId),
       'chosenOptionId': serializer.toJson<int?>(chosenOptionId),
       'resolutionText': serializer.toJson<String>(resolutionText),
+      'sourceQuote': serializer.toJson<String?>(sourceQuote),
       'isLibre': serializer.toJson<bool>(isLibre),
       'confidence': serializer.toJson<double>(confidence),
       'createdAt': serializer.toJson<String>(createdAt),
@@ -5041,6 +5112,7 @@ class SubjectResolutionRow extends DataClass
           int? resolvedByTurnId,
           Value<int?> chosenOptionId = const Value.absent(),
           String? resolutionText,
+          Value<String?> sourceQuote = const Value.absent(),
           bool? isLibre,
           double? confidence,
           String? createdAt}) =>
@@ -5051,6 +5123,7 @@ class SubjectResolutionRow extends DataClass
         chosenOptionId:
             chosenOptionId.present ? chosenOptionId.value : this.chosenOptionId,
         resolutionText: resolutionText ?? this.resolutionText,
+        sourceQuote: sourceQuote.present ? sourceQuote.value : this.sourceQuote,
         isLibre: isLibre ?? this.isLibre,
         confidence: confidence ?? this.confidence,
         createdAt: createdAt ?? this.createdAt,
@@ -5068,6 +5141,8 @@ class SubjectResolutionRow extends DataClass
       resolutionText: data.resolutionText.present
           ? data.resolutionText.value
           : this.resolutionText,
+      sourceQuote:
+          data.sourceQuote.present ? data.sourceQuote.value : this.sourceQuote,
       isLibre: data.isLibre.present ? data.isLibre.value : this.isLibre,
       confidence:
           data.confidence.present ? data.confidence.value : this.confidence,
@@ -5083,6 +5158,7 @@ class SubjectResolutionRow extends DataClass
           ..write('resolvedByTurnId: $resolvedByTurnId, ')
           ..write('chosenOptionId: $chosenOptionId, ')
           ..write('resolutionText: $resolutionText, ')
+          ..write('sourceQuote: $sourceQuote, ')
           ..write('isLibre: $isLibre, ')
           ..write('confidence: $confidence, ')
           ..write('createdAt: $createdAt')
@@ -5091,8 +5167,16 @@ class SubjectResolutionRow extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, subjectId, resolvedByTurnId,
-      chosenOptionId, resolutionText, isLibre, confidence, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      subjectId,
+      resolvedByTurnId,
+      chosenOptionId,
+      resolutionText,
+      sourceQuote,
+      isLibre,
+      confidence,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5102,6 +5186,7 @@ class SubjectResolutionRow extends DataClass
           other.resolvedByTurnId == this.resolvedByTurnId &&
           other.chosenOptionId == this.chosenOptionId &&
           other.resolutionText == this.resolutionText &&
+          other.sourceQuote == this.sourceQuote &&
           other.isLibre == this.isLibre &&
           other.confidence == this.confidence &&
           other.createdAt == this.createdAt);
@@ -5114,6 +5199,7 @@ class SubjectResolutionsCompanion
   final Value<int> resolvedByTurnId;
   final Value<int?> chosenOptionId;
   final Value<String> resolutionText;
+  final Value<String?> sourceQuote;
   final Value<bool> isLibre;
   final Value<double> confidence;
   final Value<String> createdAt;
@@ -5123,6 +5209,7 @@ class SubjectResolutionsCompanion
     this.resolvedByTurnId = const Value.absent(),
     this.chosenOptionId = const Value.absent(),
     this.resolutionText = const Value.absent(),
+    this.sourceQuote = const Value.absent(),
     this.isLibre = const Value.absent(),
     this.confidence = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -5133,6 +5220,7 @@ class SubjectResolutionsCompanion
     required int resolvedByTurnId,
     this.chosenOptionId = const Value.absent(),
     required String resolutionText,
+    this.sourceQuote = const Value.absent(),
     this.isLibre = const Value.absent(),
     this.confidence = const Value.absent(),
     required String createdAt,
@@ -5146,6 +5234,7 @@ class SubjectResolutionsCompanion
     Expression<int>? resolvedByTurnId,
     Expression<int>? chosenOptionId,
     Expression<String>? resolutionText,
+    Expression<String>? sourceQuote,
     Expression<bool>? isLibre,
     Expression<double>? confidence,
     Expression<String>? createdAt,
@@ -5156,6 +5245,7 @@ class SubjectResolutionsCompanion
       if (resolvedByTurnId != null) 'resolved_by_turn_id': resolvedByTurnId,
       if (chosenOptionId != null) 'chosen_option_id': chosenOptionId,
       if (resolutionText != null) 'resolution_text': resolutionText,
+      if (sourceQuote != null) 'source_quote': sourceQuote,
       if (isLibre != null) 'is_libre': isLibre,
       if (confidence != null) 'confidence': confidence,
       if (createdAt != null) 'created_at': createdAt,
@@ -5168,6 +5258,7 @@ class SubjectResolutionsCompanion
       Value<int>? resolvedByTurnId,
       Value<int?>? chosenOptionId,
       Value<String>? resolutionText,
+      Value<String?>? sourceQuote,
       Value<bool>? isLibre,
       Value<double>? confidence,
       Value<String>? createdAt}) {
@@ -5177,6 +5268,7 @@ class SubjectResolutionsCompanion
       resolvedByTurnId: resolvedByTurnId ?? this.resolvedByTurnId,
       chosenOptionId: chosenOptionId ?? this.chosenOptionId,
       resolutionText: resolutionText ?? this.resolutionText,
+      sourceQuote: sourceQuote ?? this.sourceQuote,
       isLibre: isLibre ?? this.isLibre,
       confidence: confidence ?? this.confidence,
       createdAt: createdAt ?? this.createdAt,
@@ -5201,6 +5293,9 @@ class SubjectResolutionsCompanion
     if (resolutionText.present) {
       map['resolution_text'] = Variable<String>(resolutionText.value);
     }
+    if (sourceQuote.present) {
+      map['source_quote'] = Variable<String>(sourceQuote.value);
+    }
     if (isLibre.present) {
       map['is_libre'] = Variable<bool>(isLibre.value);
     }
@@ -5221,6 +5316,7 @@ class SubjectResolutionsCompanion
           ..write('resolvedByTurnId: $resolvedByTurnId, ')
           ..write('chosenOptionId: $chosenOptionId, ')
           ..write('resolutionText: $resolutionText, ')
+          ..write('sourceQuote: $sourceQuote, ')
           ..write('isLibre: $isLibre, ')
           ..write('confidence: $confidence, ')
           ..write('createdAt: $createdAt')
@@ -7155,6 +7251,7 @@ typedef $$SubjectSubjectsTableCreateCompanionBuilder = SubjectSubjectsCompanion
   required String direction,
   required String title,
   Value<String?> description,
+  Value<String?> sourceQuote,
   required String category,
   Value<String> status,
   required String createdAt,
@@ -7168,6 +7265,7 @@ typedef $$SubjectSubjectsTableUpdateCompanionBuilder = SubjectSubjectsCompanion
   Value<String> direction,
   Value<String> title,
   Value<String?> description,
+  Value<String?> sourceQuote,
   Value<String> category,
   Value<String> status,
   Value<String> createdAt,
@@ -7200,6 +7298,9 @@ class $$SubjectSubjectsTableFilterComposer
 
   ColumnFilters<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnFilters(column));
@@ -7242,6 +7343,9 @@ class $$SubjectSubjectsTableOrderingComposer
   ColumnOrderings<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get category => $composableBuilder(
       column: $table.category, builder: (column) => ColumnOrderings(column));
 
@@ -7281,6 +7385,9 @@ class $$SubjectSubjectsTableAnnotationComposer
 
   GeneratedColumn<String> get description => $composableBuilder(
       column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => column);
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
@@ -7328,6 +7435,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             Value<String> direction = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String?> description = const Value.absent(),
+            Value<String?> sourceQuote = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
@@ -7340,6 +7448,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             direction: direction,
             title: title,
             description: description,
+            sourceQuote: sourceQuote,
             category: category,
             status: status,
             createdAt: createdAt,
@@ -7352,6 +7461,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             required String direction,
             required String title,
             Value<String?> description = const Value.absent(),
+            Value<String?> sourceQuote = const Value.absent(),
             required String category,
             Value<String> status = const Value.absent(),
             required String createdAt,
@@ -7364,6 +7474,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             direction: direction,
             title: title,
             description: description,
+            sourceQuote: sourceQuote,
             category: category,
             status: status,
             createdAt: createdAt,
@@ -7582,6 +7693,7 @@ typedef $$SubjectResolutionsTableCreateCompanionBuilder
   required int resolvedByTurnId,
   Value<int?> chosenOptionId,
   required String resolutionText,
+  Value<String?> sourceQuote,
   Value<bool> isLibre,
   Value<double> confidence,
   required String createdAt,
@@ -7593,6 +7705,7 @@ typedef $$SubjectResolutionsTableUpdateCompanionBuilder
   Value<int> resolvedByTurnId,
   Value<int?> chosenOptionId,
   Value<String> resolutionText,
+  Value<String?> sourceQuote,
   Value<bool> isLibre,
   Value<double> confidence,
   Value<String> createdAt,
@@ -7624,6 +7737,9 @@ class $$SubjectResolutionsTableFilterComposer
   ColumnFilters<String> get resolutionText => $composableBuilder(
       column: $table.resolutionText,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isLibre => $composableBuilder(
       column: $table.isLibre, builder: (column) => ColumnFilters(column));
@@ -7662,6 +7778,9 @@ class $$SubjectResolutionsTableOrderingComposer
       column: $table.resolutionText,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<bool> get isLibre => $composableBuilder(
       column: $table.isLibre, builder: (column) => ColumnOrderings(column));
 
@@ -7695,6 +7814,9 @@ class $$SubjectResolutionsTableAnnotationComposer
 
   GeneratedColumn<String> get resolutionText => $composableBuilder(
       column: $table.resolutionText, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceQuote => $composableBuilder(
+      column: $table.sourceQuote, builder: (column) => column);
 
   GeneratedColumn<bool> get isLibre =>
       $composableBuilder(column: $table.isLibre, builder: (column) => column);
@@ -7740,6 +7862,7 @@ class $$SubjectResolutionsTableTableManager extends RootTableManager<
             Value<int> resolvedByTurnId = const Value.absent(),
             Value<int?> chosenOptionId = const Value.absent(),
             Value<String> resolutionText = const Value.absent(),
+            Value<String?> sourceQuote = const Value.absent(),
             Value<bool> isLibre = const Value.absent(),
             Value<double> confidence = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
@@ -7750,6 +7873,7 @@ class $$SubjectResolutionsTableTableManager extends RootTableManager<
             resolvedByTurnId: resolvedByTurnId,
             chosenOptionId: chosenOptionId,
             resolutionText: resolutionText,
+            sourceQuote: sourceQuote,
             isLibre: isLibre,
             confidence: confidence,
             createdAt: createdAt,
@@ -7760,6 +7884,7 @@ class $$SubjectResolutionsTableTableManager extends RootTableManager<
             required int resolvedByTurnId,
             Value<int?> chosenOptionId = const Value.absent(),
             required String resolutionText,
+            Value<String?> sourceQuote = const Value.absent(),
             Value<bool> isLibre = const Value.absent(),
             Value<double> confidence = const Value.absent(),
             required String createdAt,
@@ -7770,6 +7895,7 @@ class $$SubjectResolutionsTableTableManager extends RootTableManager<
             resolvedByTurnId: resolvedByTurnId,
             chosenOptionId: chosenOptionId,
             resolutionText: resolutionText,
+            sourceQuote: sourceQuote,
             isLibre: isLibre,
             confidence: confidence,
             createdAt: createdAt,

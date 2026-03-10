@@ -16,6 +16,9 @@ class SubjectSubjects extends Table {
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
 
+  /// Verbatim phrase from the source turn text — used for auto-highlight on navigation.
+  TextColumn get sourceQuote => text().named('source_quote').nullable()();
+
   /// 'choice' | 'question' | 'initiative' | 'request'
   TextColumn get category => text()();
 
@@ -57,6 +60,9 @@ class SubjectResolutions extends Table {
   IntColumn get chosenOptionId =>
       integer().named('chosen_option_id').nullable()();
   TextColumn get resolutionText => text().named('resolution_text')();
+
+  /// Verbatim phrase from the player/GM text — used for auto-highlight on navigation.
+  TextColumn get sourceQuote => text().named('source_quote').nullable()();
 
   /// 1 = player chose the free-form "libre" option
   BoolColumn get isLibre =>

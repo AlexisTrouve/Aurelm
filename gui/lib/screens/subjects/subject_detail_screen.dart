@@ -71,7 +71,8 @@ class _SubjectDetailView extends StatelessWidget {
                 _TurnChip(
                     turnId: detail.sourceTurnId,
                     label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
-                    highlight: s.title),
+                    // Prefer verbatim source_quote for highlight; fall back to title
+                    highlight: (s.sourceQuote?.isNotEmpty == true) ? s.sourceQuote : s.title),
               ],
             ),
 
@@ -258,7 +259,12 @@ class _ResolutionCard extends StatelessWidget {
               InkWell(
                 onTap: () => context.push(
                   '/turns/${resolution.turnId}',
-                  extra: {'highlight': resolution.resolution.resolutionText},
+                  // Prefer verbatim source_quote; fall back to resolution_text summary
+                  extra: {
+                    'highlight': (resolution.resolution.sourceQuote?.isNotEmpty == true)
+                        ? resolution.resolution.sourceQuote
+                        : resolution.resolution.resolutionText,
+                  },
                 ),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(

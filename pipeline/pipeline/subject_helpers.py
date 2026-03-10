@@ -79,8 +79,8 @@ def insert_subject(
     """
     cursor = conn.execute(
         """INSERT OR IGNORE INTO subject_subjects
-           (civ_id, source_turn_id, direction, title, description, category)
-           VALUES (?, ?, ?, ?, ?, ?)""",
+           (civ_id, source_turn_id, direction, title, description, category, source_quote)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (
             civ_id,
             turn_id,
@@ -88,6 +88,7 @@ def insert_subject(
             subject["title"],
             subject.get("description", ""),
             subject["category"],
+            subject.get("source_quote", ""),
         ),
     )
 
@@ -160,8 +161,8 @@ def apply_resolutions(
         conn.execute(
             """INSERT INTO subject_resolutions
                (subject_id, resolved_by_turn_id, chosen_option_id,
-                resolution_text, is_libre, confidence)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+                resolution_text, is_libre, confidence, source_quote)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
                 subject_id,
                 turn_id,
@@ -169,6 +170,7 @@ def apply_resolutions(
                 res["resolution_text"],
                 is_libre,
                 confidence,
+                res.get("source_quote", ""),
             ),
         )
 

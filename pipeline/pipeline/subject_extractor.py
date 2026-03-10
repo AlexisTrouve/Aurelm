@@ -39,6 +39,8 @@ class ExtractedSubject:
     direction: str  # 'mj_to_pj' or 'pj_to_mj'
     category: str   # 'choice', 'question', 'initiative', 'request'
     options: list[ExtractedOption] = field(default_factory=list)
+    # Verbatim phrase from the source text — used for turn detail auto-highlight.
+    source_quote: str = ""
 
 
 @dataclass
@@ -50,6 +52,8 @@ class ExtractedResolution:
     chosen_option_label: str = ""
     is_libre: bool = False
     confidence: float = 0.0
+    # Verbatim phrase from the player/GM text — used for turn detail auto-highlight.
+    source_quote: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +87,7 @@ EXEMPLE de choix implicite a detecter:
 Pour chaque sujet, identifie:
 - "title": titre court et descriptif du sujet
 - "description": contexte du sujet (1-2 phrases)
+- "source_quote": phrase ou passage VERBATIM du texte du MJ qui declenche ce sujet (5-20 mots, copiee exactement)
 - "category": "choice" (choix avec options), "question" (question ouverte)
 - "options": liste des options proposees (vide si question ouverte)
 
@@ -97,6 +102,7 @@ Reponds UNIQUEMENT en JSON:
   {{
     "title": "...",
     "description": "...",
+    "source_quote": "...",
     "category": "choice",
     "options": [
       {{"number": 1, "label": "...", "description": "...", "is_libre": false}},
@@ -134,11 +140,12 @@ N'EXTRAIS PAS:
 Pour chaque initiative:
 - "title": titre court et descriptif
 - "description": ce que le joueur veut faire (1-2 phrases)
+- "source_quote": phrase ou passage VERBATIM du texte du joueur qui declenche cette initiative (5-20 mots, copie exactement)
 - "category": "initiative" (action proactive) ou "request" (demande au MJ)
 
 Reponds UNIQUEMENT en JSON:
 {{"subjects": [
-  {{"title": "...", "description": "...", "category": "initiative"}}
+  {{"title": "...", "description": "...", "source_quote": "...", "category": "initiative"}}
 ]}}
 
 Si aucune initiative propre, retourne {{"subjects": []}}.
@@ -162,6 +169,7 @@ Pour chaque match trouve:
 - "subject_id": l'ID du sujet matche
 - "subject_title": le titre du sujet (pour verification)
 - "resolution_text": resume de la reponse du joueur (1-2 phrases)
+- "source_quote": phrase ou passage VERBATIM du texte du joueur qui constitue la reponse (5-20 mots, copie exactement)
 - "chosen_option_label": label de l'option choisie si applicable (vide sinon)
 - "is_libre": true si le joueur a fait un choix libre (hors options proposees)
 - "confidence": score de confiance de 0.0 a 1.0
@@ -176,6 +184,7 @@ Reponds UNIQUEMENT en JSON:
     "subject_id": 1,
     "subject_title": "...",
     "resolution_text": "...",
+    "source_quote": "...",
     "chosen_option_label": "...",
     "is_libre": false,
     "confidence": 0.85
@@ -207,6 +216,7 @@ Pour chaque match trouve:
 - "subject_id": l'ID de l'initiative matchee
 - "subject_title": le titre de l'initiative (pour verification)
 - "resolution_text": resume de comment le MJ a traite l'initiative (1-2 phrases)
+- "source_quote": phrase ou passage VERBATIM du texte du MJ qui traite cette initiative (5-20 mots, copie exactement)
 - "confidence": score de confiance de 0.0 a 1.0
   - 1.0 = mention explicite de l'initiative
   - 0.7-0.9 = consequences claires de l'initiative
@@ -219,6 +229,7 @@ Reponds UNIQUEMENT en JSON:
     "subject_id": 1,
     "subject_title": "...",
     "resolution_text": "...",
+    "source_quote": "...",
     "confidence": 0.8
   }}
 ]}}
@@ -502,6 +513,7 @@ def _parse_subjects(
             direction=direction,
             category=category,
             options=options,
+            source_quote=str(item.get("source_quote", "")).strip(),
         ))
 
     return results
@@ -554,6 +566,7 @@ def _parse_resolutions(
             chosen_option_label=str(item.get("chosen_option_label", "")).strip(),
             is_libre=bool(item.get("is_libre", False)),
             confidence=confidence,
+            source_quote=str(item.get("source_quote", "")).strip(),
         ))
 
     return results
