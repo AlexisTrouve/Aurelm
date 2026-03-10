@@ -7,6 +7,7 @@ import json
 import logging
 import sqlite3
 import time
+import uuid
 from typing import TYPE_CHECKING
 
 from aiohttp import web
@@ -25,6 +26,7 @@ class BotServer:
         self._app.router.add_get("/status", self._status)
         self._app.router.add_get("/progress", self._progress)
         self._app.router.add_post("/sync", self._sync)
+        self._app.router.add_post("/chat", self._chat)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -32,11 +34,20 @@ class BotServer:
         self._last_sync_result: dict | None = None
         self._discord_connected = False
 
+        # Agent wired by main.py when API key is available
+        self._agent: "Agent | None" = None
+        # In-memory conversation histories keyed by UUID, capped at 40 messages
+        self._conversations: dict[str, list[dict]] = {}
+
         # Callables set by main.py
         self.on_sync: asyncio.coroutines | None = None  # async callable
 
     def set_discord_connected(self, connected: bool) -> None:
         self._discord_connected = connected
+
+    def set_agent(self, agent) -> None:
+        """Attach the LLM agent for /chat endpoint."""
+        self._agent = agent
 
     async def start(self) -> None:
         self._runner = web.AppRunner(self._app)
@@ -95,6 +106,52 @@ class BotServer:
             return web.json_response(err, status=500)
         finally:
             self._sync_running = False
+
+    async def _chat(self, request: web.Request) -> web.Response:
+        """POST /chat — run one agent turn, maintaining conversation history.
+
+        Request body: {"message": "...", "conversation_id": "optional-uuid"}
+        Response:     {"response": "...", "conversation_id": "uuid"}
+
+        Conversation history is kept in memory (capped at 40 messages = 20 turns).
+        Pass the returned conversation_id in subsequent requests to continue a session.
+        """
+        if self._agent is None:
+            return web.json_response(
+                {"error": "Agent not configured (missing ANTHROPIC_API_KEY?)"},
+                status=503,
+            )
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+
+        message = body.get("message", "").strip()
+        if not message:
+            return web.json_response({"error": "Empty message"}, status=400)
+
+        # Resume an existing conversation or start a fresh one
+        conv_id = body.get("conversation_id") or str(uuid.uuid4())
+        history = self._conversations.get(conv_id, [])
+
+        try:
+            response_text = await self._agent.answer_in_conversation(history, message)
+        except Exception as exc:
+            log.exception("Agent error in /chat")
+            return web.json_response({"error": str(exc)}, status=500)
+
+        # Persist updated history — cap at 40 messages (20 user+assistant turns)
+        updated = history + [
+            {"role": "user", "content": message},
+            {"role": "assistant", "content": response_text},
+        ]
+        self._conversations[conv_id] = updated[-40:]
+
+        return web.json_response({
+            "response": response_text,
+            "conversation_id": conv_id,
+        })
 
     # ---------------------------------------------------------------------- #
     # Helpers

@@ -69,12 +69,15 @@ async def run(config: BotConfig) -> None:
     # HTTP server (always starts)
     server = BotServer(config)
 
+    # Always create the agent (needed for /chat endpoint, not just Discord)
+    agent = Agent(config)
+    backend = "Claude" if config.has_anthropic else f"Ollama ({config.ollama_model})"
+    log.info("Agent backend: %s", backend)
+    server.set_agent(agent)
+
     # Discord bot (only if token provided)
     bot: AurelmBot | None = None
     if config.has_discord:
-        agent = Agent(config)
-        backend = "Claude" if config.has_anthropic else f"Ollama ({config.ollama_model})"
-        log.info("Agent backend: %s", backend)
         bot = AurelmBot(agent, proxy=config.proxy)
         bot.set_on_ready(lambda: server.set_discord_connected(True))
     else:

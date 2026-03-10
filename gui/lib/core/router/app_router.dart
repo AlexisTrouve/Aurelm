@@ -13,6 +13,7 @@ import '../../screens/graph/graph_screen.dart';
 import '../../screens/settings/settings_screen.dart';
 import '../../screens/subjects/subject_browser_screen.dart';
 import '../../screens/subjects/subject_detail_screen.dart';
+import '../../screens/chat/chat_screen.dart';
 import '../navigation/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -97,6 +98,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               final id = int.parse(state.pathParameters['id']!);
               return NoTransitionPage(child: SubjectDetailScreen(subjectId: id));
             },
+          ),
+          GoRoute(
+            path: '/chat',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: ChatScreen(),
+            ),
           ),
           GoRoute(
             path: '/settings',

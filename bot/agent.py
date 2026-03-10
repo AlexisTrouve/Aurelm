@@ -129,9 +129,72 @@ class Agent:
             return await self._answer_anthropic(user_message)
         return await self._answer_ollama(user_message)
 
+    async def answer_in_conversation(
+        self, history: list[dict], new_message: str
+    ) -> str:
+        """Answer a question with full conversation context.
+
+        Args:
+            history: List of previous {"role": "user/assistant", "content": "..."} messages.
+            new_message: The new user message to answer.
+
+        Returns:
+            The assistant's text response.
+        """
+        if self._backend == "anthropic":
+            return await self._answer_anthropic_conv(history, new_message)
+        return await self._answer_ollama_conv(history, new_message)
+
     # ------------------------------------------------------------------ #
     # Anthropic backend
     # ------------------------------------------------------------------ #
+
+    async def _answer_anthropic_conv(self, history: list[dict], new_message: str) -> str:
+        """Run one agent turn with conversation history (Anthropic backend).
+
+        Prepends history before the new user message so Claude can reference
+        prior exchanges. Tool-calling loop is identical to _answer_anthropic.
+        """
+        import asyncio
+
+        # Build message list: prior turns + new user turn
+        messages: list[dict] = [*history, {"role": "user", "content": new_message}]
+
+        for _round in range(MAX_TOOL_ROUNDS):
+            response = await asyncio.to_thread(
+                self._anthropic.messages.create,
+                model="claude-sonnet-4-5-20250929",
+                max_tokens=4096,
+                system=self._claude_prompt,
+                tools=self._anthropic_tools,
+                messages=messages,
+            )
+
+            if response.stop_reason == "tool_use":
+                tool_results = []
+                assistant_content = response.content
+
+                for block in assistant_content:
+                    if block.type == "tool_use":
+                        log.info("Tool call: %s(%s)", block.name, block.input)
+                        result = _run_tool(self.config.db_path, block.name, block.input)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        })
+
+                messages.append({"role": "assistant", "content": assistant_content})
+                messages.append({"role": "user", "content": tool_results})
+                continue
+
+            text_parts = []
+            for block in response.content:
+                if hasattr(block, "text"):
+                    text_parts.append(block.text)
+            return "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
+
+        return "(Limite de tours d'outils atteinte.)"
 
     async def _answer_anthropic(self, user_message: str) -> str:
         import asyncio
@@ -177,6 +240,47 @@ class Agent:
     # ------------------------------------------------------------------ #
     # Ollama backend
     # ------------------------------------------------------------------ #
+
+    async def _answer_ollama_conv(self, history: list[dict], new_message: str) -> str:
+        """Run one agent turn with conversation history (Ollama backend).
+
+        Injects the system prompt at the front, then history, then the new
+        user message. Tool-calling loop is identical to _answer_ollama.
+        """
+        import asyncio
+        import ollama
+
+        # System prompt first, then prior turns, then new user message
+        messages = [
+            {"role": "system", "content": self._ollama_prompt},
+            *history,
+            {"role": "user", "content": new_message},
+        ]
+
+        for _round in range(MAX_TOOL_ROUNDS):
+            response = await asyncio.to_thread(
+                ollama.chat,
+                model=self._ollama_model,
+                messages=messages,
+                tools=self._ollama_tools,
+                options={"num_ctx": 8192},
+            )
+
+            msg = response.message
+
+            if msg.tool_calls:
+                messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
+
+                for tc in msg.tool_calls:
+                    fn = tc.function
+                    log.info("Tool call: %s(%s)", fn.name, fn.arguments)
+                    result = _run_tool(self.config.db_path, fn.name, fn.arguments)
+                    messages.append({"role": "tool", "content": result})
+                continue
+
+            return msg.content if msg.content else "(Pas de reponse.)"
+
+        return "(Limite de tours d'outils atteinte.)"
 
     async def _answer_ollama(self, user_message: str) -> str:
         import asyncio

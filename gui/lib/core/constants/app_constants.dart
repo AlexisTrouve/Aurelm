@@ -39,4 +39,5 @@ class AppConstants {
   static const String botHealthEndpoint = '/health';
   static const String botStatusEndpoint = '/status';
   static const String botSyncEndpoint = '/sync';
+  static const String botChatEndpoint = '/chat';
 }

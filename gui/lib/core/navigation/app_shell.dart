@@ -33,6 +33,11 @@ class AppShell extends StatelessWidget {
       label: Text('Sujets'),
     ),
     NavigationRailDestination(
+      icon: Icon(Icons.smart_toy_outlined),
+      selectedIcon: Icon(Icons.smart_toy),
+      label: Text('Agent'),
+    ),
+    NavigationRailDestination(
       icon: Icon(Icons.settings_outlined),
       selectedIcon: Icon(Icons.settings),
       label: Text('Settings'),
@@ -45,6 +50,7 @@ class AppShell extends StatelessWidget {
     '/timeline',
     '/graph',
     '/subjects',
+    '/chat',
     '/settings',
   ];
 
@@ -54,7 +60,8 @@ class AppShell extends StatelessWidget {
     if (location.startsWith('/timeline')) return 2;
     if (location.startsWith('/graph')) return 3;
     if (location.startsWith('/subjects')) return 4;
-    if (location.startsWith('/settings')) return 5;
+    if (location.startsWith('/chat')) return 5;
+    if (location.startsWith('/settings')) return 6;
     return 0; // dashboard + /civs/:id
   }
 
