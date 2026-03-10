@@ -70,7 +70,8 @@ class _SubjectDetailView extends StatelessWidget {
                 _StatusBadge(status: s.status),
                 _TurnChip(
                     turnId: detail.sourceTurnId,
-                    label: 'T${detail.sourceTurnNumber} · ${detail.civName}'),
+                    label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
+                    highlight: s.title),
               ],
             ),
 
@@ -255,7 +256,10 @@ class _ResolutionCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               InkWell(
-                onTap: () => context.push('/turns/${resolution.turnId}'),
+                onTap: () => context.push(
+                  '/turns/${resolution.turnId}',
+                  extra: {'highlight': resolution.resolution.resolutionText},
+                ),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -396,16 +400,21 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-/// Chip de tour cliquable — fast travel vers le turn detail.
+/// Chip de tour cliquable — fast travel vers le turn detail avec highlight optionnel.
 class _TurnChip extends StatelessWidget {
   final int turnId;
   final String label;
-  const _TurnChip({required this.turnId, required this.label});
+  /// Text to auto-highlight in the turn detail on arrival.
+  final String? highlight;
+  const _TurnChip({required this.turnId, required this.label, this.highlight});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.push('/turns/$turnId'),
+      onTap: () => context.push(
+        '/turns/$turnId',
+        extra: highlight != null ? {'highlight': highlight} : null,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
