@@ -13,13 +13,16 @@ class EntityTypeIcon extends StatelessWidget {
   });
 
   static const Map<String, IconData> _icons = {
-    'person': Icons.person,
-    'place': Icons.place,
-    'technology': Icons.build,
-    'institution': Icons.account_balance,
-    'resource': Icons.inventory_2,
-    'creature': Icons.pets,
-    'event': Icons.event,
+    'person':       Icons.person,
+    'place':        Icons.place,
+    'technology':   Icons.build,
+    'institution':  Icons.account_balance,
+    'resource':     Icons.inventory_2,
+    'creature':     Icons.pets,
+    'event':        Icons.event,
+    'civilization': Icons.public,       // globe
+    'caste':        Icons.layers,       // social stratification
+    'belief':       Icons.self_improvement, // spirituality/philosophy
   };
 
   @override

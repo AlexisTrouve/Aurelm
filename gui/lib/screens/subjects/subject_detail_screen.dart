@@ -36,16 +36,43 @@ class SubjectDetailScreen extends ConsumerWidget {
   }
 }
 
-class _SubjectDetailView extends StatelessWidget {
+class _SubjectDetailView extends ConsumerWidget {
   final SubjectDetail detail;
 
   const _SubjectDetailView({required this.detail});
 
+  /// Shows a dialog asking the user to confirm closing a subject with [status].
+  Future<void> _confirmClose(
+      BuildContext context, WidgetRef ref, int subjectId, String status) async {
+    final label = status == 'resolved' ? 'résolu' : 'abandonné';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clore le sujet'),
+        content: Text('Marquer ce sujet comme $label ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(status == 'resolved' ? 'Résolu' : 'Abandonné'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await closeSubject(ref, subjectId, status);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = detail.subject;
     final isMjToPj = s.direction == 'mj_to_pj';
     final isResolved = s.status == 'resolved';
+    final isOpen = s.status == 'open';
 
     return Scaffold(
       appBar: AppBar(
@@ -54,6 +81,39 @@ class _SubjectDetailView extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.canPop() ? context.pop() : context.go('/subjects'),
         ),
+        // Close button — only shown when the subject is open
+        actions: isOpen
+            ? [
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.check_circle_outline),
+                  tooltip: 'Clore le sujet',
+                  onSelected: (status) =>
+                      _confirmClose(context, ref, s.id, status),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'resolved',
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.green, size: 18),
+                          SizedBox(width: 8),
+                          Text('Marquer comme résolu'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'abandoned',
+                      child: Row(
+                        children: [
+                          Icon(Icons.cancel, color: Colors.red, size: 18),
+                          SizedBox(width: 8),
+                          Text('Abandonner'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ]
+            : null,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),

@@ -56,6 +56,17 @@ final subjectDetailProvider =
 });
 
 // ---------------------------------------------------------------------------
+// Mutations
+// ---------------------------------------------------------------------------
+
+/// Manually close a subject with the given status ('resolved' or 'abandoned').
+Future<void> closeSubject(WidgetRef ref, int subjectId, String status) {
+  final db = ref.read(databaseProvider);
+  if (db == null) throw StateError('No database');
+  return db.subjectDao.updateSubjectStatus(subjectId, status);
+}
+
+// ---------------------------------------------------------------------------
 // Stats per civ (used on CivDetail screen)
 // ---------------------------------------------------------------------------
 

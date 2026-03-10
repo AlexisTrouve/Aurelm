@@ -158,6 +158,19 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
   }
 
   // ---------------------------------------------------------------------------
+  // Mutations
+  // ---------------------------------------------------------------------------
+
+  /// Manually update a subject's status. Valid values: 'open', 'resolved', 'abandoned', 'superseded'.
+  Future<void> updateSubjectStatus(int subjectId, String status) {
+    return (update(subjectSubjects)..where((s) => s.id.equals(subjectId)))
+        .write(SubjectSubjectsCompanion(
+          status: Value(status),
+          updatedAt: Value(DateTime.now().toIso8601String()),
+        ));
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
 
