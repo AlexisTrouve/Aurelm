@@ -87,7 +87,14 @@ EXEMPLE de choix implicite a detecter:
 Pour chaque sujet, identifie:
 - "title": titre court et descriptif du sujet
 - "description": contexte du sujet (1-2 phrases)
-- "source_quote": phrase ou passage VERBATIM du texte du MJ qui declenche ce sujet (5-20 mots, copiee exactement)
+- "source_quote": COPIE EXACTE mot-pour-mot d'un passage du texte du MJ qui declenche ce sujet.
+  REGLES ABSOLUES pour source_quote:
+  * Copie les mots EXACTEMENT tels qu'ils apparaissent dans le texte — meme ponctuation, meme accents, meme majuscules
+  * 5 a 20 mots, suffisamment unique pour localiser le passage
+  * JAMAIS paraphraser, resumer, ni reformuler
+  * Si le sujet vient d'une section "## Choix", copie le debut de cette section
+  * MAUVAIS: "Tu dois choisir comment explorer la riviere" (paraphrase)
+  * BON: "Quel chemin empruntes-tu pour longer la riviere ?" (copie exacte)
 - "category": "choice" (choix avec options), "question" (question ouverte)
 - "options": liste des options proposees (vide si question ouverte)
 
@@ -140,7 +147,13 @@ N'EXTRAIS PAS:
 Pour chaque initiative:
 - "title": titre court et descriptif
 - "description": ce que le joueur veut faire (1-2 phrases)
-- "source_quote": phrase ou passage VERBATIM du texte du joueur qui declenche cette initiative (5-20 mots, copie exactement)
+- "source_quote": COPIE EXACTE mot-pour-mot de la phrase du joueur qui declare cette initiative.
+  REGLES ABSOLUES pour source_quote:
+  * Copie les mots EXACTEMENT tels qu'ils apparaissent — meme ponctuation, meme accents, meme majuscules
+  * 5 a 20 mots, suffisamment unique pour localiser le passage
+  * JAMAIS paraphraser ou reformuler
+  * MAUVAIS: "Le joueur veut enseigner la chasse" (paraphrase)
+  * BON: "Je leur montre des techniques afin de perfectionner l'art de la chasse" (copie exacte)
 - "category": "initiative" (action proactive) ou "request" (demande au MJ)
 
 Reponds UNIQUEMENT en JSON:
@@ -169,7 +182,13 @@ Pour chaque match trouve:
 - "subject_id": l'ID du sujet matche
 - "subject_title": le titre du sujet (pour verification)
 - "resolution_text": resume de la reponse du joueur (1-2 phrases)
-- "source_quote": phrase ou passage VERBATIM du texte du joueur qui constitue la reponse (5-20 mots, copie exactement)
+- "source_quote": COPIE EXACTE mot-pour-mot de la phrase du joueur qui constitue sa reponse.
+  REGLES ABSOLUES pour source_quote:
+  * Copie les mots EXACTEMENT tels qu'ils apparaissent dans le texte — meme ponctuation, meme accents, meme majuscules
+  * 5 a 20 mots, suffisamment unique pour localiser le passage
+  * JAMAIS paraphraser, resumer, ni reformuler
+  * MAUVAIS: "Le joueur choisit de longer la riviere" (paraphrase)
+  * BON: "Je leur montre comment suivre la riviere mene a des lieux de vie" (copie exacte)
 - "chosen_option_label": label de l'option choisie si applicable (vide sinon)
 - "is_libre": true si le joueur a fait un choix libre (hors options proposees)
 - "confidence": score de confiance de 0.0 a 1.0
@@ -216,7 +235,13 @@ Pour chaque match trouve:
 - "subject_id": l'ID de l'initiative matchee
 - "subject_title": le titre de l'initiative (pour verification)
 - "resolution_text": resume de comment le MJ a traite l'initiative (1-2 phrases)
-- "source_quote": phrase ou passage VERBATIM du texte du MJ qui traite cette initiative (5-20 mots, copie exactement)
+- "source_quote": COPIE EXACTE mot-pour-mot de la phrase du MJ qui traite cette initiative.
+  REGLES ABSOLUES pour source_quote:
+  * Copie les mots EXACTEMENT tels qu'ils apparaissent dans le texte — meme ponctuation, meme accents, meme majuscules
+  * 5 a 20 mots, suffisamment unique pour localiser le passage
+  * JAMAIS paraphraser, resumer, ni reformuler
+  * MAUVAIS: "Le MJ decrit la decouverte de la riviere" (paraphrase)
+  * BON: "La confluence de deux rivieres cristallines, encaisse dans une large vallee." (copie exacte)
 - "confidence": score de confiance de 0.0 a 1.0
   - 1.0 = mention explicite de l'initiative
   - 0.7-0.9 = consequences claires de l'initiative
