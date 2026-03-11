@@ -18,17 +18,20 @@ class EntityBrowserScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dbPath = ref.watch(dbPathProvider);
     if (dbPath == null) {
-      return const Scaffold(
-        body: EmptyState(
-          icon: Icons.storage,
-          message: 'No database configured',
+      return SelectionArea(
+        child: Scaffold(
+          body: EmptyState(
+            icon: Icons.storage,
+            message: 'No database configured',
+          ),
         ),
       );
     }
 
     final entities = ref.watch(entityListProvider);
 
-    return Scaffold(
+    return SelectionArea(
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Entities'),
         actions: [
@@ -75,6 +78,7 @@ class EntityBrowserScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

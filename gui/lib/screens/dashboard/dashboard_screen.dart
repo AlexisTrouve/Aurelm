@@ -33,8 +33,9 @@ class DashboardScreen extends ConsumerWidget {
 
     final civs = ref.watch(civListProvider);
 
-    return Scaffold(
-      appBar: AppBar(
+    return SelectionArea(
+      child: Scaffold(
+        appBar: AppBar(
         title: const Text('Dashboard'),
         actions: const [
           Padding(
@@ -94,6 +95,7 @@ class DashboardScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
       ),
     );
   }
