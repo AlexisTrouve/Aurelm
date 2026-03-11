@@ -185,7 +185,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemCount: sessions.length,
                   itemBuilder: (context, index) {
                     final session = sessions[index];
-                    final isActive = chatState.sessionId == session.id;
+                    final isActive = chatState.sessionId == session.sessionId;
                     return ListTile(
                       title: Text(session.name),
                       subtitle: Text(
@@ -197,7 +197,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           Theme.of(context).colorScheme.primaryContainer,
                       onTap: () {
                         // Switch to this session
-                        ref.read(chatProvider.notifier).setSessionId(session.id);
+                        ref.read(chatProvider.notifier).setSessionId(session.sessionId);
                         Navigator.pop(context);
                       },
                       trailing: PopupMenuButton(
@@ -215,13 +215,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             onTap: () {
                               ref
                                   .read(sessionsProvider)
-                                  .toggleArchive(session.id, !session.archived);
+                                  .toggleArchive(session.sessionId, !session.archived);
                             },
                           ),
                           PopupMenuItem(
                             child: const Text('Supprimer'),
                             onTap: () {
-                              ref.read(sessionsProvider).deleteSession(session.id);
+                              ref.read(sessionsProvider).deleteSession(session.sessionId);
                             },
                           ),
                         ],
@@ -257,7 +257,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               if (controller.text.trim().isNotEmpty) {
                 ref
                     .read(sessionsProvider)
-                    .renameSession(session.id, controller.text.trim());
+                    .renameSession(session.sessionId, controller.text.trim());
                 Navigator.pop(context);
               }
             },
