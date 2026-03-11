@@ -156,19 +156,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
-                    // Regular messages + pending queue shown as faded bubbles
+                    // Regular messages + optional fused queue bubble
                     itemCount: chatState.messages.length +
-                        chatState.messageQueue.length,
+                        (chatState.messageQueue.isNotEmpty ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index < chatState.messages.length) {
                         return _MessageBubble(
                             message: chatState.messages[index]);
                       }
-                      // Queued message — faded, shows it's waiting
-                      final qi = index - chatState.messages.length;
+                      // All queued messages fused into a single faded bubble
                       return _QueuedMessageBubble(
-                        text: chatState.messageQueue[qi],
-                        isLast: qi == chatState.messageQueue.length - 1,
+                        text: chatState.messageQueue.join('\n'),
                         onCancel: () =>
                             ref.read(chatProvider.notifier).cancelLast(),
                       );
@@ -503,13 +501,11 @@ class _ToolCallCardState extends State<_ToolCallCard> {
 // ---------------------------------------------------------------------------
 
 class _QueuedMessageBubble extends StatelessWidget {
-  final String text;
-  final bool isLast; // last in queue — show ✕ cancel hint
+  final String text; // all queued messages pre-joined with \n
   final VoidCallback onCancel;
 
   const _QueuedMessageBubble({
     required this.text,
-    required this.isLast,
     required this.onCancel,
   });
 
@@ -546,15 +542,12 @@ class _QueuedMessageBubble extends StatelessWidget {
                   style: TextStyle(color: colorScheme.onPrimary),
                 ),
               ),
-              // Show cancel X on the last queued message (Escape hint)
-              if (isLast) ...[
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onCancel,
-                  child: Icon(Icons.close,
-                      size: 14, color: colorScheme.onPrimary),
-                ),
-              ],
+              // ✕ removes the last line from the queue (Escape equivalent)
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onCancel,
+                child: Icon(Icons.close, size: 14, color: colorScheme.onPrimary),
+              ),
             ],
           ),
         ),

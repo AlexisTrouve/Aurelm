@@ -111,6 +111,7 @@ final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>(
 
 class ChatNotifier extends StateNotifier<ChatState> {
   final ChatService _service;
+  bool _cancelled = false; // set to true to silently ignore incoming events
 
   ChatNotifier(this._service) : super(const ChatState());
 
@@ -132,6 +133,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   Future<void> _sendImmediate(String message) async {
+    _cancelled = false;
+
     // Append user message immediately
     final userMsg = ChatMessage(
       role: ChatRole.user,
@@ -153,14 +156,16 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
     try {
       final stream = _service.sendMessageStream(
-        message.trim(),
+        message,
         conversationId: state.conversationId,
       );
 
       await for (final event in stream) {
+        // Cancelled — drain the stream silently without updating UI
+        if (_cancelled) continue;
+
         switch (event) {
           case ToolStartEvent():
-            // Show spinner for this tool
             state = state.copyWith(
               pendingTools: [
                 ...state.pendingTools,
@@ -173,27 +178,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
           case ToolResultEvent():
             toolCalls.add(event.toolCall);
-            // Remove from pending, add to resolved list shown in UI
             final pending = state.pendingTools
                 .where((p) => p.name != event.toolCall.name)
                 .toList();
-            // Update the assistant message in-place
-            _updateAssistantMessage(
-              responseText, toolCalls, thinkingBlocks,
-            );
+            _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
             state = state.copyWith(pendingTools: pending);
 
           case ThinkingEvent():
             thinkingBlocks.add(event.content);
-            _updateAssistantMessage(
-              responseText, toolCalls, thinkingBlocks,
-            );
+            _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
 
           case TextEvent():
             responseText = event.content;
-            _updateAssistantMessage(
-              responseText, toolCalls, thinkingBlocks,
-            );
+            _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
 
           case DoneEvent():
             state = state.copyWith(
@@ -211,29 +208,34 @@ class ChatNotifier extends StateNotifier<ChatState> {
         }
       }
 
-      // Safety: if stream ended without a DoneEvent
+      // Safety: if stream ended without DoneEvent
       if (state.loading) {
         state = state.copyWith(loading: false, pendingTools: []);
       }
-    } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-        pendingTools: [],
-        messageQueue: [],
-      );
+    } catch (_) {
+      // Swallow connection errors (e.g. ClientException during cancel drain)
+      if (state.loading) {
+        state = state.copyWith(loading: false, pendingTools: [], messageQueue: []);
+      }
     }
 
     // Drain the queue: fuse all pending messages into one and send
-    final queue = state.messageQueue;
-    if (queue.isNotEmpty) {
-      final fused = queue.join('\n');
-      state = state.copyWith(messageQueue: []);
-      await _sendImmediate(fused);
+    if (!_cancelled) {
+      final queue = state.messageQueue;
+      if (queue.isNotEmpty) {
+        final fused = queue.join('\n');
+        state = state.copyWith(messageQueue: []);
+        await _sendImmediate(fused);
+      }
     }
+    _cancelled = false;
   }
 
-  /// Cancel: pop last queued message, or cancel the LLM call if queue is empty.
+  /// Cancel: pop last queued message, or signal to ignore the ongoing LLM response.
+  ///
+  /// Does NOT close the HTTP connection (avoids ClientException).
+  /// Sets _cancelled = true so incoming events are silently drained.
+  /// Adds an "Annulé" indicator message instead of removing the user message.
   void cancelLast() {
     if (state.messageQueue.isNotEmpty) {
       // Remove last queued message
@@ -242,19 +244,20 @@ class ChatNotifier extends StateNotifier<ChatState> {
       return;
     }
     if (state.loading) {
-      // Cancel the ongoing LLM call
-      _service.cancel();
-      // Remove the last user message (the one being processed)
+      _cancelled = true;
+      // Add "Annulé" indicator as assistant message
+      final cancelMsg = ChatMessage(
+        role: ChatRole.assistant,
+        content: '_Action annulée._',
+        timestamp: DateTime.now(),
+      );
+      // Remove any partial assistant message first
       final msgs = [...state.messages];
-      if (msgs.isNotEmpty && msgs.last.role == ChatRole.user) {
-        msgs.removeLast();
-      }
-      // Also remove partial assistant message if started
       if (msgs.isNotEmpty && msgs.last.role == ChatRole.assistant) {
         msgs.removeLast();
       }
       state = state.copyWith(
-        messages: msgs,
+        messages: [...msgs, cancelMsg],
         loading: false,
         pendingTools: [],
         messageQueue: [],
