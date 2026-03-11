@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/app_constants.dart';
 import '../services/chat_service.dart';
+import '../services/chat_sessions_service.dart';
 
 // Re-export so consumers only need to import this file
 export '../services/chat_service.dart' show ToolCallInfo;
@@ -105,15 +106,23 @@ final chatServiceProvider = Provider<ChatService>(
   (_) => ChatService(port: AppConstants.botDefaultPort),
 );
 
+final chatSessionsServiceProvider = Provider<ChatSessionsService>(
+  (_) => ChatSessionsService(port: AppConstants.botDefaultPort),
+);
+
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>(
-  (ref) => ChatNotifier(ref.watch(chatServiceProvider)),
+  (ref) => ChatNotifier(
+    ref.watch(chatServiceProvider),
+    ref.watch(chatSessionsServiceProvider),
+  ),
 );
 
 class ChatNotifier extends StateNotifier<ChatState> {
   final ChatService _service;
+  final ChatSessionsService _sessionsService;
   bool _cancelled = false; // set to true to silently ignore incoming events
 
-  ChatNotifier(this._service) : super(const ChatState());
+  ChatNotifier(this._service, this._sessionsService) : super(const ChatState());
 
   /// Send a user message and stream the agent's response events.
   ///
@@ -290,10 +299,19 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(messages: msgs);
   }
 
-  /// Start a fresh session (clears history and session ID).
-  void newSession() {
+  /// Start a fresh session (clears history and creates new session in DB).
+  /// This is async but we fire-and-forget since the UI doesn't wait.
+  Future<void> newSession() async {
     _service.cancel();
     state = const ChatState();
+
+    // Create new session in the backend
+    try {
+      final sessionId = await _sessionsService.createSession('New Session');
+      state = state.copyWith(sessionId: sessionId);
+    } catch (e) {
+      // Silently fail — user can still chat without a saved session
+    }
   }
 
   /// Set the current session ID (e.g. when loading a saved session).

@@ -9,6 +9,8 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/bot_provider.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/chat_sessions_provider.dart';
+import '../../services/chat_sessions_service.dart';
 
 /// Full-page chat interface for the Aurelm AI agent.
 class ChatScreen extends ConsumerStatefulWidget {
@@ -124,9 +126,152 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  // Build sessions drawer — list of all sessions with quick access
+  Widget _buildSessionsDrawer(BuildContext context, ChatState chatState) {
+    return Drawer(
+      child: Column(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Sessions',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await ref.read(chatProvider.notifier).newSession();
+                      // Refresh the sessions list
+                      ref.refresh(filteredSessionsProvider);
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Nouvelle'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Sessions list
+          Expanded(
+            child: ref.watch(filteredSessionsProvider).when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, st) => Center(
+                child: Text('Erreur: $err'),
+              ),
+              data: (sessions) {
+                if (sessions.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Aucune session créée.\nCliquez sur "Nouvelle" pour commencer.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  itemCount: sessions.length,
+                  itemBuilder: (context, index) {
+                    final session = sessions[index];
+                    final isActive = chatState.sessionId == session.id;
+                    return ListTile(
+                      title: Text(session.name),
+                      subtitle: Text(
+                        '${session.messageCount} messages',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      selected: isActive,
+                      selectedTileColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      onTap: () {
+                        // Switch to this session
+                        ref.read(chatProvider.notifier).setSessionId(session.id);
+                        Navigator.pop(context);
+                      },
+                      trailing: PopupMenuButton(
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            child: const Text('Renommer'),
+                            onTap: () {
+                              _showRenameDialog(context, session);
+                            },
+                          ),
+                          PopupMenuItem(
+                            child: Text(
+                              session.archived ? 'Restaurer' : 'Archiver',
+                            ),
+                            onTap: () {
+                              ref
+                                  .read(sessionsProvider)
+                                  .toggleArchive(session.id, !session.archived);
+                            },
+                          ),
+                          PopupMenuItem(
+                            child: const Text('Supprimer'),
+                            onTap: () {
+                              ref.read(sessionsProvider).deleteSession(session.id);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameDialog(BuildContext context, ChatSessionPreview session) {
+    final controller = TextEditingController(text: session.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Renommer la session'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                ref
+                    .read(sessionsProvider)
+                    .renameSession(session.id, controller.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Renommer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScaffold(
       BuildContext context, ChatState chatState, bool isOnline) {
     return Scaffold(
+      drawer: _buildSessionsDrawer(context, chatState),
       appBar: AppBar(
         title: const Text('Aurelm Agent'),
         actions: [
@@ -153,8 +298,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
             tooltip: 'Nouvelle conversation',
-            onPressed: () {
-              ref.read(chatProvider.notifier).newSession();
+            onPressed: () async {
+              await ref.read(chatProvider.notifier).newSession();
+              // Refresh the sessions list after creating a new one
+              if (mounted) {
+                ref.refresh(filteredSessionsProvider);
+              }
             },
           ),
         ],
