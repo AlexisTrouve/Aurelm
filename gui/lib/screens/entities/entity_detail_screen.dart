@@ -69,13 +69,16 @@ class EntityDetailScreen extends ConsumerWidget {
       error: (e, _) => Scaffold(body: ErrorView(message: e.toString())),
       data: (entity) {
         if (entity == null) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: Text('Entity not found')),
+          return SelectionArea(
+            child: Scaffold(
+              appBar: AppBar(),
+              body: const Center(child: Text('Entity not found')),
+            ),
           );
         }
 
-        return Scaffold(
+        return SelectionArea(
+          child: Scaffold(
           appBar: AppBar(
             title: Text(entity.entity.canonicalName),
             leading: IconButton(
@@ -171,6 +174,7 @@ class EntityDetailScreen extends ConsumerWidget {
                 MentionTimeline(entityId: entityId, entityName: entity.entity.canonicalName),
               ],
             ),
+          ),
           ),
         );
       },

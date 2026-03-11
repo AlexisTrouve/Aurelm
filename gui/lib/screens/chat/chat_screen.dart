@@ -270,9 +270,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildScaffold(
       BuildContext context, ChatState chatState, bool isOnline) {
-    return Scaffold(
-      drawer: _buildSessionsDrawer(context, chatState),
-      appBar: AppBar(
+    return SelectionArea(
+      child: Scaffold(
+        drawer: _buildSessionsDrawer(context, chatState),
+        appBar: AppBar(
         title: const Text('Aurelm Agent'),
         actions: [
           // Online/offline indicator
@@ -372,6 +373,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onRemoveAttachment: (i) => setState(() => _attachments.removeAt(i)),
           ),
         ],
+      ),
       ),
     );
   }
