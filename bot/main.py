@@ -11,6 +11,7 @@ from .agent import Agent
 from .config import BotConfig
 from .discord_client import AurelmBot
 from .fetcher import fetch_and_store
+from .migrations import apply_migrations
 from .server import BotServer
 
 log = logging.getLogger(__name__)
@@ -65,6 +66,10 @@ async def run(config: BotConfig) -> None:
         ],
     )
     log.info("Logging to %s", log_file)
+
+    # Auto-apply database migrations
+    log.info("Applying database migrations...")
+    apply_migrations(config.db_path)
 
     # HTTP server (always starts)
     server = BotServer(config)
