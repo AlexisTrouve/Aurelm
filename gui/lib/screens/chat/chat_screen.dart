@@ -146,6 +146,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ),
           ),
 
+          // Pending tool calls (shown with spinner as tools execute)
+          if (chatState.pendingTools.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: chatState.pendingTools
+                    .map((p) => _PendingToolChip(pending: p))
+                    .toList(),
+              ),
+            ),
+
           // Loading indicator
           if (chatState.loading)
             const LinearProgressIndicator(minHeight: 2),
@@ -224,15 +236,22 @@ class _MessageBubble extends StatelessWidget {
       ),
     );
 
-    // For assistant messages with tool calls, show collapsible tool cards above the bubble
-    if (!isUser && message.toolCalls.isNotEmpty) {
+    // For assistant messages, show thinking blocks + tool cards above the bubble
+    if (!isUser &&
+        (message.toolCalls.isNotEmpty || message.thinkingBlocks.isNotEmpty)) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Thinking blocks (brain icon, collapsible)
+            ...message.thinkingBlocks.map(
+              (t) => _ThinkingBlock(content: t),
+            ),
+            // Resolved tool call cards
             ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
-            bubble,
+            // Only show the text bubble if there's actual content
+            if (message.content.isNotEmpty) bubble,
           ],
         ),
       );
@@ -422,18 +441,162 @@ class _ToolCallCardState extends State<_ToolCallCard> {
                   ),
                 ],
               ),
-              if (_expanded && tc.resultSummary.isNotEmpty) ...[
+              if (_expanded) ...[
                 const Divider(height: 10, thickness: 0.5),
-                Text(
-                  tc.resultSummary,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                // Show full result if available, otherwise summary
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      tc.fullResult.isNotEmpty
+                          ? tc.fullResult
+                          : tc.resultSummary,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Thinking block — collapsible, brain icon
+// ---------------------------------------------------------------------------
+
+class _ThinkingBlock extends StatefulWidget {
+  final String content;
+  const _ThinkingBlock({required this.content});
+
+  @override
+  State<_ThinkingBlock> createState() => _ThinkingBlockState();
+}
+
+class _ThinkingBlockState extends State<_ThinkingBlock> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.tertiary.withValues(alpha: 0.3),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.psychology,
+                      size: 14, color: colorScheme.tertiary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Thinking...',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.tertiary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: colorScheme.tertiary,
+                  ),
+                ],
+              ),
+              if (_expanded) ...[
+                const Divider(height: 10, thickness: 0.5),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      widget.content,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                        fontStyle: FontStyle.italic,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pending tool chip — spinner while tool is executing
+// ---------------------------------------------------------------------------
+
+class _PendingToolChip extends StatelessWidget {
+  final PendingToolCall pending;
+  const _PendingToolChip({required this.pending});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final label = pending.inputSummary.isNotEmpty
+        ? '${pending.name} — ${pending.inputSummary}'
+        : pending.name;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              color: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

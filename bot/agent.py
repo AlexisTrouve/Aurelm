@@ -6,7 +6,7 @@ import logging
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from .tool_definitions import TOOL_DEFINITIONS
 from .tools import dispatch_tool
@@ -221,39 +221,170 @@ class Agent:
         return await self._answer_ollama(user_message)
 
     async def answer_in_conversation(
-        self, history: list[dict], new_message: str
+        self,
+        history: list[dict],
+        new_message: str,
+        on_event: Callable[[str, dict], None] | None = None,
     ) -> AgentResult:
         """Answer a question with full conversation context.
 
         Args:
             history: List of previous {"role": "user/assistant", "content": "..."} messages.
             new_message: The new user message to answer.
+            on_event: Optional callback fired as events happen in real time.
+                Called with (event_type, data_dict). Event types:
+                - "tool_start": {"name": str, "input_summary": str}
+                - "tool_result": {"name": str, "input_summary": str, "result": str, "result_summary": str}
+                - "thinking": {"content": str}
 
         Returns:
             AgentResult with the text response and tool calls performed.
         """
         if self._backend == "anthropic":
-            return await self._answer_anthropic_conv(history, new_message)
-        return await self._answer_ollama_conv(history, new_message)
+            return await self._answer_anthropic_conv(history, new_message, on_event)
+        return await self._answer_ollama_conv(history, new_message, on_event)
+
+    async def answer_streaming(
+        self, history: list[dict], new_message: str
+    ):
+        """Async generator that yields (event_type, data) tuples in real time.
+
+        Events yielded between each LLM round — so the caller can send them
+        to the client while the next LLM call is in progress.
+
+        Event types: "tool_start", "tool_result", "thinking", "text", "done".
+        """
+        import asyncio
+
+        messages: list[dict] = [*history, {"role": "user", "content": new_message}]
+        collected_tool_calls: list[dict] = []
+
+        for _round in range(MAX_TOOL_ROUNDS):
+            compressed = _compress_tool_history(messages)
+
+            if self._backend == "anthropic":
+                response = await asyncio.to_thread(
+                    self._anthropic.messages.create,
+                    model="claude-sonnet-4-6",
+                    max_tokens=4096,
+                    system=self._claude_prompt,
+                    tools=self._anthropic_tools,
+                    messages=compressed,
+                )
+
+                # Yield thinking blocks
+                for block in response.content:
+                    if getattr(block, "type", None) == "thinking":
+                        yield ("thinking", {"content": getattr(block, "thinking", "")})
+
+                if response.stop_reason == "tool_use":
+                    tool_results = []
+                    assistant_content = response.content
+
+                    for block in assistant_content:
+                        if block.type == "tool_use":
+                            inp_str = _input_summary(block.input)
+                            yield ("tool_start", {"name": block.name, "input_summary": inp_str})
+
+                            log.info("Tool call: %s(%s)", block.name, block.input)
+                            result = _run_tool(self.config.db_path, block.name, block.input)
+
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": result,
+                            })
+
+                            tc_info = {
+                                "name": block.name,
+                                "input_summary": inp_str,
+                                "result_summary": _result_summary(result),
+                                "result": result,
+                            }
+                            collected_tool_calls.append(tc_info)
+                            yield ("tool_result", tc_info)
+
+                    messages.append({"role": "assistant", "content": assistant_content})
+                    messages.append({"role": "user", "content": tool_results})
+                    continue
+
+                # Final text
+                text_parts = [b.text for b in response.content if hasattr(b, "text")]
+                response_text = "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
+                yield ("text", {"content": response_text, "tool_calls": collected_tool_calls})
+                return
+
+            else:
+                # Ollama backend
+                import ollama as _ollama
+                ollama_messages = [
+                    {"role": "system", "content": self._ollama_prompt},
+                    *messages,
+                ]
+                response = await asyncio.to_thread(
+                    _ollama.chat,
+                    model=self._ollama_model,
+                    messages=ollama_messages,
+                    tools=_build_ollama_tools(),
+                    options={"num_ctx": 8192},
+                )
+                msg = response.message
+
+                if msg.tool_calls:
+                    messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
+                    for tc in msg.tool_calls:
+                        fn = tc.function
+                        inp_str = _input_summary(fn.arguments)
+                        yield ("tool_start", {"name": fn.name, "input_summary": inp_str})
+
+                        result = _run_tool(self.config.db_path, fn.name, fn.arguments)
+                        messages.append({"role": "tool", "content": result})
+
+                        tc_info = {
+                            "name": fn.name,
+                            "input_summary": inp_str,
+                            "result_summary": _result_summary(result),
+                            "result": result,
+                        }
+                        collected_tool_calls.append(tc_info)
+                        yield ("tool_result", tc_info)
+                    continue
+
+                response_text = msg.content if msg.content else "(Pas de reponse.)"
+                yield ("text", {"content": response_text, "tool_calls": collected_tool_calls})
+                return
+
+        yield ("text", {
+            "content": "(Limite de tours d'outils atteinte.)",
+            "tool_calls": collected_tool_calls,
+        })
 
     # ------------------------------------------------------------------ #
     # Anthropic backend
     # ------------------------------------------------------------------ #
 
-    async def _answer_anthropic_conv(self, history: list[dict], new_message: str) -> AgentResult:
+    async def _answer_anthropic_conv(
+        self,
+        history: list[dict],
+        new_message: str,
+        on_event: Callable[[str, dict], None] | None = None,
+    ) -> AgentResult:
         """Run one agent turn with conversation history (Anthropic backend).
 
-        Prepends history before the new user message so Claude can reference
-        prior exchanges. Compresses old tool results each round to save tokens.
+        Emits real-time events via on_event callback:
+        - tool_start / tool_result as tools are called
+        - thinking when Claude emits a thinking block
         """
         import asyncio
 
-        # Build message list: prior turns + new user turn
+        def _emit(event_type: str, data: dict) -> None:
+            if on_event is not None:
+                on_event(event_type, data)
+
         messages: list[dict] = [*history, {"role": "user", "content": new_message}]
         collected_tool_calls: list[dict] = []
 
         for _round in range(MAX_TOOL_ROUNDS):
-            # Compress tool results from earlier rounds to avoid filling context window
             compressed = _compress_tool_history(messages)
 
             response = await asyncio.to_thread(
@@ -265,30 +396,50 @@ class Agent:
                 messages=compressed,
             )
 
+            # Emit thinking blocks (from extended thinking or <thinking> tags)
+            for block in response.content:
+                if getattr(block, "type", None) == "thinking":
+                    _emit("thinking", {"content": getattr(block, "thinking", "")})
+
             if response.stop_reason == "tool_use":
                 tool_results = []
                 assistant_content = response.content
 
                 for block in assistant_content:
                     if block.type == "tool_use":
+                        inp_str = _input_summary(block.input)
+                        # Emit tool_start immediately (before execution)
+                        _emit("tool_start", {
+                            "name": block.name,
+                            "input_summary": inp_str,
+                        })
+
                         log.info("Tool call: %s(%s)", block.name, block.input)
                         result = _run_tool(self.config.db_path, block.name, block.input)
+
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
                             "content": result,
                         })
-                        # Collect for UI display
-                        collected_tool_calls.append({
+
+                        res_summary = _result_summary(result)
+                        tool_call_info = {
                             "name": block.name,
-                            "input_summary": _input_summary(block.input),
-                            "result_summary": _result_summary(result),
-                        })
+                            "input_summary": inp_str,
+                            "result_summary": res_summary,
+                            "result": result,  # full result for UI display
+                        }
+                        collected_tool_calls.append(tool_call_info)
+
+                        # Emit tool_result with full content
+                        _emit("tool_result", tool_call_info)
 
                 messages.append({"role": "assistant", "content": assistant_content})
                 messages.append({"role": "user", "content": tool_results})
                 continue
 
+            # Final text response
             text_parts = []
             for block in response.content:
                 if hasattr(block, "text"):
@@ -346,16 +497,20 @@ class Agent:
     # Ollama backend
     # ------------------------------------------------------------------ #
 
-    async def _answer_ollama_conv(self, history: list[dict], new_message: str) -> AgentResult:
-        """Run one agent turn with conversation history (Ollama backend).
-
-        Injects the system prompt at the front, then history, then the new
-        user message. Tool-calling loop is identical to _answer_ollama.
-        """
+    async def _answer_ollama_conv(
+        self,
+        history: list[dict],
+        new_message: str,
+        on_event: Callable[[str, dict], None] | None = None,
+    ) -> AgentResult:
+        """Run one agent turn with conversation history (Ollama backend)."""
         import asyncio
         import ollama
 
-        # System prompt first, then prior turns, then new user message
+        def _emit(event_type: str, data: dict) -> None:
+            if on_event is not None:
+                on_event(event_type, data)
+
         messages = [
             {"role": "system", "content": self._ollama_prompt},
             *history,
@@ -379,14 +534,21 @@ class Agent:
 
                 for tc in msg.tool_calls:
                     fn = tc.function
+                    inp_str = _input_summary(fn.arguments)
+                    _emit("tool_start", {"name": fn.name, "input_summary": inp_str})
+
                     log.info("Tool call: %s(%s)", fn.name, fn.arguments)
                     result = _run_tool(self.config.db_path, fn.name, fn.arguments)
                     messages.append({"role": "tool", "content": result})
-                    collected_tool_calls.append({
+
+                    tool_call_info = {
                         "name": fn.name,
-                        "input_summary": _input_summary(fn.arguments),
+                        "input_summary": inp_str,
                         "result_summary": _result_summary(result),
-                    })
+                        "result": result,
+                    }
+                    collected_tool_calls.append(tool_call_info)
+                    _emit("tool_result", tool_call_info)
                 continue
 
             response_text = msg.content if msg.content else "(Pas de reponse.)"
