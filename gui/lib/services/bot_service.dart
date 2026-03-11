@@ -16,13 +16,15 @@ class BotService {
     required String dbPath,
     int port = 8473,
     String pythonPath = 'python',
+    // Extra args inserted before -m (e.g. ['-3.12'] for Windows py launcher)
+    List<String> pythonArgs = const [],
   }) async {
     if (_running) return true;
 
     try {
       _process = await Process.start(
         pythonPath,
-        ['-m', 'bot', '--db', dbPath, '--port', '$port'],
+        [...pythonArgs, '-m', 'bot', '--db', dbPath, '--port', '$port'],
         workingDirectory: _findProjectRoot(dbPath),
       );
 

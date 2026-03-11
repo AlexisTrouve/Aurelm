@@ -45,6 +45,7 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
     config_file = db_dir / "aurelm_config.json"
 
     cfg = BotConfig(db_path=db_path)
+    data: dict = {}
 
     if config_file.exists():
         with open(config_file, "r", encoding="utf-8") as f:
@@ -66,8 +67,11 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
     if port_override is not None:
         cfg.bot_port = port_override
 
-    # Secrets from env vars
+    # Secrets: env vars take priority over aurelm_config.json values
     cfg.discord_token = os.environ.get("DISCORD_BOT_TOKEN", "")
-    cfg.anthropic_api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    cfg.anthropic_api_key = (
+        os.environ.get("ANTHROPIC_API_KEY")
+        or data.get("anthropic_api_key", "")
+    )
 
     return cfg

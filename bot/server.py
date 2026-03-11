@@ -136,20 +136,22 @@ class BotServer:
         history = self._conversations.get(conv_id, [])
 
         try:
-            response_text = await self._agent.answer_in_conversation(history, message)
+            result = await self._agent.answer_in_conversation(history, message)
         except Exception as exc:
             log.exception("Agent error in /chat")
             return web.json_response({"error": str(exc)}, status=500)
 
         # Persist updated history — cap at 40 messages (20 user+assistant turns)
+        # Only store user+assistant text turns (no internal tool calls needed for context)
         updated = history + [
             {"role": "user", "content": message},
-            {"role": "assistant", "content": response_text},
+            {"role": "assistant", "content": result.response},
         ]
         self._conversations[conv_id] = updated[-40:]
 
         return web.json_response({
-            "response": response_text,
+            "response": result.response,
+            "tool_calls": result.tool_calls,
             "conversation_id": conv_id,
         })
 

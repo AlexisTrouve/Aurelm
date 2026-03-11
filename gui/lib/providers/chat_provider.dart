@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../services/chat_service.dart';
 
+// Re-export ToolCallInfo so consumers only need to import this file
+export '../services/chat_service.dart' show ToolCallInfo;
+
 // ---------------------------------------------------------------------------
 // Model
 // ---------------------------------------------------------------------------
@@ -13,11 +16,14 @@ class ChatMessage {
   final ChatRole role;
   final String content;
   final DateTime timestamp;
+  /// Tool calls made by the agent while generating this message (assistant only).
+  final List<ToolCallInfo> toolCalls;
 
   const ChatMessage({
     required this.role,
     required this.content,
     required this.timestamp,
+    this.toolCalls = const [],
   });
 }
 
@@ -96,6 +102,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         role: ChatRole.assistant,
         content: result.response,
         timestamp: DateTime.now(),
+        toolCalls: result.toolCalls,
       );
 
       state = state.copyWith(

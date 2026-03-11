@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -19,6 +23,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
 
+  /// Files attached to the next message — cleared after send.
+  final List<({String name, String content})> _attachments = [];
+
   @override
   void dispose() {
     _controller.dispose();
@@ -27,13 +34,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _send() {
+  /// Combine typed text + file attachments into the final message string.
+  String _buildMessage() {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    final parts = <String>[];
+    if (text.isNotEmpty) parts.add(text);
+    for (final att in _attachments) {
+      parts.add('[Fichier: ${att.name}]\n${att.content}');
+    }
+    return parts.join('\n\n');
+  }
+
+  void _send() {
+    final message = _buildMessage();
+    if (message.isEmpty) return;
     _controller.clear();
-    ref.read(chatProvider.notifier).send(text);
-    // Scroll to bottom after the next frame
+    setState(() => _attachments.clear());
+    ref.read(chatProvider.notifier).send(message);
+    // Refocus input so the user can type the next message immediately
+    _focusNode.requestFocus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['txt', 'md', 'json', 'csv', 'py', 'dart', 'ts', 'js', 'sql'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.path == null) return;
+    try {
+      final content = await File(file.path!).readAsString();
+      setState(() => _attachments.add((name: file.name, content: content)));
+    } catch (_) {
+      // Unreadable file — silently ignore
+    }
   }
 
   void _scrollToBottom() {
@@ -128,6 +164,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             focusNode: _focusNode,
             enabled: isOnline && !chatState.loading,
             onSend: _send,
+            onPickFile: _pickFile,
+            attachments: _attachments,
+            onRemoveAttachment: (i) => setState(() => _attachments.removeAt(i)),
           ),
         ],
       ),
@@ -149,7 +188,7 @@ class _MessageBubble extends StatelessWidget {
     final isUser = message.role == ChatRole.user;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Align(
+    final bubble = Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
@@ -184,6 +223,22 @@ class _MessageBubble extends StatelessWidget {
               ),
       ),
     );
+
+    // For assistant messages with tool calls, show collapsible tool cards above the bubble
+    if (!isUser && message.toolCalls.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
+            bubble,
+          ],
+        ),
+      );
+    }
+
+    return bubble;
   }
 }
 
@@ -196,12 +251,18 @@ class _InputBar extends StatelessWidget {
   final FocusNode focusNode;
   final bool enabled;
   final VoidCallback onSend;
+  final VoidCallback onPickFile;
+  final List<({String name, String content})> attachments;
+  final void Function(int index) onRemoveAttachment;
 
   const _InputBar({
     required this.controller,
     required this.focusNode,
     required this.enabled,
     required this.onSend,
+    required this.onPickFile,
+    required this.attachments,
+    required this.onRemoveAttachment,
   });
 
   @override
@@ -216,41 +277,163 @@ class _InputBar extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              enabled: enabled,
-              maxLines: null,
-              keyboardType: TextInputType.multiline,
-              textInputAction: TextInputAction.newline,
-              decoration: InputDecoration(
-                hintText: enabled
-                    ? 'Posez une question au MJ...'
-                    : 'Agent hors ligne — démarrez le bot',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+          // Attachment chips — shown when files are attached
+          if (attachments.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Wrap(
+                spacing: 6,
+                children: [
+                  for (int i = 0; i < attachments.length; i++)
+                    Chip(
+                      label: Text(
+                        attachments[i].name,
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                      deleteIcon: const Icon(Icons.close, size: 14),
+                      onDeleted: () => onRemoveAttachment(i),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                ],
               ),
-              onSubmitted: enabled ? (_) => onSend() : null,
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton.filled(
-            onPressed: enabled ? onSend : null,
-            icon: const Icon(Icons.send),
-            tooltip: 'Envoyer',
+          Row(
+            children: [
+              // Paperclip button — attach a text file
+              IconButton(
+                onPressed: enabled ? onPickFile : null,
+                icon: const Icon(Icons.attach_file),
+                tooltip: 'Joindre un fichier',
+                iconSize: 20,
+              ),
+              Expanded(
+                // Intercept Enter (send) vs Shift+Enter (newline) on desktop
+                child: Focus(
+                  onKeyEvent: (_, event) {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter &&
+                        !HardwareKeyboard.instance.isShiftPressed) {
+                      if (enabled) onSend();
+                      return KeyEventResult.handled; // swallow Enter
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    enabled: enabled,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    decoration: InputDecoration(
+                      hintText: enabled
+                          ? 'Posez une question... (Shift+Enter pour newline)'
+                          : 'Agent hors ligne — démarrez le bot',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: enabled ? onSend : null,
+                icon: const Icon(Icons.send),
+                tooltip: 'Envoyer',
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tool call card — collapsible, shown between bubble and tool result
+// ---------------------------------------------------------------------------
+
+class _ToolCallCard extends StatefulWidget {
+  final ToolCallInfo toolCall;
+  const _ToolCallCard({required this.toolCall});
+
+  @override
+  State<_ToolCallCard> createState() => _ToolCallCardState();
+}
+
+class _ToolCallCardState extends State<_ToolCallCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = widget.toolCall;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final label = tc.inputSummary.isNotEmpty
+        ? '${tc.name} — ${tc.inputSummary}'
+        : tc.name;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.manage_search,
+                      size: 14, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (_expanded && tc.resultSummary.isNotEmpty) ...[
+                const Divider(height: 10, thickness: 0.5),
+                Text(
+                  tc.resultSummary,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -287,6 +470,7 @@ class _EmptyStateState extends ConsumerState<_EmptyState> {
     final ok = await ref.read(botServiceProvider).start(
           dbPath: dbPath,
           pythonPath: 'py',
+          pythonArgs: ['-3.12'], // Windows py launcher: select Python 3.12
         );
     if (mounted) {
       setState(() {

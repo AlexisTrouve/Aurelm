@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .tools import TOOL_DEFINITIONS, dispatch_tool
+from .tool_definitions import TOOL_DEFINITIONS
+from .tools import dispatch_tool
 
 if TYPE_CHECKING:
     from .config import BotConfig
@@ -15,6 +17,95 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 MAX_TOOL_ROUNDS = 10
+
+
+@dataclass
+class AgentResult:
+    """Result from answer_in_conversation — text response + tool calls performed."""
+    response: str
+    tool_calls: list[dict] = field(default_factory=list)  # [{name, input_summary, result_summary}]
+
+
+def _input_summary(tool_input: dict) -> str:
+    """One-line summary of tool input, e.g. 'query=bronze, civName=Confluence'."""
+    if not tool_input:
+        return ""
+    parts = [f"{k}={v!r}" for k, v in list(tool_input.items())[:2]]
+    summary = ", ".join(parts)
+    return summary[:80] + ("\u2026" if len(summary) > 80 else "")
+
+
+def _result_summary(result_text: str) -> str:
+    """First non-empty, non-heading line of a tool result, truncated to 100 chars."""
+    for line in result_text.splitlines():
+        line = line.strip().lstrip("#").strip()
+        if line:
+            return line[:100] + ("\u2026" if len(line) > 100 else "")
+    return result_text[:100]
+
+
+def _compress_tool_history(messages: list[dict]) -> list[dict]:
+    """Compress old tool_result turns to compact one-liners.
+
+    For each assistant→tool_result pair that's not the most recent, replaces
+    the verbose tool_result content with a compact summary:
+        tooluse:{name}({input_summary})→{result_first_line}
+
+    To get the tool name we look at the preceding assistant message which
+    contains the tool_use blocks (matched by tool_use_id). The last
+    tool_result turn is kept intact — Claude needs it to continue reasoning.
+    """
+    # Find indices of user messages that carry tool_result blocks
+    tool_result_indices = [
+        i for i, msg in enumerate(messages)
+        if msg.get("role") == "user"
+        and isinstance(msg.get("content"), list)
+        and any(
+            isinstance(b, dict) and b.get("type") == "tool_result"
+            for b in msg["content"]
+        )
+    ]
+
+    # Nothing to compress if only one (or zero) tool-result turn
+    if len(tool_result_indices) <= 1:
+        return messages
+
+    to_compress = set(tool_result_indices[:-1])  # keep last turn intact
+    result = []
+    for i, msg in enumerate(messages):
+        if i not in to_compress:
+            result.append(msg)
+            continue
+
+        # Build tool_use_id → (name, input) map from the preceding assistant block
+        tool_name_map: dict[str, tuple[str, dict]] = {}
+        if i > 0:
+            prev = messages[i - 1]
+            if prev.get("role") == "assistant" and isinstance(prev.get("content"), list):
+                for block in prev["content"]:
+                    if isinstance(block, dict) and block.get("type") == "tool_use":
+                        tool_name_map[block["id"]] = (
+                            block.get("name", "tool"),
+                            block.get("input", {}),
+                        )
+
+        # Replace each long tool_result with compact format
+        new_blocks = []
+        for block in msg["content"]:
+            if isinstance(block, dict) and block.get("type") == "tool_result":
+                raw = block.get("content", "")
+                if isinstance(raw, str) and len(raw) > 120:
+                    tool_id = block.get("tool_use_id", "")
+                    name, inp = tool_name_map.get(tool_id, ("tool", {}))
+                    inp_str = _input_summary(inp)
+                    res_str = _result_summary(raw)
+                    # Compact: "tooluse:searchLore(query='bronze')→Argile Vivante…"
+                    compact = f"tooluse:{name}({inp_str})\u2192{res_str}"
+                    block = {**block, "content": compact}
+            new_blocks.append(block)
+        result.append({**msg, "content": new_blocks})
+
+    return result
 
 
 OLLAMA_SYSTEM_PROMPT = """\
@@ -131,7 +222,7 @@ class Agent:
 
     async def answer_in_conversation(
         self, history: list[dict], new_message: str
-    ) -> str:
+    ) -> AgentResult:
         """Answer a question with full conversation context.
 
         Args:
@@ -139,7 +230,7 @@ class Agent:
             new_message: The new user message to answer.
 
         Returns:
-            The assistant's text response.
+            AgentResult with the text response and tool calls performed.
         """
         if self._backend == "anthropic":
             return await self._answer_anthropic_conv(history, new_message)
@@ -149,25 +240,29 @@ class Agent:
     # Anthropic backend
     # ------------------------------------------------------------------ #
 
-    async def _answer_anthropic_conv(self, history: list[dict], new_message: str) -> str:
+    async def _answer_anthropic_conv(self, history: list[dict], new_message: str) -> AgentResult:
         """Run one agent turn with conversation history (Anthropic backend).
 
         Prepends history before the new user message so Claude can reference
-        prior exchanges. Tool-calling loop is identical to _answer_anthropic.
+        prior exchanges. Compresses old tool results each round to save tokens.
         """
         import asyncio
 
         # Build message list: prior turns + new user turn
         messages: list[dict] = [*history, {"role": "user", "content": new_message}]
+        collected_tool_calls: list[dict] = []
 
         for _round in range(MAX_TOOL_ROUNDS):
+            # Compress tool results from earlier rounds to avoid filling context window
+            compressed = _compress_tool_history(messages)
+
             response = await asyncio.to_thread(
                 self._anthropic.messages.create,
-                model="claude-sonnet-4-5-20250929",
+                model="claude-sonnet-4-6",
                 max_tokens=4096,
                 system=self._claude_prompt,
                 tools=self._anthropic_tools,
-                messages=messages,
+                messages=compressed,
             )
 
             if response.stop_reason == "tool_use":
@@ -183,6 +278,12 @@ class Agent:
                             "tool_use_id": block.id,
                             "content": result,
                         })
+                        # Collect for UI display
+                        collected_tool_calls.append({
+                            "name": block.name,
+                            "input_summary": _input_summary(block.input),
+                            "result_summary": _result_summary(result),
+                        })
 
                 messages.append({"role": "assistant", "content": assistant_content})
                 messages.append({"role": "user", "content": tool_results})
@@ -192,9 +293,13 @@ class Agent:
             for block in response.content:
                 if hasattr(block, "text"):
                     text_parts.append(block.text)
-            return "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
+            response_text = "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
+            return AgentResult(response=response_text, tool_calls=collected_tool_calls)
 
-        return "(Limite de tours d'outils atteinte.)"
+        return AgentResult(
+            response="(Limite de tours d'outils atteinte.)",
+            tool_calls=collected_tool_calls,
+        )
 
     async def _answer_anthropic(self, user_message: str) -> str:
         import asyncio
@@ -204,7 +309,7 @@ class Agent:
         for _round in range(MAX_TOOL_ROUNDS):
             response = await asyncio.to_thread(
                 self._anthropic.messages.create,
-                model="claude-sonnet-4-5-20250929",
+                model="claude-sonnet-4-6",
                 max_tokens=4096,
                 system=self._claude_prompt,
                 tools=self._anthropic_tools,
@@ -241,7 +346,7 @@ class Agent:
     # Ollama backend
     # ------------------------------------------------------------------ #
 
-    async def _answer_ollama_conv(self, history: list[dict], new_message: str) -> str:
+    async def _answer_ollama_conv(self, history: list[dict], new_message: str) -> AgentResult:
         """Run one agent turn with conversation history (Ollama backend).
 
         Injects the system prompt at the front, then history, then the new
@@ -256,6 +361,7 @@ class Agent:
             *history,
             {"role": "user", "content": new_message},
         ]
+        collected_tool_calls: list[dict] = []
 
         for _round in range(MAX_TOOL_ROUNDS):
             response = await asyncio.to_thread(
@@ -276,11 +382,20 @@ class Agent:
                     log.info("Tool call: %s(%s)", fn.name, fn.arguments)
                     result = _run_tool(self.config.db_path, fn.name, fn.arguments)
                     messages.append({"role": "tool", "content": result})
+                    collected_tool_calls.append({
+                        "name": fn.name,
+                        "input_summary": _input_summary(fn.arguments),
+                        "result_summary": _result_summary(result),
+                    })
                 continue
 
-            return msg.content if msg.content else "(Pas de reponse.)"
+            response_text = msg.content if msg.content else "(Pas de reponse.)"
+            return AgentResult(response=response_text, tool_calls=collected_tool_calls)
 
-        return "(Limite de tours d'outils atteinte.)"
+        return AgentResult(
+            response="(Limite de tours d'outils atteinte.)",
+            tool_calls=collected_tool_calls,
+        )
 
     async def _answer_ollama(self, user_message: str) -> str:
         import asyncio
