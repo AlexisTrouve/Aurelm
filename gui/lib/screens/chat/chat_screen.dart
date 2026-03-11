@@ -95,6 +95,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
+    return Focus(
+      // Escape: cancel last queued message or ongoing LLM call
+      autofocus: false,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
+          ref.read(chatProvider.notifier).cancelLast();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: _buildScaffold(context, chatState, isOnline),
+    );
+  }
+
+  Widget _buildScaffold(
+      BuildContext context, ChatState chatState, bool isOnline) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Aurelm Agent'),
@@ -130,18 +147,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       body: Column(
         children: [
-          // Message list
+          // Message list + queued messages
           Expanded(
-            child: chatState.messages.isEmpty
+            child: (chatState.messages.isEmpty &&
+                    chatState.messageQueue.isEmpty)
                 ? _EmptyState(isOnline: isOnline)
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 12),
-                    itemCount: chatState.messages.length,
+                    // Regular messages + pending queue shown as faded bubbles
+                    itemCount: chatState.messages.length +
+                        chatState.messageQueue.length,
                     itemBuilder: (context, index) {
-                      return _MessageBubble(
-                          message: chatState.messages[index]);
+                      if (index < chatState.messages.length) {
+                        return _MessageBubble(
+                            message: chatState.messages[index]);
+                      }
+                      // Queued message — faded, shows it's waiting
+                      final qi = index - chatState.messages.length;
+                      return _QueuedMessageBubble(
+                        text: chatState.messageQueue[qi],
+                        isLast: qi == chatState.messageQueue.length - 1,
+                        onCancel: () =>
+                            ref.read(chatProvider.notifier).cancelLast(),
+                      );
                     },
                   ),
           ),
@@ -174,7 +204,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _InputBar(
             controller: _controller,
             focusNode: _focusNode,
-            enabled: isOnline && !chatState.loading,
+            enabled: isOnline,
             onSend: _send,
             onPickFile: _pickFile,
             attachments: _attachments,
@@ -458,6 +488,71 @@ class _ToolCallCardState extends State<_ToolCallCard> {
                       ),
                     ),
                   ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Queued message bubble — faded, shown while LLM is processing
+// ---------------------------------------------------------------------------
+
+class _QueuedMessageBubble extends StatelessWidget {
+  final String text;
+  final bool isLast; // last in queue — show ✕ cancel hint
+  final VoidCallback onCancel;
+
+  const _QueuedMessageBubble({
+    required this.text,
+    required this.isLast,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Opacity(
+        opacity: 0.45,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(4),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: Text(
+                  text,
+                  style: TextStyle(color: colorScheme.onPrimary),
+                ),
+              ),
+              // Show cancel X on the last queued message (Escape hint)
+              if (isLast) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onCancel,
+                  child: Icon(Icons.close,
+                      size: 14, color: colorScheme.onPrimary),
                 ),
               ],
             ],

@@ -62,6 +62,8 @@ class ChatState {
   final String? conversationId;
   /// Tool calls currently in progress (shown with spinner).
   final List<PendingToolCall> pendingTools;
+  /// Messages typed while the LLM was busy — will be fused and sent after.
+  final List<String> messageQueue;
 
   const ChatState({
     this.messages = const [],
@@ -69,6 +71,7 @@ class ChatState {
     this.error,
     this.conversationId,
     this.pendingTools = const [],
+    this.messageQueue = const [],
   });
 
   ChatState copyWith({
@@ -77,6 +80,7 @@ class ChatState {
     String? error,
     String? conversationId,
     List<PendingToolCall>? pendingTools,
+    List<String>? messageQueue,
     bool clearError = false,
     bool clearConversation = false,
   }) {
@@ -88,6 +92,7 @@ class ChatState {
           ? null
           : (conversationId ?? this.conversationId),
       pendingTools: pendingTools ?? this.pendingTools,
+      messageQueue: messageQueue ?? this.messageQueue,
     );
   }
 }
@@ -110,13 +115,27 @@ class ChatNotifier extends StateNotifier<ChatState> {
   ChatNotifier(this._service) : super(const ChatState());
 
   /// Send a user message and stream the agent's response events.
+  ///
+  /// If the LLM is busy, the message is queued and will be fused with other
+  /// queued messages when the current turn finishes.
   Future<void> send(String message) async {
-    if (message.trim().isEmpty || state.loading) return;
+    final trimmed = message.trim();
+    if (trimmed.isEmpty) return;
 
+    // LLM is busy → queue the message (shown as faded bubble)
+    if (state.loading) {
+      state = state.copyWith(messageQueue: [...state.messageQueue, trimmed]);
+      return;
+    }
+
+    await _sendImmediate(trimmed);
+  }
+
+  Future<void> _sendImmediate(String message) async {
     // Append user message immediately
     final userMsg = ChatMessage(
       role: ChatRole.user,
-      content: message.trim(),
+      content: message,
       timestamp: DateTime.now(),
     );
     state = state.copyWith(
@@ -124,6 +143,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       loading: true,
       clearError: true,
       pendingTools: [],
+      messageQueue: [],
     );
 
     // Prepare a partial assistant message that we'll build up incrementally
@@ -200,6 +220,45 @@ class ChatNotifier extends StateNotifier<ChatState> {
         loading: false,
         error: e.toString(),
         pendingTools: [],
+        messageQueue: [],
+      );
+    }
+
+    // Drain the queue: fuse all pending messages into one and send
+    final queue = state.messageQueue;
+    if (queue.isNotEmpty) {
+      final fused = queue.join('\n');
+      state = state.copyWith(messageQueue: []);
+      await _sendImmediate(fused);
+    }
+  }
+
+  /// Cancel: pop last queued message, or cancel the LLM call if queue is empty.
+  void cancelLast() {
+    if (state.messageQueue.isNotEmpty) {
+      // Remove last queued message
+      final newQueue = [...state.messageQueue]..removeLast();
+      state = state.copyWith(messageQueue: newQueue);
+      return;
+    }
+    if (state.loading) {
+      // Cancel the ongoing LLM call
+      _service.cancel();
+      // Remove the last user message (the one being processed)
+      final msgs = [...state.messages];
+      if (msgs.isNotEmpty && msgs.last.role == ChatRole.user) {
+        msgs.removeLast();
+      }
+      // Also remove partial assistant message if started
+      if (msgs.isNotEmpty && msgs.last.role == ChatRole.assistant) {
+        msgs.removeLast();
+      }
+      state = state.copyWith(
+        messages: msgs,
+        loading: false,
+        pendingTools: [],
+        messageQueue: [],
+        clearError: true,
       );
     }
   }
