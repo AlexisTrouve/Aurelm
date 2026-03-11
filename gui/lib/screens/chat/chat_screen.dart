@@ -12,7 +12,9 @@ import '../../providers/database_provider.dart';
 
 /// Full-page chat interface for the Aurelm AI agent.
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  final String? initialSessionId;
+
+  const ChatScreen({super.key, this.initialSessionId});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -25,6 +27,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// Files attached to the next message — cleared after send.
   final List<({String name, String content})> _attachments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-load session if provided
+    if (widget.initialSessionId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Set the session ID in the state so subsequent messages use it
+        ref.read(chatProvider.notifier).setSessionId(widget.initialSessionId!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -140,7 +154,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             icon: const Icon(Icons.add_comment_outlined),
             tooltip: 'Nouvelle conversation',
             onPressed: () {
-              ref.read(chatProvider.notifier).newConversation();
+              ref.read(chatProvider.notifier).newSession();
             },
           ),
         ],
@@ -195,7 +209,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             _ErrorBanner(
               error: chatState.error!,
               onDismiss: () =>
-                  ref.read(chatProvider.notifier).newConversation(),
+                  ref.read(chatProvider.notifier).newSession(),
             ),
 
           // Input bar

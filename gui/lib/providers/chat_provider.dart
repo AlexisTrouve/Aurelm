@@ -59,7 +59,7 @@ class ChatState {
   final List<ChatMessage> messages;
   final bool loading;
   final String? error;
-  final String? conversationId;
+  final String? sessionId;
   /// Tool calls currently in progress (shown with spinner).
   final List<PendingToolCall> pendingTools;
   /// Messages typed while the LLM was busy — will be fused and sent after.
@@ -69,7 +69,7 @@ class ChatState {
     this.messages = const [],
     this.loading = false,
     this.error,
-    this.conversationId,
+    this.sessionId,
     this.pendingTools = const [],
     this.messageQueue = const [],
   });
@@ -78,19 +78,19 @@ class ChatState {
     List<ChatMessage>? messages,
     bool? loading,
     String? error,
-    String? conversationId,
+    String? sessionId,
     List<PendingToolCall>? pendingTools,
     List<String>? messageQueue,
     bool clearError = false,
-    bool clearConversation = false,
+    bool clearSession = false,
   }) {
     return ChatState(
       messages: messages ?? this.messages,
       loading: loading ?? this.loading,
       error: clearError ? null : (error ?? this.error),
-      conversationId: clearConversation
+      sessionId: clearSession
           ? null
-          : (conversationId ?? this.conversationId),
+          : (sessionId ?? this.sessionId),
       pendingTools: pendingTools ?? this.pendingTools,
       messageQueue: messageQueue ?? this.messageQueue,
     );
@@ -157,7 +157,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     try {
       final stream = _service.sendMessageStream(
         message,
-        conversationId: state.conversationId,
+        sessionId: state.sessionId,
       );
 
       await for (final event in stream) {
@@ -195,7 +195,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
           case DoneEvent():
             state = state.copyWith(
               loading: false,
-              conversationId: event.conversationId,
+              sessionId: event.sessionId,
               pendingTools: [],
             );
 
@@ -290,9 +290,14 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(messages: msgs);
   }
 
-  /// Start a fresh conversation (clears history and conversation ID).
-  void newConversation() {
+  /// Start a fresh session (clears history and session ID).
+  void newSession() {
     _service.cancel();
     state = const ChatState();
+  }
+
+  /// Set the current session ID (e.g. when loading a saved session).
+  void setSessionId(String sessionId) {
+    state = state.copyWith(sessionId: sessionId);
   }
 }

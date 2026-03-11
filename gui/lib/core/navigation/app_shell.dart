@@ -33,9 +33,9 @@ class AppShell extends StatelessWidget {
       label: Text('Sujets'),
     ),
     NavigationRailDestination(
-      icon: Icon(Icons.smart_toy_outlined),
-      selectedIcon: Icon(Icons.smart_toy),
-      label: Text('Agent'),
+      icon: Icon(Icons.chat_outlined),
+      selectedIcon: Icon(Icons.chat),
+      label: Text('Sessions'),
     ),
     NavigationRailDestination(
       icon: Icon(Icons.settings_outlined),
@@ -50,7 +50,7 @@ class AppShell extends StatelessWidget {
     '/timeline',
     '/graph',
     '/subjects',
-    '/chat',
+    '/chat/sessions',
     '/settings',
   ];
 
@@ -60,7 +60,7 @@ class AppShell extends StatelessWidget {
     if (location.startsWith('/timeline')) return 2;
     if (location.startsWith('/graph')) return 3;
     if (location.startsWith('/subjects')) return 4;
-    if (location.startsWith('/chat')) return 5;
+    if (location.startsWith('/chat')) return 5;  // matches /chat, /chat/sessions, etc.
     if (location.startsWith('/settings')) return 6;
     return 0; // dashboard + /civs/:id
   }

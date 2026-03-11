@@ -14,6 +14,7 @@ import '../../screens/settings/settings_screen.dart';
 import '../../screens/subjects/subject_browser_screen.dart';
 import '../../screens/subjects/subject_detail_screen.dart';
 import '../../screens/chat/chat_screen.dart';
+import '../../screens/chat/chat_sessions_screen.dart';
 import '../navigation/app_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -100,10 +101,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
-            path: '/chat',
+            path: '/chat/sessions',
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ChatScreen(),
+              child: ChatSessionsScreen(),
             ),
+          ),
+          GoRoute(
+            path: '/chat',
+            pageBuilder: (context, state) {
+              // Optionally accept a sessionId via extra parameter
+              final sessionId = state.extra as String?;
+              return NoTransitionPage(
+                child: ChatScreen(initialSessionId: sessionId),
+              );
+            },
           ),
           GoRoute(
             path: '/settings',

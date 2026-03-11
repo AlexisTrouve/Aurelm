@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING
 
 from aiohttp import web
 
+from .sessions import SessionManager, ChatMessage
+
 if TYPE_CHECKING:
     from .config import BotConfig
 
@@ -27,6 +29,13 @@ class BotServer:
         self._app.router.add_get("/progress", self._progress)
         self._app.router.add_post("/sync", self._sync)
         self._app.router.add_post("/chat", self._chat)
+        self._app.router.add_get("/chat/sessions", self._list_sessions)
+        self._app.router.add_post("/chat/sessions", self._create_session)
+        self._app.router.add_post("/chat/sessions/{session_id}/rename", self._rename_session)
+        self._app.router.add_post("/chat/sessions/{session_id}/archive", self._archive_session)
+        self._app.router.add_delete("/chat/sessions/{session_id}", self._delete_session)
+        self._app.router.add_post("/chat/sessions/{session_id}/tags", self._add_tag)
+        self._app.router.add_delete("/chat/sessions/{session_id}/tags/{tag}", self._remove_tag)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -36,7 +45,9 @@ class BotServer:
 
         # Agent wired by main.py when API key is available
         self._agent: "Agent | None" = None
-        # In-memory conversation histories keyed by UUID, capped at 40 messages
+        # Session manager for persistent conversation history
+        self._session_manager = SessionManager(config.db_path)
+        # Legacy in-memory conversation histories keyed by UUID (deprecated, kept for backwards compatibility)
         self._conversations: dict[str, list[dict]] = {}
 
         # Callables set by main.py
@@ -110,14 +121,14 @@ class BotServer:
     async def _chat(self, request: web.Request) -> web.StreamResponse:
         """POST /chat — NDJSON stream of agent events during a turn.
 
-        Request body: {"message": "...", "conversation_id": "optional-uuid"}
+        Request body: {"message": "...", "session_id": "optional-uuid"}
 
         One JSON object per line, streamed as events happen:
             {"type": "tool_start", "name": "...", "input_summary": "..."}
             {"type": "tool_result", "name": "...", "result": "...", ...}
             {"type": "thinking", "content": "..."}
             {"type": "text", "content": "..."}
-            {"type": "done", "conversation_id": "uuid"}
+            {"type": "done", "session_id": "uuid"}
             {"type": "error", "message": "..."}
         """
         if self._agent is None:
@@ -135,8 +146,23 @@ class BotServer:
         if not message:
             return web.json_response({"error": "Empty message"}, status=400)
 
-        conv_id = body.get("conversation_id") or str(uuid.uuid4())
-        history = self._conversations.get(conv_id, [])
+        session_id = body.get("session_id")
+
+        # Load or create session
+        if session_id:
+            session = self._session_manager.load_session(session_id)
+            if not session:
+                return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+        else:
+            # Create anonymous session (not persisted)
+            session_id = str(uuid.uuid4())
+            session = self._session_manager.create_session(f"Conversation {session_id[:8]}")
+
+        # Build history for LLM: convert ChatMessage to dict
+        history = [
+            {"role": msg.role, "content": msg.content}
+            for msg in session.messages
+        ]
 
         # NDJSON stream — each event is one JSON line
         resp = web.StreamResponse(
@@ -159,16 +185,28 @@ class BotServer:
             async for event_type, data in self._agent.answer_streaming(history, message):
                 await _write(event_type, data)
 
-                # When we get the final text, persist conversation history
+                # When we get the final text, persist conversation in DB
                 if event_type == "text":
                     response_text = data.get("content", "")
-                    updated = history + [
-                        {"role": "user", "content": message},
-                        {"role": "assistant", "content": response_text},
-                    ]
-                    self._conversations[conv_id] = updated[-40:]
+                    tool_calls = data.get("tool_calls", [])
 
-            await _write("done", {"conversation_id": conv_id})
+                    # Persist user message
+                    self._session_manager.save_message(
+                        session_id,
+                        ChatMessage(role="user", content=message)
+                    )
+
+                    # Persist assistant response with tool calls
+                    self._session_manager.save_message(
+                        session_id,
+                        ChatMessage(
+                            role="assistant",
+                            content=response_text,
+                            tool_calls=tool_calls
+                        )
+                    )
+
+            await _write("done", {"session_id": session_id})
 
         except Exception as exc:
             log.exception("Agent error in /chat")
@@ -176,6 +214,136 @@ class BotServer:
 
         await resp.write_eof()
         return resp
+
+    async def _list_sessions(self, request: web.Request) -> web.Response:
+        """GET /chat/sessions — List all active sessions."""
+        archived = request.query.get("archived", "false").lower() == "true"
+        tag_filter = request.query.get("tag")
+
+        sessions = self._session_manager.list_sessions(archived=archived, tag_filter=tag_filter)
+
+        result = []
+        for session in sessions:
+            last_msg = session.messages[-1] if session.messages else None
+            result.append({
+                "session_id": session.session_id,
+                "name": session.name,
+                "message_count": len(session.messages),
+                "tags": session.tags,
+                "archived": session.archived,
+                "created_at": session.created_at,
+                "updated_at": session.updated_at,
+                "last_message": last_msg.content[:100] if last_msg else None,
+            })
+
+        return web.json_response({"sessions": result, "total": len(result)})
+
+    async def _create_session(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions — Create a new session."""
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+
+        name = body.get("name", "").strip()
+        if not name:
+            return web.json_response({"error": "Session name required"}, status=400)
+
+        session = self._session_manager.create_session(name)
+
+        return web.json_response({
+            "session_id": session.session_id,
+            "name": session.name,
+            "created_at": session.created_at,
+        }, status=201)
+
+    async def _rename_session(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions/{session_id}/rename — Rename a session."""
+        session_id = request.match_info.get("session_id")
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+
+        new_name = body.get("name", "").strip()
+        if not new_name:
+            return web.json_response({"error": "New name required"}, status=400)
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        self._session_manager.rename_session(session_id, new_name)
+
+        return web.json_response({"session_id": session_id, "name": new_name})
+
+    async def _archive_session(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions/{session_id}/archive — Archive/unarchive a session."""
+        session_id = request.match_info.get("session_id")
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+
+        archived = body.get("archived", not session.archived)
+        self._session_manager.toggle_archive(session_id, archived)
+
+        return web.json_response({"session_id": session_id, "archived": archived})
+
+    async def _delete_session(self, request: web.Request) -> web.Response:
+        """DELETE /chat/sessions/{session_id} — Delete a session."""
+        session_id = request.match_info.get("session_id")
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        self._session_manager.delete_session(session_id)
+
+        return web.json_response({"deleted": session_id})
+
+    async def _add_tag(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions/{session_id}/tags — Add a tag to a session."""
+        session_id = request.match_info.get("session_id")
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON body"}, status=400)
+
+        tag = body.get("tag", "").strip()
+        if not tag:
+            return web.json_response({"error": "Tag required"}, status=400)
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        self._session_manager.add_tag(session_id, tag)
+
+        return web.json_response({"session_id": session_id, "tag": tag})
+
+    async def _remove_tag(self, request: web.Request) -> web.Response:
+        """DELETE /chat/sessions/{session_id}/tags/{tag} — Remove a tag from a session."""
+        session_id = request.match_info.get("session_id")
+        tag = request.match_info.get("tag")
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        if tag not in session.tags:
+            return web.json_response({"error": f"Tag {tag} not in session"}, status=400)
+
+        self._session_manager.remove_tag(session_id, tag)
+
+        return web.json_response({"session_id": session_id, "removed_tag": tag})
 
     # ---------------------------------------------------------------------- #
     # Helpers

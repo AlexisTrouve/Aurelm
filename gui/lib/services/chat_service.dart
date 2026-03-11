@@ -56,10 +56,10 @@ class TextEvent extends ChatEvent {
   TextEvent({required this.content});
 }
 
-/// Stream complete — conversation_id for next turn.
+/// Stream complete — session_id for next turn.
 class DoneEvent extends ChatEvent {
-  final String conversationId;
-  DoneEvent({required this.conversationId});
+  final String sessionId;
+  DoneEvent({required this.sessionId});
 }
 
 /// Agent error.
@@ -84,12 +84,12 @@ class ChatService {
   /// Tool calls appear as they resolve, not at the end.
   Stream<ChatEvent> sendMessageStream(
     String message, {
-    String? conversationId,
+    String? sessionId,
   }) async* {
     final uri = Uri.parse('$_baseUrl${AppConstants.botChatEndpoint}');
     final body = jsonEncode({
       'message': message,
-      if (conversationId != null) 'conversation_id': conversationId,
+      if (sessionId != null) 'session_id': sessionId,
     });
 
     final client = http.Client();
@@ -139,7 +139,7 @@ class ChatService {
               );
             case 'done':
               yield DoneEvent(
-                conversationId: json['conversation_id'] as String? ?? '',
+                sessionId: json['session_id'] as String? ?? '',
               );
             case 'error':
               yield ErrorEvent(
