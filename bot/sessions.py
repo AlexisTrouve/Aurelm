@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid as uuid_lib
+from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -41,7 +42,8 @@ class SessionManager:
     """Manages persistent conversation sessions in SQLite."""
 
     def __init__(self, db_path: str) -> None:
-        self.db_path = db_path
+        # Normalize to absolute path so relative/absolute comparisons always match
+        self.db_path = str(Path(db_path).resolve())
 
     def create_session(self, name: str, db_path: str | None = None) -> ChatSession:
         """Create a new session and save to DB.
@@ -53,8 +55,8 @@ class SessionManager:
         """
         session_id = str(uuid_lib.uuid4())
         session = ChatSession(session_id=session_id, name=name)
-        # Scope the session to the given DB path (or fall back to self.db_path)
-        scoped_db_path = db_path or self.db_path
+        # Scope the session to the given DB path (normalized to absolute)
+        scoped_db_path = str(Path(db_path).resolve()) if db_path else self.db_path
 
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
@@ -143,10 +145,11 @@ class SessionManager:
                 )
                 params.append(tag_filter)
 
-            # Filter by game DB: include sessions matching the path OR unscoped ones (NULL)
+            # Filter by game DB: normalize path before comparing, include unscoped (NULL)
             if db_path:
+                normalized = str(Path(db_path).resolve())
                 query += " AND (db_path = ? OR db_path IS NULL)"
-                params.append(db_path)
+                params.append(normalized)
 
             query += " ORDER BY updated_at DESC"
 
