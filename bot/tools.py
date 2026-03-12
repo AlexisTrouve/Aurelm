@@ -1363,6 +1363,211 @@ from .tool_definitions import TOOL_DEFINITIONS  # noqa: F401  (re-exported)
 _NIL_VALUES = {"<nil>", "nil", "null", "none", "None", "undefined"}
 
 
+def list_subjects(
+    conn: sqlite3.Connection,
+    civ_id: int | None = None,
+    status: str = "open",
+    direction: str | None = None,
+    tag: str | None = None,
+) -> str:
+    """List subjects (MJ↔PJ open threads) with optional filters.
+
+    Returns a Markdown table with subject id, title, category, direction,
+    status, source turn, and tags.
+    """
+    import json as _json
+
+    where: list[str] = []
+    params: list = []
+
+    if status and status != "all":
+        where.append("s.status = ?")
+        params.append(status)
+    if civ_id is not None:
+        where.append("s.civ_id = ?")
+        params.append(civ_id)
+    if direction:
+        where.append("s.direction = ?")
+        params.append(direction)
+    if tag:
+        # JSON array contains match: tags column stores ["militaire","..."]
+        where.append('s.tags LIKE ?')
+        params.append(f'%"{tag}"%')
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
+    rows = conn.execute(
+        f"""
+        SELECT s.id, s.title, s.category, s.direction, s.status, s.tags,
+               t.turn_number, c.name AS civ_name
+        FROM subject_subjects s
+        JOIN turn_turns t ON t.id = s.source_turn_id
+        JOIN civ_civilizations c ON c.id = s.civ_id
+        {where_sql}
+        ORDER BY t.turn_number DESC, s.id DESC
+        LIMIT 50
+        """,
+        params,
+    ).fetchall()
+
+    if not rows:
+        label = f"statut={status}" + (f", tag={tag}" if tag else "")
+        return f"Aucun sujet trouvé ({label})."
+
+    dir_label = {"mj_to_pj": "MJ→PJ", "pj_to_mj": "PJ→MJ"}
+    cat_label = {"choice": "Choix", "question": "Question", "initiative": "Initiative", "request": "Demande"}
+    status_label = {"open": "🔴 Ouvert", "resolved": "✅ Résolu", "superseded": "Dépassé", "abandoned": "Abandonné"}
+
+    lines = ["## Sujets\n"]
+    lines.append("| # | Tour | Civ | Direction | Catégorie | Statut | Tags | Titre |")
+    lines.append("|---|------|-----|-----------|-----------|--------|------|-------|")
+
+    for row in rows:
+        sid, title, category, direc, stat, tags_json, turn_num, civ_name = row
+        tags = _json.loads(tags_json or "[]")
+        tags_str = ", ".join(tags) if tags else "—"
+        lines.append(
+            f"| {sid} | T{turn_num} | {civ_name} "
+            f"| {dir_label.get(direc, direc)} "
+            f"| {cat_label.get(category, category)} "
+            f"| {status_label.get(stat, stat)} "
+            f"| {tags_str} "
+            f"| {title} |"
+        )
+
+    total = len(rows)
+    lines.append(f"\n_{total} sujet(s). Utiliser `getSubjectDetail(subjectId)` pour le détail d'un sujet._")
+    return "\n".join(lines)
+
+
+def get_subject_detail(conn: sqlite3.Connection, subject_id: int) -> str:
+    """Return full detail for a single subject: description, options, resolutions."""
+    import json as _json
+
+    row = conn.execute(
+        """
+        SELECT s.id, s.title, s.description, s.category, s.direction, s.status,
+               s.source_quote, s.tags, s.created_at,
+               t.turn_number, c.name AS civ_name
+        FROM subject_subjects s
+        JOIN turn_turns t ON t.id = s.source_turn_id
+        JOIN civ_civilizations c ON c.id = s.civ_id
+        WHERE s.id = ?
+        """,
+        (subject_id,),
+    ).fetchone()
+
+    if not row:
+        return f"Sujet #{subject_id} introuvable."
+
+    sid, title, description, category, direction, status, source_quote, tags_json, created_at, turn_num, civ_name = row
+    tags = _json.loads(tags_json or "[]")
+
+    dir_label = {"mj_to_pj": "MJ→PJ (GM propose au joueur)", "pj_to_mj": "PJ→MJ (initiative du joueur)"}
+    cat_label = {"choice": "Choix", "question": "Question", "initiative": "Initiative", "request": "Demande"}
+    status_label = {"open": "🔴 Ouvert", "resolved": "✅ Résolu", "superseded": "Dépassé", "abandoned": "Abandonné"}
+
+    lines = [
+        f"## Sujet #{sid} — {title}",
+        f"**Civ** : {civ_name} | **Tour** : T{turn_num} | **Direction** : {dir_label.get(direction, direction)}",
+        f"**Catégorie** : {cat_label.get(category, category)} | **Statut** : {status_label.get(status, status)}",
+    ]
+    if tags:
+        lines.append(f"**Tags** : {', '.join(tags)}")
+    lines.append("")
+
+    if description:
+        lines.append(f"**Description** : {description}\n")
+
+    if source_quote:
+        lines.append(f"> _{source_quote}_\n")
+
+    # Options
+    options = conn.execute(
+        "SELECT option_number, label, description, is_libre FROM subject_options WHERE subject_id = ? ORDER BY option_number",
+        (subject_id,),
+    ).fetchall()
+    if options:
+        lines.append("### Options proposées")
+        for opt_num, label, opt_desc, is_libre in options:
+            libre_tag = " *(libre)*" if is_libre else ""
+            lines.append(f"{opt_num}. **{label}**{libre_tag}" + (f" — {opt_desc}" if opt_desc else ""))
+        lines.append("")
+
+    # Resolutions
+    resolutions = conn.execute(
+        """
+        SELECT r.resolution_text, r.confidence, r.is_libre,
+               t.turn_number,
+               o.label AS chosen_option
+        FROM subject_resolutions r
+        JOIN turn_turns t ON t.id = r.resolved_by_turn_id
+        LEFT JOIN subject_options o ON o.id = r.chosen_option_id
+        WHERE r.subject_id = ?
+        ORDER BY r.confidence DESC
+        LIMIT 5
+        """,
+        (subject_id,),
+    ).fetchall()
+    if resolutions:
+        lines.append("### Résolutions")
+        for res_text, conf, is_libre, res_turn, chosen_opt in resolutions:
+            conf_pct = f"{int(conf * 100)}%"
+            opt_info = f" (option : {chosen_opt})" if chosen_opt else (" (libre)" if is_libre else "")
+            lines.append(f"- T{res_turn} [{conf_pct}]{opt_info} : {truncate(res_text, 200)}")
+
+    return "\n".join(lines)
+
+
+def get_entities_by_tag(
+    conn: sqlite3.Connection,
+    tag: str,
+    civ_id: int | None = None,
+    entity_type: str | None = None,
+) -> str:
+    """List all entities with a given domain tag (stored as JSON array in entity_entities.tags)."""
+    import json as _json
+
+    where = ['e.disabled = 0', 'e.tags LIKE ?']
+    params: list = [f'%"{tag}"%']
+
+    if civ_id is not None:
+        where.append("e.civ_id = ?")
+        params.append(civ_id)
+    if entity_type:
+        where.append("e.entity_type = ?")
+        params.append(entity_type)
+
+    rows = conn.execute(
+        f"""
+        SELECT e.id, e.canonical_name, e.entity_type, e.description,
+               c.name AS civ_name,
+               (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mention_count
+        FROM entity_entities e
+        LEFT JOIN civ_civilizations c ON c.id = e.civ_id
+        WHERE {' AND '.join(where)}
+        ORDER BY mention_count DESC
+        LIMIT 50
+        """,
+        params,
+    ).fetchall()
+
+    if not rows:
+        return f"Aucune entité trouvée avec le tag '{tag}'."
+
+    lines = [f"## Entités — tag : {tag}\n"]
+    lines.append("| Nom | Type | Civ | Mentions | Description |")
+    lines.append("|-----|------|-----|----------|-------------|")
+
+    for eid, name, etype, desc, civ_name, mentions in rows:
+        desc_short = truncate(desc, 80) if desc else "—"
+        civ_display = civ_name or "—"
+        lines.append(f"| {name} | {etype} | {civ_display} | {mentions} | {desc_short} |")
+
+    lines.append(f"\n_{len(rows)} entité(s) avec tag '{tag}'._")
+    return "\n".join(lines)
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -1568,6 +1773,36 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             resolved["id"],
             resolved["name"],
             category=tool_input.get("category"),
+        )
+
+    if tool_name == "listSubjects":
+        resolved = _resolve()
+        civ_id = resolved["id"] if resolved and "error" not in resolved else None
+        return list_subjects(
+            conn,
+            civ_id=civ_id,
+            status=tool_input.get("status") or "open",
+            direction=tool_input.get("direction"),
+            tag=tool_input.get("tag"),
+        )
+
+    if tool_name == "getSubjectDetail":
+        subject_id = tool_input.get("subjectId")
+        if subject_id is None:
+            return "Error: subjectId is required."
+        return get_subject_detail(conn, int(subject_id))
+
+    if tool_name == "getEntitiesByTag":
+        tag = tool_input.get("tag")
+        if not tag:
+            return "Error: tag is required."
+        resolved = _resolve()
+        civ_id = resolved["id"] if resolved and "error" not in resolved else None
+        return get_entities_by_tag(
+            conn,
+            tag=tag,
+            civ_id=civ_id,
+            entity_type=tool_input.get("entityType"),
         )
 
     return f"Unknown tool: {tool_name}"

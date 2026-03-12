@@ -182,4 +182,42 @@ TOOL_DEFINITIONS = [
             "required": ["civName"],
         },
     },
+    {
+        "name": "listSubjects",
+        "description": "Liste les sujets ouverts/résolus entre MJ et joueur. Utiliser pour : 'quelles décisions sont en attente ?', 'quelles initiatives ont été lancées ?', 'quels choix sont encore ouverts ?'. Filtre par statut, direction (MJ→PJ ou PJ→MJ), et tag de domaine.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Optionnel"},
+                "status": {"type": "string", "description": "open|resolved|all — défaut: open"},
+                "direction": {"type": "string", "description": "mj_to_pj (choix posés au joueur) | pj_to_mj (initiatives du joueur) — optionnel"},
+                "tag": {"type": "string", "description": "Filtre par tag de domaine : militaire|politique|religieux|economique|culturel|diplomatique|technologique|mythologique — optionnel"},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "getSubjectDetail",
+        "description": "Détail complet d'un sujet : description, options proposées, résolutions (avec texte PJ et confidence). Utiliser après listSubjects pour approfondir un sujet spécifique.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "subjectId": {"type": "integer", "description": "ID du sujet (obtenu via listSubjects)"},
+            },
+            "required": ["subjectId"],
+        },
+    },
+    {
+        "name": "getEntitiesByTag",
+        "description": "Liste toutes les entités d'un domaine : militaire, politique, religieux, economique, culturel, diplomatique, technologique, mythologique. Utile pour 'quelles sont toutes les entités militaires ?' ou 'liste les croyances des Confluents'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "tag": {"type": "string", "description": "militaire|politique|religieux|economique|culturel|diplomatique|technologique|mythologique"},
+                "civName": {"type": "string", "description": "Optionnel"},
+                "entityType": {"type": "string", "description": "Optionnel: person|place|technology|institution|resource|creature|event|civilization|caste|belief"},
+            },
+            "required": ["tag"],
+        },
+    },
 ]
