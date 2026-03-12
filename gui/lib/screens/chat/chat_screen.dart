@@ -186,46 +186,85 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   itemBuilder: (context, index) {
                     final session = sessions[index];
                     final isActive = chatState.sessionId == session.sessionId;
-                    return ListTile(
-                      title: Text(session.name),
-                      subtitle: Text(
-                        '${session.messageCount} messages',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      selected: isActive,
-                      selectedTileColor:
-                          Theme.of(context).colorScheme.primaryContainer,
-                      onTap: () {
-                        // Switch to this session
-                        ref.read(chatProvider.notifier).setSessionId(session.sessionId);
-                        Navigator.pop(context);
-                      },
-                      trailing: PopupMenuButton(
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            child: const Text('Renommer'),
-                            onTap: () {
-                              _showRenameDialog(context, session);
-                            },
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: Text(session.name),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${session.messageCount} messages',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              // Tag chips — civ auto-tags + manual tags
+                              if (session.tags.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 4,
+                                  runSpacing: 2,
+                                  children: session.tags.map((tag) => GestureDetector(
+                                    onLongPress: () {
+                                      // Long-press to remove tag
+                                      ref.read(sessionsProvider).removeTag(session.sessionId, tag);
+                                      ref.refresh(filteredSessionsProvider);
+                                    },
+                                    child: Chip(
+                                      label: Text(tag),
+                                      labelStyle: Theme.of(context).textTheme.labelSmall,
+                                      padding: EdgeInsets.zero,
+                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  )).toList(),
+                                ),
+                              ],
+                            ],
                           ),
-                          PopupMenuItem(
-                            child: Text(
-                              session.archived ? 'Restaurer' : 'Archiver',
-                            ),
-                            onTap: () {
-                              ref
-                                  .read(sessionsProvider)
-                                  .toggleArchive(session.sessionId, !session.archived);
-                            },
+                          isThreeLine: session.tags.isNotEmpty,
+                          selected: isActive,
+                          selectedTileColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          onTap: () {
+                            // Switch to this session
+                            ref.read(chatProvider.notifier).setSessionId(session.sessionId);
+                            Navigator.pop(context);
+                          },
+                          trailing: PopupMenuButton(
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                child: const Text('Renommer'),
+                                onTap: () {
+                                  _showRenameDialog(context, session);
+                                },
+                              ),
+                              PopupMenuItem(
+                                child: const Text('Ajouter un tag'),
+                                onTap: () {
+                                  _showAddTagDialog(context, session);
+                                },
+                              ),
+                              PopupMenuItem(
+                                child: Text(
+                                  session.archived ? 'Restaurer' : 'Archiver',
+                                ),
+                                onTap: () {
+                                  ref
+                                      .read(sessionsProvider)
+                                      .toggleArchive(session.sessionId, !session.archived);
+                                },
+                              ),
+                              PopupMenuItem(
+                                child: const Text('Supprimer'),
+                                onTap: () {
+                                  ref.read(sessionsProvider).deleteSession(session.sessionId);
+                                },
+                              ),
+                            ],
                           ),
-                          PopupMenuItem(
-                            child: const Text('Supprimer'),
-                            onTap: () {
-                              ref.read(sessionsProvider).deleteSession(session.sessionId);
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   },
                 );
@@ -262,6 +301,44 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               }
             },
             child: const Text('Renommer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddTagDialog(BuildContext context, ChatSessionPreview session) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter un tag'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'ex: Confluence, important...'),
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) {
+              ref.read(sessionsProvider).addTag(session.sessionId, v.trim());
+              ref.refresh(filteredSessionsProvider);
+              Navigator.pop(context);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                ref.read(sessionsProvider).addTag(session.sessionId, controller.text.trim());
+                ref.refresh(filteredSessionsProvider);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Ajouter'),
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../services/chat_service.dart';
 import '../services/chat_sessions_service.dart';
+import 'chat_sessions_provider.dart' show chatSessionsServiceProvider;
 
 // Re-export so consumers only need to import this file
 export '../services/chat_service.dart' show ToolCallInfo;
@@ -104,10 +105,6 @@ class ChatState {
 
 final chatServiceProvider = Provider<ChatService>(
   (_) => ChatService(port: AppConstants.botDefaultPort),
-);
-
-final chatSessionsServiceProvider = Provider<ChatSessionsService>(
-  (_) => ChatSessionsService(port: AppConstants.botDefaultPort),
 );
 
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>(

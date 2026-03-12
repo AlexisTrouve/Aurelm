@@ -215,6 +215,9 @@ class BotServer:
 
             await _write("done", {"session_id": session_id})
 
+            # Auto-tag session with civilizations referenced in this turn
+            self._auto_tag_civs(session_id, tool_calls)
+
         except Exception as exc:
             log.exception("Agent error in /chat")
             await _write("error", {"message": str(exc)})
@@ -384,6 +387,43 @@ class BotServer:
             for msg in session.messages
         ]
         return web.json_response({"session_id": session_id, "messages": messages})
+
+    def _auto_tag_civs(self, session_id: str, tool_calls: list[dict]) -> None:
+        """Tag a session with any civilization names referenced in this turn's tool calls.
+
+        Scans input_summary and result_summary of each tool call against the
+        known civ list from the active DB. Silent no-op if DB not available or
+        civ table empty (e.g. pipeline hasn't run yet).
+        Does not add duplicate tags — SessionManager.add_tag is idempotent.
+        """
+        if not tool_calls or not self.config.db_path:
+            return
+        try:
+            conn = sqlite3.connect(self.config.db_path, check_same_thread=False)
+            civ_rows = conn.execute(
+                "SELECT name FROM civ_civilizations ORDER BY LENGTH(name) DESC"
+            ).fetchall()
+            conn.close()
+        except Exception:
+            return  # DB not ready or table missing — silently skip
+
+        if not civ_rows:
+            return
+
+        # Build a single string with all tool call content for this turn
+        searchable = " ".join(
+            f"{tc.get('input_summary', '')} {tc.get('result_summary', '')}"
+            for tc in tool_calls
+        ).lower()
+
+        # Tag once per civ found (longest names first to avoid substring false positives)
+        for (civ_name,) in civ_rows:
+            if civ_name.lower() in searchable:
+                try:
+                    self._session_manager.add_tag(session_id, civ_name)
+                    log.debug("Auto-tagged session %s with civ: %s", session_id[:8], civ_name)
+                except Exception:
+                    pass  # Don't let tagging failure bubble up
 
     async def _reload_db(self, request: web.Request) -> web.Response:
         """POST /bot/reload-db — Hot-swap the active game database at runtime.
