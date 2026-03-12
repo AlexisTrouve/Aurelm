@@ -8,6 +8,7 @@ import '../../models/subject_with_details.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
+import '../entities/widgets/notes_menu_button.dart';
 
 /// Detail page for a single subject — shows description, options, and all
 /// resolution attempts with confidence percentages.
@@ -76,46 +77,49 @@ class _SubjectDetailView extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 44,
+        leadingWidth: 88,
         title: Text(s.title, overflow: TextOverflow.ellipsis),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.canPop() ? context.pop() : context.go('/subjects'),
         ),
-        // Close button — only shown when the subject is open
-        actions: isOpen
-            ? [
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.check_circle_outline),
-                  tooltip: 'Clore le sujet',
-                  onSelected: (status) =>
-                      _confirmClose(context, ref, s.id, status),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'resolved',
-                      child: Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.green, size: 18),
-                          SizedBox(width: 8),
-                          Text('Marquer comme résolu'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'abandoned',
-                      child: Row(
-                        children: [
-                          Icon(Icons.cancel, color: Colors.red, size: 18),
-                          SizedBox(width: 8),
-                          Text('Abandonner'),
-                        ],
-                      ),
-                    ),
-                  ],
+        actions: [
+          if (isOpen)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.check_circle_outline),
+              tooltip: 'Clore le sujet',
+              onSelected: (status) =>
+                  _confirmClose(context, ref, s.id, status),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'resolved',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.green, size: 18),
+                      SizedBox(width: 8),
+                      Text('Marquer comme résolu'),
+                    ],
+                  ),
                 ),
-              ]
-            : null,
+                PopupMenuItem(
+                  value: 'abandoned',
+                  child: Row(
+                    children: [
+                      Icon(Icons.cancel, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text('Abandonner'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
-      body: SingleChildScrollView(
+      body: NotesSideRail(
+        attachment: NoteAttachment.subject,
+        attachmentId: s.id,
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,9 +181,11 @@ class _SubjectDetailView extends ConsumerWidget {
                     isAccepted: detail.bestResolution?.id == r.resolution.id &&
                         isResolved,
                   )),
+
           ],
         ),
       ),
+      ), // NotesSideRail
     );
   }
 }

@@ -12,6 +12,7 @@ import '../../widgets/common/entity_type_icon.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
+import '../entities/widgets/notes_menu_button.dart';
 
 /// Full turn detail — GM segments with type labels, PJ content as a single
 /// readable block. Search bar highlights matches across all text.
@@ -178,6 +179,8 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
           },
           child: Scaffold(
           appBar: AppBar(
+            toolbarHeight: 44,
+            leadingWidth: 88,
             title: _searchVisible
                 ? Row(children: [
                     Expanded(
@@ -221,7 +224,10 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
               ),
             ],
           ),
-          body: SingleChildScrollView(
+          body: NotesSideRail(
+            attachment: NoteAttachment.turn,
+            attachmentId: widget.turnId,
+            child: SingleChildScrollView(
             controller: _scrollCtrl,
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
             child: Column(
@@ -365,9 +371,11 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                         ),
                   ),
                 ],
+
               ],
             ),
           ),
+          ), // NotesSideRail
         )); // closes Focus + Scaffold
       },
     );

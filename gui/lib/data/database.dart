@@ -10,6 +10,7 @@ import 'tables/mentions.dart';
 import 'tables/relations.dart';
 import 'tables/pipeline_runs.dart';
 import 'tables/subjects.dart';
+import 'tables/notes.dart';
 
 import 'daos/civilization_dao.dart';
 import 'daos/turn_dao.dart';
@@ -17,6 +18,7 @@ import 'daos/entity_dao.dart';
 import 'daos/relation_dao.dart';
 import 'daos/pipeline_dao.dart';
 import 'daos/subject_dao.dart';
+import 'daos/notes_dao.dart';
 
 part 'database.g.dart';
 
@@ -34,6 +36,8 @@ part 'database.g.dart';
     SubjectSubjects,
     SubjectOptions,
     SubjectResolutions,
+    // Notes (migration 019)
+    Notes,
   ],
   daos: [
     CivilizationDao,
@@ -42,6 +46,7 @@ part 'database.g.dart';
     RelationDao,
     PipelineDao,
     SubjectDao,
+    NotesDao,
   ],
 )
 class AurelmDatabase extends _$AurelmDatabase {

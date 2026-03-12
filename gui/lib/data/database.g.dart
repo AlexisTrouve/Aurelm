@@ -3995,6 +3995,13 @@ class $SubjectSubjectsTable extends SubjectSubjects
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('open'));
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+      'tags', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -4018,6 +4025,7 @@ class $SubjectSubjectsTable extends SubjectSubjects
         sourceQuote,
         category,
         status,
+        tags,
         createdAt,
         updatedAt
       ];
@@ -4082,6 +4090,10 @@ class $SubjectSubjectsTable extends SubjectSubjects
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+          _tagsMeta, tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -4121,6 +4133,8 @@ class $SubjectSubjectsTable extends SubjectSubjects
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      tags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -4152,6 +4166,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
 
   /// 'open' | 'resolved' | 'superseded' | 'abandoned'
   final String status;
+
+  /// JSON array of domain tags auto-assigned by the pipeline, e.g. ["militaire","politique"]
+  final String tags;
   final String createdAt;
   final String updatedAt;
   const SubjectRow(
@@ -4164,6 +4181,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       this.sourceQuote,
       required this.category,
       required this.status,
+      required this.tags,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -4182,6 +4200,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     }
     map['category'] = Variable<String>(category);
     map['status'] = Variable<String>(status);
+    map['tags'] = Variable<String>(tags);
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
     return map;
@@ -4202,6 +4221,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           : Value(sourceQuote),
       category: Value(category),
       status: Value(status),
+      tags: Value(tags),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -4220,6 +4240,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       sourceQuote: serializer.fromJson<String?>(json['sourceQuote']),
       category: serializer.fromJson<String>(json['category']),
       status: serializer.fromJson<String>(json['status']),
+      tags: serializer.fromJson<String>(json['tags']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
@@ -4237,6 +4258,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       'sourceQuote': serializer.toJson<String?>(sourceQuote),
       'category': serializer.toJson<String>(category),
       'status': serializer.toJson<String>(status),
+      'tags': serializer.toJson<String>(tags),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
     };
@@ -4252,6 +4274,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           Value<String?> sourceQuote = const Value.absent(),
           String? category,
           String? status,
+          String? tags,
           String? createdAt,
           String? updatedAt}) =>
       SubjectRow(
@@ -4264,6 +4287,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
         sourceQuote: sourceQuote.present ? sourceQuote.value : this.sourceQuote,
         category: category ?? this.category,
         status: status ?? this.status,
+        tags: tags ?? this.tags,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -4282,6 +4306,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           data.sourceQuote.present ? data.sourceQuote.value : this.sourceQuote,
       category: data.category.present ? data.category.value : this.category,
       status: data.status.present ? data.status.value : this.status,
+      tags: data.tags.present ? data.tags.value : this.tags,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4299,6 +4324,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           ..write('sourceQuote: $sourceQuote, ')
           ..write('category: $category, ')
           ..write('status: $status, ')
+          ..write('tags: $tags, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4307,7 +4333,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
 
   @override
   int get hashCode => Object.hash(id, civId, sourceTurnId, direction, title,
-      description, sourceQuote, category, status, createdAt, updatedAt);
+      description, sourceQuote, category, status, tags, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4321,6 +4347,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
           other.sourceQuote == this.sourceQuote &&
           other.category == this.category &&
           other.status == this.status &&
+          other.tags == this.tags &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4335,6 +4362,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   final Value<String?> sourceQuote;
   final Value<String> category;
   final Value<String> status;
+  final Value<String> tags;
   final Value<String> createdAt;
   final Value<String> updatedAt;
   const SubjectSubjectsCompanion({
@@ -4347,6 +4375,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     this.sourceQuote = const Value.absent(),
     this.category = const Value.absent(),
     this.status = const Value.absent(),
+    this.tags = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -4360,6 +4389,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     this.sourceQuote = const Value.absent(),
     required String category,
     this.status = const Value.absent(),
+    this.tags = const Value.absent(),
     required String createdAt,
     required String updatedAt,
   })  : civId = Value(civId),
@@ -4379,6 +4409,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     Expression<String>? sourceQuote,
     Expression<String>? category,
     Expression<String>? status,
+    Expression<String>? tags,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
   }) {
@@ -4392,6 +4423,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       if (sourceQuote != null) 'source_quote': sourceQuote,
       if (category != null) 'category': category,
       if (status != null) 'status': status,
+      if (tags != null) 'tags': tags,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -4407,6 +4439,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       Value<String?>? sourceQuote,
       Value<String>? category,
       Value<String>? status,
+      Value<String>? tags,
       Value<String>? createdAt,
       Value<String>? updatedAt}) {
     return SubjectSubjectsCompanion(
@@ -4419,6 +4452,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
       sourceQuote: sourceQuote ?? this.sourceQuote,
       category: category ?? this.category,
       status: status ?? this.status,
+      tags: tags ?? this.tags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -4454,6 +4488,9 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<String>(createdAt.value);
     }
@@ -4475,6 +4512,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
           ..write('sourceQuote: $sourceQuote, ')
           ..write('category: $category, ')
           ..write('status: $status, ')
+          ..write('tags: $tags, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5325,6 +5363,420 @@ class SubjectResolutionsCompanion
   }
 }
 
+class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+      'entity_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _subjectIdMeta =
+      const VerificationMeta('subjectId');
+  @override
+  late final GeneratedColumn<int> subjectId = GeneratedColumn<int>(
+      'subject_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _turnIdMeta = const VerificationMeta('turnId');
+  @override
+  late final GeneratedColumn<int> turnId = GeneratedColumn<int>(
+      'turn_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+      'title', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _contentMeta =
+      const VerificationMeta('content');
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+      'content', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, entityId, subjectId, turnId, title, content, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notes';
+  @override
+  VerificationContext validateIntegrity(Insertable<NoteRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    }
+    if (data.containsKey('subject_id')) {
+      context.handle(_subjectIdMeta,
+          subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta));
+    }
+    if (data.containsKey('turn_id')) {
+      context.handle(_turnIdMeta,
+          turnId.isAcceptableOrUnknown(data['turn_id']!, _turnIdMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+          _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(_contentMeta,
+          content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NoteRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}entity_id']),
+      subjectId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}subject_id']),
+      turnId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}turn_id']),
+      title: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
+      content: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $NotesTable createAlias(String alias) {
+    return $NotesTable(attachedDatabase, alias);
+  }
+}
+
+class NoteRow extends DataClass implements Insertable<NoteRow> {
+  final int id;
+
+  /// FK to entity_entities.id — null if note is on a subject or turn
+  final int? entityId;
+
+  /// FK to subject_subjects.id — null if note is on an entity or turn
+  final int? subjectId;
+
+  /// FK to turn_turns.id — null if note is on an entity or subject
+  final int? turnId;
+  final String title;
+  final String content;
+  final String createdAt;
+  final String updatedAt;
+  const NoteRow(
+      {required this.id,
+      this.entityId,
+      this.subjectId,
+      this.turnId,
+      required this.title,
+      required this.content,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || entityId != null) {
+      map['entity_id'] = Variable<int>(entityId);
+    }
+    if (!nullToAbsent || subjectId != null) {
+      map['subject_id'] = Variable<int>(subjectId);
+    }
+    if (!nullToAbsent || turnId != null) {
+      map['turn_id'] = Variable<int>(turnId);
+    }
+    map['title'] = Variable<String>(title);
+    map['content'] = Variable<String>(content);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    return map;
+  }
+
+  NotesCompanion toCompanion(bool nullToAbsent) {
+    return NotesCompanion(
+      id: Value(id),
+      entityId: entityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityId),
+      subjectId: subjectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subjectId),
+      turnId:
+          turnId == null && nullToAbsent ? const Value.absent() : Value(turnId),
+      title: Value(title),
+      content: Value(content),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory NoteRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NoteRow(
+      id: serializer.fromJson<int>(json['id']),
+      entityId: serializer.fromJson<int?>(json['entityId']),
+      subjectId: serializer.fromJson<int?>(json['subjectId']),
+      turnId: serializer.fromJson<int?>(json['turnId']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'entityId': serializer.toJson<int?>(entityId),
+      'subjectId': serializer.toJson<int?>(subjectId),
+      'turnId': serializer.toJson<int?>(turnId),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+    };
+  }
+
+  NoteRow copyWith(
+          {int? id,
+          Value<int?> entityId = const Value.absent(),
+          Value<int?> subjectId = const Value.absent(),
+          Value<int?> turnId = const Value.absent(),
+          String? title,
+          String? content,
+          String? createdAt,
+          String? updatedAt}) =>
+      NoteRow(
+        id: id ?? this.id,
+        entityId: entityId.present ? entityId.value : this.entityId,
+        subjectId: subjectId.present ? subjectId.value : this.subjectId,
+        turnId: turnId.present ? turnId.value : this.turnId,
+        title: title ?? this.title,
+        content: content ?? this.content,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  NoteRow copyWithCompanion(NotesCompanion data) {
+    return NoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      turnId: data.turnId.present ? data.turnId.value : this.turnId,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteRow(')
+          ..write('id: $id, ')
+          ..write('entityId: $entityId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('turnId: $turnId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, entityId, subjectId, turnId, title, content, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NoteRow &&
+          other.id == this.id &&
+          other.entityId == this.entityId &&
+          other.subjectId == this.subjectId &&
+          other.turnId == this.turnId &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class NotesCompanion extends UpdateCompanion<NoteRow> {
+  final Value<int> id;
+  final Value<int?> entityId;
+  final Value<int?> subjectId;
+  final Value<int?> turnId;
+  final Value<String> title;
+  final Value<String> content;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  const NotesCompanion({
+    this.id = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.turnId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  NotesCompanion.insert({
+    this.id = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.turnId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    required String createdAt,
+    required String updatedAt,
+  })  : createdAt = Value(createdAt),
+        updatedAt = Value(updatedAt);
+  static Insertable<NoteRow> custom({
+    Expression<int>? id,
+    Expression<int>? entityId,
+    Expression<int>? subjectId,
+    Expression<int>? turnId,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (entityId != null) 'entity_id': entityId,
+      if (subjectId != null) 'subject_id': subjectId,
+      if (turnId != null) 'turn_id': turnId,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  NotesCompanion copyWith(
+      {Value<int>? id,
+      Value<int?>? entityId,
+      Value<int?>? subjectId,
+      Value<int?>? turnId,
+      Value<String>? title,
+      Value<String>? content,
+      Value<String>? createdAt,
+      Value<String>? updatedAt}) {
+    return NotesCompanion(
+      id: id ?? this.id,
+      entityId: entityId ?? this.entityId,
+      subjectId: subjectId ?? this.subjectId,
+      turnId: turnId ?? this.turnId,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (subjectId.present) {
+      map['subject_id'] = Variable<int>(subjectId.value);
+    }
+    if (turnId.present) {
+      map['turn_id'] = Variable<int>(turnId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotesCompanion(')
+          ..write('id: $id, ')
+          ..write('entityId: $entityId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('turnId: $turnId, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AurelmDatabase extends GeneratedDatabase {
   _$AurelmDatabase(QueryExecutor e) : super(e);
   $AurelmDatabaseManager get managers => $AurelmDatabaseManager(this);
@@ -5343,6 +5795,7 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final $SubjectOptionsTable subjectOptions = $SubjectOptionsTable(this);
   late final $SubjectResolutionsTable subjectResolutions =
       $SubjectResolutionsTable(this);
+  late final $NotesTable notes = $NotesTable(this);
   late final CivilizationDao civilizationDao =
       CivilizationDao(this as AurelmDatabase);
   late final TurnDao turnDao = TurnDao(this as AurelmDatabase);
@@ -5350,6 +5803,7 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final RelationDao relationDao = RelationDao(this as AurelmDatabase);
   late final PipelineDao pipelineDao = PipelineDao(this as AurelmDatabase);
   late final SubjectDao subjectDao = SubjectDao(this as AurelmDatabase);
+  late final NotesDao notesDao = NotesDao(this as AurelmDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5365,7 +5819,8 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
         pipelineRuns,
         subjectSubjects,
         subjectOptions,
-        subjectResolutions
+        subjectResolutions,
+        notes
       ];
 }
 
@@ -7254,6 +7709,7 @@ typedef $$SubjectSubjectsTableCreateCompanionBuilder = SubjectSubjectsCompanion
   Value<String?> sourceQuote,
   required String category,
   Value<String> status,
+  Value<String> tags,
   required String createdAt,
   required String updatedAt,
 });
@@ -7268,6 +7724,7 @@ typedef $$SubjectSubjectsTableUpdateCompanionBuilder = SubjectSubjectsCompanion
   Value<String?> sourceQuote,
   Value<String> category,
   Value<String> status,
+  Value<String> tags,
   Value<String> createdAt,
   Value<String> updatedAt,
 });
@@ -7307,6 +7764,9 @@ class $$SubjectSubjectsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -7352,6 +7812,9 @@ class $$SubjectSubjectsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get tags => $composableBuilder(
+      column: $table.tags, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -7394,6 +7857,9 @@ class $$SubjectSubjectsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
 
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7438,6 +7904,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             Value<String?> sourceQuote = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String> tags = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String> updatedAt = const Value.absent(),
           }) =>
@@ -7451,6 +7918,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             sourceQuote: sourceQuote,
             category: category,
             status: status,
+            tags: tags,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -7464,6 +7932,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             Value<String?> sourceQuote = const Value.absent(),
             required String category,
             Value<String> status = const Value.absent(),
+            Value<String> tags = const Value.absent(),
             required String createdAt,
             required String updatedAt,
           }) =>
@@ -7477,6 +7946,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
             sourceQuote: sourceQuote,
             category: category,
             status: status,
+            tags: tags,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -7923,6 +8393,210 @@ typedef $$SubjectResolutionsTableProcessedTableManager = ProcessedTableManager<
     ),
     SubjectResolutionRow,
     PrefetchHooks Function()>;
+typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
+  Value<int> id,
+  Value<int?> entityId,
+  Value<int?> subjectId,
+  Value<int?> turnId,
+  Value<String> title,
+  Value<String> content,
+  required String createdAt,
+  required String updatedAt,
+});
+typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
+  Value<int> id,
+  Value<int?> entityId,
+  Value<int?> subjectId,
+  Value<int?> turnId,
+  Value<String> title,
+  Value<String> content,
+  Value<String> createdAt,
+  Value<String> updatedAt,
+});
+
+class $$NotesTableFilterComposer
+    extends Composer<_$AurelmDatabase, $NotesTable> {
+  $$NotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get subjectId => $composableBuilder(
+      column: $table.subjectId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get turnId => $composableBuilder(
+      column: $table.turnId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$NotesTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $NotesTable> {
+  $$NotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get subjectId => $composableBuilder(
+      column: $table.subjectId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get turnId => $composableBuilder(
+      column: $table.turnId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get title => $composableBuilder(
+      column: $table.title, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get content => $composableBuilder(
+      column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$NotesTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $NotesTable> {
+  $$NotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<int> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<int> get turnId =>
+      $composableBuilder(column: $table.turnId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$NotesTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $NotesTable,
+    NoteRow,
+    $$NotesTableFilterComposer,
+    $$NotesTableOrderingComposer,
+    $$NotesTableAnnotationComposer,
+    $$NotesTableCreateCompanionBuilder,
+    $$NotesTableUpdateCompanionBuilder,
+    (NoteRow, BaseReferences<_$AurelmDatabase, $NotesTable, NoteRow>),
+    NoteRow,
+    PrefetchHooks Function()> {
+  $$NotesTableTableManager(_$AurelmDatabase db, $NotesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> entityId = const Value.absent(),
+            Value<int?> subjectId = const Value.absent(),
+            Value<int?> turnId = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String> content = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+            Value<String> updatedAt = const Value.absent(),
+          }) =>
+              NotesCompanion(
+            id: id,
+            entityId: entityId,
+            subjectId: subjectId,
+            turnId: turnId,
+            title: title,
+            content: content,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> entityId = const Value.absent(),
+            Value<int?> subjectId = const Value.absent(),
+            Value<int?> turnId = const Value.absent(),
+            Value<String> title = const Value.absent(),
+            Value<String> content = const Value.absent(),
+            required String createdAt,
+            required String updatedAt,
+          }) =>
+              NotesCompanion.insert(
+            id: id,
+            entityId: entityId,
+            subjectId: subjectId,
+            turnId: turnId,
+            title: title,
+            content: content,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$NotesTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $NotesTable,
+    NoteRow,
+    $$NotesTableFilterComposer,
+    $$NotesTableOrderingComposer,
+    $$NotesTableAnnotationComposer,
+    $$NotesTableCreateCompanionBuilder,
+    $$NotesTableUpdateCompanionBuilder,
+    (NoteRow, BaseReferences<_$AurelmDatabase, $NotesTable, NoteRow>),
+    NoteRow,
+    PrefetchHooks Function()>;
 
 class $AurelmDatabaseManager {
   final _$AurelmDatabase _db;
@@ -7949,4 +8623,6 @@ class $AurelmDatabaseManager {
       $$SubjectOptionsTableTableManager(_db, _db.subjectOptions);
   $$SubjectResolutionsTableTableManager get subjectResolutions =>
       $$SubjectResolutionsTableTableManager(_db, _db.subjectResolutions);
+  $$NotesTableTableManager get notes =>
+      $$NotesTableTableManager(_db, _db.notes);
 }

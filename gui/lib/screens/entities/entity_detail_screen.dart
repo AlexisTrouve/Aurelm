@@ -9,6 +9,7 @@ import '../../widgets/common/error_view.dart';
 import '../../widgets/common/entity_type_badge.dart';
 import '../../widgets/common/section_header.dart';
 import 'widgets/naming_history.dart';
+import 'widgets/notes_menu_button.dart';
 import 'widgets/relation_list.dart';
 import 'widgets/mention_timeline.dart';
 
@@ -80,6 +81,7 @@ class EntityDetailScreen extends ConsumerWidget {
         return SelectionArea(
           child: Scaffold(
           appBar: AppBar(
+            toolbarHeight: 44,
             title: Text(entity.entity.canonicalName),
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
@@ -120,7 +122,10 @@ class EntityDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          body: SingleChildScrollView(
+          body: NotesSideRail(
+            attachment: NoteAttachment.entity,
+            attachmentId: entityId,
+            child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,9 +177,11 @@ class EntityDetailScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 const SectionHeader(title: 'Mentions'),
                 MentionTimeline(entityId: entityId, entityName: entity.entity.canonicalName),
+
               ],
             ),
           ),
+          ), // NotesSideRail
           ),
         );
       },
