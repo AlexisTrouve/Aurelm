@@ -43,6 +43,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh sessions list when a chat turn completes (loading: true→false),
+    // so auto-tags applied by the bot are visible immediately in the drawer.
+    ref.listenManual(chatProvider, (prev, next) {
+      if (prev?.loading == true && next.loading == false) {
+        ref.invalidate(filteredSessionsProvider);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
@@ -191,38 +203,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       children: [
                         ListTile(
                           title: Text(session.name),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${session.messageCount} messages',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              // Tag chips — civ auto-tags + manual tags
-                              if (session.tags.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Wrap(
-                                  spacing: 4,
-                                  runSpacing: 2,
-                                  children: session.tags.map((tag) => GestureDetector(
-                                    onLongPress: () {
-                                      // Long-press to remove tag
-                                      ref.read(sessionsProvider).removeTag(session.sessionId, tag);
-                                      ref.refresh(filteredSessionsProvider);
-                                    },
-                                    child: Chip(
-                                      label: Text(tag),
-                                      labelStyle: Theme.of(context).textTheme.labelSmall,
-                                      padding: EdgeInsets.zero,
-                                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: VisualDensity.compact,
-                                    ),
-                                  )).toList(),
-                                ),
-                              ],
-                            ],
+                          subtitle: Text(
+                            '${session.messageCount} messages',
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          isThreeLine: session.tags.isNotEmpty,
                           selected: isActive,
                           selectedTileColor:
                               Theme.of(context).colorScheme.primaryContainer,
@@ -264,6 +248,28 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ],
                           ),
                         ),
+                        // Tags displayed below the tile, outside ListTile constraints
+                        if (session.tags.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                            child: Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: session.tags.map((tag) => GestureDetector(
+                                onLongPress: () {
+                                  ref.read(sessionsProvider).removeTag(session.sessionId, tag);
+                                  ref.invalidate(filteredSessionsProvider);
+                                },
+                                child: Chip(
+                                  label: Text(tag),
+                                  labelStyle: Theme.of(context).textTheme.labelSmall,
+                                  padding: EdgeInsets.zero,
+                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              )).toList(),
+                            ),
+                          ),
                       ],
                     );
                   },

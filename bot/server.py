@@ -410,18 +410,30 @@ class BotServer:
         if not civ_rows:
             return
 
-        # Build a single string with all tool call content for this turn
+        # Build searchable text from ALL tool call fields (input, summaries, full result).
+        # The full result is critical: the LLM often passes a short name like "Confluence"
+        # while the DB stores "Civilisation de la Confluence". The tool result always
+        # contains the canonical name, so searching the full result catches it reliably.
         searchable = " ".join(
-            f"{tc.get('input_summary', '')} {tc.get('result_summary', '')}"
+            f"{tc.get('input_summary', '')} {tc.get('result_summary', '')} {tc.get('result', '')}"
             for tc in tool_calls
         ).lower()
 
-        # Tag once per civ found (longest names first to avoid substring false positives)
+        # For each civ, build a set of tokens to match: the full name + each significant
+        # word (≥4 chars, skips stopwords like "de", "la", "les"). This handles cases
+        # where the LLM passes "Confluence" but the DB name is "Civilisation de la Confluence".
+        _STOPWORDS = {"de", "la", "le", "les", "du", "des", "et", "en", "un", "une"}
+
         for (civ_name,) in civ_rows:
-            if civ_name.lower() in searchable:
+            tokens = {civ_name.lower()}
+            for word in civ_name.lower().split():
+                if len(word) >= 4 and word not in _STOPWORDS:
+                    tokens.add(word)
+
+            if any(tok in searchable for tok in tokens):
                 try:
                     self._session_manager.add_tag(session_id, civ_name)
-                    log.debug("Auto-tagged session %s with civ: %s", session_id[:8], civ_name)
+                    log.info("Auto-tagged session %s with civ: %s", session_id[:8], civ_name)
                 except Exception:
                     pass  # Don't let tagging failure bubble up
 
