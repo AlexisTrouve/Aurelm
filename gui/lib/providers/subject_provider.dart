@@ -28,6 +28,10 @@ class SubjectFilterNotifier extends StateNotifier<SubjectFilterState> {
     state = state.copyWith(civId: () => id);
   }
 
+  void setTag(String? tag) {
+    state = state.copyWith(selectedTag: () => tag);
+  }
+
   void reset() {
     state = const SubjectFilterState();
   }

@@ -79,6 +79,38 @@ class SubjectFilterBar extends ConsumerWidget {
           ],
         ),
 
+        const SizedBox(height: 8),
+
+        // Tag filter chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Text('Tag:', style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(width: 8),
+              _DirectionChip(
+                label: 'Tous',
+                selected: filters.selectedTag == null,
+                onSelected: (_) =>
+                    ref.read(subjectFilterProvider.notifier).setTag(null),
+              ),
+              const SizedBox(width: 4),
+              for (final tag in const [
+                'militaire', 'politique', 'religieux', 'economique',
+                'culturel', 'diplomatique', 'technologique', 'mythologique',
+              ]) ...[
+                _DirectionChip(
+                  label: tag,
+                  selected: filters.selectedTag == tag,
+                  onSelected: (_) =>
+                      ref.read(subjectFilterProvider.notifier).setTag(tag),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ],
+          ),
+        ),
+
         // Civ dropdown (if multiple civs)
         civs.when(
           data: (civList) {

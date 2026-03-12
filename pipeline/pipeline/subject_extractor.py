@@ -41,6 +41,87 @@ class ExtractedSubject:
     options: list[ExtractedOption] = field(default_factory=list)
     # Verbatim phrase from the source text — used for turn detail auto-highlight.
     source_quote: str = ""
+    # Domain tags auto-assigned by _assign_subject_tags() — same vocab as entity tags.
+    tags: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Subject auto-tagging
+# ---------------------------------------------------------------------------
+
+# Keywords (French, accent-tolerant) per domain tag from ENTITY_TAG_VOCAB.
+# Each subject's title+description is lowercased and scanned against these lists.
+_SUBJECT_TAG_KEYWORDS: dict[str, list[str]] = {
+    "militaire": [
+        "guerre", "armee", "armée", "combat", "bataille", "soldat", "attaque",
+        "défense", "defense", "troupe", "guerrier", "conflit", "raid", "siège",
+        "siege", "fortif", "garnison", "arme", "milice",
+    ],
+    "religieux": [
+        "dieu", "déesse", "deesse", "culte", "temple", "prêtre", "pretre",
+        "rituel", "croyance", "sacrifice", "foi", "divin", "sacré", "sacre",
+        "prophète", "prophete", "cérémonie", "ceremonie", "offrande",
+    ],
+    "politique": [
+        "loi", "décret", "decret", "gouvernement", "caste", "oligarchie",
+        "pouvoir", "dirigeant", "conseil", "vote", "élection", "election",
+        "règle", "regle", "autorité", "autorite", "succession", "statut", "rang",
+        "assemblée", "assemblee",
+    ],
+    "economique": [
+        "commerce", "échange", "echange", "ressource", "production", "récolte",
+        "recolte", "marché", "marche", "richesse", "tribut", "taxe", "agriculture",
+        "artisan", "mine", "forge", "irrigation", "stock", "nourriture",
+    ],
+    "culturel": [
+        "art", "musique", "fête", "fete", "célébration", "celebration",
+        "tradition", "coutume", "festival", "danse", "culture", "monument",
+        "architecture", "sculpture",
+    ],
+    "diplomatique": [
+        "alliance", "traité", "traite", "paix", "ambassadeur", "négociation",
+        "negociation", "contact", "relation", "accord", "envoyé", "envoye",
+        "étranger", "etranger", "diplomatie",
+    ],
+    "technologique": [
+        "technologie", "invention", "découverte", "decouverte", "argile",
+        "construction", "technique", "outil", "navire", "bateau", "voile",
+        "innovation", "forge", "irrigation", "machine",
+    ],
+    "mythologique": [
+        "mythe", "légende", "legende", "ancien", "origine", "cosmogonie",
+        "ancêtre", "ancetre", "héros", "heros", "créature", "creature",
+        "divinité", "divinite",
+    ],
+}
+
+
+def _assign_subject_tags(title: str, description: str, category: str) -> list[str]:
+    """Auto-assign domain tags to a subject by scanning title + description.
+
+    Uses keyword matching against _SUBJECT_TAG_KEYWORDS. Returns a list of
+    matching domain tags from ENTITY_TAG_VOCAB. Never returns status tags
+    (actif/disparu/…) — those are entity-specific.
+
+    The category ('choice', 'question', 'initiative') is NOT added as a tag
+    since it's already stored in its own column.
+    """
+    text = (title + " " + description).lower()
+    # Strip accents for more robust matching (handles é/e, â/a variants)
+    import unicodedata
+    text_normalized = unicodedata.normalize("NFD", text)
+    text_normalized = "".join(c for c in text_normalized if unicodedata.category(c) != "Mn")
+
+    tags: list[str] = []
+    for domain, keywords in _SUBJECT_TAG_KEYWORDS.items():
+        for kw in keywords:
+            kw_norm = unicodedata.normalize("NFD", kw)
+            kw_norm = "".join(c for c in kw_norm if unicodedata.category(c) != "Mn")
+            if kw_norm in text_normalized:
+                tags.append(domain)
+                break  # One match per domain is enough
+
+    return tags
 
 
 @dataclass
@@ -532,13 +613,15 @@ def _parse_subjects(
                 is_libre=bool(opt.get("is_libre", False)),
             ))
 
+        description = str(item.get("description", "")).strip()
         results.append(ExtractedSubject(
             title=title,
-            description=str(item.get("description", "")).strip(),
+            description=description,
             direction=direction,
             category=category,
             options=options,
             source_quote=str(item.get("source_quote", "")).strip(),
+            tags=_assign_subject_tags(title, description, category),
         ))
 
     return results

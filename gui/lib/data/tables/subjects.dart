@@ -26,6 +26,9 @@ class SubjectSubjects extends Table {
   TextColumn get status =>
       text().withDefault(const Constant('open'))();
 
+  /// JSON array of domain tags auto-assigned by the pipeline, e.g. ["militaire","politique"]
+  TextColumn get tags => text().withDefault(const Constant('[]'))();
+
   TextColumn get createdAt => text().named('created_at')();
   TextColumn get updatedAt => text().named('updated_at')();
 }

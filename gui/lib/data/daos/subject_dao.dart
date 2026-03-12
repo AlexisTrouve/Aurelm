@@ -45,6 +45,12 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
     if (filters.civId != null) {
       query.where(subjectSubjects.civId.equals(filters.civId!));
     }
+    // Apply tag filter — tags stored as JSON array, use LIKE '%"tag"%'
+    if (filters.selectedTag != null) {
+      query.where(
+        subjectSubjects.tags.like('%"${filters.selectedTag!}"%'),
+      );
+    }
 
     // Most recent turns first, then by subject id
     query.orderBy([

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -88,6 +90,33 @@ class SubjectListTile extends StatelessWidget {
                         ),
                       ],
                     ),
+
+                    // Domain tag chips
+                    Builder(builder: (context) {
+                      final tags = s.tags.isNotEmpty
+                          ? (jsonDecode(s.tags) as List).cast<String>()
+                          : <String>[];
+                      if (tags.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 4,
+                          children: tags.map((tag) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              tag,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Colors.blueGrey.shade300,
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      );
+                    }),
 
                     // Options preview (for mj_to_pj choices)
                     if (subject.options.isNotEmpty) ...[

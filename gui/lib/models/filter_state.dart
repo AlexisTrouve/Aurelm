@@ -8,22 +8,28 @@ class SubjectFilterState {
 
   final int? civId;
 
+  /// Domain tag filter (militaire, politique, …) — null = no filter
+  final String? selectedTag;
+
   const SubjectFilterState({
     this.direction,
     this.subjectStatus,
     this.civId,
+    this.selectedTag,
   });
 
   SubjectFilterState copyWith({
     String? Function()? direction,
     String? Function()? subjectStatus,
     int? Function()? civId,
+    String? Function()? selectedTag,
   }) {
     return SubjectFilterState(
       direction: direction != null ? direction() : this.direction,
       subjectStatus:
           subjectStatus != null ? subjectStatus() : this.subjectStatus,
       civId: civId != null ? civId() : this.civId,
+      selectedTag: selectedTag != null ? selectedTag() : this.selectedTag,
     );
   }
 }
