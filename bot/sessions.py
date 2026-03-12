@@ -43,15 +43,23 @@ class SessionManager:
     def __init__(self, db_path: str) -> None:
         self.db_path = db_path
 
-    def create_session(self, name: str) -> ChatSession:
-        """Create a new session and save to DB."""
+    def create_session(self, name: str, db_path: str | None = None) -> ChatSession:
+        """Create a new session and save to DB.
+
+        Args:
+            name: Human-readable session name.
+            db_path: The game database this session is scoped to.
+                     Defaults to the SessionManager's own db_path.
+        """
         session_id = str(uuid_lib.uuid4())
         session = ChatSession(session_id=session_id, name=name)
+        # Scope the session to the given DB path (or fall back to self.db_path)
+        scoped_db_path = db_path or self.db_path
 
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO chat_sessions (uuid, name, created_at, updated_at, last_message_at) VALUES (?, ?, ?, ?, ?)",
-                (session_id, name, session.created_at, session.updated_at, session.created_at)
+                "INSERT INTO chat_sessions (uuid, name, db_path, created_at, updated_at, last_message_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (session_id, name, scoped_db_path, session.created_at, session.updated_at, session.created_at)
             )
             conn.commit()
 
@@ -109,8 +117,20 @@ class SessionManager:
 
         return session
 
-    def list_sessions(self, archived: bool = False, tag_filter: str | None = None) -> list[ChatSession]:
-        """List all sessions, optionally filtered by archive status and tag."""
+    def list_sessions(
+        self,
+        archived: bool = False,
+        tag_filter: str | None = None,
+        db_path: str | None = None,
+    ) -> list[ChatSession]:
+        """List all sessions, optionally filtered by archive status, tag, and db_path.
+
+        Args:
+            archived: If True, list archived sessions; otherwise active ones.
+            tag_filter: Only sessions with this tag (exact match).
+            db_path: If provided, restrict to sessions scoped to this game DB.
+                     Sessions with db_path IS NULL are included as legacy/unscoped.
+        """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
 
@@ -122,6 +142,11 @@ class SessionManager:
                     " AND id IN (SELECT session_id FROM chat_session_tags WHERE tag = ?)"
                 )
                 params.append(tag_filter)
+
+            # Filter by game DB: include sessions matching the path OR unscoped ones (NULL)
+            if db_path:
+                query += " AND (db_path = ? OR db_path IS NULL)"
+                params.append(db_path)
 
             query += " ORDER BY updated_at DESC"
 

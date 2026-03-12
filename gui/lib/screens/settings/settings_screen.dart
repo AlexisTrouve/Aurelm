@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../services/chat_sessions_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -138,7 +139,19 @@ class SettingsScreen extends ConsumerWidget {
       dialogTitle: 'Select Aurelm database',
     );
     if (result != null && result.files.single.path != null) {
-      ref.read(dbPathProvider.notifier).setPath(result.files.single.path!);
+      final newPath = result.files.single.path!;
+
+      // Persist the new path in app settings
+      ref.read(dbPathProvider.notifier).setPath(newPath);
+
+      // Notify the bot server to hot-swap its active DB so session lists
+      // and tool queries immediately reflect the newly selected database.
+      // Silently ignore if the bot is not running.
+      try {
+        await ChatSessionsService(port: AppConstants.botDefaultPort).reloadDb(newPath);
+      } catch (_) {
+        // Bot may not be running — that's OK, it will pick up config.db_path on next start
+      }
     }
   }
 }

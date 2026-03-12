@@ -314,8 +314,38 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  /// Set the current session ID (e.g. when loading a saved session).
-  void setSessionId(String sessionId) {
-    state = state.copyWith(sessionId: sessionId);
+  /// Set the current session ID and load its message history from the backend.
+  ///
+  /// Clears the current chat view immediately, then populates it with the
+  /// session's stored messages. Silently falls back to an empty view on error
+  /// (e.g. bot not running).
+  Future<void> setSessionId(String sessionId) async {
+    // Clear immediately so the UI shows a clean slate while loading
+    state = state.copyWith(sessionId: sessionId, messages: [], clearError: true);
+
+    try {
+      final rawMessages = await _sessionsService.getSessionMessages(sessionId);
+
+      final chatMessages = rawMessages.map((m) {
+        // Rebuild tool calls from the persisted JSON
+        final toolCallsRaw = m['tool_calls'] as List? ?? [];
+        final toolCalls = toolCallsRaw
+            .cast<Map<String, dynamic>>()
+            .map(ToolCallInfo.fromJson)
+            .toList();
+
+        return ChatMessage(
+          role: (m['role'] as String?) == 'user' ? ChatRole.user : ChatRole.assistant,
+          content: m['content'] as String? ?? '',
+          timestamp: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
+          toolCalls: toolCalls,
+          // Thinking blocks are not persisted — they're transient during streaming
+        );
+      }).toList();
+
+      state = state.copyWith(messages: chatMessages);
+    } catch (_) {
+      // Silently ignore — the session ID is still set, history just won't show
+    }
   }
 }

@@ -165,6 +165,47 @@ class ChatSessionsService {
     }
   }
 
+  /// GET /chat/sessions/{session_id}/messages — Load full message history.
+  ///
+  /// Returns raw message maps from the backend. The caller ([ChatNotifier])
+  /// is responsible for converting them into [ChatMessage] objects.
+  Future<List<Map<String, dynamic>>> getSessionMessages(String sessionId) async {
+    final uri = Uri.parse(
+        '$_baseUrl${AppConstants.botChatEndpoint}/sessions/$sessionId/messages');
+
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load messages: ${response.statusCode}');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return List<Map<String, dynamic>>.from(data['messages'] as List? ?? []);
+    } catch (e) {
+      throw Exception('Error loading session messages: $e');
+    }
+  }
+
+  /// POST /bot/reload-db — Hot-swap the active game database.
+  ///
+  /// Called from the settings screen when the user selects a new DB file.
+  /// Silently succeeds if the bot is not running.
+  Future<void> reloadDb(String dbPath) async {
+    final uri = Uri.parse('$_baseUrl/bot/reload-db');
+
+    final response = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'db_path': dbPath}),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reload db: ${response.statusCode}');
+    }
+  }
+
   /// POST /chat/sessions/{session_id}/tags — Add a tag to a session.
   Future<void> addTag(String sessionId, String tag) async {
     final uri = Uri.parse(

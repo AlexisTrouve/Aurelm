@@ -36,6 +36,10 @@ class BotServer:
         self._app.router.add_delete("/chat/sessions/{session_id}", self._delete_session)
         self._app.router.add_post("/chat/sessions/{session_id}/tags", self._add_tag)
         self._app.router.add_delete("/chat/sessions/{session_id}/tags/{tag}", self._remove_tag)
+        # Session message history (Fix 1: load messages on session switch)
+        self._app.router.add_get("/chat/sessions/{session_id}/messages", self._get_session_messages)
+        # Hot-reload DB path at runtime (Fix 3)
+        self._app.router.add_post("/bot/reload-db", self._reload_db)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -154,9 +158,12 @@ class BotServer:
             if not session:
                 return web.json_response({"error": f"Session {session_id} not found"}, status=404)
         else:
-            # Create anonymous session (not persisted)
+            # Create anonymous session scoped to current game DB (Fix 2)
             session_id = str(uuid.uuid4())
-            session = self._session_manager.create_session(f"Conversation {session_id[:8]}")
+            session = self._session_manager.create_session(
+                f"Conversation {session_id[:8]}",
+                db_path=self.config.db_path,
+            )
 
         # Build history for LLM: convert ChatMessage to dict
         history = [
@@ -216,11 +223,20 @@ class BotServer:
         return resp
 
     async def _list_sessions(self, request: web.Request) -> web.Response:
-        """GET /chat/sessions — List all active sessions."""
+        """GET /chat/sessions — List all active sessions.
+
+        Only returns sessions scoped to the currently active game DB,
+        so switching databases shows the right conversation history.
+        """
         archived = request.query.get("archived", "false").lower() == "true"
         tag_filter = request.query.get("tag")
 
-        sessions = self._session_manager.list_sessions(archived=archived, tag_filter=tag_filter)
+        # Filter sessions by the current game DB path (Fix 2)
+        sessions = self._session_manager.list_sessions(
+            archived=archived,
+            tag_filter=tag_filter,
+            db_path=self.config.db_path,
+        )
 
         result = []
         for session in sessions:
@@ -249,7 +265,8 @@ class BotServer:
         if not name:
             return web.json_response({"error": "Session name required"}, status=400)
 
-        session = self._session_manager.create_session(name)
+        # Scope the new session to the current game DB (Fix 2)
+        session = self._session_manager.create_session(name, db_path=self.config.db_path)
 
         return web.json_response({
             "session_id": session.session_id,
@@ -344,6 +361,63 @@ class BotServer:
         self._session_manager.remove_tag(session_id, tag)
 
         return web.json_response({"session_id": session_id, "removed_tag": tag})
+
+    async def _get_session_messages(self, request: web.Request) -> web.Response:
+        """GET /chat/sessions/{session_id}/messages — Load full message history for a session.
+
+        Used by Flutter when switching sessions: loads past messages so the
+        chat UI can display the conversation history from where it was left.
+        """
+        session_id = request.match_info["session_id"]
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": "Session not found"}, status=404)
+
+        messages = [
+            {
+                "role": msg.role,
+                "content": msg.content,
+                "message_type": msg.message_type,
+                "tool_calls": msg.tool_calls,  # already a list of dicts
+                "created_at": msg.created_at,
+            }
+            for msg in session.messages
+        ]
+        return web.json_response({"session_id": session_id, "messages": messages})
+
+    async def _reload_db(self, request: web.Request) -> web.Response:
+        """POST /bot/reload-db — Hot-swap the active game database at runtime.
+
+        Body: {"db_path": "/path/to/aurelm.db"}
+
+        Updates config and reinitialises the SessionManager so subsequent
+        session queries target the new DB. The agent's tool calls also pick up
+        the new path immediately via self.config.db_path.
+        """
+        import os
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON"}, status=400)
+
+        db_path = body.get("db_path", "").strip()
+        if not db_path:
+            return web.json_response({"error": "db_path required"}, status=400)
+
+        if not os.path.exists(db_path):
+            return web.json_response(
+                {"error": f"Database not found: {db_path}"}, status=404
+            )
+
+        old_path = self.config.db_path
+        # Swap the active DB path — agent tool calls read config.db_path at query time
+        self.config.db_path = db_path
+        # Reinitialise SessionManager so it points to the new DB file
+        self._session_manager = SessionManager(db_path)
+
+        log.info("Hot-reloaded database: %s -> %s", old_path, db_path)
+        return web.json_response({"ok": True, "db_path": db_path})
 
     # ---------------------------------------------------------------------- #
     # Helpers
