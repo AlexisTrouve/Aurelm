@@ -73,6 +73,10 @@ CREATE TABLE entity_entities (
     first_seen_turn INTEGER REFERENCES turn_turns(id),
     last_seen_turn INTEGER REFERENCES turn_turns(id),
     is_active INTEGER NOT NULL DEFAULT 1,
+    hidden INTEGER NOT NULL DEFAULT 0,
+    disabled INTEGER NOT NULL DEFAULT 0,
+    disabled_at TEXT,
+    tags TEXT DEFAULT '[]',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(canonical_name, civ_id)
@@ -103,6 +107,39 @@ CREATE TABLE entity_relations (
     turn_id INTEGER REFERENCES turn_turns(id),
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE subject_subjects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    civ_id INTEGER NOT NULL REFERENCES civ_civilizations(id),
+    source_turn_id INTEGER NOT NULL REFERENCES turn_turns(id),
+    title TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL DEFAULT 'choice',
+    direction TEXT NOT NULL DEFAULT 'mj_to_pj',
+    status TEXT NOT NULL DEFAULT 'open',
+    source_quote TEXT,
+    tags TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE subject_options (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER NOT NULL REFERENCES subject_subjects(id) ON DELETE CASCADE,
+    option_number INTEGER NOT NULL,
+    label TEXT NOT NULL,
+    description TEXT,
+    is_libre INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE subject_resolutions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER NOT NULL REFERENCES subject_subjects(id) ON DELETE CASCADE,
+    resolved_by_turn_id INTEGER NOT NULL REFERENCES turn_turns(id),
+    resolution_text TEXT,
+    confidence REAL NOT NULL DEFAULT 0.0,
+    is_libre INTEGER NOT NULL DEFAULT 0,
+    chosen_option_id INTEGER REFERENCES subject_options(id)
 );
 
 CREATE TABLE pipeline_runs (

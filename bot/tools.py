@@ -84,6 +84,42 @@ def _parse_history(history_json: str | None) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# Standard filter helper
+# --------------------------------------------------------------------------- #
+
+def _turn_range_conditions(
+    from_turn: int | None,
+    to_turn: int | None,
+    last_n_turns: int | None,
+    conn: sqlite3.Connection,
+    turn_alias: str = "t",
+) -> tuple[list[str], list]:
+    """Return (sql_conditions, params) for turn number range filtering.
+
+    lastNTurns takes precedence over fromTurn/toTurn when provided.
+    Computes effective_from = max_turn - last_n_turns + 1 so "last 5 turns"
+    means the 5 most recent turns in the DB.
+    """
+    conditions: list[str] = []
+    params: list = []
+
+    if last_n_turns is not None:
+        max_turn = conn.execute("SELECT MAX(turn_number) FROM turn_turns").fetchone()[0] or 0
+        effective_from = max(1, max_turn - last_n_turns + 1)
+        conditions.append(f"{turn_alias}.turn_number >= ?")
+        params.append(effective_from)
+    else:
+        if from_turn is not None:
+            conditions.append(f"{turn_alias}.turn_number >= ?")
+            params.append(from_turn)
+        if to_turn is not None:
+            conditions.append(f"{turn_alias}.turn_number <= ?")
+            params.append(to_turn)
+
+    return conditions, params
+
+
+# --------------------------------------------------------------------------- #
 # Tool 1: listCivs
 # --------------------------------------------------------------------------- #
 
@@ -258,32 +294,70 @@ def get_turn_detail(
 
 def search_lore(
     conn: sqlite3.Connection,
-    query: str,
+    query: str = "",
     civ_id: int | None = None,
     entity_type: str | None = None,
+    tag: str | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    last_n_turns: int | None = None,
+    limit: int = 20,
 ) -> str:
-    sql = """
+    """Search entities by name/description/alias.
+
+    With tag= (and empty query), behaves like getEntitiesByTag.
+    Turn range filters (fromTurn/toTurn/lastNTurns) filter by first_seen_turn.
+    """
+    # Build WHERE conditions incrementally
+    conditions = ["e.disabled = 0"]
+    params: list = []
+
+    # Text search (optional when tag is provided)
+    if query:
+        pattern = f"%{_escape_like(query)}%"
+        conditions.append(
+            "(e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'"
+            " OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')"
+        )
+        params.extend([pattern, pattern, pattern, pattern])
+
+    if civ_id is not None:
+        conditions.append("e.civ_id = ?")
+        params.append(civ_id)
+    if entity_type:
+        conditions.append("e.entity_type = ?")
+        params.append(entity_type)
+    if tag:
+        # JSON array contains match
+        conditions.append("e.tags LIKE ?")
+        params.append(f'%"{tag}"%')
+
+    # Turn range: filter by first_seen_turn join
+    turn_conds, turn_params = _turn_range_conditions(from_turn, to_turn, last_n_turns, conn, turn_alias="ft")
+    if turn_conds:
+        conditions.append("ft.turn_number IS NOT NULL")  # ensure join is not null
+        conditions.extend(turn_conds)
+        params.extend(turn_params)
+
+    where_sql = " AND ".join(conditions)
+
+    # Need LEFT JOIN on turn if filtering by turn range
+    turn_join = ""
+    if turn_conds:
+        turn_join = "LEFT JOIN turn_turns ft ON ft.id = e.first_seen_turn"
+
+    sql = f"""
         SELECT DISTINCT e.id, e.canonical_name, e.entity_type, e.description, e.history,
                c.name AS civ_name,
                (SELECT COUNT(*) FROM entity_mentions m WHERE m.entity_id = e.id) AS mention_count
         FROM entity_entities e
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN entity_aliases a ON a.entity_id = e.id
-        WHERE e.disabled = 0
-          AND (e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'
-               OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')
+        {turn_join}
+        WHERE {where_sql}
+        ORDER BY mention_count DESC LIMIT ?
     """
-    pattern = f"%{_escape_like(query)}%"
-    params: list = [pattern, pattern, pattern, pattern]
-
-    if civ_id is not None:
-        sql += " AND e.civ_id = ?"
-        params.append(civ_id)
-    if entity_type:
-        sql += " AND e.entity_type = ?"
-        params.append(entity_type)
-
-    sql += " ORDER BY mention_count DESC LIMIT 20"
+    params.append(limit)
     entities = conn.execute(sql, params).fetchall()
 
     if not entities:
@@ -337,8 +411,17 @@ def search_lore(
 # --------------------------------------------------------------------------- #
 
 def get_entity_detail(
-    conn: sqlite3.Connection, entity_name: str, civ_id: int | None = None
+    conn: sqlite3.Connection,
+    entity_name: str,
+    civ_id: int | None = None,
+    include_relations: bool = False,
+    include_activity: bool = False,
 ) -> str:
+    """Full entity profile.
+
+    include_relations=True: add relation graph (replaces exploreRelations).
+    include_activity=True: add per-turn activity sparkline (replaces entityActivity).
+    """
     sql = """
         SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
                c.name AS civ_name, e.is_active,
@@ -392,30 +475,60 @@ def get_entity_detail(
         if aliases:
             lines.append(f"**Aliases:** {', '.join(a[0] for a in aliases)}")
 
-        # Relations (both directions)
-        relations = conn.execute("""
-            SELECT 'outgoing' AS direction, t.canonical_name AS other_name, t.entity_type AS other_type,
-                   r.relation_type, r.description, tt.turn_number
-            FROM entity_relations r
-            JOIN entity_entities t ON r.target_entity_id = t.id
-            LEFT JOIN turn_turns tt ON r.turn_id = tt.id
-            WHERE r.source_entity_id = ? AND r.is_active = 1
-            UNION ALL
-            SELECT 'incoming' AS direction, s.canonical_name AS other_name, s.entity_type AS other_type,
-                   r.relation_type, r.description, tt.turn_number
-            FROM entity_relations r
-            JOIN entity_entities s ON r.source_entity_id = s.id
-            LEFT JOIN turn_turns tt ON r.turn_id = tt.id
-            WHERE r.target_entity_id = ? AND r.is_active = 1
-        """, (eid, eid)).fetchall()
+        # Relations (both directions) — opt-in via include_relations
+        if include_relations:
+            rels = conn.execute("""
+                SELECT 'outgoing' AS direction, t.canonical_name AS other_name, t.entity_type AS other_type,
+                       r.relation_type, r.description, tt.turn_number
+                FROM entity_relations r
+                JOIN entity_entities t ON r.target_entity_id = t.id
+                LEFT JOIN turn_turns tt ON r.turn_id = tt.id
+                WHERE r.source_entity_id = ? AND r.is_active = 1
+                UNION ALL
+                SELECT 'incoming' AS direction, s.canonical_name AS other_name, s.entity_type AS other_type,
+                       r.relation_type, r.description, tt.turn_number
+                FROM entity_relations r
+                JOIN entity_entities s ON r.source_entity_id = s.id
+                LEFT JOIN turn_turns tt ON r.turn_id = tt.id
+                WHERE r.target_entity_id = ? AND r.is_active = 1
+            """, (eid, eid)).fetchall()
 
-        if relations:
-            lines += ["", "## Relations", "", "| Direction | Entity | Type | Relation | Turn |", "|---|---|---|---|---|"]
-            for rel in relations:
-                direction, other_name, other_type, rel_type, _desc, turn_num = rel
-                arrow = "->" if direction == "outgoing" else "<-"
-                turn_str = str(turn_num) if turn_num is not None else "-"
-                lines.append(f"| {arrow} | {other_name} | {other_type} | {rel_type} | {turn_str} |")
+            if rels:
+                lines += ["", "## Relations", "", "| Direction | Entity | Type | Relation | Turn |", "|---|---|---|---|---|"]
+                for rel in rels:
+                    rel_dir, other_name, other_type, rel_type, _desc, turn_num = rel
+                    arrow = "->" if rel_dir == "outgoing" else "<-"
+                    turn_str = str(turn_num) if turn_num is not None else "-"
+                    lines.append(f"| {arrow} | {other_name} | {other_type} | {rel_type} | {turn_str} |")
+            else:
+                lines += ["", "## Relations", "", "_Aucune relation trouvée._"]
+
+        # Activity sparkline — opt-in via include_activity
+        if include_activity:
+            act_rows = conn.execute("""
+                SELECT t.turn_number, COUNT(*) AS cnt
+                FROM entity_mentions m
+                JOIN turn_turns t ON m.turn_id = t.id
+                WHERE m.entity_id = ?
+                GROUP BY t.turn_number
+                ORDER BY t.turn_number
+            """, (eid,)).fetchall()
+
+            if act_rows:
+                turn_counts = [(r[0], r[1]) for r in act_rows]
+                total_mentions = sum(c for _, c in turn_counts)
+                peak_turn, peak_count = max(turn_counts, key=lambda x: x[1])
+                max_count = max(c for _, c in turn_counts)
+                sparkline_chars = " _.-:=+*#"
+                lines += ["", "## Activity", ""]
+                lines.append(f"**Total mentions:** {total_mentions} | **Peak:** Turn {peak_turn} ({peak_count})")
+                lines.append("")
+                lines.append("```")
+                for t_num, cnt in turn_counts:
+                    bar_idx = min(int(cnt / max_count * (len(sparkline_chars) - 1)), len(sparkline_chars) - 1)
+                    bar = sparkline_chars[bar_idx] * cnt
+                    lines.append(f"T{t_num:>3}: {bar} ({cnt})")
+                lines.append("```")
 
         # Mentions (up to 20)
         mentions = conn.execute("""
@@ -638,40 +751,88 @@ def timeline(
     conn: sqlite3.Connection,
     civ_id: int | None = None,
     limit: int = 50,
+    turn_type: str | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    last_n_turns: int | None = None,
+    entity_name: str | None = None,
 ) -> str:
-    if civ_id is not None:
-        rows = conn.execute("""
-            SELECT t.turn_number, t.title, t.summary, t.turn_type,
+    """Chronological turn list with optional filters.
+
+    Absorbs filterTimeline: supports turnType, fromTurn/toTurn/lastNTurns, entityName.
+    """
+    if entity_name:
+        # Entity-filtered query: join through mentions
+        sql = """
+            SELECT DISTINCT t.turn_number, t.title, t.summary, t.turn_type,
                    t.game_date_start, t.game_date_end, c.name AS civ_name,
-                   (SELECT COUNT(DISTINCT m.entity_id) FROM entity_mentions m WHERE m.turn_id = t.id) AS entity_count
+                   (SELECT COUNT(DISTINCT m2.entity_id) FROM entity_mentions m2 WHERE m2.turn_id = t.id) AS entity_count
             FROM turn_turns t
             JOIN civ_civilizations c ON t.civ_id = c.id
-            WHERE t.civ_id = ?
-            ORDER BY t.turn_number ASC, c.name LIMIT ?
-        """, (civ_id, limit)).fetchall()
+            LEFT JOIN entity_mentions m ON m.turn_id = t.id
+            LEFT JOIN entity_entities e ON m.entity_id = e.id
+            LEFT JOIN entity_aliases a ON a.entity_id = e.id
+            WHERE (e.canonical_name LIKE ? ESCAPE '!' OR a.alias LIKE ? ESCAPE '!')
+              AND (e.disabled IS NULL OR e.disabled = 0)
+        """
+        pattern = f"%{_escape_like(entity_name)}%"
+        params: list = [pattern, pattern]
     else:
-        rows = conn.execute("""
+        sql = """
             SELECT t.turn_number, t.title, t.summary, t.turn_type,
                    t.game_date_start, t.game_date_end, c.name AS civ_name,
                    (SELECT COUNT(DISTINCT m.entity_id) FROM entity_mentions m WHERE m.turn_id = t.id) AS entity_count
             FROM turn_turns t
             JOIN civ_civilizations c ON t.civ_id = c.id
-            ORDER BY t.turn_number ASC, c.name LIMIT ?
-        """, (limit,)).fetchall()
+            WHERE 1=1
+        """
+        params = []
+
+    if civ_id is not None:
+        sql += " AND t.civ_id = ?"
+        params.append(civ_id)
+    if turn_type:
+        sql += " AND t.turn_type = ?"
+        params.append(turn_type)
+
+    # Standard turn range filter
+    turn_conds, turn_params = _turn_range_conditions(from_turn, to_turn, last_n_turns, conn, turn_alias="t")
+    for cond in turn_conds:
+        sql += f" AND {cond}"
+    params.extend(turn_params)
+
+    sql += " ORDER BY t.turn_number ASC, c.name LIMIT ?"
+    params.append(limit)
+
+    rows = conn.execute(sql, params).fetchall()
 
     if not rows:
         return "# Timeline\n\nNo turns found."
 
+    # Build title with active filters
+    filter_parts = []
+    if turn_type:
+        filter_parts.append(f"type={turn_type}")
+    if entity_name:
+        filter_parts.append(f"entity={entity_name}")
+    if last_n_turns is not None:
+        filter_parts.append(f"last {last_n_turns} turns")
+    elif from_turn is not None or to_turn is not None:
+        f_str = str(from_turn) if from_turn is not None else "?"
+        t_str = str(to_turn) if to_turn is not None else "?"
+        filter_parts.append(f"turns {f_str}-{t_str}")
+    filter_str = f" ({', '.join(filter_parts)})" if filter_parts else ""
+
     lines = [
-        "# Timeline",
+        f"# Timeline{filter_str}",
         "",
         "| Turn | Civilization | Type | Summary | Entities |",
         "|---|---|---|---|---|",
     ]
     for r in rows:
-        turn_num, title, summary, turn_type, gd_start, _gd_end, cn, ec = r
+        turn_num, title, summary, t_type, _gd_start, _gd_end, cn, ec = r
         text = truncate(summary or title or "(no summary)", 80)
-        lines.append(f"| {turn_num} | {cn} | {turn_type} | {text} | {ec} |")
+        lines.append(f"| {turn_num} | {cn} | {t_type} | {text} | {ec} |")
 
     return "\n".join(lines)
 
@@ -832,6 +993,10 @@ def search_turn_content(
     query: str,
     civ_id: int | None = None,
     segment_type: str | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    last_n_turns: int | None = None,
+    limit: int = 20,
 ) -> str:
     sql = """
         SELECT t.turn_number, c.name AS civ_name, s.segment_type, s.content, t.title
@@ -849,7 +1014,13 @@ def search_turn_content(
         sql += " AND s.segment_type = ?"
         params.append(segment_type)
 
-    sql += " ORDER BY t.turn_number DESC LIMIT 20"
+    turn_conds, turn_params = _turn_range_conditions(from_turn, to_turn, last_n_turns, conn, turn_alias="t")
+    for cond in turn_conds:
+        sql += f" AND {cond}"
+    params.extend(turn_params)
+
+    sql += " ORDER BY t.turn_number DESC LIMIT ?"
+    params.append(limit)
     rows = conn.execute(sql, params).fetchall()
 
     if not rows:
@@ -869,7 +1040,7 @@ def search_turn_content(
 # Tool 10: getStructuredFacts
 # --------------------------------------------------------------------------- #
 
-VALID_FACT_TYPES = {"technologies", "resources", "beliefs", "geography"}
+VALID_FACT_TYPES = {"technologies", "resources", "beliefs", "geography", "choices", "techtree"}
 
 
 def _parse_json_list(raw: str | None) -> list[str]:
@@ -890,27 +1061,54 @@ def get_structured_facts(
     civ_id: int,
     civ_name: str,
     fact_type: str | None = None,
-    turn_number: int | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    last_n_turns: int | None = None,
 ) -> str:
-    if fact_type and fact_type not in VALID_FACT_TYPES:
-        valid = ", ".join(sorted(VALID_FACT_TYPES))
+    """Structured facts per turn.
+
+    fact_type=choices delegates to get_choice_history (narrative bifurcations).
+    fact_type=techtree delegates to get_tech_tree (categorized tech tree).
+    fact_type=all skips choices and techtree (use explicitly for those).
+    """
+    if fact_type and fact_type not in VALID_FACT_TYPES and fact_type != "all":
+        valid = ", ".join(sorted(VALID_FACT_TYPES) + ["all"])
         return f"# Structured Facts - {civ_name}\n\nError: invalid factType '{fact_type}'. Valid types: {valid}"
-    types_to_query = [fact_type] if fact_type else sorted(VALID_FACT_TYPES)
+
+    # Delegate special fact types
+    if fact_type == "choices":
+        return get_choice_history(conn, civ_id, civ_name)
+    if fact_type == "techtree":
+        return get_tech_tree(conn, civ_id, civ_name)
+
+    # Standard fact types (technologies, resources, beliefs, geography)
+    db_fact_types = {"technologies", "resources", "beliefs", "geography"}
+    types_to_query = [fact_type] if (fact_type and fact_type in db_fact_types) else sorted(db_fact_types)
 
     sql = "SELECT turn_number, technologies, resources, beliefs, geography FROM turn_turns WHERE civ_id = ?"
     params: list = [civ_id]
-    if turn_number is not None:
-        sql += " AND turn_number = ?"
-        params.append(int(turn_number))
-    sql += " ORDER BY turn_number"
 
+    turn_conds, turn_params = _turn_range_conditions(from_turn, to_turn, last_n_turns, conn, turn_alias="turn_turns")
+    # Note: no alias in this query, use column directly
+    if last_n_turns is not None:
+        max_turn = conn.execute("SELECT MAX(turn_number) FROM turn_turns").fetchone()[0] or 0
+        effective_from = max(1, max_turn - last_n_turns + 1)
+        sql += " AND turn_number >= ?"
+        params.append(effective_from)
+    else:
+        if from_turn is not None:
+            sql += " AND turn_number >= ?"
+            params.append(from_turn)
+        if to_turn is not None:
+            sql += " AND turn_number <= ?"
+            params.append(to_turn)
+
+    sql += " ORDER BY turn_number"
     rows = conn.execute(sql, params).fetchall()
 
     lines = [f"# Structured Facts - {civ_name}", ""]
-    if fact_type and fact_type in VALID_FACT_TYPES:
+    if fact_type and fact_type in (VALID_FACT_TYPES - {"choices", "techtree"}):
         lines.append(f"**Filter:** {fact_type}")
-    if turn_number is not None:
-        lines.append(f"**Turn:** {turn_number}")
     lines.append("")
 
     found_any = False
@@ -1369,6 +1567,10 @@ def list_subjects(
     status: str = "open",
     direction: str | None = None,
     tag: str | None = None,
+    from_turn: int | None = None,
+    to_turn: int | None = None,
+    last_n_turns: int | None = None,
+    limit: int = 50,
 ) -> str:
     """List subjects (MJ↔PJ open threads) with optional filters.
 
@@ -1394,6 +1596,12 @@ def list_subjects(
         where.append('s.tags LIKE ?')
         params.append(f'%"{tag}"%')
 
+    # Turn range filter on source turn
+    turn_conds, turn_params = _turn_range_conditions(from_turn, to_turn, last_n_turns, conn, turn_alias="t")
+    for cond in turn_conds:
+        where.append(cond)
+    params.extend(turn_params)
+
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
 
     rows = conn.execute(
@@ -1405,9 +1613,9 @@ def list_subjects(
         JOIN civ_civilizations c ON c.id = s.civ_id
         {where_sql}
         ORDER BY t.turn_number DESC, s.id DESC
-        LIMIT 50
+        LIMIT ?
         """,
-        params,
+        params + [limit],
     ).fetchall()
 
     if not rows:
@@ -1610,14 +1818,23 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
         return get_turn_detail(conn, int(turn_number), resolved["id"], resolved["name"])
 
     if tool_name == "searchLore":
-        query = tool_input.get("query", "")
         civ_id = None
         civ_name_str = tool_input.get("civName")
         if civ_name_str:
             resolved = _resolve()
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
-        return search_lore(conn, query, civ_id=civ_id, entity_type=tool_input.get("entityType"))
+        return search_lore(
+            conn,
+            query=tool_input.get("query") or "",
+            civ_id=civ_id,
+            entity_type=tool_input.get("entityType"),
+            tag=tool_input.get("tag"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            last_n_turns=tool_input.get("lastNTurns"),
+            limit=int(tool_input.get("limit") or 20),
+        )
 
     if tool_name == "getEntityDetail":
         entity_name = tool_input.get("entityName", "")
@@ -1627,7 +1844,13 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             resolved = _resolve()
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
-        return get_entity_detail(conn, entity_name, civ_id=civ_id)
+        return get_entity_detail(
+            conn,
+            entity_name,
+            civ_id=civ_id,
+            include_relations=bool(tool_input.get("relations")),
+            include_activity=bool(tool_input.get("activity")),
+        )
 
     if tool_name == "sanityCheck":
         statement = tool_input.get("statement", "")
@@ -1648,8 +1871,16 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             resolved = _resolve()
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
-        limit = tool_input.get("limit", 50)
-        return timeline(conn, civ_id=civ_id, limit=int(limit))
+        return timeline(
+            conn,
+            civ_id=civ_id,
+            limit=int(tool_input.get("limit") or 50),
+            turn_type=tool_input.get("turnType"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            last_n_turns=tool_input.get("lastNTurns"),
+            entity_name=tool_input.get("entityName"),
+        )
 
     if tool_name == "compareCivs":
         civ_names_raw = tool_input.get("civNames", [])
@@ -1685,14 +1916,22 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
         return compare_civs(conn, resolved_civs, aspects=tool_input.get("aspects"))
 
     if tool_name == "searchTurnContent":
-        query = tool_input.get("query", "")
         civ_id = None
         civ_name_str = tool_input.get("civName")
         if civ_name_str:
             resolved = _resolve()
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
-        return search_turn_content(conn, query, civ_id=civ_id, segment_type=tool_input.get("segmentType"))
+        return search_turn_content(
+            conn,
+            query=tool_input.get("query", ""),
+            civ_id=civ_id,
+            segment_type=tool_input.get("segmentType"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            last_n_turns=tool_input.get("lastNTurns"),
+            limit=int(tool_input.get("limit") or 20),
+        )
 
     if tool_name == "getStructuredFacts":
         resolved = _resolve()
@@ -1705,7 +1944,9 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             resolved["id"],
             resolved["name"],
             fact_type=tool_input.get("factType"),
-            turn_number=tool_input.get("turnNumber"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            last_n_turns=tool_input.get("lastNTurns"),
         )
 
     if tool_name == "getChoiceHistory":
@@ -1784,6 +2025,10 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             status=tool_input.get("status") or "open",
             direction=tool_input.get("direction"),
             tag=tool_input.get("tag"),
+            from_turn=tool_input.get("fromTurn"),
+            to_turn=tool_input.get("toTurn"),
+            last_n_turns=tool_input.get("lastNTurns"),
+            limit=int(tool_input.get("limit") or 50),
         )
 
     if tool_name == "getSubjectDetail":

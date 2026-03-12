@@ -28,32 +28,56 @@ Si un premier outil ne suffit pas, rappelle un autre outil immédiatement. Un to
 
 ---
 
+## Paramètres standard — valables sur TOUS les tools de liste
+
+```
+civName    : filtre par civilisation (fuzzy match)
+fromTurn   : tour de début (inclus)
+toTurn     : tour de fin (inclus)
+lastNTurns : raccourci "N derniers tours" (ex: lastNTurns=5)
+tag        : domaine — militaire|politique|religieux|economique|
+                       culturel|diplomatique|technologique|mythologique
+limit      : max résultats
+```
+
+Ces paramètres sont **identiques sur tous les tools** — pas besoin de vérifier si le param existe. `lastNTurns` prime sur `fromTurn`/`toTurn`.
+
+---
+
 ## Decision tree — quel outil pour quelle question ?
 
 ### État d'une civilisation
 - "Recap de X", "où en est X" → `getCivState(civName)`
-- "Timeline de X" → `timeline(civName)` ou `filterTimeline(civName, fromTurn, toTurn)`
+- "Timeline de X" → `timeline(civName)`
+- "Timeline T5-T10" → `timeline(fromTurn=5, toTurn=10)`
+- "5 derniers tours" → `timeline(lastNTurns=5)`
+- "Tours de type event" → `timeline(turnType="event")`
+- "Tours mentionnant l'Oracle" → `timeline(entityName="Oracle")`
 - "Compare X et Y" → `compareCivs(civNames, aspects)`
 - "Quelles technos a X ?" → `getStructuredFacts(civName, factType="technologies")`
-- "Quels choix a faits X ?" → `getChoiceHistory(civName)`
-- "Arbre technologique" → `getTechTree(civName)`
+- "Arbre techno" → `getStructuredFacts(civName, factType="techtree")`
+- "Quels choix a faits X ?" → `getStructuredFacts(civName, factType="choices")`
+- "Croyances/ressources/géo" → `getStructuredFacts(civName, factType=...)`
 
 ### Entités
-- "Qu'est-ce qu'on sait sur X ?" → `searchLore(query)` puis si trouvé `getEntityDetail(entityName)`
-- "Toutes les entités militaires / religieuses / politiques / ..." → `getEntitiesByTag(tag, civName?)`
-- "Relations de X ?" → `exploreRelations(entityName, depth=2)`
-- "X est-il encore actif ?" → `entityActivity(entityName)`
+- "Qu'est-ce qu'on sait sur X ?" → `searchLore(query)` puis `getEntityDetail(entityName)`
+- "Toutes les entités militaires" → `searchLore(tag="militaire")`
+- "Entités militaires des Confluents" → `searchLore(tag="militaire", civName="Confluence")`
+- "Relations de X ?" → `getEntityDetail(entityName, relations=true)`
+- "X est-il encore actif ?" → `getEntityDetail(entityName, activity=true)`
+- "Quand l'Argile est-elle apparue ?" → `getEntityDetail("Argile Vivante", activity=true)`
 
 ### Sujets — décisions ouvertes et initiatives
 - "Quels choix sont encore ouverts ?" → `listSubjects(status="open")`
 - "Quelles initiatives du joueur ?" → `listSubjects(direction="pj_to_mj")`
-- "Quelles décisions militaires en attente ?" → `listSubjects(tag="militaire", status="open")`
+- "Décisions militaires en attente" → `listSubjects(tag="militaire", status="open")`
+- "Sujets des 5 derniers tours" → `listSubjects(lastNTurns=5)`
 - "Qu'est-ce que le joueur a résolu ?" → `listSubjects(status="resolved")`
-- "Détail du sujet #N" ou approfondir un sujet → `getSubjectDetail(subjectId)`
-- "Combien de sujets ouverts ?" → `listSubjects(status="open")`
+- "Détail du sujet #N" → `getSubjectDetail(subjectId=N)`
 
 ### Recherche et vérification
 - "Où parle-t-on de X ?" (dans les récits) → `searchTurnContent(query)`
+- "Mentions de X sur les 5 derniers tours" → `searchTurnContent(query, lastNTurns=5)`
 - "Est-ce que X est cohérent ?" → `sanityCheck(statement, civName?)`
 - "Que s'est-il passé au tour N ?" → `getTurnDetail(civName, turnNumber)`
 - "Liste toutes les civs" → `listCivs()`

@@ -183,7 +183,8 @@ class TestGetEntityDetail:
         assert "Mentions" in result
 
     def test_shows_relations(self, db):
-        result = get_entity_detail(db, "Argile Vivante")
+        # relations are opt-in via include_relations=True
+        result = get_entity_detail(db, "Argile Vivante", include_relations=True)
         assert "Relations" in result
         assert "discovered_at" in result
 
@@ -267,12 +268,13 @@ class TestGetStructuredFacts:
         assert "Poisson" not in result
 
     def test_filter_by_turn(self, db):
-        result = get_structured_facts(db, 1, "Civilisation de la Confluence", turn_number=1)
+        # Use fromTurn/toTurn instead of deprecated turn_number
+        result = get_structured_facts(db, 1, "Civilisation de la Confluence", from_turn=1, to_turn=1)
         assert "Poisson" in result
         assert "Argile Vivante" not in result
 
     def test_no_facts(self, db):
-        result = get_structured_facts(db, 1, "Civilisation de la Confluence", fact_type="technologies", turn_number=99)
+        result = get_structured_facts(db, 1, "Civilisation de la Confluence", fact_type="technologies", from_turn=99)
         assert "No structured facts" in result
 
 
