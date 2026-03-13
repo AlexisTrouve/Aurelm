@@ -62,6 +62,13 @@ class DoneEvent extends ChatEvent {
   DoneEvent({required this.sessionId});
 }
 
+/// Cumulative token usage after each LLM round.
+class UsageEvent extends ChatEvent {
+  final int inputTokens;
+  final int outputTokens;
+  UsageEvent({required this.inputTokens, required this.outputTokens});
+}
+
 /// Agent error.
 class ErrorEvent extends ChatEvent {
   final String message;
@@ -132,6 +139,11 @@ class ChatService {
             case 'thinking':
               yield ThinkingEvent(
                 content: json['content'] as String? ?? '',
+              );
+            case 'usage':
+              yield UsageEvent(
+                inputTokens: json['input_tokens'] as int? ?? 0,
+                outputTokens: json['output_tokens'] as int? ?? 0,
               );
             case 'text':
               yield TextEvent(

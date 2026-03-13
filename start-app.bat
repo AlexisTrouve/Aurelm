@@ -1,16 +1,14 @@
 @echo off
-REM Start Aurelm Flutter app
+REM Start Aurelm Flutter app (prebuilt release)
 REM Assumes bot is already running on port 8473
 
-echo Starting Aurelm Flutter app...
-echo Make sure bot is running first (see start-bot.bat)
-echo.
+set EXE=gui\build\windows\x64\runner\Release\aurelm_gui.exe
 
-cd gui
-flutter run -d windows
-
-if errorlevel 1 (
-    echo.
-    echo Flutter failed to start. Check that Flutter is installed and Windows platform is available.
+if not exist "%EXE%" (
+    echo ERROR: App not built yet. Run: cd gui && flutter build windows
     pause
+    exit /b 1
 )
+
+echo Starting Aurelm...
+start "" "%EXE%"

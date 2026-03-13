@@ -7,6 +7,7 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/stat_card.dart';
 import '../../widgets/common/section_header.dart';
+import '../../screens/entities/widgets/notes_menu_button.dart';
 import 'widgets/entity_breakdown_chart.dart';
 import 'widgets/top_entities_list.dart';
 import 'widgets/recent_turns_list.dart';
@@ -40,7 +41,10 @@ class CivDetailScreen extends ConsumerWidget {
               onPressed: () => context.go('/'),
             ),
           ),
-          body: SingleChildScrollView(
+          body: NotesSideRail(
+            attachment: NoteAttachment.civ,
+            attachmentId: civId,
+            child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,6 +120,7 @@ class CivDetailScreen extends ConsumerWidget {
                 RecentTurnsList(civId: civId),
               ],
             ),
+          ),
           ),
         );
       },

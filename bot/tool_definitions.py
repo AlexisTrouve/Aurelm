@@ -50,12 +50,24 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "getTurnDetail",
-        "description": "Contenu complet d'un tour : segments, choix, conséquences, entités.",
+        "description": "Contenu complet d'un tour : segments, choix, conséquences, entités. Sections opt-in pour contrôler la verbosité.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "civName": {"type": "string"},
                 "turnNumber": {"type": "integer"},
+                "showSegments": {
+                    "type": "boolean",
+                    "description": "Inclure les segments narratifs (défaut: false)",
+                },
+                "showEntities": {
+                    "type": "boolean",
+                    "description": "Inclure la table des entités mentionnées (défaut: false)",
+                },
+                "showNotes": {
+                    "type": "boolean",
+                    "description": "Inclure les notes GM (défaut: false). Les notes pinned sont toujours incluses.",
+                },
             },
             "required": ["civName", "turnNumber"],
         },
@@ -88,7 +100,8 @@ TOOL_DEFINITIONS = [
         "description": (
             "Fiche complète d'une entité : description, aliases, mentions. "
             "relations=true pour le graphe de relations (remplace exploreRelations). "
-            "activity=true pour la timeline d'activité par tour (remplace entityActivity)."
+            "activity=true pour la timeline d'activité par tour (remplace entityActivity). "
+            "Sections opt-in pour contrôler la verbosité."
         ),
         "input_schema": {
             "type": "object",
@@ -102,6 +115,22 @@ TOOL_DEFINITIONS = [
                 "activity": {
                     "type": "boolean",
                     "description": "Inclure la timeline d'activité par tour (défaut: false)",
+                },
+                "showMentions": {
+                    "type": "boolean",
+                    "description": "Inclure les 20 dernières mentions (défaut: false)",
+                },
+                "showFacts": {
+                    "type": "boolean",
+                    "description": "Inclure la chronologie/history (défaut: false)",
+                },
+                "showTimeline": {
+                    "type": "boolean",
+                    "description": "Alias pour activity (défaut: false)",
+                },
+                "showNotes": {
+                    "type": "boolean",
+                    "description": "Inclure les notes GM (défaut: false). Les notes pinned sont toujours incluses.",
                 },
             },
             "required": ["entityName"],
@@ -221,14 +250,62 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "getNotes",
+        "description": "Notes GM attachées à une entité, un sujet, ou un tour. Appeler pour enrichir le contexte d'un élément.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Nom d'une entité"},
+                "subjectId":  {"type": "integer", "description": "ID d'un sujet"},
+                "turnNumber": {"type": "integer", "description": "Numéro de tour"},
+                "civName":    {"type": "string"},
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "getSubjectDetail",
-        "description": "Détail complet d'un sujet : description, options proposées, résolutions. Utiliser après listSubjects.",
+        "description": "Détail complet d'un sujet : description, options proposées, résolutions. Sections opt-in. Utiliser après listSubjects.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "subjectId": {"type": "integer"},
+                "showOptions": {
+                    "type": "boolean",
+                    "description": "Inclure les options proposées (défaut: false)",
+                },
+                "showResolutions": {
+                    "type": "boolean",
+                    "description": "Inclure les résolutions (défaut: false)",
+                },
+                "showNotes": {
+                    "type": "boolean",
+                    "description": "Inclure les notes GM (défaut: false). Les notes pinned sont toujours incluses.",
+                },
             },
             "required": ["subjectId"],
+        },
+    },
+    {
+        "name": "deepExplore",
+        "description": (
+            "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
+            "getEntityDetail, getSubjectDetail, timeline, getTurnDetail pour répondre à une question complexe. "
+            "Utiliser quand une seule recherche ne suffit pas."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": "La question de recherche approfondie",
+                },
+                "context": {
+                    "type": "string",
+                    "description": "Contexte additionnel pour guider la recherche",
+                },
+            },
+            "required": ["question"],
         },
     },
 ]

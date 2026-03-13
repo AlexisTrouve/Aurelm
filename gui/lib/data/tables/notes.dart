@@ -19,8 +19,18 @@ class Notes extends Table {
   /// FK to turn_turns.id — null if note is on an entity or subject
   IntColumn get turnId => integer().named('turn_id').nullable()();
 
+  /// FK to civ_civilizations.id — null if note is on an entity/subject/turn
+  IntColumn get civId => integer().named('civ_id').nullable()();
+
   TextColumn get title => text().withDefault(const Constant(''))();
   TextColumn get content => text().withDefault(const Constant(''))();
+
+  /// Whether this note should always be shown (even in compact tool output)
+  IntColumn get pinned => integer().withDefault(const Constant(0))();
+
+  /// 'gm' = GM annotation, 'agent' = injected into agent system prompt
+  TextColumn get noteType =>
+      text().named('note_type').withDefault(const Constant('gm'))();
 
   TextColumn get createdAt => text().named('created_at')();
   TextColumn get updatedAt => text().named('updated_at')();

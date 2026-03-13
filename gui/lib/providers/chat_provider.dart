@@ -66,6 +66,12 @@ class ChatState {
   final List<PendingToolCall> pendingTools;
   /// Messages typed while the LLM was busy — will be fused and sent after.
   final List<String> messageQueue;
+  /// Cumulative token usage across the entire session (not reset between turns).
+  /// inputTokens = last reported input (context size), outputTokens = cumulative output.
+  final int inputTokens;
+  final int outputTokens;
+  /// Session-wide cumulative total (sum of all rounds' input+output).
+  final int sessionTotalTokens;
 
   const ChatState({
     this.messages = const [],
@@ -74,6 +80,9 @@ class ChatState {
     this.sessionId,
     this.pendingTools = const [],
     this.messageQueue = const [],
+    this.inputTokens = 0,
+    this.outputTokens = 0,
+    this.sessionTotalTokens = 0,
   });
 
   ChatState copyWith({
@@ -83,6 +92,9 @@ class ChatState {
     String? sessionId,
     List<PendingToolCall>? pendingTools,
     List<String>? messageQueue,
+    int? inputTokens,
+    int? outputTokens,
+    int? sessionTotalTokens,
     bool clearError = false,
     bool clearSession = false,
   }) {
@@ -95,6 +107,9 @@ class ChatState {
           : (sessionId ?? this.sessionId),
       pendingTools: pendingTools ?? this.pendingTools,
       messageQueue: messageQueue ?? this.messageQueue,
+      inputTokens: inputTokens ?? this.inputTokens,
+      outputTokens: outputTokens ?? this.outputTokens,
+      sessionTotalTokens: sessionTotalTokens ?? this.sessionTotalTokens,
     );
   }
 }
@@ -193,6 +208,18 @@ class ChatNotifier extends StateNotifier<ChatState> {
           case ThinkingEvent():
             thinkingBlocks.add(event.content);
             _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
+
+          case UsageEvent():
+            // inputTokens = context window size (last round), grows with conversation
+            // sessionTotalTokens = cumulative input+output across all rounds in session
+            final newSessionTotal = state.sessionTotalTokens
+                + (event.inputTokens - state.inputTokens)
+                + (event.outputTokens - state.outputTokens);
+            state = state.copyWith(
+              inputTokens: event.inputTokens,
+              outputTokens: event.outputTokens,
+              sessionTotalTokens: newSessionTotal,
+            );
 
           case TextEvent():
             responseText = event.content;

@@ -8,44 +8,55 @@ Aurelm is a local-first, privacy-respecting GM toolkit. All processing happens o
 
 ```
 Discord Channels (one per civilization + global)
-        │
-        ▼
-  Discord Sync ─────────────────────► SQLite DB
+        |
+        v
+  Discord Sync ----------------------> SQLite DB
   (discord.py,                         (raw messages,
    read-only bot)                       structured entities,
-        │                               turn metadata)
-        ▼                                    │
-  ML Pipeline                                │
-  ├── Chunker (turn boundary detection)      │
-  ├── NER (entity extraction via spaCy)      │
-  ├── Classifier (message type)              │
-  ├── Summarizer (Ollama GPT-OSS 20B)       │
-  └── Exporter (structured JSON → DB)        │
-                                             │
-        ┌────────────────────────────────────┘
-        │
-        ▼
-  Wiki Generator ──────► MkDocs Site (localhost)
-  (markdown templates,     ├── /civilizations/{name}/
-   auto-refresh)           ├── /global/timeline
-                           └── /meta/entities
-        │
-        ▼
-  MCP Server (TypeScript, 9 tools)
-  ├── listCivs         — List all civilizations with stats
-  ├── getCivState      — Current state of a civilization
-  ├── searchLore       — Full-text search across entities and lore
-  ├── sanityCheck      — Verify consistency of a statement
-  ├── timeline         — Events for a civilization or globally
-  ├── compareCivs      — Side-by-side analysis of civilizations
-  ├── getEntityDetail  — Deep dive on an entity (mentions, relations)
-  ├── getTurnDetail    — Full turn content with segments and entities
-  └── searchTurnContent — Full-text search on turn segment content
-        │
-        ▼
-  OpenClaw Agent
-  (Claude API primary, llama3.1:8b via Ollama fallback)
-  └── Natural language interface for the GM
+        |                               turn metadata)
+        v                                    |
+  ML Pipeline (10 stages)                    |
+  [1] Ingestion (normalize raw messages)     |
+  [2] Chunker (turn boundary detection)      |
+  [3] Classifier (segment types)             |
+  [4-6] LLM Extraction + Summarization       |
+      (facts, entities, validate via Ollama)  |
+  [7] Subject Extraction (MJ/PJ threads)     |
+  [8] Entity Profiling (incremental)         |
+  [9] Alias Resolution (merge duplicates)    |
+  [10] Wiki Generation                       |
+                                             |
+        .------------------------------------'
+        |
+        v
+  Wiki Generator -------> MkDocs Site (localhost)
+  (markdown templates,     /civilizations/{name}/
+   auto-refresh)           /global/timeline
+                           /meta/entities
+        |
+        v
+  Bot + Agent (Python, 14 tools)
+  -- listCivs          - List all civilizations with stats
+  -- getCivState       - Current state of a civilization
+  -- searchLore        - Full-text search across entities and lore
+  -- sanityCheck       - Verify consistency of a statement
+  -- timeline          - Events for a civilization or globally
+  -- compareCivs       - Side-by-side analysis of civilizations
+  -- getEntityDetail   - Deep dive on an entity (mentions, relations)
+  -- getTurnDetail     - Full turn content with segments and entities
+  -- searchTurnContent - Full-text search on turn segment content
+  -- getStructuredFacts- Structured facts for an entity
+  -- listSubjects      - List subjects (MJ/PJ threads) with filters
+  -- getSubjectDetail  - Subject detail with options/resolutions
+  -- getNotes          - GM notes for entity/subject/turn
+  -- deepExplore       - Sub-agent for autonomous DB exploration
+        |
+        v
+  Flutter Desktop GUI
+  (Dashboard, Entities, Timeline, Subjects, Chat, Notes, Settings)
+  -- NDJSON streaming from bot
+  -- Persistent chat sessions with tags
+  -- Notes side rail with draggable windows
 ```
 
 ## Component Details
@@ -59,14 +70,18 @@ Discord Channels (one per civilization + global)
 
 ### ML Pipeline
 
-Sequential processing stages, each reading from and writing to SQLite:
+10-stage sequential processing, each reading from and writing to SQLite:
 
 1. **Ingestion** (`ingestion.py`): Fetches new messages from DB, normalizes formatting
 2. **Chunker** (`chunker.py`): Detects turn boundaries (GM posts that start new turns vs continuations)
-3. **NER** (`ner.py`): spaCy EntityRuler + NER — extracts persons, places, technologies, institutions, resources, creatures, events
-4. **Classifier** (`classifier.py`): Classifies message segments — narrative, choice, consequence, ooc, description
-5. **Summarizer** (`summarizer.py`): Uses Ollama (llama3.1:8b) to generate turn summaries, with extractive fallback
-6. **Exporter** (`exporter.py`): Writes structured data back to DB in canonical format
+3. **Classifier** (`classifier.py`): Classifies message segments — narrative, choice, consequence, ooc, description
+4. **LLM Extraction** (`fact_extractor.py`): LLM-based entity extraction via Ollama (qwen3:8b dev / qwen3:14b prod) — dual calls (facts+entities, entities-only), validation pass, PJ extraction
+5. **Summarizer** (`summarizer.py`): LLM-generated turn summaries with extractive fallback
+6. **Entity Filter** (`entity_filter.py`): Noise filtering (generic French words, URLs, markdown artifacts)
+7. **Subject Extraction** (`subject_extractor.py`): 4 LLM calls/turn — MJ choices, PJ initiatives, resolution matching, consequence detection
+8. **Entity Profiling** (`entity_profiler.py`): Incremental profiling — merges new turn summaries into existing entity descriptions
+9. **Alias Resolution** (`alias_resolver.py`): Redirect mentions + relations, union tags, deactivate secondary entities, orphan chain resolution
+10. **Wiki Generation** (`wiki/generate.py`): Auto-generates MkDocs Material pages per civilization
 
 ### Wiki Generator
 
@@ -74,20 +89,21 @@ Sequential processing stages, each reading from and writing to SQLite:
 - **Structure**: One page per entity/civilization, auto-refreshed when DB changes
 - **Serves**: Local HTTP for GM browsing and MCP server reads
 
-### MCP Server
+### MCP Server (Legacy)
 
 - **Tech**: TypeScript, Model Context Protocol
-- **Exposed tools**: 9 tools for querying game state, lore, consistency, entity details, turn content
+- **Exposed tools**: 9 original tools — superceded by Python bot with 14 tools
 - **Data source**: SQLite DB (read-only, via AURELM_DB_PATH env var)
 - **Stateless**: Each tool call is independent
 
-### OpenClaw Agent
+### Bot + Agent (Primary)
 
-- **Primary**: Claude API (claude-sonnet-4-5-20250929) — best reasoning for complex queries
-- **Fallback**: llama3.1:8b via Ollama — offline mode, simpler queries
-- **Skill**: Custom `aurelm-gm` skill with full tool documentation, decision trees, and domain knowledge
-- **Persona**: SOUL.md defines the agent's identity, rules, and boundaries
-- **MCP**: Connects to local MCP server for structured data access
+- **Tech**: Python (discord.py + aiohttp + Anthropic SDK)
+- **14 tools**: All original MCP tools + getStructuredFacts, listSubjects, getSubjectDetail, getNotes, deepExplore
+- **NDJSON streaming**: Real-time streaming to Flutter GUI with thinking blocks and tool results
+- **Persistent sessions**: Chat sessions with tags, auto-tag by civilization, resume support
+- **SOUL.md persona**: Archiviste expert, French, GM-only perspective, subject/tag awareness
+- **Auto-migrations**: Database migrations applied on bot startup
 
 ### Database
 
@@ -97,11 +113,15 @@ Sequential processing stages, each reading from and writing to SQLite:
 
 ### Flutter GUI
 
+- **Tech**: Dart/Flutter Desktop, Riverpod 2.6, Drift ORM, GoRouter — 99 source files, 7 test files
 - **Dashboard**: Overview of all civilizations, recent turns, pipeline status
-- **Entity browser**: Search and view entities across civilizations
-- **Timeline**: Visual timeline of events per civilization
-- **Agent chat**: Embedded OpenClaw interface
-- **Settings**: Discord channels, pipeline config, model selection
+- **Entity browser**: Search and view entities across civilizations with tags, aliases, naming history
+- **Timeline**: Visual timeline of events per civilization with type filters
+- **Subjects**: MJ/PJ thread tracking with domain tags and resolution status
+- **Agent chat**: NDJSON streaming with thinking blocks, tool use display (expandable cards), message queue, persistent sessions with tags, sessions drawer
+- **Notes**: Side rail on detail screens with hover-expanding tags, draggable floating windows for view/edit/add, inline NotesPanel alternative
+- **Settings**: DB path picker, theme toggle
+- **Navigation**: NavigationRail shell with 6 destinations (Dashboard, Entities, Timeline, Graph, Subjects, Settings)
 
 ## Security Model
 

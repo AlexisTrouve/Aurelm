@@ -127,8 +127,8 @@ Outils principaux:
 Pour toute question sur le jeu, appelle d'abord un outil, puis reponds avec les resultats."""
 
 
-def _load_system_prompt() -> str:
-    """Load SOUL.md + domain-knowledge.md as system prompt for Claude."""
+def _load_system_prompt(db_path: str | None = None) -> str:
+    """Load SOUL.md + domain-knowledge.md + agent notes from DB as system prompt."""
     base = Path(__file__).resolve().parent.parent / "openclaw-config"
     parts = []
 
@@ -139,6 +139,23 @@ def _load_system_prompt() -> str:
     dk = base / "skills" / "aurelm-gm" / "domain-knowledge.md"
     if dk.exists():
         parts.append(dk.read_text(encoding="utf-8"))
+
+    # Inject agent notes from DB (note_type='agent') — persistent GM instructions
+    if db_path:
+        try:
+            conn = sqlite3.connect(db_path)
+            rows = conn.execute(
+                "SELECT title, content FROM notes WHERE note_type = 'agent' ORDER BY created_at ASC"
+            ).fetchall()
+            conn.close()
+            if rows:
+                note_lines = ["## Instructions du MJ", ""]
+                for title, content in rows:
+                    note_lines.append(f"**{title or '(instruction)'}**: {content or ''}")
+                    note_lines.append("")
+                parts.append("\n".join(note_lines))
+        except Exception:
+            pass  # notes table may not exist on older DBs
 
     if not parts:
         return "Tu es Aurelm, archiviste expert du monde de jeu. Reponds en francais."
@@ -160,12 +177,26 @@ def _build_ollama_tools() -> list[dict]:
     return tools
 
 
-def _run_tool(db_path: str, tool_name: str, tool_input: dict) -> str:
-    """Execute a tool call against the DB."""
+def _run_tool(
+    db_path: str,
+    tool_name: str,
+    tool_input: dict,
+    anthropic_client=None,
+    proxy: str | None = None,
+) -> str:
+    """Execute a tool call against the DB.
+
+    anthropic_client and proxy are passed through for deepExplore sub-agent.
+    """
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("PRAGMA foreign_keys = ON")
-        result = dispatch_tool(conn, tool_name, tool_input)
+        result = dispatch_tool(
+            conn, tool_name, tool_input,
+            db_path=db_path,
+            anthropic_client=anthropic_client,
+            proxy=proxy,
+        )
         return result
     except Exception as exc:
         log.exception("Tool %s failed", tool_name)
@@ -177,7 +208,7 @@ def _run_tool(db_path: str, tool_name: str, tool_input: dict) -> str:
 class Agent:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
-        self._claude_prompt = _load_system_prompt()
+        self._claude_prompt = _load_system_prompt(config.db_path)
         self._ollama_prompt = OLLAMA_SYSTEM_PROMPT
         self._backend = "ollama"  # default
 
@@ -188,6 +219,15 @@ class Agent:
             self._init_ollama()
 
         log.info("Agent initialized with %s backend", self._backend)
+
+    def _exec_tool(self, tool_name: str, tool_input: dict) -> str:
+        """Run a tool, passing anthropic client for deepExplore if available."""
+        client = getattr(self, "_anthropic", None)
+        return _run_tool(
+            self.config.db_path, tool_name, tool_input,
+            anthropic_client=client,
+            proxy=self.config.proxy,
+        )
 
     def _init_anthropic(self) -> None:
         import anthropic
@@ -252,12 +292,16 @@ class Agent:
         Events yielded between each LLM round — so the caller can send them
         to the client while the next LLM call is in progress.
 
-        Event types: "tool_start", "tool_result", "thinking", "text", "done".
+        Event types: "tool_start", "tool_result", "thinking", "text", "done", "usage".
+        The "usage" event is emitted after each LLM round with cumulative token counts.
         """
         import asyncio
 
         messages: list[dict] = [*history, {"role": "user", "content": new_message}]
         collected_tool_calls: list[dict] = []
+        # Cumulative token usage across all rounds
+        total_input_tokens = 0
+        total_output_tokens = 0
 
         for _round in range(MAX_TOOL_ROUNDS):
             compressed = _compress_tool_history(messages)
@@ -271,6 +315,15 @@ class Agent:
                     tools=self._anthropic_tools,
                     messages=compressed,
                 )
+
+                # Accumulate token usage from this round
+                if hasattr(response, "usage") and response.usage:
+                    total_input_tokens += getattr(response.usage, "input_tokens", 0)
+                    total_output_tokens += getattr(response.usage, "output_tokens", 0)
+                    yield ("usage", {
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                    })
 
                 # Yield thinking blocks
                 for block in response.content:
@@ -287,7 +340,7 @@ class Agent:
                             yield ("tool_start", {"name": block.name, "input_summary": inp_str})
 
                             log.info("Tool call: %s(%s)", block.name, block.input)
-                            result = _run_tool(self.config.db_path, block.name, block.input)
+                            result = self._exec_tool(block.name, block.input)
 
                             tool_results.append({
                                 "type": "tool_result",
@@ -330,6 +383,15 @@ class Agent:
                 )
                 msg = response.message
 
+                # Ollama provides eval/prompt token counts
+                if hasattr(response, "prompt_eval_count"):
+                    total_input_tokens += getattr(response, "prompt_eval_count", 0) or 0
+                    total_output_tokens += getattr(response, "eval_count", 0) or 0
+                    yield ("usage", {
+                        "input_tokens": total_input_tokens,
+                        "output_tokens": total_output_tokens,
+                    })
+
                 if msg.tool_calls:
                     messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
                     for tc in msg.tool_calls:
@@ -337,7 +399,7 @@ class Agent:
                         inp_str = _input_summary(fn.arguments)
                         yield ("tool_start", {"name": fn.name, "input_summary": inp_str})
 
-                        result = _run_tool(self.config.db_path, fn.name, fn.arguments)
+                        result = self._exec_tool(fn.name, fn.arguments)
                         messages.append({"role": "tool", "content": result})
 
                         tc_info = {
@@ -415,7 +477,7 @@ class Agent:
                         })
 
                         log.info("Tool call: %s(%s)", block.name, block.input)
-                        result = _run_tool(self.config.db_path, block.name, block.input)
+                        result = self._exec_tool(block.name, block.input)
 
                         tool_results.append({
                             "type": "tool_result",
@@ -474,7 +536,7 @@ class Agent:
                 for block in assistant_content:
                     if block.type == "tool_use":
                         log.info("Tool call: %s(%s)", block.name, block.input)
-                        result = _run_tool(self.config.db_path, block.name, block.input)
+                        result = self._exec_tool(block.name, block.input)
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
@@ -538,7 +600,7 @@ class Agent:
                     _emit("tool_start", {"name": fn.name, "input_summary": inp_str})
 
                     log.info("Tool call: %s(%s)", fn.name, fn.arguments)
-                    result = _run_tool(self.config.db_path, fn.name, fn.arguments)
+                    result = self._exec_tool(fn.name, fn.arguments)
                     messages.append({"role": "tool", "content": result})
 
                     tool_call_info = {
@@ -587,7 +649,7 @@ class Agent:
                 for tc in msg.tool_calls:
                     fn = tc.function
                     log.info("Tool call: %s(%s)", fn.name, fn.arguments)
-                    result = _run_tool(self.config.db_path, fn.name, fn.arguments)
+                    result = self._exec_tool(fn.name, fn.arguments)
                     messages.append({"role": "tool", "content": result})
                 continue
 

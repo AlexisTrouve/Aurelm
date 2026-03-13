@@ -40,6 +40,11 @@ class BotServer:
         self._app.router.add_get("/chat/sessions/{session_id}/messages", self._get_session_messages)
         # Hot-reload DB path at runtime (Fix 3)
         self._app.router.add_post("/bot/reload-db", self._reload_db)
+        # Notes CRUD
+        self._app.router.add_get("/notes", self._list_notes)
+        self._app.router.add_post("/notes", self._create_note)
+        self._app.router.add_put("/notes/{note_id}", self._update_note)
+        self._app.router.add_delete("/notes/{note_id}", self._delete_note)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -552,5 +557,126 @@ class BotServer:
         except Exception as exc:
             log.exception("Failed to get progress")
             return {"status": "error", "error": str(exc)}
+        finally:
+            conn.close()
+
+    # ---------------------------------------------------------------------- #
+    # Notes CRUD
+    # ---------------------------------------------------------------------- #
+
+    async def _list_notes(self, request: web.Request) -> web.Response:
+        """GET /notes?entity_id=X  or  ?subject_id=X  or  ?turn_id=X"""
+        entity_id  = request.rel_url.query.get("entity_id")
+        subject_id = request.rel_url.query.get("subject_id")
+        turn_id    = request.rel_url.query.get("turn_id")
+
+        if not any([entity_id, subject_id, turn_id]):
+            return web.json_response(
+                {"error": "Provide entity_id, subject_id, or turn_id"}, status=400
+            )
+
+        conditions, params = [], []
+        if entity_id:
+            conditions.append("entity_id = ?")
+            params.append(int(entity_id))
+        if subject_id:
+            conditions.append("subject_id = ?")
+            params.append(int(subject_id))
+        if turn_id:
+            conditions.append("turn_id = ?")
+            params.append(int(turn_id))
+
+        where = " OR ".join(conditions)
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            rows = conn.execute(
+                f"SELECT id, entity_id, subject_id, turn_id, title, content, created_at, updated_at "
+                f"FROM notes WHERE {where} ORDER BY created_at DESC",
+                params,
+            ).fetchall()
+            return web.json_response([dict(r) for r in rows])
+        finally:
+            conn.close()
+
+    async def _create_note(self, request: web.Request) -> web.Response:
+        """POST /notes  body: {entity_id|subject_id|turn_id, title, content}"""
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON"}, status=400)
+
+        entity_id  = body.get("entity_id")
+        subject_id = body.get("subject_id")
+        turn_id    = body.get("turn_id")
+        title      = body.get("title", "").strip()
+        content    = body.get("content", "").strip()
+
+        if not any([entity_id, subject_id, turn_id]):
+            return web.json_response(
+                {"error": "Provide entity_id, subject_id, or turn_id"}, status=400
+            )
+
+        conn = sqlite3.connect(self.config.db_path)
+        try:
+            cursor = conn.execute(
+                "INSERT INTO notes (entity_id, subject_id, turn_id, title, content) VALUES (?,?,?,?,?)",
+                (entity_id, subject_id, turn_id, title, content),
+            )
+            conn.commit()
+            note_id = cursor.lastrowid
+            row = conn.execute(
+                "SELECT id, entity_id, subject_id, turn_id, title, content, created_at, updated_at "
+                "FROM notes WHERE id = ?",
+                (note_id,),
+            ).fetchone()
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT id, entity_id, subject_id, turn_id, title, content, created_at, updated_at "
+                "FROM notes WHERE id = ?",
+                (note_id,),
+            ).fetchone()
+            return web.json_response(dict(row), status=201)
+        finally:
+            conn.close()
+
+    async def _update_note(self, request: web.Request) -> web.Response:
+        """PUT /notes/{note_id}  body: {title, content}"""
+        note_id = int(request.match_info["note_id"])
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON"}, status=400)
+
+        title   = body.get("title", "").strip()
+        content = body.get("content", "").strip()
+
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute(
+                "UPDATE notes SET title = ?, content = ?, updated_at = datetime('now') WHERE id = ?",
+                (title, content, note_id),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT id, entity_id, subject_id, turn_id, title, content, created_at, updated_at "
+                "FROM notes WHERE id = ?",
+                (note_id,),
+            ).fetchone()
+            if not row:
+                return web.json_response({"error": "Note not found"}, status=404)
+            return web.json_response(dict(row))
+        finally:
+            conn.close()
+
+    async def _delete_note(self, request: web.Request) -> web.Response:
+        """DELETE /notes/{note_id}"""
+        note_id = int(request.match_info["note_id"])
+        conn = sqlite3.connect(self.config.db_path)
+        try:
+            conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+            conn.commit()
+            return web.json_response({"ok": True})
         finally:
             conn.close()

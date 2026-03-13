@@ -5394,6 +5394,11 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
   late final GeneratedColumn<int> turnId = GeneratedColumn<int>(
       'turn_id', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _civIdMeta = const VerificationMeta('civId');
+  @override
+  late final GeneratedColumn<int> civId = GeneratedColumn<int>(
+      'civ_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -5409,6 +5414,21 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant(''));
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<int> pinned = GeneratedColumn<int>(
+      'pinned', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _noteTypeMeta =
+      const VerificationMeta('noteType');
+  @override
+  late final GeneratedColumn<String> noteType = GeneratedColumn<String>(
+      'note_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('gm'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -5422,8 +5442,19 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
       'updated_at', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, entityId, subjectId, turnId, title, content, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        entityId,
+        subjectId,
+        turnId,
+        civId,
+        title,
+        content,
+        pinned,
+        noteType,
+        createdAt,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -5449,6 +5480,10 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
       context.handle(_turnIdMeta,
           turnId.isAcceptableOrUnknown(data['turn_id']!, _turnIdMeta));
     }
+    if (data.containsKey('civ_id')) {
+      context.handle(
+          _civIdMeta, civId.isAcceptableOrUnknown(data['civ_id']!, _civIdMeta));
+    }
     if (data.containsKey('title')) {
       context.handle(
           _titleMeta, title.isAcceptableOrUnknown(data['title']!, _titleMeta));
@@ -5456,6 +5491,14 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
     if (data.containsKey('content')) {
       context.handle(_contentMeta,
           content.isAcceptableOrUnknown(data['content']!, _contentMeta));
+    }
+    if (data.containsKey('pinned')) {
+      context.handle(_pinnedMeta,
+          pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta));
+    }
+    if (data.containsKey('note_type')) {
+      context.handle(_noteTypeMeta,
+          noteType.isAcceptableOrUnknown(data['note_type']!, _noteTypeMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -5486,10 +5529,16 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
           .read(DriftSqlType.int, data['${effectivePrefix}subject_id']),
       turnId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}turn_id']),
+      civId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}civ_id']),
       title: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       content: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}content'])!,
+      pinned: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}pinned'])!,
+      noteType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note_type'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -5514,8 +5563,17 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
 
   /// FK to turn_turns.id — null if note is on an entity or subject
   final int? turnId;
+
+  /// FK to civ_civilizations.id — null if note is on an entity/subject/turn
+  final int? civId;
   final String title;
   final String content;
+
+  /// Whether this note should always be shown (even in compact tool output)
+  final int pinned;
+
+  /// 'gm' = GM annotation, 'agent' = injected into agent system prompt
+  final String noteType;
   final String createdAt;
   final String updatedAt;
   const NoteRow(
@@ -5523,8 +5581,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       this.entityId,
       this.subjectId,
       this.turnId,
+      this.civId,
       required this.title,
       required this.content,
+      required this.pinned,
+      required this.noteType,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -5540,8 +5601,13 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     if (!nullToAbsent || turnId != null) {
       map['turn_id'] = Variable<int>(turnId);
     }
+    if (!nullToAbsent || civId != null) {
+      map['civ_id'] = Variable<int>(civId);
+    }
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
+    map['pinned'] = Variable<int>(pinned);
+    map['note_type'] = Variable<String>(noteType);
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
     return map;
@@ -5558,8 +5624,12 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           : Value(subjectId),
       turnId:
           turnId == null && nullToAbsent ? const Value.absent() : Value(turnId),
+      civId:
+          civId == null && nullToAbsent ? const Value.absent() : Value(civId),
       title: Value(title),
       content: Value(content),
+      pinned: Value(pinned),
+      noteType: Value(noteType),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -5573,8 +5643,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       entityId: serializer.fromJson<int?>(json['entityId']),
       subjectId: serializer.fromJson<int?>(json['subjectId']),
       turnId: serializer.fromJson<int?>(json['turnId']),
+      civId: serializer.fromJson<int?>(json['civId']),
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
+      pinned: serializer.fromJson<int>(json['pinned']),
+      noteType: serializer.fromJson<String>(json['noteType']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
@@ -5587,8 +5660,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       'entityId': serializer.toJson<int?>(entityId),
       'subjectId': serializer.toJson<int?>(subjectId),
       'turnId': serializer.toJson<int?>(turnId),
+      'civId': serializer.toJson<int?>(civId),
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
+      'pinned': serializer.toJson<int>(pinned),
+      'noteType': serializer.toJson<String>(noteType),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
     };
@@ -5599,8 +5675,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           Value<int?> entityId = const Value.absent(),
           Value<int?> subjectId = const Value.absent(),
           Value<int?> turnId = const Value.absent(),
+          Value<int?> civId = const Value.absent(),
           String? title,
           String? content,
+          int? pinned,
+          String? noteType,
           String? createdAt,
           String? updatedAt}) =>
       NoteRow(
@@ -5608,8 +5687,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
         entityId: entityId.present ? entityId.value : this.entityId,
         subjectId: subjectId.present ? subjectId.value : this.subjectId,
         turnId: turnId.present ? turnId.value : this.turnId,
+        civId: civId.present ? civId.value : this.civId,
         title: title ?? this.title,
         content: content ?? this.content,
+        pinned: pinned ?? this.pinned,
+        noteType: noteType ?? this.noteType,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -5619,8 +5701,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
       subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
       turnId: data.turnId.present ? data.turnId.value : this.turnId,
+      civId: data.civId.present ? data.civId.value : this.civId,
       title: data.title.present ? data.title.value : this.title,
       content: data.content.present ? data.content.value : this.content,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
+      noteType: data.noteType.present ? data.noteType.value : this.noteType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -5633,8 +5718,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           ..write('entityId: $entityId, ')
           ..write('subjectId: $subjectId, ')
           ..write('turnId: $turnId, ')
+          ..write('civId: $civId, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
+          ..write('pinned: $pinned, ')
+          ..write('noteType: $noteType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -5642,8 +5730,8 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, entityId, subjectId, turnId, title, content, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, entityId, subjectId, turnId, civId, title,
+      content, pinned, noteType, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5652,8 +5740,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           other.entityId == this.entityId &&
           other.subjectId == this.subjectId &&
           other.turnId == this.turnId &&
+          other.civId == this.civId &&
           other.title == this.title &&
           other.content == this.content &&
+          other.pinned == this.pinned &&
+          other.noteType == this.noteType &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -5663,8 +5754,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   final Value<int?> entityId;
   final Value<int?> subjectId;
   final Value<int?> turnId;
+  final Value<int?> civId;
   final Value<String> title;
   final Value<String> content;
+  final Value<int> pinned;
+  final Value<String> noteType;
   final Value<String> createdAt;
   final Value<String> updatedAt;
   const NotesCompanion({
@@ -5672,8 +5766,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     this.entityId = const Value.absent(),
     this.subjectId = const Value.absent(),
     this.turnId = const Value.absent(),
+    this.civId = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.noteType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -5682,8 +5779,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     this.entityId = const Value.absent(),
     this.subjectId = const Value.absent(),
     this.turnId = const Value.absent(),
+    this.civId = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
+    this.pinned = const Value.absent(),
+    this.noteType = const Value.absent(),
     required String createdAt,
     required String updatedAt,
   })  : createdAt = Value(createdAt),
@@ -5693,8 +5793,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     Expression<int>? entityId,
     Expression<int>? subjectId,
     Expression<int>? turnId,
+    Expression<int>? civId,
     Expression<String>? title,
     Expression<String>? content,
+    Expression<int>? pinned,
+    Expression<String>? noteType,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
   }) {
@@ -5703,8 +5806,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       if (entityId != null) 'entity_id': entityId,
       if (subjectId != null) 'subject_id': subjectId,
       if (turnId != null) 'turn_id': turnId,
+      if (civId != null) 'civ_id': civId,
       if (title != null) 'title': title,
       if (content != null) 'content': content,
+      if (pinned != null) 'pinned': pinned,
+      if (noteType != null) 'note_type': noteType,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -5715,8 +5821,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       Value<int?>? entityId,
       Value<int?>? subjectId,
       Value<int?>? turnId,
+      Value<int?>? civId,
       Value<String>? title,
       Value<String>? content,
+      Value<int>? pinned,
+      Value<String>? noteType,
       Value<String>? createdAt,
       Value<String>? updatedAt}) {
     return NotesCompanion(
@@ -5724,8 +5833,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       entityId: entityId ?? this.entityId,
       subjectId: subjectId ?? this.subjectId,
       turnId: turnId ?? this.turnId,
+      civId: civId ?? this.civId,
       title: title ?? this.title,
       content: content ?? this.content,
+      pinned: pinned ?? this.pinned,
+      noteType: noteType ?? this.noteType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -5746,11 +5858,20 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     if (turnId.present) {
       map['turn_id'] = Variable<int>(turnId.value);
     }
+    if (civId.present) {
+      map['civ_id'] = Variable<int>(civId.value);
+    }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
     if (content.present) {
       map['content'] = Variable<String>(content.value);
+    }
+    if (pinned.present) {
+      map['pinned'] = Variable<int>(pinned.value);
+    }
+    if (noteType.present) {
+      map['note_type'] = Variable<String>(noteType.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<String>(createdAt.value);
@@ -5768,8 +5889,11 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
           ..write('entityId: $entityId, ')
           ..write('subjectId: $subjectId, ')
           ..write('turnId: $turnId, ')
+          ..write('civId: $civId, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
+          ..write('pinned: $pinned, ')
+          ..write('noteType: $noteType, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -8398,8 +8522,11 @@ typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
   Value<int?> entityId,
   Value<int?> subjectId,
   Value<int?> turnId,
+  Value<int?> civId,
   Value<String> title,
   Value<String> content,
+  Value<int> pinned,
+  Value<String> noteType,
   required String createdAt,
   required String updatedAt,
 });
@@ -8408,8 +8535,11 @@ typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
   Value<int?> entityId,
   Value<int?> subjectId,
   Value<int?> turnId,
+  Value<int?> civId,
   Value<String> title,
   Value<String> content,
+  Value<int> pinned,
+  Value<String> noteType,
   Value<String> createdAt,
   Value<String> updatedAt,
 });
@@ -8435,11 +8565,20 @@ class $$NotesTableFilterComposer
   ColumnFilters<int> get turnId => $composableBuilder(
       column: $table.turnId, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<int> get civId => $composableBuilder(
+      column: $table.civId, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get title => $composableBuilder(
       column: $table.title, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get content => $composableBuilder(
       column: $table.content, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get noteType => $composableBuilder(
+      column: $table.noteType, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8469,11 +8608,20 @@ class $$NotesTableOrderingComposer
   ColumnOrderings<int> get turnId => $composableBuilder(
       column: $table.turnId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get civId => $composableBuilder(
+      column: $table.civId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get title => $composableBuilder(
       column: $table.title, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get content => $composableBuilder(
       column: $table.content, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get pinned => $composableBuilder(
+      column: $table.pinned, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get noteType => $composableBuilder(
+      column: $table.noteType, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
@@ -8503,11 +8651,20 @@ class $$NotesTableAnnotationComposer
   GeneratedColumn<int> get turnId =>
       $composableBuilder(column: $table.turnId, builder: (column) => column);
 
+  GeneratedColumn<int> get civId =>
+      $composableBuilder(column: $table.civId, builder: (column) => column);
+
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
+
+  GeneratedColumn<String> get noteType =>
+      $composableBuilder(column: $table.noteType, builder: (column) => column);
 
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8543,8 +8700,11 @@ class $$NotesTableTableManager extends RootTableManager<
             Value<int?> entityId = const Value.absent(),
             Value<int?> subjectId = const Value.absent(),
             Value<int?> turnId = const Value.absent(),
+            Value<int?> civId = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> content = const Value.absent(),
+            Value<int> pinned = const Value.absent(),
+            Value<String> noteType = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String> updatedAt = const Value.absent(),
           }) =>
@@ -8553,8 +8713,11 @@ class $$NotesTableTableManager extends RootTableManager<
             entityId: entityId,
             subjectId: subjectId,
             turnId: turnId,
+            civId: civId,
             title: title,
             content: content,
+            pinned: pinned,
+            noteType: noteType,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -8563,8 +8726,11 @@ class $$NotesTableTableManager extends RootTableManager<
             Value<int?> entityId = const Value.absent(),
             Value<int?> subjectId = const Value.absent(),
             Value<int?> turnId = const Value.absent(),
+            Value<int?> civId = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> content = const Value.absent(),
+            Value<int> pinned = const Value.absent(),
+            Value<String> noteType = const Value.absent(),
             required String createdAt,
             required String updatedAt,
           }) =>
@@ -8573,8 +8739,11 @@ class $$NotesTableTableManager extends RootTableManager<
             entityId: entityId,
             subjectId: subjectId,
             turnId: turnId,
+            civId: civId,
             title: title,
             content: content,
+            pinned: pinned,
+            noteType: noteType,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),

@@ -36,7 +36,7 @@ part 'database.g.dart';
     SubjectSubjects,
     SubjectOptions,
     SubjectResolutions,
-    // Notes (migration 019)
+    // Notes (migration 019+020)
     Notes,
   ],
   daos: [
@@ -53,14 +53,12 @@ class AurelmDatabase extends _$AurelmDatabase {
   AurelmDatabase(super.e);
 
   @override
-  // Drift schemaVersion must match the DB's user_version pragma.
-  // The Python pipeline manages the real schema via migrations — Drift is query-only.
-  // aurelm_fullrun.db was created with user_version=1 (5 Python migrations applied).
   int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        // Never auto-create or auto-migrate — Python manages the schema
+        // Python manages the full schema — Drift is query-only.
+        // _ensureMigrations() in setup handles missing tables/columns.
         onCreate: (_) async {},
         onUpgrade: (_, __, ___) async {},
       );
@@ -70,11 +68,62 @@ class AurelmDatabase extends _$AurelmDatabase {
   }
 }
 
+/// Idempotent migrations — ensures Drift-required tables/columns exist.
+/// Runs synchronously in the NativeDatabase setup callback (before any query).
+/// Each statement is wrapped in try/catch to handle "already exists" gracefully.
+void _ensureMigrations(dynamic db) {
+  const statements = [
+    // Migration 019: notes table
+    '''CREATE TABLE IF NOT EXISTS notes (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_id   INTEGER REFERENCES entity_entities(id) ON DELETE CASCADE,
+        subject_id  INTEGER REFERENCES subject_subjects(id) ON DELETE CASCADE,
+        turn_id     INTEGER REFERENCES turn_turns(id) ON DELETE CASCADE,
+        title       TEXT NOT NULL DEFAULT '',
+        content     TEXT NOT NULL DEFAULT '',
+        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    )''',
+    // Migration 020: pinned + note_type
+    "ALTER TABLE notes ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE notes ADD COLUMN note_type TEXT NOT NULL DEFAULT 'gm'",
+    // Migration 016: chat sessions
+    '''CREATE TABLE IF NOT EXISTS chat_sessions (
+        id          TEXT PRIMARY KEY,
+        title       TEXT NOT NULL DEFAULT '',
+        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        db_path     TEXT
+    )''',
+    '''CREATE TABLE IF NOT EXISTS chat_messages (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id  TEXT NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+        role        TEXT NOT NULL,
+        content     TEXT NOT NULL,
+        tool_calls  TEXT,
+        created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    )''',
+    // Migration 018: subject tags
+    "ALTER TABLE subject_subjects ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'",
+    // Migration 015: source_quote on subjects
+    "ALTER TABLE subject_subjects ADD COLUMN source_quote TEXT",
+  ];
+
+  for (final sql in statements) {
+    try {
+      db.execute(sql);
+    } catch (_) {
+      // "duplicate column" or "table already exists" — safe to ignore
+    }
+  }
+}
+
 LazyDatabase _openConnection(String dbPath) {
   return LazyDatabase(() async {
     final file = File(dbPath);
     return NativeDatabase.createInBackground(file, setup: (db) {
       db.execute('PRAGMA foreign_keys = ON');
+      _ensureMigrations(db);
     });
   });
 }

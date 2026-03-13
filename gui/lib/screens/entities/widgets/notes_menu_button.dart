@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/database.dart';
 import '../../../providers/notes_provider.dart';
+import '../../../widgets/common/floating_window.dart';
 
 /// Which object a note is attached to.
-enum NoteAttachment { entity, subject, turn }
+enum NoteAttachment { entity, subject, turn, civ }
 
 // Rail dimensions
 const _kRailWidth = 96.0;
@@ -48,6 +49,7 @@ class _NotesSideRailState extends ConsumerState<NotesSideRail> {
       NoteAttachment.entity  => ref.watch(entityNotesProvider(widget.attachmentId)),
       NoteAttachment.subject => ref.watch(subjectNotesProvider(widget.attachmentId)),
       NoteAttachment.turn    => ref.watch(turnNotesProvider(widget.attachmentId)),
+      NoteAttachment.civ     => ref.watch(civNotesProvider(widget.attachmentId)),
     };
     final notes = notesAsync.valueOrNull ?? [];
     final cs = Theme.of(context).colorScheme;
@@ -206,10 +208,13 @@ class _NoteRailTagState extends State<_NoteRailTag> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Star icon for pinned notes, regular icon otherwise
                 Icon(
-                  Icons.sticky_note_2,
+                  widget.note.pinned == 1 ? Icons.star : Icons.sticky_note_2,
                   size: 14,
-                  color: _hovered ? cs.primary : cs.onSurfaceVariant,
+                  color: widget.note.pinned == 1
+                      ? Colors.amber
+                      : (_hovered ? cs.primary : cs.onSurfaceVariant),
                 ),
                 const SizedBox(width: 6),
                 Flexible(
@@ -308,141 +313,15 @@ class _AddRailButtonState extends State<_AddRailButton> {
 }
 
 // ---------------------------------------------------------------------------
-// Draggable floating window infrastructure
+// Draggable floating window infrastructure — delegated to floating_window.dart
 // ---------------------------------------------------------------------------
-
-typedef _WindowBody = Widget Function(VoidCallback close);
-
-OverlayEntry _insertWindow(
-  BuildContext context,
-  String title,
-  IconData icon,
-  _WindowBody body, {
-  Offset initialOffset = const Offset(200, 140),
-}) {
-  late OverlayEntry entry;
-  entry = OverlayEntry(
-    builder: (ctx) => _FloatingWindowFrame(
-      title: title,
-      icon: icon,
-      initialOffset: initialOffset,
-      onClose: () => entry.remove(),
-      body: body(() => entry.remove()),
-    ),
-  );
-  Overlay.of(context).insert(entry);
-  return entry;
-}
-
-class _FloatingWindowFrame extends StatefulWidget {
-  final String title;
-  final IconData icon;
-  final Offset initialOffset;
-  final VoidCallback onClose;
-  final Widget body;
-
-  const _FloatingWindowFrame({
-    required this.title,
-    required this.icon,
-    required this.initialOffset,
-    required this.onClose,
-    required this.body,
-  });
-
-  @override
-  State<_FloatingWindowFrame> createState() => _FloatingWindowFrameState();
-}
-
-class _FloatingWindowFrameState extends State<_FloatingWindowFrame> {
-  late Offset _pos;
-
-  @override
-  void initState() {
-    super.initState();
-    _pos = widget.initialOffset;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Stack(
-      children: [
-        Positioned(
-          left: _pos.dx,
-          top: _pos.dy,
-          child: Material(
-            elevation: 16,
-            borderRadius: BorderRadius.circular(10),
-            color: cs.surface,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 380, maxWidth: 520),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Draggable title bar
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanUpdate: (d) =>
-                        setState(() => _pos = _pos + d.delta),
-                    child: Container(
-                      height: 36,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(10)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(widget.icon, size: 14,
-                              color: cs.onSurfaceVariant),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(widget.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleSmall
-                                    ?.copyWith(fontSize: 12)),
-                          ),
-                          // Red X — always closes without saving
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              iconSize: 15,
-                              icon: const Icon(Icons.close,
-                                  color: Colors.red),
-                              tooltip: 'Fermer',
-                              onPressed: widget.onClose,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Window body
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: widget.body,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Note view window
 // ---------------------------------------------------------------------------
 
 void showNoteViewWindow(BuildContext context, NoteRow note) {
-  _insertWindow(
+  insertFloatingWindow(
     context,
     note.title.isNotEmpty ? note.title : 'Note',
     Icons.sticky_note_2_outlined,
@@ -450,19 +329,39 @@ void showNoteViewWindow(BuildContext context, NoteRow note) {
   );
 }
 
-class _NoteViewBody extends ConsumerWidget {
+class _NoteViewBody extends ConsumerStatefulWidget {
   final NoteRow note;
   final VoidCallback onWindowClose;
 
   const _NoteViewBody({required this.note, required this.onWindowClose});
 
-  Future<void> _delete(BuildContext ctx, WidgetRef ref) async {
+  @override
+  ConsumerState<_NoteViewBody> createState() => _NoteViewBodyState();
+}
+
+class _NoteViewBodyState extends ConsumerState<_NoteViewBody> {
+  /// Local pin state — updated immediately on click, persisted to DB
+  late bool _pinned;
+
+  @override
+  void initState() {
+    super.initState();
+    _pinned = widget.note.pinned == 1;
+  }
+
+  Future<void> _togglePin() async {
+    final next = !_pinned;
+    setState(() => _pinned = next);
+    await toggleNotePinned(ref, widget.note.id, next);
+  }
+
+  Future<void> _delete(BuildContext ctx) async {
     final confirmed = await showDialog<bool>(
       context: ctx,
       builder: (dCtx) => AlertDialog(
         title: const Text('Supprimer cette note ?'),
-        content: Text(note.title.isNotEmpty
-            ? '"${note.title}"'
+        content: Text(widget.note.title.isNotEmpty
+            ? '"${widget.note.title}"'
             : 'Cette note sera supprimée définitivement.'),
         actions: [
           TextButton(
@@ -478,14 +377,15 @@ class _NoteViewBody extends ConsumerWidget {
       ),
     );
     if (confirmed == true) {
-      await deleteNote(ref, note.id);
-      onWindowClose();
+      await deleteNote(ref, widget.note.id);
+      widget.onWindowClose();
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final note = widget.note;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -516,8 +416,27 @@ class _NoteViewBody extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // Pin/important toggle — local state, immediate visual update
+            Tooltip(
+              message: _pinned ? 'Retirer des importants' : 'Marquer comme important',
+              child: TextButton.icon(
+                icon: Icon(
+                  _pinned ? Icons.star : Icons.star_border,
+                  size: 16,
+                  color: _pinned ? Colors.amber : cs.onSurfaceVariant,
+                ),
+                label: Text(
+                  'Important',
+                  style: TextStyle(
+                    color: _pinned ? Colors.amber.shade700 : cs.onSurfaceVariant,
+                    fontWeight: _pinned ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
+                onPressed: _togglePin,
+              ),
+            ),
+            const Spacer(),
             TextButton.icon(
               icon: const Icon(Icons.edit_outlined, size: 15),
               label: const Text('Éditer'),
@@ -529,7 +448,7 @@ class _NoteViewBody extends ConsumerWidget {
                   size: 15, color: Colors.red),
               label: const Text('Supprimer',
                   style: TextStyle(color: Colors.red)),
-              onPressed: () => _delete(context, ref),
+              onPressed: () => _delete(context),
             ),
           ],
         ),
@@ -543,7 +462,7 @@ class _NoteViewBody extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 void showNoteEditWindow(BuildContext context, NoteRow note) {
-  _insertWindow(
+  insertFloatingWindow(
     context,
     'Éditer${note.title.isNotEmpty ? " — ${note.title}" : ""}',
     Icons.edit_outlined,
@@ -565,12 +484,14 @@ class _NoteEditBody extends ConsumerStatefulWidget {
 class _NoteEditBodyState extends ConsumerState<_NoteEditBody> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _contentCtrl;
+  late bool _pinned;
 
   @override
   void initState() {
     super.initState();
     _titleCtrl = TextEditingController(text: widget.note.title);
     _contentCtrl = TextEditingController(text: widget.note.content);
+    _pinned = widget.note.pinned == 1;
   }
 
   @override
@@ -581,8 +502,12 @@ class _NoteEditBodyState extends ConsumerState<_NoteEditBody> {
   }
 
   Future<void> _save() async {
+    // Save title + content, then toggle pin if changed
     await updateNote(ref, widget.note.id,
         _titleCtrl.text.trim(), _contentCtrl.text.trim());
+    if (_pinned != (widget.note.pinned == 1)) {
+      await toggleNotePinned(ref, widget.note.id, _pinned);
+    }
     widget.onSaved();
   }
 
@@ -614,10 +539,17 @@ class _NoteEditBodyState extends ConsumerState<_NoteEditBody> {
           autofocus: true,
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton(
-              onPressed: _save, child: const Text('Confirmer')),
+        Row(
+          children: [
+            // Pin toggle inline in edit mode
+            _InlinePinToggle(
+              pinned: _pinned,
+              onToggle: (v) => setState(() => _pinned = v),
+            ),
+            const Spacer(),
+            FilledButton(
+                onPressed: _save, child: const Text('Confirmer')),
+          ],
         ),
       ],
     );
@@ -630,7 +562,7 @@ class _NoteEditBodyState extends ConsumerState<_NoteEditBody> {
 
 void showNoteAddWindow(
     BuildContext context, NoteAttachment attachment, int attachmentId) {
-  _insertWindow(
+  insertFloatingWindow(
     context,
     'Nouvelle note',
     Icons.add_circle_outline,
@@ -669,18 +601,29 @@ class _NoteAddBodyState extends ConsumerState<_NoteAddBody> {
   Future<void> _add() async {
     final content = _contentCtrl.text.trim();
     if (content.isEmpty) return;
-    switch (widget.attachment) {
-      case NoteAttachment.entity:
-        await addNoteForEntity(
-            ref, widget.attachmentId, _titleCtrl.text.trim(), content);
-      case NoteAttachment.subject:
-        await addNoteForSubject(
-            ref, widget.attachmentId, _titleCtrl.text.trim(), content);
-      case NoteAttachment.turn:
-        await addNoteForTurn(
-            ref, widget.attachmentId, _titleCtrl.text.trim(), content);
+    try {
+      switch (widget.attachment) {
+        case NoteAttachment.entity:
+          await addNoteForEntity(
+              ref, widget.attachmentId, _titleCtrl.text.trim(), content);
+        case NoteAttachment.subject:
+          await addNoteForSubject(
+              ref, widget.attachmentId, _titleCtrl.text.trim(), content);
+        case NoteAttachment.turn:
+          await addNoteForTurn(
+              ref, widget.attachmentId, _titleCtrl.text.trim(), content);
+        case NoteAttachment.civ:
+          await addNoteForCiv(
+              ref, widget.attachmentId, _titleCtrl.text.trim(), content);
+      }
+      widget.onAdded();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
-    widget.onAdded();
   }
 
   @override
@@ -720,6 +663,55 @@ class _NoteAddBodyState extends ConsumerState<_NoteAddBody> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pin toggle button — used in note view window (reads DB, toggles directly)
+// ---------------------------------------------------------------------------
+
+// _PinToggleButton supprime -- le toggle pin est maintenant inline
+// dans _NoteViewBodyState et _NoteEditBodyState
+
+// ---------------------------------------------------------------------------
+// Inline pin toggle — used in edit window (local state, saved on confirm)
+// ---------------------------------------------------------------------------
+
+class _InlinePinToggle extends StatelessWidget {
+  final bool pinned;
+  final ValueChanged<bool> onToggle;
+
+  const _InlinePinToggle({required this.pinned, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: () => onToggle(!pinned),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              pinned ? Icons.star : Icons.star_border,
+              size: 16,
+              color: pinned ? Colors.amber : cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'Important',
+              style: TextStyle(
+                fontSize: 12,
+                color: pinned ? Colors.amber.shade700 : cs.onSurfaceVariant,
+                fontWeight: pinned ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

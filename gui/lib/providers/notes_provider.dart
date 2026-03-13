@@ -32,41 +32,81 @@ final turnNotesProvider =
   return db.notesDao.watchNotesForTurn(turnId);
 });
 
+/// Notes for a specific civilization (reactive stream).
+final civNotesProvider =
+    StreamProvider.family<List<NoteRow>, int>((ref, civId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.notesDao.watchNotesForCiv(civId);
+});
+
 // ---------------------------------------------------------------------------
 // Mutations — called directly via ref.read(databaseProvider)
 // ---------------------------------------------------------------------------
 
 Future<void> addNoteForEntity(
-    WidgetRef ref, int entityId, String title, String content) {
+    WidgetRef ref, int entityId, String title, String content) async {
   final db = ref.read(databaseProvider);
   if (db == null) throw StateError('No database');
-  return db.notesDao.insertNote(NotesCompanion(
-    entityId: Value(entityId),
-    title: Value(title),
-    content: Value(content),
-  ));
+  try {
+    await db.notesDao.insertNote(NotesCompanion(
+      entityId: Value(entityId),
+      title: Value(title),
+      content: Value(content),
+    ));
+  } catch (e) {
+    // Log FK constraint or table-missing errors for diagnosis
+    print('[notes_provider] addNoteForEntity failed: $e');
+    rethrow;
+  }
 }
 
 Future<void> addNoteForSubject(
-    WidgetRef ref, int subjectId, String title, String content) {
+    WidgetRef ref, int subjectId, String title, String content) async {
   final db = ref.read(databaseProvider);
   if (db == null) throw StateError('No database');
-  return db.notesDao.insertNote(NotesCompanion(
-    subjectId: Value(subjectId),
-    title: Value(title),
-    content: Value(content),
-  ));
+  try {
+    await db.notesDao.insertNote(NotesCompanion(
+      subjectId: Value(subjectId),
+      title: Value(title),
+      content: Value(content),
+    ));
+  } catch (e) {
+    print('[notes_provider] addNoteForSubject failed: $e');
+    rethrow;
+  }
+}
+
+Future<void> addNoteForCiv(
+    WidgetRef ref, int civId, String title, String content) async {
+  final db = ref.read(databaseProvider);
+  if (db == null) throw StateError('No database');
+  try {
+    await db.notesDao.insertNote(NotesCompanion(
+      civId: Value(civId),
+      title: Value(title),
+      content: Value(content),
+    ));
+  } catch (e) {
+    print('[notes_provider] addNoteForCiv failed: $e');
+    rethrow;
+  }
 }
 
 Future<void> addNoteForTurn(
-    WidgetRef ref, int turnId, String title, String content) {
+    WidgetRef ref, int turnId, String title, String content) async {
   final db = ref.read(databaseProvider);
   if (db == null) throw StateError('No database');
-  return db.notesDao.insertNote(NotesCompanion(
-    turnId: Value(turnId),
-    title: Value(title),
-    content: Value(content),
-  ));
+  try {
+    await db.notesDao.insertNote(NotesCompanion(
+      turnId: Value(turnId),
+      title: Value(title),
+      content: Value(content),
+    ));
+  } catch (e) {
+    print('[notes_provider] addNoteForTurn failed: $e');
+    rethrow;
+  }
 }
 
 Future<void> updateNote(
@@ -74,6 +114,13 @@ Future<void> updateNote(
   final db = ref.read(databaseProvider);
   if (db == null) throw StateError('No database');
   return db.notesDao.updateNote(noteId, title, content);
+}
+
+/// Toggle pinned status on a note.
+Future<void> toggleNotePinned(WidgetRef ref, int noteId, bool pinned) {
+  final db = ref.read(databaseProvider);
+  if (db == null) throw StateError('No database');
+  return db.notesDao.togglePinned(noteId, pinned);
 }
 
 Future<void> deleteNote(WidgetRef ref, int noteId) {

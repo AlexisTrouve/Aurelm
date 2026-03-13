@@ -142,6 +142,19 @@ CREATE TABLE subject_resolutions (
     chosen_option_id INTEGER REFERENCES subject_options(id)
 );
 
+CREATE TABLE notes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_id   INTEGER REFERENCES entity_entities(id) ON DELETE CASCADE,
+    subject_id  INTEGER REFERENCES subject_subjects(id) ON DELETE CASCADE,
+    turn_id     INTEGER REFERENCES turn_turns(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL DEFAULT '',
+    content     TEXT NOT NULL DEFAULT '',
+    pinned      INTEGER NOT NULL DEFAULT 0,
+    note_type   TEXT NOT NULL DEFAULT 'gm',
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE pipeline_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -199,6 +212,13 @@ INSERT INTO entity_mentions (entity_id, turn_id, segment_id, mention_text, conte
 INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type, turn_id) VALUES
     (1, 4, 'discovered_at', 3),
     (2, 1, 'member_of', 1);
+
+INSERT INTO notes (entity_id, title, content, pinned, note_type) VALUES
+    (1, 'Propriete speciale', 'L argile vivante durcit au contact de l air en 3 secondes.', 1, 'gm'),
+    (1, 'Usage militaire', 'Peut etre utilisee comme armure improvisee.', 0, 'gm');
+
+INSERT INTO notes (title, content, note_type) VALUES
+    ('Regle maison', 'Toujours verifier les technologies avant de valider un tour.', 'agent');
 """
 
 

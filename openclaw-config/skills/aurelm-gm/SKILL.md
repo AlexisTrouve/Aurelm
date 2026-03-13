@@ -8,7 +8,40 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 
 ---
 
+## Token Budget — Regles d'utilisation des params opt-in
+
+**Principe** : chaque section opt-in consomme des tokens. Moins de tokens = plus de rounds de raisonnement possibles.
+
+1. **Appel leger d'abord** : toujours appeler sans opt-in (summary only), puis opt-in cible si la reponse manque d'info.
+2. **Un seul opt-in a la fois** : ne jamais activer showMentions + showFacts + showTimeline ensemble. Choisis celui qui repond a la question.
+3. **showNotes = rare** : seulement si Arthur demande explicitement les notes ou le contexte GM. Les notes pinned sont toujours incluses automatiquement (pas besoin d'opt-in).
+4. **showSegments = sur demande** : seulement si Arthur veut le texte brut du tour. Le resume suffit dans 90% des cas.
+5. **relations/activity = cible** : active `relations=true` pour les questions de structure ("qui controle quoi"), `activity=true` pour les questions temporelles ("quand est apparu X").
+
+**Pattern recommande** :
+```
+Etape 1: getEntityDetail("Argile Vivante")          -- summary only, ~200 tokens
+Etape 2: getEntityDetail("Argile Vivante", showFacts=true)  -- si besoin de chronologie, ~800 tokens
+```
+
+---
+
 ## MCP Tools Reference
+
+### Params standard
+
+Presents sur la plupart des outils qui retournent des listes. Le LLM apprend le vocabulaire une fois, l'applique partout.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `civName` | string | Nom de la civ (match partiel / fuzzy) |
+| `fromTurn` | integer | Tour de debut (inclus) |
+| `toTurn` | integer | Tour de fin (inclus) |
+| `lastNTurns` | integer | Raccourci "N derniers tours" (ex: 5) |
+| `tag` | string | Domaine : militaire, politique, religieux, economique, culturel, diplomatique, technologique, mythologique |
+| `limit` | integer | Max resultats (defaut selon l'outil) |
+
+---
 
 ### 1. `listCivs`
 
@@ -37,12 +70,12 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 ### 3. `searchLore`
 
 **Params** :
-- `query` (string) — nom d'entite, mot-cle ou alias
-- `civName` (string, optionnel) — filtrer par civilisation
-- `entityType` (string, optionnel) — filtrer par type : person, place, technology, institution, resource, creature, event
+- `query` (string) — nom d'entite, mot-cle ou alias. Laisser vide avec `tag=` pour lister toutes les entites d'un domaine.
+- `entityType` (string, optionnel) — person, place, technology, institution, resource, creature, event, civilization, caste, belief
+- Params standard : `civName`, `fromTurn`, `toTurn`, `lastNTurns`, `tag`, `limit`
 
 **Retourne** : Entites matchant la requete avec leurs mentions en contexte.
-**Quand l'utiliser** : Pour trouver des entites specifiques, explorer un domaine (toutes les technologies d'une civ), ou verifier l'existence d'un concept.
+**Quand l'utiliser** : Pour trouver des entites specifiques, explorer un domaine (toutes les technologies d'une civ), ou verifier l'existence d'un concept. Remplace aussi `getEntitiesByTag` : `searchLore(tag="militaire")`.
 
 **Tips** :
 - Essaie d'abord le nom exact, puis elargis avec des mots-cles si pas de resultat.
@@ -70,15 +103,18 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 ### 5. `timeline`
 
 **Params** :
-- `civName` (string, optionnel) — omis = timeline globale
-- `limit` (number, 1-100, defaut 20) — nombre max de tours
+- `turnType` (string, optionnel) — standard, event, first_contact, crisis
+- `entityName` (string, optionnel) — tours mentionnant cette entite
+- Params standard : `civName`, `fromTurn`, `toTurn`, `lastNTurns`, `limit` (defaut 20)
 
 **Retourne** : Chronologie des tours avec nombre d'entites par tour.
-**Quand l'utiliser** : Pour reconstruire la sequence d'evenements, identifier des gaps, ou donner un recap temporel.
+**Quand l'utiliser** : Pour reconstruire la sequence d'evenements, identifier des gaps, ou donner un recap temporel. Remplace `filterTimeline` — tous les filtres sont integres.
 
 **Tips** :
 - Sans `civName`, retourne la timeline globale (toutes les civs melees).
-- Augmente `limit` pour les recaps longs, reduis-le pour les questions sur les tours recents.
+- `entityName=` pour tracer un fil narratif : "tous les tours ou l'Argile est mentionnee".
+- `turnType=first_contact` pour lister uniquement les premiers contacts.
+- Les filtres se combinent : `turnType + civName + fromTurn/toTurn` pour des requetes precises.
 
 ---
 
@@ -104,12 +140,24 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 - `entityName` (string, match partiel supporte)
 - `civName` (string, optionnel) — scope a une civilisation
 
-**Retourne** : Deep dive sur une entite : metadonnees, aliases, relations, jusqu'a 20 mentions avec contexte.
-**Quand l'utiliser** : Apres avoir identifie une entite via `searchLore`, pour obtenir tous les details.
+**Sections opt-in** (toutes `false` par defaut) :
+- `relations` — graphe de relations (remplace l'ancien `exploreRelations`)
+- `activity` — timeline d'activite par tour (remplace l'ancien `entityActivity`)
+- `showMentions` — 20 dernieres mentions en contexte
+- `showFacts` — chronologie narrative / history
+- `showTimeline` — alias pour `activity`
+- `showNotes` — notes GM (notes pinned toujours incluses sans opt-in)
+
+**Retourne** : Fiche entite. Sans opt-in = summary compact (description, type, aliases, tags). Avec opt-in = sections additionnelles.
+**Quand l'utiliser** : Apres avoir identifie une entite via `searchLore`, pour obtenir les details voulus.
 
 **Tips** :
-- Le match partiel aide quand Arthur utilise un nom informel.
-- Les mentions avec contexte sont precieuses pour comprendre l'evolution d'une entite dans le temps.
+- **Toujours commencer sans opt-in.** Le summary suffit souvent.
+- `relations=true` pour cartographier les structures de pouvoir ("qui controle quoi").
+- `activity=true` pour le profil temporel ("quand est apparu X", "encore actif ?").
+- `showFacts=true` pour la chronologie narrative de l'entite.
+- `showMentions=true` seulement si tu as besoin du texte exact des passages.
+- **Ne jamais combiner plus de 2 opt-in** — trop de tokens.
 
 ---
 
@@ -119,12 +167,19 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 - `turnNumber` (number) — numero du tour
 - `civName` (string, requis) — civilisation (le numero de tour est unique par civ)
 
-**Retourne** : Contenu complet du tour : tous les segments avec types, entites mentionnees, resume.
-**Quand l'utiliser** : Pour relire un tour specifique en detail. Utile quand Arthur demande "que s'est-il passe au tour X ?".
+**Sections opt-in** (toutes `false` par defaut) :
+- `showSegments` — segments narratifs (texte complet GM + PJ)
+- `showEntities` — table des entites mentionnees dans le tour
+- `showNotes` — notes GM (notes pinned toujours incluses sans opt-in)
+
+**Retourne** : Sans opt-in = resume compact (titre, summary, choix proposes/faits). Avec opt-in = sections additionnelles.
+**Quand l'utiliser** : Pour relire un tour specifique.
 
 **Tips** :
-- `civName` est obligatoire ici -- un meme numero de tour peut exister dans plusieurs civs.
-- Le resultat inclut les types de segments : utile pour distinguer narration, choix, consequences.
+- `civName` est obligatoire — un meme numero de tour peut exister dans plusieurs civs.
+- **Sans opt-in d'abord.** Le resume est suffisant pour la plupart des questions.
+- `showSegments=true` seulement si Arthur veut relire le texte brut du tour.
+- `showEntities=true` pour savoir quelles entites sont mentionnees (utile avant un deep dive).
 
 ---
 
@@ -132,8 +187,8 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 
 **Params** :
 - `query` (string) — texte a chercher (match LIKE sur le contenu des segments)
-- `civName` (string, optionnel) — filtrer par civilisation
-- `segmentType` (string, optionnel) — filtrer par type : narrative, choice, consequence, ooc, description
+- `segmentType` (string, optionnel) — narrative, choice, consequence, ooc, description
+- Params standard : `civName`, `fromTurn`, `toTurn`, `lastNTurns`, `limit`
 
 **Retourne** : Segments dont le contenu matche la requete, avec contexte (tour, civ, type).
 **Quand l'utiliser** : Pour la recherche full-text quand le concept n'est pas capture comme entite. Exemple : "ou parle-t-on de tempete ?" ou "quels choix impliquaient la riviere ?".
@@ -148,98 +203,95 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 ### 10. `getStructuredFacts`
 
 **Params** :
-- `civName` (string) — civilisation
-- `factType` (string, optionnel) — technologies, resources, beliefs, geography, ou all
-- `turnNumber` (integer, optionnel) — filtrer par tour
+- `factType` (string, optionnel) — technologies, resources, beliefs, geography, choices, techtree, all (defaut: all)
+- Params standard : `civName` (requis), `fromTurn`, `toTurn`, `lastNTurns`, `limit`
 
 **Retourne** : Faits structures par tour, groupes par type.
 **Quand l'utiliser** : "Quelles technos a la Confluence au tour 10 ?", "Quelles ressources sont connues ?", "Quelles croyances existent ?".
 
+**Absorbe les anciens outils** :
+- `factType="choices"` remplace `getChoiceHistory` — historique des bifurcations narratives.
+- `factType="techtree"` remplace `getTechTree` — arbre technologique par categorie.
+
 **Tips** :
 - Permet de repondre aux questions sur les acquis d'une civilisation a un moment donne.
 - Combine avec `timeline` pour situer temporellement.
+- `factType="techtree"` pour une vue par categorie (Outils de chasse, Agriculture, etc.).
 
 ---
 
-### 11. `getChoiceHistory`
+### 11. `listSubjects`
 
 **Params** :
-- `civName` (string) — civilisation
-- `turnNumber` (integer, optionnel) — filtrer par tour
+- `status` (string, optionnel) — open, resolved, all (defaut: open)
+- `direction` (string, optionnel) — mj_to_pj (GM propose un choix au joueur) | pj_to_mj (initiative du joueur)
+- Params standard : `civName`, `fromTurn`, `toTurn`, `lastNTurns`, `tag`, `limit`
 
-**Retourne** : Historique chronologique des choix proposes par le MJ et des decisions du joueur.
-**Quand l'utiliser** : "Quels choix ont ete proposes au tour 8 ?", "Quelles decisions a pris la Confluence ?".
+**Retourne** : Liste des sujets MJ<->PJ avec statut, tour d'origine, direction.
+**Quand l'utiliser** : Pour identifier les fils narratifs ouverts, les choix en attente, les initiatives joueur non traitees.
 
 **Tips** :
-- Montre les choix proposes ET les decisions prises -- utile pour comprendre les bifurcations narratives.
-- Si le joueur regrette un choix, cet outil montre les alternatives qu'il avait.
+- `status="open"` (defaut) = sujets non resolus — les plus utiles pour Arthur quand il prepare le prochain tour.
+- `direction="mj_to_pj"` = choix proposes par le MJ, en attente de decision joueur.
+- `direction="pj_to_mj"` = initiatives joueur, en attente de traitement GM.
+- Combine avec `tag="diplomatique"` pour filtrer par domaine.
+- Enchaine avec `getSubjectDetail(subjectId)` pour le detail d'un sujet.
 
 ---
 
-### 12. `exploreRelations`
+### 12. `getSubjectDetail`
 
 **Params** :
-- `entityName` (string) — entite de depart
-- `civName` (string, optionnel) — limiter a une civilisation
-- `depth` (integer, 1-3, defaut 1) — profondeur de navigation
+- `subjectId` (integer, requis) — ID du sujet (obtenu via `listSubjects`)
 
-**Retourne** : Graphe textuel des relations (controle, appartenance, alliance, localisation...).
-**Quand l'utiliser** : "Qui controle quoi dans la Confluence ?", "Quelles sont les relations de l'Argile Vivante ?", "Comment sont liees les castes ?".
+**Sections opt-in** (toutes `false` par defaut) :
+- `showOptions` — options proposees au joueur
+- `showResolutions` — resolutions (choix faits, consequences)
+- `showNotes` — notes GM (notes pinned toujours incluses sans opt-in)
+
+**Retourne** : Sans opt-in = description du sujet, statut, direction, tour d'origine. Avec opt-in = sections additionnelles.
+**Quand l'utiliser** : Apres `listSubjects`, pour creuser un sujet specifique.
 
 **Tips** :
-- `depth=1` montre les relations directes. `depth=2` suit les voisins des voisins.
-- Tres utile pour cartographier les structures de pouvoir et les reseaux d'influence.
-- Combine avec `getEntityDetail` pour les details de chaque entite trouvee.
+- **Sans opt-in d'abord** pour le contexte general.
+- `showOptions=true` pour voir les choix proposes au joueur.
+- `showResolutions=true` pour voir comment le sujet a ete resolu (si `status=resolved`).
+- `showNotes=true` seulement si Arthur demande des notes GM sur ce sujet.
 
 ---
 
-### 13. `filterTimeline`
+### 13. `getNotes`
 
 **Params** :
+- `entityName` (string, optionnel) — notes attachees a une entite
+- `subjectId` (integer, optionnel) — notes attachees a un sujet
+- `turnNumber` (integer, optionnel) — notes attachees a un tour
 - `civName` (string, optionnel) — filtrer par civilisation
-- `turnType` (string, optionnel) — standard, event, first_contact, crisis
-- `fromTurn` (integer, optionnel) — tour de depart
-- `toTurn` (integer, optionnel) — tour de fin
-- `entityName` (string, optionnel) — tours mentionnant cette entite
 
-**Retourne** : Timeline filtree avec resumes.
-**Quand l'utiliser** : "Tous les premiers contacts", "Que s'est-il passe entre les tours 5 et 10 ?", "Tous les tours ou l'Argile est mentionnee".
+**Retourne** : Notes GM liees a l'element demande.
+**Quand l'utiliser** : Quand Arthur demande explicitement "les notes sur X" ou quand tu veux enrichir le contexte d'un element sans relancer un appel complet avec `showNotes=true`.
 
 **Tips** :
-- Plus flexible que `timeline` (qui n'a que civName + limit).
-- Les filtres se combinent : turnType + civName + range pour des requetes precises.
-- Le filtre `entityName` fait un JOIN sur les mentions -- puissant pour tracer un fil narratif.
+- Passer au moins un des trois filtres (`entityName`, `subjectId`, `turnNumber`) — sans filtre, retourne toutes les notes (trop large).
+- Les notes pinned sont deja incluses automatiquement dans les autres outils — `getNotes` est pour les notes non-pinned ou pour un acces direct.
+- Prefere `showNotes=true` sur `getEntityDetail`/`getTurnDetail`/`getSubjectDetail` quand tu appelles deja l'outil.
 
 ---
 
-### 14. `entityActivity`
+### 14. `deepExplore`
 
 **Params** :
-- `entityName` (string) — entite a analyser
-- `civName` (string, optionnel) — limiter a une civilisation
+- `question` (string, requis) — la question de recherche approfondie
+- `context` (string, optionnel) — contexte additionnel pour guider la recherche
 
-**Retourne** : Profil temporel : premier/dernier tour, total mentions, pic d'activite, sparkline ASCII, contexte des 3 mentions recentes.
-**Quand l'utiliser** : "Quand l'Argile Vivante est-elle devenue importante ?", "L'entite X est-elle encore active ?".
-
-**Tips** :
-- Le sparkline montre visuellement l'evolution -- utile pour detecter des entites qui disparaissent ou emergent.
-- Combine avec `getEntityDetail` pour le contexte complet.
-
----
-
-### 15. `getTechTree`
-
-**Params** :
-- `civName` (string) — civilisation
-- `category` (string, optionnel) — filtrer par categorie (Outils de chasse, Outils de peche, Agriculture, Artisanat, Construction, Navigation, Feu et lumiere, Musique et rituel, Materiaux)
-
-**Retourne** : Arbre technologique complet organise par categorie, avec timeline chronologique d'acquisition.
-**Quand l'utiliser** : "Quelles technos a la Confluence ?", "Quand ont-ils appris a naviguer ?", "Compare les techs de chasse entre civs".
+**Retourne** : Reponse detaillee construite par un sous-agent qui enchaine automatiquement les outils de recherche.
+**Quand l'utiliser** : Quand une question necessite plusieurs recherches croisees que tu ne peux pas planifier a l'avance. Le sous-agent enchaine searchLore, getEntityDetail, timeline, etc. automatiquement.
 
 **Tips** :
-- Combine avec `getStructuredFacts` si tu as besoin du tour exact d'acquisition.
-- Le filtre `category` est en sous-chaine insensible a la casse ("chasse" matche "Outils de chasse").
-- La section Timeline montre l'ordre chronologique d'acquisition par tour.
+- Plus lent qu'un appel direct (plusieurs rounds LLM) mais plus complet.
+- Utilise pour les analyses croisees, les recaps complexes, ou les questions ouvertes.
+- Le sous-agent n'a acces qu'aux outils en lecture seule.
+- Reserve pour les questions complexes — pour un simple lookup, utilise les outils directement.
 
 ---
 
@@ -250,8 +302,8 @@ Voir `SOUL.md` pour la persona complete et `domain-knowledge.md` pour le context
 Arthur demande des infos sur une entite
   -> searchLore(query=nom, civName?)
      -> Resultat trouve ?
-        OUI -> getEntityDetail(entityName, civName?) pour le deep dive
-               -> entityActivity(entityName) pour le profil temporel
+        OUI -> getEntityDetail(entityName, civName?)       -- summary d'abord
+               -> Besoin de plus ? getEntityDetail(..., showFacts=true) ou relations=true
         NON -> searchTurnContent(query=nom) pour chercher dans le texte brut
                -> Resultat trouve ?
                   OUI -> Rapporter les mentions trouvees
@@ -263,7 +315,7 @@ Arthur demande des infos sur une entite
 Arthur demande un recap d'une civ
   -> listCivs() si le nom est ambigu
   -> getCivState(civName) pour le snapshot
-  -> timeline(civName, limit=10) pour les tours recents
+  -> timeline(civName, lastNTurns=10) pour les tours recents
   -> Synthetiser en reponse structuree
 ```
 
@@ -293,9 +345,10 @@ Arthur veut comparer des civs
 ### Inspection d'un tour
 ```
 Arthur demande le detail d'un tour
-  -> getTurnDetail(turnNumber, civName)
+  -> getTurnDetail(turnNumber, civName)                    -- summary d'abord
      -> Resultat trouve ?
-        OUI -> Presenter les segments par type, lister les entites
+        OUI -> Besoin du texte ? getTurnDetail(..., showSegments=true)
+               Besoin des entites ? getTurnDetail(..., showEntities=true)
         NON -> timeline(civName) pour verifier les tours existants
                -> Suggerer le bon numero de tour
 ```
@@ -308,6 +361,25 @@ Arthur cherche un theme ou un evenement dans le temps
         OUI -> Regrouper par tour, montrer la chronologie
         NON -> searchLore(query) pour chercher dans les entites
                -> Toujours rien : "Pas de mention de [theme] dans les donnees."
+```
+
+### Sujets ouverts / decisions en attente
+```
+Arthur demande les sujets en cours ou les choix en attente
+  -> listSubjects(civName?, status="open")
+     -> Resultats ?
+        OUI -> Pour un sujet specifique : getSubjectDetail(subjectId)
+               -> Besoin des options ? getSubjectDetail(..., showOptions=true)
+               -> Besoin des resolutions ? getSubjectDetail(..., showResolutions=true)
+        NON -> "Aucun sujet ouvert pour cette civilisation."
+```
+
+### Question complexe / analyse croisee
+```
+Arthur pose une question qui touche plusieurs entites/civs/tours
+  -> Peux-tu planifier les appels a l'avance ?
+     OUI -> Enchaine 2-3 outils directement (searchLore + getEntityDetail + timeline...)
+     NON -> deepExplore(question, context?) pour laisser le sous-agent explorer
 ```
 
 ---
@@ -335,6 +407,22 @@ Arthur cherche un theme ou un evenement dans le temps
 | `resource` | Ressource naturelle ou produite |
 | `creature` | Etre vivant non-humain |
 | `event` | Evenement historique notable |
+| `civilization` | Civilisation / peuple |
+| `caste` | Caste ou classe sociale |
+| `belief` | Croyance, religion, mythe |
+
+### Tags de domaine
+
+| Tag | Description |
+|-----|-------------|
+| `militaire` | Forces armees, conflits, defense |
+| `politique` | Gouvernance, castes, pouvoir |
+| `religieux` | Croyances, rituels, mythes |
+| `economique` | Commerce, ressources, production |
+| `culturel` | Arts, traditions, savoir |
+| `diplomatique` | Relations inter-civs, contacts |
+| `technologique` | Inventions, savoir-faire |
+| `mythologique` | Legendes, origines, propheties |
 
 ---
 
@@ -387,7 +475,7 @@ getTurnDetail retourne une erreur
 **Arthur** : "Fais-moi un recap de la Confluence"
 **Aurelm** :
 1. `getCivState("Confluence")`
-2. `timeline("Confluence", 10)`
+2. `timeline("Confluence", lastNTurns=10)`
 3. Reponse structuree : entites-cles, tours recents, tendances.
 
 ### 3. Comparaison militaire
@@ -397,18 +485,18 @@ getTurnDetail retourne une erreur
 2. `compareCivs(["Civilisation de la Confluence", "Cheveux de Sang", "Nanzagouets"], ["military"])`
 3. Tableau comparatif avec les entites militaires de chaque civ.
 
-### 4. Recherche d'entite profonde
+### 4. Recherche d'entite profonde (pattern leger puis detaille)
 **Arthur** : "Qu'est-ce qu'on sait sur l'Argile Vivante ?"
 **Aurelm** :
 1. `searchLore("Argile Vivante", "Confluence")`
-2. `getEntityDetail("Argile Vivante", "Confluence")`
-3. Fiche complete : type, premiere apparition, aliases, mentions en contexte, relations.
+2. `getEntityDetail("Argile Vivante", "Confluence")` — summary d'abord
+3. Le summary suffit ? Repondre. Sinon : `getEntityDetail("Argile Vivante", "Confluence", showFacts=true)` pour la chronologie.
 
-### 5. Detail d'un tour
+### 5. Detail d'un tour (pattern leger puis detaille)
 **Arthur** : "Que s'est-il passe au tour 7 de la Confluence ?"
 **Aurelm** :
-1. `getTurnDetail(7, "Confluence")`
-2. Presente les segments par type : narration, choix proposes, consequences, entites mentionnees.
+1. `getTurnDetail(7, "Confluence")` — resume compact
+2. Si Arthur veut plus : `getTurnDetail(7, "Confluence", showSegments=true)` pour le texte brut.
 
 ### 6. Recherche textuelle
 **Arthur** : "Ou parle-t-on de la mer dans le jeu ?"
@@ -417,19 +505,19 @@ getTurnDetail retourne une erreur
 2. Regroupe les resultats par civilisation et par tour.
 3. Si pertinent, complete avec `searchLore("mer")` pour les entites liees.
 
-### 7. Timeline globale
-**Arthur** : "Montre-moi les 5 derniers tours de chaque civ"
+### 7. Sujets en attente
+**Arthur** : "Quels choix sont en attente pour la Confluence ?"
 **Aurelm** :
-1. `listCivs()` pour les noms
-2. `timeline("Confluence", 5)`, `timeline("Cheveux de Sang", 5)`, etc.
-3. Presente une chronologie par civilisation.
+1. `listSubjects(civName="Confluence", status="open", direction="mj_to_pj")`
+2. Liste les sujets ouverts. Pour le detail : `getSubjectDetail(subjectId, showOptions=true)`
+3. Reponse structuree : sujets en attente avec options proposees.
 
 ### 8. Verification croisee
 **Arthur** : "Les Cheveux de Sang connaissent-ils l'existence de la Confluence ?"
 **Aurelm** :
 1. `sanityCheck("Les Cheveux de Sang connaissent la Confluence", "Cheveux de Sang")`
-2. `searchTurnContent("Confluence", "Cheveux de Sang")`
-3. `searchTurnContent("Cheveux de Sang", "Confluence")`
+2. `searchTurnContent("Confluence", civName="Cheveux de Sang")`
+3. `searchTurnContent("Cheveux de Sang", civName="Confluence")`
 4. Croise les resultats pour determiner si le contact est etabli dans les deux sens.
 
 ### 9. Entite absente du NER
@@ -438,6 +526,12 @@ getTurnDetail retourne une erreur
 1. `searchLore("tremblement de terre")`
 2. Pas de resultat -> `searchTurnContent("tremblement")` en fallback
 3. Rapporte les mentions textuelles ou confirme l'absence.
+
+### 10. Analyse croisee complexe
+**Arthur** : "Compare l'evolution technologique de chaque civ depuis le premier contact"
+**Aurelm** :
+1. `deepExplore("Compare l'evolution technologique de chaque civilisation depuis le premier contact inter-civilisations", context="Focus sur les technologies acquises apres les premiers contacts diplomatiques")`
+2. Le sous-agent enchaine timeline, getStructuredFacts, searchLore automatiquement.
 
 ---
 
@@ -452,6 +546,7 @@ getTurnDetail retourne une erreur
 7. **Francais** : Reponds en francais sauf si Arthur ecrit en anglais.
 8. **Outils d'abord** : Toujours appeler au moins un outil avant de repondre a une question sur le lore.
 9. **Chaines d'outils** : N'hesite pas a enchainer 2-3 outils pour une reponse complete (cf. decision trees).
+10. **Leger d'abord** : Toujours appeler sans opt-in, puis cibler avec un seul opt-in si besoin (cf. Token Budget).
 
 ---
 

@@ -21,6 +21,19 @@ def _escape_like(value: str) -> str:
     return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
 
 
+def _fuzzy_like_pattern(query: str) -> str:
+    """Build a fuzzy LIKE pattern: hyphens/spaces interchangeable, optional trailing plural.
+
+    'Ailes Grises' matches 'Ailes-Grises', 'ailes grises', 'Ailes-Grises' etc.
+    Each space or hyphen becomes '%' (wildcard) to bridge the gap.
+    """
+    escaped = _escape_like(query)
+    # Replace spaces and hyphens with '%' wildcard so both match
+    import re
+    fuzzy = re.sub(r'[\s\-]+', '%', escaped)
+    return f"%{fuzzy}%"
+
+
 FRENCH_STOPWORDS = {
     "le", "la", "les", "de", "du", "des", "un", "une",
     "et", "ou", "en", "au", "aux", "ce", "ces", "son", "sa", "ses",
@@ -205,7 +218,13 @@ def get_civ_state(conn: sqlite3.Connection, civ_id: int, civ_name: str) -> str:
 # --------------------------------------------------------------------------- #
 
 def get_turn_detail(
-    conn: sqlite3.Connection, turn_number: int, civ_id: int, civ_name: str
+    conn: sqlite3.Connection,
+    turn_number: int,
+    civ_id: int,
+    civ_name: str,
+    show_segments: bool = False,
+    show_entities: bool = False,
+    show_notes: bool = False,
 ) -> str:
     turn = conn.execute("""
         SELECT t.id, t.turn_number, t.title, t.summary, t.turn_type,
@@ -257,33 +276,44 @@ def get_turn_detail(
             lines.append(f"-> {d}")
         lines.append("")
 
-    # Segments
-    segments = conn.execute(
-        "SELECT segment_order, segment_type, content FROM turn_segments WHERE turn_id = ? ORDER BY segment_order",
-        (t_id,),
-    ).fetchall()
+    # Segments — opt-in via show_segments
+    if show_segments:
+        segments = conn.execute(
+            "SELECT segment_order, segment_type, content FROM turn_segments WHERE turn_id = ? ORDER BY segment_order",
+            (t_id,),
+        ).fetchall()
 
-    if segments:
-        lines += ["## Segments", ""]
-        for s in segments:
-            lines.append(f"### [{s[1]}] (segment {s[0]})")
-            lines.append(truncate(s[2], 1000))
-            lines.append("")
+        if segments:
+            lines += ["## Segments", ""]
+            for s in segments:
+                lines.append(f"### [{s[1]}] (segment {s[0]})")
+                lines.append(truncate(s[2], 1000))
+                lines.append("")
 
-    # Entities mentioned
-    entities = conn.execute("""
-        SELECT e.canonical_name, e.entity_type, COUNT(*) AS mention_count
-        FROM entity_mentions m
-        JOIN entity_entities e ON m.entity_id = e.id
-        WHERE m.turn_id = ? AND e.disabled = 0
-        GROUP BY e.id
-        ORDER BY mention_count DESC
-    """, (t_id,)).fetchall()
+    # Entities mentioned — opt-in via show_entities
+    if show_entities:
+        entities = conn.execute("""
+            SELECT e.canonical_name, e.entity_type, COUNT(*) AS mention_count
+            FROM entity_mentions m
+            JOIN entity_entities e ON m.entity_id = e.id
+            WHERE m.turn_id = ? AND e.disabled = 0
+            GROUP BY e.id
+            ORDER BY mention_count DESC
+        """, (t_id,)).fetchall()
 
-    if entities:
-        lines += ["## Entities Mentioned", "", "| Entity | Type | Mentions |", "|---|---|---|"]
-        for e in entities:
-            lines.append(f"| {e[0]} | {e[1]} | {e[2]} |")
+        if entities:
+            lines += ["## Entities Mentioned", "", "| Entity | Type | Mentions |", "|---|---|---|"]
+            for e in entities:
+                lines.append(f"| {e[0]} | {e[1]} | {e[2]} |")
+
+    # Notes GM — show_notes or pinned-only
+    all_notes = _get_notes_for(conn, turn_id=t_id)
+    if show_notes:
+        lines += _format_notes_section(all_notes)
+    else:
+        # Always show pinned notes even without show_notes
+        pinned = [n for n in all_notes if n.get("pinned")]
+        lines += _format_notes_section(pinned)
 
     return "\n".join(lines)
 
@@ -313,13 +343,15 @@ def search_lore(
     params: list = []
 
     # Text search (optional when tag is provided)
+    # Fuzzy: hyphens/spaces interchangeable so "Ailes Grises" matches "Ailes-Grises"
     if query:
-        pattern = f"%{_escape_like(query)}%"
+        pattern = _fuzzy_like_pattern(query)
         conditions.append(
             "(e.canonical_name LIKE ? ESCAPE '!' OR e.description LIKE ? ESCAPE '!'"
-            " OR a.alias LIKE ? ESCAPE '!' OR e.history LIKE ? ESCAPE '!')"
+            " OR a.alias LIKE ? ESCAPE '!')"
         )
-        params.extend([pattern, pattern, pattern, pattern])
+        # Note: removed history LIKE — too noisy, description covers it
+        params.extend([pattern, pattern, pattern])
 
     if civ_id is not None:
         conditions.append("e.civ_id = ?")
@@ -369,39 +401,28 @@ def search_lore(
         eid, name, etype, desc, history, cn, mc = e
         lines.append(f"## {name} ({etype})")
         if cn:
-            lines.append(f"**Civilization:** {cn}")
-        lines.append(f"**Mentions:** {mc}")
+            lines.append(f"**Civilization:** {cn} | **Mentions:** {mc}")
+        else:
+            lines.append(f"**Mentions:** {mc}")
+
+        # Description tronquee -- searchLore donne un apercu, pas le detail complet
         if desc:
-            lines.append(f"**Description:** {desc}")
+            lines.append(f"**Description:** {truncate(desc, 200)}")
 
-        events = _parse_history(history)
-        if events:
-            lines += ["", "**Chronologie:**"]
-            for ev in events:
-                lines.append(f"- {ev}")
-
+        # Aliases (compact, une ligne)
         aliases = conn.execute(
             "SELECT alias FROM entity_aliases WHERE entity_id = ?", (eid,)
         ).fetchall()
         if aliases:
             lines.append(f"**Aliases:** {', '.join(a[0] for a in aliases)}")
 
-        mentions = conn.execute("""
-            SELECT m.mention_text, m.context, t.turn_number
-            FROM entity_mentions m
-            JOIN turn_turns t ON m.turn_id = t.id
-            WHERE m.entity_id = ?
-            ORDER BY t.turn_number DESC
-            LIMIT 3
-        """, (eid,)).fetchall()
-
-        if mentions:
-            lines += ["", "**Recent mentions:**"]
-            for m in mentions:
-                ctx = truncate(m[1], 150) if m[1] else m[0]
-                lines.append(f"- Turn {m[2]}: {ctx}")
-
+        # Pas de chronologie complete ni de mentions -- utiliser getEntityDetail pour ca
         lines.append("")
+
+    # Hint pour l'agent : pointer vers les tools de detail
+    lines.append("---")
+    lines.append("*Pour plus de details sur une entite, utilise `getEntityDetail`. "
+                  "Pour les faits structures, utilise `getStructuredFacts`.*")
 
     return "\n".join(lines)
 
@@ -416,11 +437,17 @@ def get_entity_detail(
     civ_id: int | None = None,
     include_relations: bool = False,
     include_activity: bool = False,
+    show_mentions: bool = False,
+    show_facts: bool = False,
+    show_notes: bool = False,
 ) -> str:
     """Full entity profile.
 
     include_relations=True: add relation graph (replaces exploreRelations).
     include_activity=True: add per-turn activity sparkline (replaces entityActivity).
+    show_mentions: include last 20 mentions (opt-in).
+    show_facts: include chronology/history (opt-in).
+    show_notes: include GM notes (opt-in; pinned notes always shown).
     """
     sql = """
         SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
@@ -463,11 +490,13 @@ def get_entity_detail(
         if desc:
             lines.append(f"**Description:** {desc}")
 
-        events = _parse_history(history)
-        if events:
-            lines += ["", "## Chronologie", ""]
-            for ev in events:
-                lines.append(f"- {ev}")
+        # Chronology — opt-in via show_facts
+        if show_facts:
+            events = _parse_history(history)
+            if events:
+                lines += ["", "## Chronologie", ""]
+                for ev in events:
+                    lines.append(f"- {ev}")
 
         aliases = conn.execute(
             "SELECT alias FROM entity_aliases WHERE entity_id = ?", (eid,)
@@ -530,23 +559,32 @@ def get_entity_detail(
                     lines.append(f"T{t_num:>3}: {bar} ({cnt})")
                 lines.append("```")
 
-        # Mentions (up to 20)
-        mentions = conn.execute("""
-            SELECT m.mention_text, m.context, t.turn_number, s.segment_type
-            FROM entity_mentions m
-            JOIN turn_turns t ON m.turn_id = t.id
-            LEFT JOIN turn_segments s ON m.segment_id = s.id
-            WHERE m.entity_id = ?
-            ORDER BY t.turn_number DESC
-            LIMIT 20
-        """, (eid,)).fetchall()
+        # Mentions (up to 20) — opt-in via show_mentions
+        if show_mentions:
+            mentions = conn.execute("""
+                SELECT m.mention_text, m.context, t.turn_number, s.segment_type
+                FROM entity_mentions m
+                JOIN turn_turns t ON m.turn_id = t.id
+                LEFT JOIN turn_segments s ON m.segment_id = s.id
+                WHERE m.entity_id = ?
+                ORDER BY t.turn_number DESC
+                LIMIT 20
+            """, (eid,)).fetchall()
 
-        if mentions:
-            lines += ["", "## Mentions", ""]
-            for m in mentions:
-                seg_type = f" [{m[3]}]" if m[3] else ""
-                ctx = truncate(m[1], 200) if m[1] else m[0]
-                lines.append(f"- **Turn {m[2]}**{seg_type}: {ctx}")
+            if mentions:
+                lines += ["", "## Mentions", ""]
+                for m in mentions:
+                    seg_type = f" [{m[3]}]" if m[3] else ""
+                    ctx = truncate(m[1], 200) if m[1] else m[0]
+                    lines.append(f"- **Turn {m[2]}**{seg_type}: {ctx}")
+
+        # Notes GM — show_notes or pinned-only
+        all_notes = _get_notes_for(conn, entity_id=eid)
+        if show_notes:
+            lines += _format_notes_section(all_notes)
+        else:
+            pinned = [n for n in all_notes if n.get("pinned")]
+            lines += _format_notes_section(pinned)
 
         lines.append("")
 
@@ -1648,8 +1686,17 @@ def list_subjects(
     return "\n".join(lines)
 
 
-def get_subject_detail(conn: sqlite3.Connection, subject_id: int) -> str:
-    """Return full detail for a single subject: description, options, resolutions."""
+def get_subject_detail(
+    conn: sqlite3.Connection,
+    subject_id: int,
+    show_options: bool = False,
+    show_resolutions: bool = False,
+    show_notes: bool = False,
+) -> str:
+    """Return full detail for a single subject: description, options, resolutions.
+
+    Sections are opt-in to control verbosity. Pinned notes always shown.
+    """
     import json as _json
 
     row = conn.execute(
@@ -1690,39 +1737,49 @@ def get_subject_detail(conn: sqlite3.Connection, subject_id: int) -> str:
     if source_quote:
         lines.append(f"> _{source_quote}_\n")
 
-    # Options
-    options = conn.execute(
-        "SELECT option_number, label, description, is_libre FROM subject_options WHERE subject_id = ? ORDER BY option_number",
-        (subject_id,),
-    ).fetchall()
-    if options:
-        lines.append("### Options proposées")
-        for opt_num, label, opt_desc, is_libre in options:
-            libre_tag = " *(libre)*" if is_libre else ""
-            lines.append(f"{opt_num}. **{label}**{libre_tag}" + (f" — {opt_desc}" if opt_desc else ""))
-        lines.append("")
+    # Options — opt-in via show_options
+    if show_options:
+        options = conn.execute(
+            "SELECT option_number, label, description, is_libre FROM subject_options WHERE subject_id = ? ORDER BY option_number",
+            (subject_id,),
+        ).fetchall()
+        if options:
+            lines.append("### Options proposées")
+            for opt_num, label, opt_desc, is_libre in options:
+                libre_tag = " *(libre)*" if is_libre else ""
+                lines.append(f"{opt_num}. **{label}**{libre_tag}" + (f" — {opt_desc}" if opt_desc else ""))
+            lines.append("")
 
-    # Resolutions
-    resolutions = conn.execute(
-        """
-        SELECT r.resolution_text, r.confidence, r.is_libre,
-               t.turn_number,
-               o.label AS chosen_option
-        FROM subject_resolutions r
-        JOIN turn_turns t ON t.id = r.resolved_by_turn_id
-        LEFT JOIN subject_options o ON o.id = r.chosen_option_id
-        WHERE r.subject_id = ?
-        ORDER BY r.confidence DESC
-        LIMIT 5
-        """,
-        (subject_id,),
-    ).fetchall()
-    if resolutions:
-        lines.append("### Résolutions")
-        for res_text, conf, is_libre, res_turn, chosen_opt in resolutions:
-            conf_pct = f"{int(conf * 100)}%"
-            opt_info = f" (option : {chosen_opt})" if chosen_opt else (" (libre)" if is_libre else "")
-            lines.append(f"- T{res_turn} [{conf_pct}]{opt_info} : {truncate(res_text, 200)}")
+    # Resolutions — opt-in via show_resolutions
+    if show_resolutions:
+        resolutions = conn.execute(
+            """
+            SELECT r.resolution_text, r.confidence, r.is_libre,
+                   t.turn_number,
+                   o.label AS chosen_option
+            FROM subject_resolutions r
+            JOIN turn_turns t ON t.id = r.resolved_by_turn_id
+            LEFT JOIN subject_options o ON o.id = r.chosen_option_id
+            WHERE r.subject_id = ?
+            ORDER BY r.confidence DESC
+            LIMIT 5
+            """,
+            (subject_id,),
+        ).fetchall()
+        if resolutions:
+            lines.append("### Résolutions")
+            for res_text, conf, is_libre, res_turn, chosen_opt in resolutions:
+                conf_pct = f"{int(conf * 100)}%"
+                opt_info = f" (option : {chosen_opt})" if chosen_opt else (" (libre)" if is_libre else "")
+                lines.append(f"- T{res_turn} [{conf_pct}]{opt_info} : {truncate(res_text, 200)}")
+
+    # Notes GM — show_notes or pinned-only
+    all_notes = _get_notes_for(conn, subject_id=sid)
+    if show_notes:
+        lines += _format_notes_section(all_notes)
+    else:
+        pinned = [n for n in all_notes if n.get("pinned")]
+        lines += _format_notes_section(pinned)
 
     return "\n".join(lines)
 
@@ -1776,13 +1833,273 @@ def get_entities_by_tag(
     return "\n".join(lines)
 
 
+def _get_notes_for(
+    conn: sqlite3.Connection,
+    entity_id: int | None = None,
+    subject_id: int | None = None,
+    turn_id: int | None = None,
+    civ_id: int | None = None,
+    note_type: str = "gm",
+) -> list[dict]:
+    """Return notes attached to the given entity/subject/turn/civ.
+
+    note_type filters by type ('gm' default, 'agent' for system prompt notes).
+    """
+    conditions, params = [], []
+    if entity_id is not None:
+        conditions.append("entity_id = ?")
+        params.append(entity_id)
+    if subject_id is not None:
+        conditions.append("subject_id = ?")
+        params.append(subject_id)
+    if turn_id is not None:
+        conditions.append("turn_id = ?")
+        params.append(turn_id)
+    if civ_id is not None:
+        conditions.append("civ_id = ?")
+        params.append(civ_id)
+    if not conditions:
+        return []
+    where = " OR ".join(conditions)
+    try:
+        rows = conn.execute(
+            f"""SELECT id, title, content, created_at,
+                       COALESCE(pinned, 0) AS pinned
+                FROM notes
+                WHERE ({where})
+                  AND COALESCE(note_type, 'gm') = ?
+                ORDER BY pinned DESC, created_at DESC""",
+            [*params, note_type],
+        ).fetchall()
+    except Exception:
+        return []  # notes table may not exist on older DBs
+    return [
+        {"id": r[0], "title": r[1], "content": r[2], "created_at": r[3], "pinned": r[4]}
+        for r in rows
+    ]
+
+
+def _format_notes_section(notes: list[dict]) -> list[str]:
+    """Format notes as Markdown lines to append to any tool response.
+
+    Pinned notes are prefixed with [IMPORTANT].
+    """
+    if not notes:
+        return []
+    lines = ["", "## Notes GM", ""]
+    for n in notes:
+        title = n["title"] or "(sans titre)"
+        prefix = "[IMPORTANT] " if n.get("pinned") else ""
+        lines.append(f"### {prefix}{title}")
+        if n["content"]:
+            lines.append(n["content"])
+        lines.append(f"_Ajouté le {n['created_at'][:10]}_")
+        lines.append("")
+    return lines
+
+
+def get_notes(
+    conn: sqlite3.Connection,
+    entity_name: str | None = None,
+    subject_id: int | None = None,
+    turn_number: int | None = None,
+    civ_id: int | None = None,
+) -> str:
+    """Return all notes attached to an entity, subject, or turn."""
+    lines: list[str] = []
+
+    if entity_name:
+        entities = _resolve_entity(conn, entity_name, civ_id)
+        for ent in entities:
+            notes = _get_notes_for(conn, entity_id=ent["id"])
+            lines.append(f"# Notes — {ent['name']} ({ent['type']})")
+            lines += _format_notes_section(notes) if notes else ["", "_Aucune note._"]
+            lines.append("")
+
+    if subject_id is not None:
+        notes = _get_notes_for(conn, subject_id=subject_id)
+        lines.append(f"# Notes — Sujet #{subject_id}")
+        lines += _format_notes_section(notes) if notes else ["", "_Aucune note._"]
+
+    if turn_number is not None:
+        # Resolve turn_id
+        where = "WHERE turn_number = ?"
+        params: list = [turn_number]
+        if civ_id is not None:
+            where += " AND civ_id = ?"
+            params.append(civ_id)
+        turn_row = conn.execute(
+            f"SELECT id, civ_id FROM turn_turns {where} LIMIT 1", params
+        ).fetchone()
+        if turn_row:
+            notes = _get_notes_for(conn, turn_id=turn_row[0])
+            lines.append(f"# Notes — Tour {turn_number}")
+            lines += _format_notes_section(notes) if notes else ["", "_Aucune note._"]
+        else:
+            lines.append(f"Tour {turn_number} introuvable.")
+
+    # Civ-level notes (when civName is provided but no entity/subject/turn)
+    if civ_id is not None and not entity_name and subject_id is None and turn_number is None:
+        notes = _get_notes_for(conn, civ_id=civ_id)
+        civ_name = conn.execute(
+            "SELECT name FROM civ_civilizations WHERE id = ?", [civ_id]
+        ).fetchone()
+        label = civ_name[0] if civ_name else f"Civ #{civ_id}"
+        lines.append(f"# Notes — {label}")
+        lines += _format_notes_section(notes) if notes else ["", "_Aucune note._"]
+
+    if not lines:
+        return "Préciser entityName, subjectId, turnNumber ou civName."
+
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Sub-agent: deepExplore
+# --------------------------------------------------------------------------- #
+
+# Tools allowed for the sub-agent — read-only exploration subset
+_DEEP_EXPLORE_TOOLS = {
+    "searchLore", "getEntityDetail", "getSubjectDetail",
+    "timeline", "getTurnDetail", "searchTurnContent",
+    "listSubjects", "getNotes", "listCivs",
+}
+
+_DEEP_EXPLORE_SYSTEM = """\
+Tu es un sous-agent de recherche pour Aurelm. Ta mission est de repondre a une question \
+en utilisant les outils de la base de donnees du JDR. Enchaine les recherches necessaires \
+(searchLore -> getEntityDetail, timeline -> getTurnDetail, etc.) pour construire une \
+reponse complete et sourcee. Cite toujours les tours et entites sources. Reponds en francais.
+
+IMPORTANT: Tu as un nombre limite d'appels outils. Sois efficace -- ne demande que ce qui \
+est strictement necessaire. Des que tu as assez d'info, reponds immediatement sans \
+faire d'appels supplementaires. Privilegle searchLore (apercu) avant getEntityDetail (detail)."""
+
+
+def _estimate_tokens(messages: list) -> int:
+    """Rough token estimate for the sub-agent conversation (~4 chars per token)."""
+    total = 0
+    for msg in messages:
+        if isinstance(msg.get("content"), str):
+            total += len(msg["content"]) // 4
+        elif isinstance(msg.get("content"), list):
+            for block in msg["content"]:
+                if isinstance(block, dict):
+                    # tool_result or text block
+                    text = block.get("content") or block.get("text") or ""
+                    total += len(text) // 4
+                elif hasattr(block, "text"):
+                    total += len(block.text) // 4
+    return total
+
+
+# Budget tokens max pour le sous-agent (au-dela, on injecte un message de conclusion)
+_DEEP_EXPLORE_TOKEN_BUDGET = 60_000
+
+
+def deep_explore(
+    conn: sqlite3.Connection,
+    question: str,
+    context: str | None = None,
+    db_path: str | None = None,
+    anthropic_client=None,
+    proxy: str | None = None,
+) -> str:
+    """Run a sub-agent that chains multiple tool calls to answer a complex question.
+
+    No round limit — runs until the agent finishes or token budget (~60k) is exhausted.
+    Uses Anthropic Claude if client available, otherwise returns a simple searchLore result.
+    """
+    # Build the sub-agent tool definitions (only the exploration subset)
+    from .tool_definitions import TOOL_DEFINITIONS
+    sub_tools = [
+        {"name": t["name"], "description": t["description"], "input_schema": t["input_schema"]}
+        for t in TOOL_DEFINITIONS
+        if t["name"] in _DEEP_EXPLORE_TOOLS
+    ]
+
+    user_msg = question
+    if context:
+        user_msg = f"{question}\n\nContexte: {context}"
+
+    # If no Anthropic client, fall back to a single searchLore call
+    if anthropic_client is None:
+        return f"(deepExplore sans backend Claude -- reponse directe)\n\n" + dispatch_tool(
+            conn, "searchLore", {"query": question}
+        )
+
+    messages = [{"role": "user", "content": user_msg}]
+    budget_warning_sent = False
+
+    while True:
+        # Check token budget before each API call
+        estimated_tokens = _estimate_tokens(messages)
+        if estimated_tokens > _DEEP_EXPLORE_TOKEN_BUDGET and not budget_warning_sent:
+            # Inject a conclusion prompt — budget almost exhausted
+            messages.append({"role": "user", "content": [
+                {"type": "text", "text":
+                 "[SYSTEME] Budget tokens presque epuise. "
+                 "Conclus ta recherche MAINTENANT avec les informations collectees. "
+                 "Ne lance plus d'outils -- redige ta reponse finale."}
+            ]})
+            budget_warning_sent = True
+
+        response = anthropic_client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            system=_DEEP_EXPLORE_SYSTEM,
+            tools=sub_tools,
+            messages=messages,
+        )
+
+        if response.stop_reason == "tool_use" and not budget_warning_sent:
+            tool_results = []
+            for block in response.content:
+                if block.type == "tool_use":
+                    # Execute tool against the DB
+                    tool_conn = sqlite3.connect(db_path) if db_path else conn
+                    try:
+                        tool_conn.execute("PRAGMA foreign_keys = ON")
+                        result = dispatch_tool(tool_conn, block.name, block.input)
+                    except Exception as exc:
+                        result = f"Error: {exc}"
+                    finally:
+                        if db_path and tool_conn is not conn:
+                            tool_conn.close()
+
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result,
+                    })
+
+            messages.append({"role": "assistant", "content": response.content})
+            messages.append({"role": "user", "content": tool_results})
+            continue
+
+        # Final text response (or forced conclusion after budget warning)
+        text_parts = [b.text for b in response.content if hasattr(b, "text")]
+        return "\n".join(text_parts) if text_parts else "(Pas de reponse du sous-agent.)"
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
 
 
-def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) -> str:
-    """Route a tool call to the appropriate function. Returns Markdown string."""
+def dispatch_tool(
+    conn: sqlite3.Connection,
+    tool_name: str,
+    tool_input: dict,
+    *,
+    db_path: str | None = None,
+    anthropic_client=None,
+    proxy: str | None = None,
+) -> str:
+    """Route a tool call to the appropriate function. Returns Markdown string.
+
+    Extra kwargs (db_path, anthropic_client, proxy) are only needed for deepExplore.
+    """
     tool_input = _clean_input(tool_input)
 
     def _resolve(name_key: str = "civName") -> dict | None:
@@ -1815,7 +2132,12 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
         turn_number = tool_input.get("turnNumber")
         if turn_number is None:
             return "Error: turnNumber is required."
-        return get_turn_detail(conn, int(turn_number), resolved["id"], resolved["name"])
+        return get_turn_detail(
+            conn, int(turn_number), resolved["id"], resolved["name"],
+            show_segments=bool(tool_input.get("showSegments")),
+            show_entities=bool(tool_input.get("showEntities")),
+            show_notes=bool(tool_input.get("showNotes")),
+        )
 
     if tool_name == "searchLore":
         civ_id = None
@@ -1849,7 +2171,10 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             entity_name,
             civ_id=civ_id,
             include_relations=bool(tool_input.get("relations")),
-            include_activity=bool(tool_input.get("activity")),
+            include_activity=bool(tool_input.get("activity") or tool_input.get("showTimeline")),
+            show_mentions=bool(tool_input.get("showMentions")),
+            show_facts=bool(tool_input.get("showFacts")),
+            show_notes=bool(tool_input.get("showNotes")),
         )
 
     if tool_name == "sanityCheck":
@@ -2031,11 +2356,33 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             limit=int(tool_input.get("limit") or 50),
         )
 
+    if tool_name == "getNotes":
+        civ_id = None
+        civ_name_str = tool_input.get("civName")
+        if civ_name_str:
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        subject_id_raw = tool_input.get("subjectId")
+        turn_number_raw = tool_input.get("turnNumber")
+        return get_notes(
+            conn,
+            entity_name=tool_input.get("entityName"),
+            subject_id=int(subject_id_raw) if subject_id_raw is not None else None,
+            turn_number=int(turn_number_raw) if turn_number_raw is not None else None,
+            civ_id=civ_id,
+        )
+
     if tool_name == "getSubjectDetail":
         subject_id = tool_input.get("subjectId")
         if subject_id is None:
             return "Error: subjectId is required."
-        return get_subject_detail(conn, int(subject_id))
+        return get_subject_detail(
+            conn, int(subject_id),
+            show_options=bool(tool_input.get("showOptions")),
+            show_resolutions=bool(tool_input.get("showResolutions")),
+            show_notes=bool(tool_input.get("showNotes")),
+        )
 
     if tool_name == "getEntitiesByTag":
         tag = tool_input.get("tag")
@@ -2048,6 +2395,19 @@ def dispatch_tool(conn: sqlite3.Connection, tool_name: str, tool_input: dict) ->
             tag=tag,
             civ_id=civ_id,
             entity_type=tool_input.get("entityType"),
+        )
+
+    if tool_name == "deepExplore":
+        question = tool_input.get("question", "")
+        if not question:
+            return "Error: question is required."
+        return deep_explore(
+            conn,
+            question=question,
+            context=tool_input.get("context"),
+            db_path=db_path,
+            anthropic_client=anthropic_client,
+            proxy=proxy,
         )
 
     return f"Unknown tool: {tool_name}"

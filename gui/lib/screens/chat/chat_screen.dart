@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +11,11 @@ import '../../providers/chat_provider.dart';
 import '../../providers/bot_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/chat_sessions_provider.dart';
+import '../../providers/lore_links_provider.dart';
+import '../../providers/side_panel_provider.dart';
 import '../../services/chat_sessions_service.dart';
+import '../../utils/lore_linker.dart';
+import '../../widgets/common/side_panel.dart';
 
 /// Full-page chat interface for the Aurelm AI agent.
 class ChatScreen extends ConsumerStatefulWidget {
@@ -378,6 +383,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ],
             ),
           ),
+          // Token usage — context size / max budget
+          if (chatState.inputTokens > 0)
+            _TokenUsageBadge(
+              contextTokens: chatState.inputTokens,
+              maxTokens: 60000,
+            ),
           // New conversation button
           IconButton(
             icon: const Icon(Icons.add_comment_outlined),
@@ -392,71 +403,283 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Row(
         children: [
-          // Message list + queued messages
+          // Chat column — takes remaining space
           Expanded(
-            child: (chatState.messages.isEmpty &&
-                    chatState.messageQueue.isEmpty)
-                ? _EmptyState(isOnline: isOnline)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    // Regular messages + optional fused queue bubble
-                    itemCount: chatState.messages.length +
-                        (chatState.messageQueue.isNotEmpty ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index < chatState.messages.length) {
-                        return _MessageBubble(
-                            message: chatState.messages[index]);
-                      }
-                      // All queued messages fused into a single faded bubble
-                      return _QueuedMessageBubble(
-                        text: chatState.messageQueue.join('\n'),
-                        onCancel: () =>
-                            ref.read(chatProvider.notifier).cancelLast(),
-                      );
-                    },
+            child: Column(
+              children: [
+                // Message list + queued messages
+                Expanded(
+                  child: (chatState.messages.isEmpty &&
+                          chatState.messageQueue.isEmpty)
+                      ? _EmptyState(isOnline: isOnline)
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          // Regular messages + optional fused queue bubble
+                          itemCount: chatState.messages.length +
+                              (chatState.messageQueue.isNotEmpty ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index < chatState.messages.length) {
+                              return _MessageBubble(
+                                  message: chatState.messages[index]);
+                            }
+                            // All queued messages fused into a single faded bubble
+                            return _QueuedMessageBubble(
+                              text: chatState.messageQueue.join('\n'),
+                              onCancel: () =>
+                                  ref.read(chatProvider.notifier).cancelLast(),
+                            );
+                          },
+                        ),
+                ),
+
+                // Pending tool calls (shown with spinner as tools execute)
+                if (chatState.pendingTools.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: chatState.pendingTools
+                          .map((p) => _PendingToolChip(pending: p))
+                          .toList(),
+                    ),
                   ),
-          ),
 
-          // Pending tool calls (shown with spinner as tools execute)
-          if (chatState.pendingTools.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: chatState.pendingTools
-                    .map((p) => _PendingToolChip(pending: p))
-                    .toList(),
-              ),
+                // Loading indicator
+                if (chatState.loading)
+                  const LinearProgressIndicator(minHeight: 2),
+
+                // Error banner
+                if (chatState.error != null)
+                  _ErrorBanner(
+                    error: chatState.error!,
+                    onDismiss: () =>
+                        ref.read(chatProvider.notifier).newSession(),
+                  ),
+
+                // Input bar
+                _InputBar(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: isOnline,
+                  onSend: _send,
+                  onPickFile: _pickFile,
+                  attachments: _attachments,
+                  onRemoveAttachment: (i) => setState(() => _attachments.removeAt(i)),
+                ),
+              ],
             ),
-
-          // Loading indicator
-          if (chatState.loading)
-            const LinearProgressIndicator(minHeight: 2),
-
-          // Error banner
-          if (chatState.error != null)
-            _ErrorBanner(
-              error: chatState.error!,
-              onDismiss: () =>
-                  ref.read(chatProvider.notifier).newSession(),
-            ),
-
-          // Input bar
-          _InputBar(
-            controller: _controller,
-            focusNode: _focusNode,
-            enabled: isOnline,
-            onSend: _send,
-            onPickFile: _pickFile,
-            attachments: _attachments,
-            onRemoveAttachment: (i) => setState(() => _attachments.removeAt(i)),
           ),
+          // Side panel — lore detail views (max 40% width, 3 slots) on RIGHT
+          const SidePanel(),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message segment parser — splits user messages into text and file parts
+// ---------------------------------------------------------------------------
+
+/// Represents a segment of a user message: either plain text or an attached file.
+sealed class _MessageSegment {}
+
+class _TextSegment extends _MessageSegment {
+  final String text;
+  _TextSegment(this.text);
+}
+
+class _FileSegment extends _MessageSegment {
+  final String filename;
+  final String content;
+  _FileSegment(this.filename, this.content);
+}
+
+/// Parse a message string into alternating text/file segments.
+/// Files are delimited by `[Fichier: name]\ncontent` blocks.
+List<_MessageSegment> _parseMessageSegments(String message) {
+  final segments = <_MessageSegment>[];
+  final pattern = RegExp(r'\[Fichier: ([^\]]+)\]\n');
+  int cursor = 0;
+
+  for (final match in pattern.allMatches(message)) {
+    // Text before this file marker
+    if (match.start > cursor) {
+      final text = message.substring(cursor, match.start).trim();
+      if (text.isNotEmpty) segments.add(_TextSegment(text));
+    }
+
+    final filename = match.group(1)!;
+    // File content runs from end of marker to next marker or end of string
+    final contentStart = match.end;
+    // Look for next file marker to delimit content
+    final nextMatch = pattern.firstMatch(message.substring(contentStart));
+    final contentEnd = nextMatch != null
+        ? contentStart + nextMatch.start
+        : message.length;
+    // Trim trailing whitespace between file blocks
+    final content = message.substring(contentStart, contentEnd).trimRight();
+    segments.add(_FileSegment(filename, content));
+    cursor = contentEnd;
+  }
+
+  // Trailing text after last file
+  if (cursor < message.length) {
+    final text = message.substring(cursor).trim();
+    if (text.isNotEmpty) segments.add(_TextSegment(text));
+  }
+
+  return segments;
+}
+
+/// Pick an icon based on file extension.
+IconData _fileIcon(String filename) {
+  final ext = filename.contains('.') ? filename.split('.').last.toLowerCase() : '';
+  return switch (ext) {
+    'py' || 'dart' => Icons.code,
+    'ts' || 'js' => Icons.javascript,
+    'json' => Icons.data_object,
+    'sql' => Icons.storage,
+    'md' => Icons.description,
+    'csv' => Icons.table_chart,
+    'txt' => Icons.text_snippet,
+    _ => Icons.insert_drive_file,
+  };
+}
+
+/// Build user message content with file cards when attachments are present.
+Widget _buildUserContent(String content, ColorScheme colorScheme) {
+  final segments = _parseMessageSegments(content);
+
+  // Fast path: single text segment = plain message, no overhead
+  if (segments.length == 1 && segments.first is _TextSegment) {
+    return Text(
+      (segments.first as _TextSegment).text,
+      style: TextStyle(color: colorScheme.onPrimary),
+    );
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: segments.map((seg) {
+      if (seg is _TextSegment) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            seg.text,
+            style: TextStyle(color: colorScheme.onPrimary),
+          ),
+        );
+      }
+      final file = seg as _FileSegment;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: _FileCard(filename: file.filename, content: file.content),
+      );
+    }).toList(),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// File card — collapsible, shown inside user bubbles for attached files
+// ---------------------------------------------------------------------------
+
+class _FileCard extends StatefulWidget {
+  final String filename;
+  final String content;
+
+  const _FileCard({required this.filename, required this.content});
+
+  @override
+  State<_FileCard> createState() => _FileCardState();
+}
+
+class _FileCardState extends State<_FileCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    // Human-readable size label
+    final chars = widget.content.length;
+    final sizeLabel = chars >= 1024
+        ? '${(chars / 1024).toStringAsFixed(1)} KB'
+        : '$chars chars';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.secondary.withValues(alpha: 0.5),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(_fileIcon(widget.filename),
+                      size: 14, color: colorScheme.secondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      widget.filename,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    sizeLabel,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+              if (_expanded) ...[
+                const Divider(height: 10, thickness: 0.5),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      widget.content,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -466,15 +689,107 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 // Message bubble
 // ---------------------------------------------------------------------------
 
-class _MessageBubble extends StatelessWidget {
+class _MessageBubble extends ConsumerWidget {
   final ChatMessage message;
 
   const _MessageBubble({required this.message});
 
+  /// Handle taps on lore:// links — open in the side panel.
+  /// For turns with multiple civs (lore://turn/-turnNumber), show a civ picker.
+  void _onTapLoreLink(BuildContext context, WidgetRef ref, String href) {
+    final uri = Uri.tryParse(href);
+    if (uri == null || uri.scheme != 'lore') return;
+
+    final rawId = int.tryParse(uri.pathSegments.lastOrNull ?? '');
+    if (rawId == null) return;
+
+    final type = switch (uri.host) {
+      'entity' => LoreLinkType.entity,
+      'civ' => LoreLinkType.civ,
+      'subject' => LoreLinkType.subject,
+      'turn' => LoreLinkType.turn,
+      _ => null,
+    };
+    if (type == null) return;
+
+    // Turn with negative ID = ambiguous turn number, needs civ picker
+    if (type == LoreLinkType.turn && rawId < 0) {
+      _showTurnCivPicker(context, ref, -rawId);
+      return;
+    }
+
+    ref.read(sidePanelProvider.notifier).open(
+          SidePanelItem(type: type, id: rawId),
+        );
+  }
+
+  /// Show a dialog to pick which civ's turn to open when multiple civs have
+  /// the same turn number.
+  void _showTurnCivPicker(
+      BuildContext context, WidgetRef ref, int turnNumber) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+
+    // Find all turns with this turn_number across civs
+    final rows = await db.customSelect(
+      '''
+      SELECT t.id, t.turn_number, c.id AS civ_id, c.name AS civ_name
+      FROM turn_turns t
+      JOIN civ_civilizations c ON c.id = t.civ_id
+      WHERE t.turn_number = ?
+      ORDER BY c.name
+      ''',
+      variables: [Variable<int>(turnNumber)],
+      readsFrom: {db.turnTurns, db.civCivilizations},
+    ).get();
+
+    if (rows.isEmpty) return;
+
+    // Only one civ — open directly
+    if (rows.length == 1) {
+      ref.read(sidePanelProvider.notifier).open(
+            SidePanelItem(
+              type: LoreLinkType.turn,
+              id: rows.first.read<int>('id'),
+            ),
+          );
+      return;
+    }
+
+    // Multiple civs — show picker dialog
+    if (!context.mounted) return;
+    final chosen = await showDialog<int>(
+      context: context,
+      builder: (dCtx) => SimpleDialog(
+        title: Text('Tour $turnNumber - quelle civilisation ?'),
+        children: rows.map((r) {
+          final turnId = r.read<int>('id');
+          final civName = r.read<String>('civ_name');
+          return SimpleDialogOption(
+            onPressed: () => Navigator.of(dCtx).pop(turnId),
+            child: Text(civName),
+          );
+        }).toList(),
+      ),
+    );
+
+    if (chosen != null) {
+      ref.read(sidePanelProvider.notifier).open(
+            SidePanelItem(type: LoreLinkType.turn, id: chosen),
+          );
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isUser = message.role == ChatRole.user;
     final colorScheme = Theme.of(context).colorScheme;
+
+    // For assistant messages, inject lore hyperlinks (cached by provider)
+    String displayContent = message.content;
+    if (!isUser && displayContent.isNotEmpty) {
+      displayContent = ref.watch(loreLinkTextProvider(displayContent));
+    }
 
     final bubble = Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -496,18 +811,20 @@ class _MessageBubble extends StatelessWidget {
           ),
         ),
         child: isUser
-            ? Text(
-                message.content,
-                style: TextStyle(color: colorScheme.onPrimary),
-              )
+            ? _buildUserContent(message.content, colorScheme)
             : MarkdownBody(
-                data: message.content,
+                data: displayContent,
                 styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))
                     .copyWith(
                   p: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface,
                       ),
                 ),
+                onTapLink: (_, href, __) {
+                  if (href != null && href.startsWith('lore://')) {
+                    _onTapLoreLink(context, ref, href);
+                  }
+                },
               ),
       ),
     );
@@ -785,10 +1102,7 @@ class _QueuedMessageBubble extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Flexible(
-                child: Text(
-                  text,
-                  style: TextStyle(color: colorScheme.onPrimary),
-                ),
+                child: _buildUserContent(text, colorScheme),
               ),
               // ✕ removes the last line from the queue (Escape equivalent)
               const SizedBox(width: 8),
@@ -1067,6 +1381,63 @@ class _ErrorBanner extends StatelessWidget {
             onPressed: onDismiss,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Token usage badge — context tokens / max budget, shown in AppBar
+// ---------------------------------------------------------------------------
+
+class _TokenUsageBadge extends StatelessWidget {
+  final int contextTokens;
+  final int maxTokens;
+
+  const _TokenUsageBadge({
+    required this.contextTokens,
+    required this.maxTokens,
+  });
+
+  /// Format token count: 1234 -> "1.2k", 56789 -> "56.8k"
+  static String _fmt(int tokens) {
+    if (tokens < 1000) return '$tokens';
+    return '${(tokens / 1000).toStringAsFixed(1)}k';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final ratio = contextTokens / maxTokens;
+
+    // Color shifts as context fills up: green -> amber -> red
+    final Color barColor;
+    if (ratio < 0.5) {
+      barColor = Colors.green;
+    } else if (ratio < 0.8) {
+      barColor = Colors.amber;
+    } else {
+      barColor = colorScheme.error;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Tooltip(
+        message: 'Contexte: $contextTokens / $maxTokens tokens',
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.token, size: 14, color: barColor),
+            const SizedBox(width: 4),
+            Text(
+              '${_fmt(contextTokens)} / ${_fmt(maxTokens)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: barColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

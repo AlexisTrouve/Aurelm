@@ -9,8 +9,6 @@ import '../../widgets/common/error_view.dart';
 import '../../widgets/common/empty_state.dart';
 import 'widgets/civ_summary_card.dart';
 import 'widgets/pipeline_status_card.dart';
-import 'widgets/quick_search_bar.dart';
-
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -37,12 +35,6 @@ class DashboardScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
         title: const Text('Dashboard'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: SizedBox(width: 300, child: QuickSearchBar()),
-          ),
-        ],
       ),
       body: civs.when(
         loading: () => const LoadingIndicator(message: 'Loading civilizations...'),

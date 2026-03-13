@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/database.dart';
 import '../../providers/turn_provider.dart';
 import '../../providers/entity_provider.dart';
+import '../../utils/lore_linker.dart';
 import '../../widgets/common/entity_type_icon.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
@@ -72,7 +73,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   void _scrollToFirstMatch(
       String query, List<({GlobalKey key, String text})> blocks) {
     if (query.isEmpty) return;
-    final regex = _fuzzyRegex(query);
+    final regex = fuzzyRegex(query);
     for (final block in blocks) {
       if (regex.hasMatch(block.text)) {
         final ctx = block.key.currentContext;
@@ -107,7 +108,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   /// Count all non-overlapping fuzzy matches of [query] in [text].
   int _countMatches(String text, String query) {
     if (query.isEmpty) return 0;
-    return _fuzzyRegex(query).allMatches(text).length;
+    return fuzzyRegex(query).allMatches(text).length;
   }
 
   @override
@@ -545,27 +546,7 @@ class _TurnEntitiesSection extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Fuzzy match helper — space/hyphen interchangeable, optional plural on last word
-// "Sans ciel" matches "sans-ciels", "sans ciels", "Sans-Ciel", etc.
-// ---------------------------------------------------------------------------
-
-RegExp _fuzzyRegex(String query) {
-  final words = query
-      .trim()
-      .split(RegExp(r'[\s\-]+'))
-      .where((w) => w.isNotEmpty)
-      .toList();
-  if (words.isEmpty) return RegExp(RegExp.escape(query), caseSensitive: false);
-  final pattern = [
-    for (int i = 0; i < words.length; i++)
-      // Last word gets optional plural 's' — handles "sans-ciels" for query "sans ciel"
-      i == words.length - 1
-          ? '${RegExp.escape(words[i])}s?'
-          : RegExp.escape(words[i]),
-  ].join(r'[\s\-]+');
-  return RegExp(pattern, caseSensitive: false);
-}
+// fuzzyRegex() moved to lore_linker.dart — imported as fuzzyRegex()
 
 // ---------------------------------------------------------------------------
 // MD-aware text — renders Markdown when no search, highlights when searching
@@ -588,33 +569,21 @@ class _SearchableText extends StatelessWidget {
     this.entityLinks = const {},
   });
 
-  /// Replace entity names in text with Markdown links [name](/entities/id).
-  /// Names sorted by length desc so "Argile Vivante" matches before "Argile".
-  /// Skips names shorter than 4 chars to avoid noise.
-  /// Avoids replacing text already inside a Markdown link [...](...)
+  /// Build a LoreLink map from the entity name->id map and delegate to injectLoreLinks().
   String _injectEntityLinks(String text) {
     if (entityLinks.isEmpty) return text;
 
-    // Sort by name length descending — longest match wins
-    final sorted = entityLinks.entries
-        .where((e) => e.key.length >= 4)
-        .toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
+    // Convert entityLinks (name->id) to a LoreLink map sorted by length desc
+    final loreLinkMap = Map.fromEntries(
+      entityLinks.entries
+          .toList()
+        ..sort((a, b) => b.key.length.compareTo(a.key.length)),
+    ).map((name, id) => MapEntry(
+          name,
+          LoreLink(id: id, type: LoreLinkType.entity, route: '/entities/$id'),
+        ));
 
-    String result = text;
-    for (final entry in sorted) {
-      final escaped = RegExp.escape(entry.key);
-      // Match the name case-insensitively, not already inside [...](...)
-      final regex = RegExp(escaped, caseSensitive: false);
-      // Replace only occurrences not already inside a Markdown link
-      result = result.replaceAllMapped(regex, (match) {
-        final start = match.start;
-        // Check if preceded by '[' (already a link label) — skip
-        if (start > 0 && result[start - 1] == '[') return match.group(0)!;
-        return '[${match.group(0)}](/entities/${entry.value})';
-      });
-    }
-    return result;
+    return injectLoreLinks(text, loreLinkMap);
   }
 
   @override
@@ -629,7 +598,7 @@ class _SearchableText extends StatelessWidget {
           .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
           .replaceAll(RegExp(r'#{1,6}\s+'), '')
           .replaceAll(RegExp(r'!\[.*?\]\(.*?\)'), '');
-      final regex = _fuzzyRegex(query);
+      final regex = fuzzyRegex(query);
       final spans = <TextSpan>[];
       int start = 0;
       for (final match in regex.allMatches(plain)) {
@@ -658,7 +627,23 @@ class _SearchableText extends StatelessWidget {
       selectable: true,
       styleSheet: sheet,
       onTapLink: (_, href, __) {
-        if (href != null && href.startsWith('/entities/')) {
+        if (href == null) return;
+        // Handle lore:// links (from injectLoreLinks) — extract the route
+        if (href.startsWith('lore://')) {
+          final uri = Uri.tryParse(href);
+          if (uri == null) return;
+          final id = int.tryParse(uri.pathSegments.lastOrNull ?? '');
+          if (id == null) return;
+          // Map lore type to route prefix
+          final route = switch (uri.host) {
+            'entity' => '/entities/$id',
+            'civ' => '/civs/$id',
+            'subject' => '/subjects/$id',
+            'turn' => '/turns/$id',
+            _ => null,
+          };
+          if (route != null) context.push(route);
+        } else if (href.startsWith('/')) {
           context.push(href);
         }
       },

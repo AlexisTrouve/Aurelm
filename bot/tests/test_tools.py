@@ -9,6 +9,8 @@ from bot.tools import (
     get_turn_detail,
     search_lore,
     get_entity_detail,
+    get_subject_detail,
+    get_notes,
     sanity_check,
     timeline,
     compare_civs,
@@ -176,7 +178,7 @@ class TestCompareCivs:
 
 class TestGetEntityDetail:
     def test_returns_details(self, db):
-        result = get_entity_detail(db, "Argile")
+        result = get_entity_detail(db, "Argile", show_mentions=True, show_facts=True)
         assert "Argile Vivante" in result
         assert "living clay" in result
         assert "argile" in result
@@ -199,7 +201,8 @@ class TestGetEntityDetail:
 
 class TestGetTurnDetail:
     def test_returns_detail(self, db):
-        result = get_turn_detail(db, 1, 1, "Civilisation de la Confluence")
+        result = get_turn_detail(db, 1, 1, "Civilisation de la Confluence",
+                                 show_segments=True, show_entities=True)
         assert "Fondation" in result
         assert "narrative" in result
         assert "description" in result
@@ -480,7 +483,7 @@ class TestParseHistoryNoneFilter:
             "UPDATE entity_entities SET history = '[null, \"Fondation de la cite\"]' WHERE id = 2"
         )
         db.commit()
-        result = get_entity_detail(db, "Caste de l Air", 1)
+        result = get_entity_detail(db, "Caste de l Air", 1, show_facts=True)
         assert "- None" not in result, (
             "history null entry was converted to the literal string 'None'"
         )
@@ -491,7 +494,7 @@ class TestParseHistoryNoneFilter:
             "UPDATE entity_entities SET history = '[null, \"Fondation de la cite\"]' WHERE id = 2"
         )
         db.commit()
-        result = get_entity_detail(db, "Caste de l Air", 1)
+        result = get_entity_detail(db, "Caste de l Air", 1, show_facts=True)
         assert "Fondation de la cite" in result
 
 
@@ -742,3 +745,74 @@ class TestCleanInputEmptyString:
             raise AssertionError(
                 f"dispatch_tool('searchLore', query='') crashed with AttributeError: {e}"
             ) from e
+
+
+# --------------------------------------------------------------------------- #
+# Granular tool params — opt-in sections
+# --------------------------------------------------------------------------- #
+
+class TestGranularParams:
+    """Verify that opt-in sections are excluded by default and included when requested."""
+
+    def test_turn_detail_compact_by_default(self, db):
+        """Without show_* flags, segments and entities are excluded."""
+        result = get_turn_detail(db, 1, 1, "Civilisation de la Confluence")
+        assert "Fondation" in result  # title/summary always present
+        assert "## Segments" not in result
+        assert "## Entities Mentioned" not in result
+
+    def test_turn_detail_with_segments(self, db):
+        result = get_turn_detail(db, 1, 1, "Civilisation de la Confluence",
+                                 show_segments=True)
+        assert "## Segments" in result
+        assert "narrative" in result
+
+    def test_entity_detail_compact_by_default(self, db):
+        """Without show_* flags, mentions and chronology are excluded."""
+        result = get_entity_detail(db, "Argile Vivante")
+        assert "Argile Vivante" in result
+        assert "## Mentions" not in result
+        assert "## Chronologie" not in result
+
+    def test_entity_detail_with_mentions(self, db):
+        result = get_entity_detail(db, "Argile Vivante", show_mentions=True)
+        assert "## Mentions" in result
+
+    def test_entity_detail_with_facts(self, db):
+        result = get_entity_detail(db, "Argile Vivante", show_facts=True)
+        assert "Chronologie" in result or "Decouverte" in result
+
+
+# --------------------------------------------------------------------------- #
+# Notes — pinned + note_type filtering
+# --------------------------------------------------------------------------- #
+
+class TestNotes:
+    """Test notes with pinned flag and note_type filtering."""
+
+    def test_pinned_notes_shown_even_without_show_notes(self, db):
+        """Pinned notes should appear in entity detail even without show_notes."""
+        result = get_entity_detail(db, "Argile Vivante")
+        # Pinned note "Propriete speciale" should appear
+        assert "[IMPORTANT]" in result
+        assert "Propriete speciale" in result
+        # Non-pinned note "Usage militaire" should NOT appear
+        assert "Usage militaire" not in result
+
+    def test_all_notes_shown_with_show_notes(self, db):
+        """With show_notes=True, all notes should appear."""
+        result = get_entity_detail(db, "Argile Vivante", show_notes=True)
+        assert "Propriete speciale" in result
+        assert "Usage militaire" in result
+
+    def test_get_notes_returns_gm_notes(self, db):
+        """get_notes tool returns GM notes only (not agent notes)."""
+        result = get_notes(db, entity_name="Argile Vivante")
+        assert "Propriete speciale" in result
+        assert "Regle maison" not in result  # agent note excluded
+
+    def test_dispatch_deep_explore_without_anthropic(self, db):
+        """deepExplore without Anthropic client falls back to searchLore."""
+        result = dispatch_tool(db, "deepExplore", {"question": "Argile Vivante"})
+        assert "deepExplore sans backend Claude" in result
+        assert isinstance(result, str)
