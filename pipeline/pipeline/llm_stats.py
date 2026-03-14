@@ -12,6 +12,7 @@ _counts: dict[str, int] = {
     "entity_profiling": 0,
     "subject_extraction": 0,
     "subject_resolution": 0,
+    "preanalysis": 0,
 }
 
 

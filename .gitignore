@@ -38,6 +38,10 @@ mcp-server/*.js.map
 
 # MkDocs
 wiki/site/
+docs/civilizations/
+docs/global/
+docs/meta/
+docs/index.md
 
 # IDE
 .idea/
@@ -63,3 +67,33 @@ ehthumbs.db
 # Logs
 *.log
 logs/
+
+# SQLite WAL/SHM leftovers
+*.db-shm
+*.db-wal
+*.db.bak
+
+# Claude duo (local MCP state)
+.claude-duo-*
+
+# Temp analysis/debug files
+BUG_*.md
+SUBJECT_REPORT.md
+NOTES_DISPLAY_AUDIT.md
+NEXT_SESSION_PROMPT.md
+wiki_index_preview.md
+
+# One-off scripts (not part of pipeline)
+cleanup_resources.py
+compare_extractions.py
+compile_llm_entities.py
+export_entities.py
+filter_llm_entities.py
+normalize_llm_entities.py
+
+# Temp data
+roundEntities/
+llm_entities_full_list.txt
+pipeline/incremental_test/
+chat_test.json
+response.json

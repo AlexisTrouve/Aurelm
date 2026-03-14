@@ -352,6 +352,9 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                   ),
                 ],
 
+                // Preanalysis — novelty + player strategy
+                _PreanalysisSection(turn: t),
+
                 // Analysis tags — thematic_tags, tech_era, fantasy_level
                 _TurnTagsSection(turn: t),
 
@@ -379,6 +382,137 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
           ), // NotesSideRail
         )); // closes Focus + Scaffold
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Preanalysis — novelty detection + player strategy
+// ---------------------------------------------------------------------------
+
+class _PreanalysisSection extends StatelessWidget {
+  final TurnRow turn;
+
+  const _PreanalysisSection({required this.turn});
+
+  List<String> _parseTags(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    return raw
+        .replaceAll('[', '')
+        .replaceAll(']', '')
+        .split(',')
+        .map((s) => s.trim().replaceAll('"', '').replaceAll("'", ''))
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  static const _strategyTagColors = <String, Color>{
+    'expansion': Colors.green,
+    'diplomatie': Colors.blue,
+    'defense': Colors.orange,
+    'economie': Colors.amber,
+    'culture': Colors.purple,
+    'exploration': Colors.teal,
+    'militaire': Colors.red,
+    'religieux': Colors.indigo,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNovelty = turn.noveltySummary != null && turn.noveltySummary!.isNotEmpty;
+    final hasStrategy = turn.playerStrategy != null && turn.playerStrategy!.isNotEmpty;
+
+    if (!hasNovelty && !hasStrategy) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        const SectionHeader(title: 'Preanalyse'),
+        const SizedBox(height: 10),
+
+        // Novelty summary
+        if (hasNovelty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 10),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.new_releases_outlined, size: 16,
+                    color: Colors.green.shade300),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    turn.noveltySummary!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurface,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Player strategy
+        if (hasStrategy)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.psychology_outlined, size: 16,
+                        color: Colors.blue.shade300),
+                    const SizedBox(width: 8),
+                    Text('Strategie joueur',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: Colors.blue.shade300,
+                          fontWeight: FontWeight.w600,
+                        )),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  turn.playerStrategy!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurface,
+                    height: 1.5,
+                  ),
+                ),
+                // Strategy tags
+                if (_parseTags(turn.strategyTags).isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: _parseTags(turn.strategyTags).map((tag) {
+                      final color = _strategyTagColors[tag] ?? cs.primary;
+                      return _TagChip(label: tag, color: color);
+                    }).toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

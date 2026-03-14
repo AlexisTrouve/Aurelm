@@ -30,6 +30,11 @@ class TurnTurns extends Table {
   // Tech/fantasy analysis
   TextColumn get techEra => text().named('tech_era').nullable()();
   TextColumn get fantasyLevel => text().named('fantasy_level').nullable()();
+  // Preanalysis (stage 6.5) — novelty + player strategy
+  TextColumn get noveltySummary => text().named('novelty_summary').nullable()();
+  TextColumn get newEntityIds => text().named('new_entity_ids').nullable()();
+  TextColumn get playerStrategy => text().named('player_strategy').nullable()();
+  TextColumn get strategyTags => text().named('strategy_tags').nullable()();
 }
 
 @DataClassName('SegmentRow')

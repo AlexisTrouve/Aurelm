@@ -493,6 +493,30 @@ class $TurnTurnsTable extends TurnTurns
   late final GeneratedColumn<String> fantasyLevel = GeneratedColumn<String>(
       'fantasy_level', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _noveltySummaryMeta =
+      const VerificationMeta('noveltySummary');
+  @override
+  late final GeneratedColumn<String> noveltySummary = GeneratedColumn<String>(
+      'novelty_summary', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _newEntityIdsMeta =
+      const VerificationMeta('newEntityIds');
+  @override
+  late final GeneratedColumn<String> newEntityIds = GeneratedColumn<String>(
+      'new_entity_ids', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _playerStrategyMeta =
+      const VerificationMeta('playerStrategy');
+  @override
+  late final GeneratedColumn<String> playerStrategy = GeneratedColumn<String>(
+      'player_strategy', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _strategyTagsMeta =
+      const VerificationMeta('strategyTags');
+  @override
+  late final GeneratedColumn<String> strategyTags = GeneratedColumn<String>(
+      'strategy_tags', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -516,7 +540,11 @@ class $TurnTurnsTable extends TurnTurns
         choicesMade,
         choicesProposed,
         techEra,
-        fantasyLevel
+        fantasyLevel,
+        noveltySummary,
+        newEntityIds,
+        playerStrategy,
+        strategyTags
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -645,6 +673,30 @@ class $TurnTurnsTable extends TurnTurns
           fantasyLevel.isAcceptableOrUnknown(
               data['fantasy_level']!, _fantasyLevelMeta));
     }
+    if (data.containsKey('novelty_summary')) {
+      context.handle(
+          _noveltySummaryMeta,
+          noveltySummary.isAcceptableOrUnknown(
+              data['novelty_summary']!, _noveltySummaryMeta));
+    }
+    if (data.containsKey('new_entity_ids')) {
+      context.handle(
+          _newEntityIdsMeta,
+          newEntityIds.isAcceptableOrUnknown(
+              data['new_entity_ids']!, _newEntityIdsMeta));
+    }
+    if (data.containsKey('player_strategy')) {
+      context.handle(
+          _playerStrategyMeta,
+          playerStrategy.isAcceptableOrUnknown(
+              data['player_strategy']!, _playerStrategyMeta));
+    }
+    if (data.containsKey('strategy_tags')) {
+      context.handle(
+          _strategyTagsMeta,
+          strategyTags.isAcceptableOrUnknown(
+              data['strategy_tags']!, _strategyTagsMeta));
+    }
     return context;
   }
 
@@ -698,6 +750,14 @@ class $TurnTurnsTable extends TurnTurns
           .read(DriftSqlType.string, data['${effectivePrefix}tech_era']),
       fantasyLevel: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}fantasy_level']),
+      noveltySummary: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}novelty_summary']),
+      newEntityIds: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}new_entity_ids']),
+      playerStrategy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}player_strategy']),
+      strategyTags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}strategy_tags']),
     );
   }
 
@@ -730,6 +790,10 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
   final String? choicesProposed;
   final String? techEra;
   final String? fantasyLevel;
+  final String? noveltySummary;
+  final String? newEntityIds;
+  final String? playerStrategy;
+  final String? strategyTags;
   const TurnRow(
       {required this.id,
       required this.civId,
@@ -752,7 +816,11 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       this.choicesMade,
       this.choicesProposed,
       this.techEra,
-      this.fantasyLevel});
+      this.fantasyLevel,
+      this.noveltySummary,
+      this.newEntityIds,
+      this.playerStrategy,
+      this.strategyTags});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -809,6 +877,18 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
     }
     if (!nullToAbsent || fantasyLevel != null) {
       map['fantasy_level'] = Variable<String>(fantasyLevel);
+    }
+    if (!nullToAbsent || noveltySummary != null) {
+      map['novelty_summary'] = Variable<String>(noveltySummary);
+    }
+    if (!nullToAbsent || newEntityIds != null) {
+      map['new_entity_ids'] = Variable<String>(newEntityIds);
+    }
+    if (!nullToAbsent || playerStrategy != null) {
+      map['player_strategy'] = Variable<String>(playerStrategy);
+    }
+    if (!nullToAbsent || strategyTags != null) {
+      map['strategy_tags'] = Variable<String>(strategyTags);
     }
     return map;
   }
@@ -868,6 +948,18 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       fantasyLevel: fantasyLevel == null && nullToAbsent
           ? const Value.absent()
           : Value(fantasyLevel),
+      noveltySummary: noveltySummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(noveltySummary),
+      newEntityIds: newEntityIds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newEntityIds),
+      playerStrategy: playerStrategy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(playerStrategy),
+      strategyTags: strategyTags == null && nullToAbsent
+          ? const Value.absent()
+          : Value(strategyTags),
     );
   }
 
@@ -897,6 +989,10 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       choicesProposed: serializer.fromJson<String?>(json['choicesProposed']),
       techEra: serializer.fromJson<String?>(json['techEra']),
       fantasyLevel: serializer.fromJson<String?>(json['fantasyLevel']),
+      noveltySummary: serializer.fromJson<String?>(json['noveltySummary']),
+      newEntityIds: serializer.fromJson<String?>(json['newEntityIds']),
+      playerStrategy: serializer.fromJson<String?>(json['playerStrategy']),
+      strategyTags: serializer.fromJson<String?>(json['strategyTags']),
     );
   }
   @override
@@ -925,6 +1021,10 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       'choicesProposed': serializer.toJson<String?>(choicesProposed),
       'techEra': serializer.toJson<String?>(techEra),
       'fantasyLevel': serializer.toJson<String?>(fantasyLevel),
+      'noveltySummary': serializer.toJson<String?>(noveltySummary),
+      'newEntityIds': serializer.toJson<String?>(newEntityIds),
+      'playerStrategy': serializer.toJson<String?>(playerStrategy),
+      'strategyTags': serializer.toJson<String?>(strategyTags),
     };
   }
 
@@ -950,7 +1050,11 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           Value<String?> choicesMade = const Value.absent(),
           Value<String?> choicesProposed = const Value.absent(),
           Value<String?> techEra = const Value.absent(),
-          Value<String?> fantasyLevel = const Value.absent()}) =>
+          Value<String?> fantasyLevel = const Value.absent(),
+          Value<String?> noveltySummary = const Value.absent(),
+          Value<String?> newEntityIds = const Value.absent(),
+          Value<String?> playerStrategy = const Value.absent(),
+          Value<String?> strategyTags = const Value.absent()}) =>
       TurnRow(
         id: id ?? this.id,
         civId: civId ?? this.civId,
@@ -982,6 +1086,14 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
         techEra: techEra.present ? techEra.value : this.techEra,
         fantasyLevel:
             fantasyLevel.present ? fantasyLevel.value : this.fantasyLevel,
+        noveltySummary:
+            noveltySummary.present ? noveltySummary.value : this.noveltySummary,
+        newEntityIds:
+            newEntityIds.present ? newEntityIds.value : this.newEntityIds,
+        playerStrategy:
+            playerStrategy.present ? playerStrategy.value : this.playerStrategy,
+        strategyTags:
+            strategyTags.present ? strategyTags.value : this.strategyTags,
       );
   TurnRow copyWithCompanion(TurnTurnsCompanion data) {
     return TurnRow(
@@ -1025,6 +1137,18 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
       fantasyLevel: data.fantasyLevel.present
           ? data.fantasyLevel.value
           : this.fantasyLevel,
+      noveltySummary: data.noveltySummary.present
+          ? data.noveltySummary.value
+          : this.noveltySummary,
+      newEntityIds: data.newEntityIds.present
+          ? data.newEntityIds.value
+          : this.newEntityIds,
+      playerStrategy: data.playerStrategy.present
+          ? data.playerStrategy.value
+          : this.playerStrategy,
+      strategyTags: data.strategyTags.present
+          ? data.strategyTags.value
+          : this.strategyTags,
     );
   }
 
@@ -1052,7 +1176,11 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           ..write('choicesMade: $choicesMade, ')
           ..write('choicesProposed: $choicesProposed, ')
           ..write('techEra: $techEra, ')
-          ..write('fantasyLevel: $fantasyLevel')
+          ..write('fantasyLevel: $fantasyLevel, ')
+          ..write('noveltySummary: $noveltySummary, ')
+          ..write('newEntityIds: $newEntityIds, ')
+          ..write('playerStrategy: $playerStrategy, ')
+          ..write('strategyTags: $strategyTags')
           ..write(')'))
         .toString();
   }
@@ -1080,7 +1208,11 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
         choicesMade,
         choicesProposed,
         techEra,
-        fantasyLevel
+        fantasyLevel,
+        noveltySummary,
+        newEntityIds,
+        playerStrategy,
+        strategyTags
       ]);
   @override
   bool operator ==(Object other) =>
@@ -1107,7 +1239,11 @@ class TurnRow extends DataClass implements Insertable<TurnRow> {
           other.choicesMade == this.choicesMade &&
           other.choicesProposed == this.choicesProposed &&
           other.techEra == this.techEra &&
-          other.fantasyLevel == this.fantasyLevel);
+          other.fantasyLevel == this.fantasyLevel &&
+          other.noveltySummary == this.noveltySummary &&
+          other.newEntityIds == this.newEntityIds &&
+          other.playerStrategy == this.playerStrategy &&
+          other.strategyTags == this.strategyTags);
 }
 
 class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
@@ -1133,6 +1269,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
   final Value<String?> choicesProposed;
   final Value<String?> techEra;
   final Value<String?> fantasyLevel;
+  final Value<String?> noveltySummary;
+  final Value<String?> newEntityIds;
+  final Value<String?> playerStrategy;
+  final Value<String?> strategyTags;
   const TurnTurnsCompanion({
     this.id = const Value.absent(),
     this.civId = const Value.absent(),
@@ -1156,6 +1296,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     this.choicesProposed = const Value.absent(),
     this.techEra = const Value.absent(),
     this.fantasyLevel = const Value.absent(),
+    this.noveltySummary = const Value.absent(),
+    this.newEntityIds = const Value.absent(),
+    this.playerStrategy = const Value.absent(),
+    this.strategyTags = const Value.absent(),
   });
   TurnTurnsCompanion.insert({
     this.id = const Value.absent(),
@@ -1180,6 +1324,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     this.choicesProposed = const Value.absent(),
     this.techEra = const Value.absent(),
     this.fantasyLevel = const Value.absent(),
+    this.noveltySummary = const Value.absent(),
+    this.newEntityIds = const Value.absent(),
+    this.playerStrategy = const Value.absent(),
+    this.strategyTags = const Value.absent(),
   })  : civId = Value(civId),
         turnNumber = Value(turnNumber),
         rawMessageIds = Value(rawMessageIds),
@@ -1207,6 +1355,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     Expression<String>? choicesProposed,
     Expression<String>? techEra,
     Expression<String>? fantasyLevel,
+    Expression<String>? noveltySummary,
+    Expression<String>? newEntityIds,
+    Expression<String>? playerStrategy,
+    Expression<String>? strategyTags,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1231,6 +1383,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
       if (choicesProposed != null) 'choices_proposed': choicesProposed,
       if (techEra != null) 'tech_era': techEra,
       if (fantasyLevel != null) 'fantasy_level': fantasyLevel,
+      if (noveltySummary != null) 'novelty_summary': noveltySummary,
+      if (newEntityIds != null) 'new_entity_ids': newEntityIds,
+      if (playerStrategy != null) 'player_strategy': playerStrategy,
+      if (strategyTags != null) 'strategy_tags': strategyTags,
     });
   }
 
@@ -1256,7 +1412,11 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
       Value<String?>? choicesMade,
       Value<String?>? choicesProposed,
       Value<String?>? techEra,
-      Value<String?>? fantasyLevel}) {
+      Value<String?>? fantasyLevel,
+      Value<String?>? noveltySummary,
+      Value<String?>? newEntityIds,
+      Value<String?>? playerStrategy,
+      Value<String?>? strategyTags}) {
     return TurnTurnsCompanion(
       id: id ?? this.id,
       civId: civId ?? this.civId,
@@ -1280,6 +1440,10 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
       choicesProposed: choicesProposed ?? this.choicesProposed,
       techEra: techEra ?? this.techEra,
       fantasyLevel: fantasyLevel ?? this.fantasyLevel,
+      noveltySummary: noveltySummary ?? this.noveltySummary,
+      newEntityIds: newEntityIds ?? this.newEntityIds,
+      playerStrategy: playerStrategy ?? this.playerStrategy,
+      strategyTags: strategyTags ?? this.strategyTags,
     );
   }
 
@@ -1352,6 +1516,18 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
     if (fantasyLevel.present) {
       map['fantasy_level'] = Variable<String>(fantasyLevel.value);
     }
+    if (noveltySummary.present) {
+      map['novelty_summary'] = Variable<String>(noveltySummary.value);
+    }
+    if (newEntityIds.present) {
+      map['new_entity_ids'] = Variable<String>(newEntityIds.value);
+    }
+    if (playerStrategy.present) {
+      map['player_strategy'] = Variable<String>(playerStrategy.value);
+    }
+    if (strategyTags.present) {
+      map['strategy_tags'] = Variable<String>(strategyTags.value);
+    }
     return map;
   }
 
@@ -1379,7 +1555,11 @@ class TurnTurnsCompanion extends UpdateCompanion<TurnRow> {
           ..write('choicesMade: $choicesMade, ')
           ..write('choicesProposed: $choicesProposed, ')
           ..write('techEra: $techEra, ')
-          ..write('fantasyLevel: $fantasyLevel')
+          ..write('fantasyLevel: $fantasyLevel, ')
+          ..write('noveltySummary: $noveltySummary, ')
+          ..write('newEntityIds: $newEntityIds, ')
+          ..write('playerStrategy: $playerStrategy, ')
+          ..write('strategyTags: $strategyTags')
           ..write(')'))
         .toString();
   }
@@ -6150,6 +6330,10 @@ typedef $$TurnTurnsTableCreateCompanionBuilder = TurnTurnsCompanion Function({
   Value<String?> choicesProposed,
   Value<String?> techEra,
   Value<String?> fantasyLevel,
+  Value<String?> noveltySummary,
+  Value<String?> newEntityIds,
+  Value<String?> playerStrategy,
+  Value<String?> strategyTags,
 });
 typedef $$TurnTurnsTableUpdateCompanionBuilder = TurnTurnsCompanion Function({
   Value<int> id,
@@ -6174,6 +6358,10 @@ typedef $$TurnTurnsTableUpdateCompanionBuilder = TurnTurnsCompanion Function({
   Value<String?> choicesProposed,
   Value<String?> techEra,
   Value<String?> fantasyLevel,
+  Value<String?> noveltySummary,
+  Value<String?> newEntityIds,
+  Value<String?> playerStrategy,
+  Value<String?> strategyTags,
 });
 
 class $$TurnTurnsTableFilterComposer
@@ -6252,6 +6440,20 @@ class $$TurnTurnsTableFilterComposer
 
   ColumnFilters<String> get fantasyLevel => $composableBuilder(
       column: $table.fantasyLevel, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get noveltySummary => $composableBuilder(
+      column: $table.noveltySummary,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get newEntityIds => $composableBuilder(
+      column: $table.newEntityIds, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get playerStrategy => $composableBuilder(
+      column: $table.playerStrategy,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get strategyTags => $composableBuilder(
+      column: $table.strategyTags, builder: (column) => ColumnFilters(column));
 }
 
 class $$TurnTurnsTableOrderingComposer
@@ -6335,6 +6537,22 @@ class $$TurnTurnsTableOrderingComposer
   ColumnOrderings<String> get fantasyLevel => $composableBuilder(
       column: $table.fantasyLevel,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get noveltySummary => $composableBuilder(
+      column: $table.noveltySummary,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get newEntityIds => $composableBuilder(
+      column: $table.newEntityIds,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get playerStrategy => $composableBuilder(
+      column: $table.playerStrategy,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get strategyTags => $composableBuilder(
+      column: $table.strategyTags,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$TurnTurnsTableAnnotationComposer
@@ -6411,6 +6629,18 @@ class $$TurnTurnsTableAnnotationComposer
 
   GeneratedColumn<String> get fantasyLevel => $composableBuilder(
       column: $table.fantasyLevel, builder: (column) => column);
+
+  GeneratedColumn<String> get noveltySummary => $composableBuilder(
+      column: $table.noveltySummary, builder: (column) => column);
+
+  GeneratedColumn<String> get newEntityIds => $composableBuilder(
+      column: $table.newEntityIds, builder: (column) => column);
+
+  GeneratedColumn<String> get playerStrategy => $composableBuilder(
+      column: $table.playerStrategy, builder: (column) => column);
+
+  GeneratedColumn<String> get strategyTags => $composableBuilder(
+      column: $table.strategyTags, builder: (column) => column);
 }
 
 class $$TurnTurnsTableTableManager extends RootTableManager<
@@ -6458,6 +6688,10 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             Value<String?> choicesProposed = const Value.absent(),
             Value<String?> techEra = const Value.absent(),
             Value<String?> fantasyLevel = const Value.absent(),
+            Value<String?> noveltySummary = const Value.absent(),
+            Value<String?> newEntityIds = const Value.absent(),
+            Value<String?> playerStrategy = const Value.absent(),
+            Value<String?> strategyTags = const Value.absent(),
           }) =>
               TurnTurnsCompanion(
             id: id,
@@ -6482,6 +6716,10 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             choicesProposed: choicesProposed,
             techEra: techEra,
             fantasyLevel: fantasyLevel,
+            noveltySummary: noveltySummary,
+            newEntityIds: newEntityIds,
+            playerStrategy: playerStrategy,
+            strategyTags: strategyTags,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6506,6 +6744,10 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             Value<String?> choicesProposed = const Value.absent(),
             Value<String?> techEra = const Value.absent(),
             Value<String?> fantasyLevel = const Value.absent(),
+            Value<String?> noveltySummary = const Value.absent(),
+            Value<String?> newEntityIds = const Value.absent(),
+            Value<String?> playerStrategy = const Value.absent(),
+            Value<String?> strategyTags = const Value.absent(),
           }) =>
               TurnTurnsCompanion.insert(
             id: id,
@@ -6530,6 +6772,10 @@ class $$TurnTurnsTableTableManager extends RootTableManager<
             choicesProposed: choicesProposed,
             techEra: techEra,
             fantasyLevel: fantasyLevel,
+            noveltySummary: noveltySummary,
+            newEntityIds: newEntityIds,
+            playerStrategy: playerStrategy,
+            strategyTags: strategyTags,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

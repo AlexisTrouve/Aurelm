@@ -49,6 +49,10 @@ CREATE TABLE turn_turns (
     beliefs TEXT,
     geography TEXT,
     choices_proposed TEXT,
+    novelty_summary TEXT,
+    new_entity_ids TEXT,
+    player_strategy TEXT,
+    strategy_tags TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     processed_at TEXT,
     UNIQUE(civ_id, turn_number)

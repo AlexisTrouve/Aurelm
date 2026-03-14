@@ -432,6 +432,22 @@ def run_pipeline(
     finally:
         conn.close()
 
+    # Step 6.5: Turn preanalysis (novelty detection + player strategy)
+    print("[6.5/10] Turn preanalysis (novelty + player strategy)...")
+    from .turn_preanalysis import run_preanalysis
+    preanalysis_stats = run_preanalysis(
+        db_path,
+        model=llm_config.get_model("preanalysis") if llm_config else model,
+        provider=llm_provider if use_llm else None,
+        civ_id=civ_id,
+        run_id=run_id,
+        use_llm=use_llm,
+    )
+    if preanalysis_stats["new_entities_found"]:
+        print(f"       -> {preanalysis_stats['new_entities_found']} new entities across {preanalysis_stats['turns_analyzed']} turns")
+    if preanalysis_stats["strategies_analyzed"]:
+        print(f"       -> {preanalysis_stats['strategies_analyzed']} player strategies analyzed")
+
     # Step 7: Subject extraction (MJ choices + PJ initiatives)
     if use_llm:
         print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
@@ -1194,6 +1210,8 @@ def _print_stats(stats: dict) -> None:
         print(f"    subject resolv.:   {counts['subject_resolution']}")
         print(f"    summarization:     {counts['summarization']}")
         print(f"    entity profiling:  {counts['entity_profiling']}")
+        if counts['preanalysis']:
+            print(f"    preanalysis:       {counts['preanalysis']}")
     # Show total cost if available (OpenRouter provider)
     if "provider_usage" in stats:
         usage = stats["provider_usage"]

@@ -229,7 +229,8 @@ def get_turn_detail(
     turn = conn.execute("""
         SELECT t.id, t.turn_number, t.title, t.summary, t.turn_type,
                t.game_date_start, t.game_date_end, c.name AS civ_name,
-               t.key_events, t.choices_proposed, t.choices_made
+               t.key_events, t.choices_proposed, t.choices_made,
+               t.novelty_summary, t.player_strategy, t.strategy_tags
         FROM turn_turns t
         JOIN civ_civilizations c ON t.civ_id = c.id
         WHERE t.turn_number = ? AND t.civ_id = ?
@@ -243,7 +244,7 @@ def get_turn_detail(
         available = ", ".join(str(t[0]) for t in turns) or "none"
         return f"# Turn {turn_number} - {civ_name}\n\nTurn not found. Available turns: {available}"
 
-    t_id, t_num, title, summary, turn_type, gd_start, gd_end, cn, key_events_raw, proposed_raw, made_raw = turn
+    t_id, t_num, title, summary, turn_type, gd_start, gd_end, cn, key_events_raw, proposed_raw, made_raw, novelty_summary, player_strategy, strategy_tags = turn
     lines = [f"# Turn {t_num}: {title or '(untitled)'} - {cn}", ""]
 
     if turn_type != "standard":
@@ -254,6 +255,17 @@ def get_turn_detail(
     if summary:
         lines.append(f"**Summary:** {summary}")
     lines.append("")
+
+    # Preanalysis — novelty + player strategy
+    if novelty_summary:
+        lines += [f"**Novelty:** {novelty_summary}", ""]
+    if player_strategy:
+        tags_str = ""
+        if strategy_tags:
+            tags = _parse_json_list(strategy_tags)
+            if tags:
+                tags_str = f" [{', '.join(tags)}]"
+        lines += [f"**Player strategy:** {player_strategy}{tags_str}", ""]
 
     key_events = _parse_json_list(key_events_raw)
     if key_events:
