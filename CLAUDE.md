@@ -51,7 +51,8 @@ Flutter Desktop GUI (Dashboard)
 
 - **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 99 Dart source files, 7 test files. Flutter 3.38.8 installed locally. CI also builds via GitHub Actions. Run `dart run build_runner build --delete-conflicting-outputs` after any schema/DAO change.
 - **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 14 tools (listCivs, getCivState, getTurnDetail, searchLore, getEntityDetail, sanityCheck, timeline, compareCivs, searchTurnContent, getStructuredFacts, listSubjects, getNotes, getSubjectDetail, deepExplore), aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API with NDJSON streaming. 94 tests passing.
-- **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline. `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
+- **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline (+ stage 6.5 preanalysis). `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
+- **pipeline/scripts/**: Standalone benchmark/scoring/profiling utilities. See `pipeline/scripts/README.md` for usage. Not part of the pipeline itself — run manually for evaluation and tuning.
 - **wiki/**: MkDocs Material — auto-generated game wiki
 - **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
 - **openclaw-config/**: OpenClaw skill definitions and config templates
