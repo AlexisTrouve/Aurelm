@@ -59,7 +59,13 @@ class TextEvent extends ChatEvent {
 /// Stream complete — session_id for next turn.
 class DoneEvent extends ChatEvent {
   final String sessionId;
-  DoneEvent({required this.sessionId});
+  final String sessionName;
+  final List<String> sessionTags;
+  DoneEvent({
+    required this.sessionId,
+    this.sessionName = '',
+    this.sessionTags = const [],
+  });
 }
 
 /// Cumulative token usage after each LLM round.
@@ -67,6 +73,30 @@ class UsageEvent extends ChatEvent {
   final int inputTokens;
   final int outputTokens;
   UsageEvent({required this.inputTokens, required this.outputTokens});
+}
+
+/// Local token estimate — context size before/after compression.
+class ContextEstimateEvent extends ChatEvent {
+  final int rawTokens;
+  final int compressedTokens;
+  final int round;
+  ContextEstimateEvent({
+    required this.rawTokens,
+    required this.compressedTokens,
+    required this.round,
+  });
+}
+
+/// Conversation history compressed into a summary block.
+class CompressEvent extends ChatEvent {
+  final String content;
+  CompressEvent({required this.content});
+}
+
+/// Multiple compress blocks merged into a resume block.
+class ResumeEvent extends ChatEvent {
+  final String content;
+  ResumeEvent({required this.content});
 }
 
 /// Agent error.
@@ -145,13 +175,30 @@ class ChatService {
                 inputTokens: json['input_tokens'] as int? ?? 0,
                 outputTokens: json['output_tokens'] as int? ?? 0,
               );
+            case 'context_estimate':
+              yield ContextEstimateEvent(
+                rawTokens: json['raw_tokens'] as int? ?? 0,
+                compressedTokens: json['compressed_tokens'] as int? ?? 0,
+                round: json['round'] as int? ?? 0,
+              );
             case 'text':
               yield TextEvent(
+                content: json['content'] as String? ?? '',
+              );
+            case 'compress':
+              yield CompressEvent(
+                content: json['content'] as String? ?? '',
+              );
+            case 'resume':
+              yield ResumeEvent(
                 content: json['content'] as String? ?? '',
               );
             case 'done':
               yield DoneEvent(
                 sessionId: json['session_id'] as String? ?? '',
+                sessionName: json['session_name'] as String? ?? '',
+                sessionTags: (json['session_tags'] as List?)
+                    ?.cast<String>() ?? const [],
               );
             case 'error':
               yield ErrorEvent(

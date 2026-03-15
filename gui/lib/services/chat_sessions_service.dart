@@ -186,6 +186,23 @@ class ChatSessionsService {
     }
   }
 
+  /// GET /chat/sessions/{id}/context_size — Estimate context tokens.
+  ///
+  /// Uses the same pipeline as sending a message (build_llm_history ->
+  /// compress -> estimate). Returns the compressed token count.
+  Future<int> getContextSize(String sessionId) async {
+    final uri = Uri.parse(
+        '$_baseUrl${AppConstants.botChatEndpoint}/sessions/$sessionId/context_size');
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode != 200) return 0;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['compressed_tokens'] as int? ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   /// POST /bot/reload-db — Hot-swap the active game database.
   ///
   /// Called from the settings screen when the user selects a new DB file.

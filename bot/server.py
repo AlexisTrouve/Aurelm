@@ -38,6 +38,7 @@ class BotServer:
         self._app.router.add_delete("/chat/sessions/{session_id}/tags/{tag}", self._remove_tag)
         # Session message history (Fix 1: load messages on session switch)
         self._app.router.add_get("/chat/sessions/{session_id}/messages", self._get_session_messages)
+        self._app.router.add_get("/chat/sessions/{session_id}/context_size", self._get_context_size)
         # Hot-reload DB path at runtime (Fix 3)
         self._app.router.add_post("/bot/reload-db", self._reload_db)
         # Notes CRUD
@@ -164,17 +165,18 @@ class BotServer:
                 return web.json_response({"error": f"Session {session_id} not found"}, status=404)
         else:
             # Create anonymous session scoped to current game DB (Fix 2)
-            session_id = str(uuid.uuid4())
+            # Note: create_session generates its own UUID internally —
+            # we must use session.session_id, not a local UUID.
+            temp_label = str(uuid.uuid4())[:8]
             session = self._session_manager.create_session(
-                f"Conversation {session_id[:8]}",
+                f"Conversation {temp_label}",
                 db_path=self.config.db_path,
             )
+            session_id = session.session_id
 
-        # Build history for LLM: convert ChatMessage to dict
-        history = [
-            {"role": msg.role, "content": msg.content}
-            for msg in session.messages
-        ]
+        # Build optimized history: uses latest compress/resume as checkpoint
+        # instead of sending ALL messages to the LLM
+        history = self._session_manager.build_llm_history(session.session_id)
 
         # NDJSON stream — each event is one JSON line
         resp = web.StreamResponse(
@@ -208,17 +210,53 @@ class BotServer:
                         ChatMessage(role="user", content=message)
                     )
 
-                    # Persist assistant response with tool calls
+                    # Persist assistant response — fold tool result summaries
+                    # into the content so they're part of the LLM context on reload.
+                    # Raw tool_use/tool_result blocks are NOT persisted; only the
+                    # compact text summary survives in the conversation history.
+                    enriched_content = response_text
+                    if tool_calls:
+                        tc_lines = []
+                        for tc in tool_calls:
+                            name = tc.get("name", "tool")
+                            inp = tc.get("input_summary", "")
+                            res = tc.get("result_summary", "")
+                            tc_lines.append(f"[{name}({inp}) -> {res}]")
+                        # Prepend tool context before the response text
+                        enriched_content = "\n".join(tc_lines) + "\n\n" + response_text
+
                     self._session_manager.save_message(
                         session_id,
                         ChatMessage(
                             role="assistant",
-                            content=response_text,
+                            content=enriched_content,
                             tool_calls=tool_calls
                         )
                     )
 
-            await _write("done", {"session_id": session_id})
+            # Check if compression is needed (20+ text messages since last checkpoint)
+            await self._maybe_compress_session(session_id, _write)
+
+            # Emit final context estimate based on persisted history (no tool blocks)
+            # This is the accurate token count for the NEXT message.
+            from .agent import _compress_tool_history, _estimate_tokens
+            final_history = self._session_manager.build_llm_history(session_id)
+            final_compressed = _compress_tool_history(final_history)
+            await _write("context_estimate", {
+                "raw_tokens": _estimate_tokens(final_history),
+                "compressed_tokens": _estimate_tokens(final_compressed),
+                "round": -1,  # -1 = post-response final estimate
+            })
+
+            # Include session name + tags in done event for AppBar display
+            session = self._session_manager.load_session(session_id)
+            session_name = session.name if session else ""
+            session_tags = session.tags if session else []
+            await _write("done", {
+                "session_id": session_id,
+                "session_name": session_name,
+                "session_tags": session_tags,
+            })
 
             # Auto-tag session with civilizations referenced in this turn
             self._auto_tag_civs(session_id, tool_calls)
@@ -393,6 +431,31 @@ class BotServer:
         ]
         return web.json_response({"session_id": session_id, "messages": messages})
 
+    async def _get_context_size(self, request: web.Request) -> web.Response:
+        """GET /chat/sessions/{session_id}/context_size — Estimate context tokens.
+
+        Uses the exact same pipeline as sending a message:
+        build_llm_history() -> _compress_tool_history() -> _estimate_tokens().
+        Returns raw (before compression) and compressed (what Claude sees) estimates.
+        """
+        from .agent import _compress_tool_history, _estimate_tokens
+
+        session_id = request.match_info["session_id"]
+        history = self._session_manager.build_llm_history(session_id)
+        if not history:
+            return web.json_response({
+                "raw_tokens": 0, "compressed_tokens": 0,
+            })
+
+        raw_tokens = _estimate_tokens(history)
+        compressed = _compress_tool_history(history)
+        compressed_tokens = _estimate_tokens(compressed)
+
+        return web.json_response({
+            "raw_tokens": raw_tokens,
+            "compressed_tokens": compressed_tokens,
+        })
+
     def _auto_tag_civs(self, session_id: str, tool_calls: list[dict]) -> None:
         """Tag a session with any civilization names referenced in this turn's tool calls.
 
@@ -475,6 +538,99 @@ class BotServer:
 
         log.info("Hot-reloaded database: %s -> %s", old_path, db_path)
         return web.json_response({"ok": True, "db_path": db_path})
+
+    # ---------------------------------------------------------------------- #
+    # Session compression
+    # ---------------------------------------------------------------------- #
+
+    COMPRESS_MSG_THRESHOLD = 20    # text messages before triggering a compress
+    COMPRESS_TOKEN_THRESHOLD = 30_000  # estimated tokens (includes tool results)
+    RESUME_THRESHOLD = 4           # compress blocks before triggering a resume
+
+    async def _maybe_compress_session(self, session_id: str, _write) -> None:
+        """Check and run compress/resume if thresholds are reached.
+
+        Triggers compression when EITHER:
+        - 20+ text messages since last checkpoint, OR
+        - 30k+ estimated tokens since last checkpoint (tool results are huge)
+
+        Called after persisting messages in a /chat turn. Emits NDJSON events
+        so Flutter can display the compress/resume blocks.
+        """
+        if self._agent is None:
+            return
+
+        try:
+            msg_count = self._session_manager.count_messages_since_checkpoint(session_id)
+            token_count = self._session_manager.estimate_tokens_since_checkpoint(session_id)
+
+            if msg_count < self.COMPRESS_MSG_THRESHOLD and token_count < self.COMPRESS_TOKEN_THRESHOLD:
+                return
+
+            # --- Phase 1: Compress ---
+            log.info(
+                "Session %s: %d messages / ~%dk tokens since checkpoint, compressing...",
+                session_id[:8], msg_count, token_count // 1000,
+            )
+
+            messages_to_compress = self._session_manager.get_messages_for_compression(session_id)
+            if not messages_to_compress:
+                return
+
+            # Convert ChatMessage objects to dicts for the summarizer.
+            # For assistant messages, include tool call results inline so the
+            # summary captures what tools found (not just the final answer).
+            msgs_for_llm = []
+            for m in messages_to_compress:
+                content = m.content
+                if m.role == "assistant" and m.tool_calls:
+                    tc_lines = []
+                    for tc in m.tool_calls:
+                        name = tc.get("name", "tool")
+                        inp = tc.get("input_summary", "")
+                        # Include truncated result — enough for the summary
+                        result = tc.get("result", tc.get("result_summary", ""))
+                        if len(result) > 500:
+                            result = result[:500] + "..."
+                        tc_lines.append(f"[outil {name}({inp}) -> {result}]")
+                    content = "\n".join(tc_lines) + "\n" + content
+                msgs_for_llm.append({"role": m.role, "content": content})
+            summary = await self._agent.summarize_for_compress(msgs_for_llm, mode="compress")
+
+            self._session_manager.add_compress_block(session_id, summary)
+            await _write("compress", {"content": summary})
+
+            log.info("Session %s: compress block added (%d chars)", session_id[:8], len(summary))
+
+            # --- Phase 2: Resume (if enough compresses accumulated) ---
+            session = self._session_manager.load_session(session_id)
+            if not session or session.compress_count < self.RESUME_THRESHOLD:
+                return
+
+            log.info(
+                "Session %s: %d compress blocks, creating resume...",
+                session_id[:8], session.compress_count,
+            )
+
+            compress_blocks = self._session_manager.get_compress_blocks_since_resume(session_id)
+            if not compress_blocks:
+                return
+
+            # Feed compress summaries as "messages" to the resume summarizer
+            compress_msgs = [
+                {"role": "assistant", "content": cb.content}
+                for cb in compress_blocks
+            ]
+            resume_summary = await self._agent.summarize_for_compress(compress_msgs, mode="resume")
+
+            self._session_manager.add_resume_block(session_id, resume_summary)
+            await _write("resume", {"content": resume_summary})
+
+            log.info("Session %s: resume block added (%d chars)", session_id[:8], len(resume_summary))
+
+        except Exception:
+            # Compression failure should never break the chat flow
+            log.exception("Session compression failed for %s", session_id[:8])
 
     # ---------------------------------------------------------------------- #
     # Helpers

@@ -45,15 +45,12 @@ def _result_summary(result_text: str) -> str:
 
 
 def _compress_tool_history(messages: list[dict]) -> list[dict]:
-    """Compress old tool_result turns to compact one-liners.
+    """Compress old tool_result turns and strip thinking blocks from history.
 
-    For each assistant→tool_result pair that's not the most recent, replaces
-    the verbose tool_result content with a compact summary:
-        tooluse:{name}({input_summary})→{result_first_line}
-
-    To get the tool name we look at the preceding assistant message which
-    contains the tool_use blocks (matched by tool_use_id). The last
-    tool_result turn is kept intact — Claude needs it to continue reasoning.
+    - Tool results: all except the last 2 rounds are compressed to one-liners.
+      Format: tooluse:{name}({input_summary})->{result_first_line}
+    - Thinking blocks: stripped from all assistant messages except the most
+      recent one — they're huge and useless in older history.
     """
     # Find indices of user messages that carry tool_result blocks
     tool_result_indices = [
@@ -66,18 +63,41 @@ def _compress_tool_history(messages: list[dict]) -> list[dict]:
         )
     ]
 
-    # Nothing to compress if only one (or zero) tool-result turn
-    if len(tool_result_indices) <= 1:
-        return messages
+    # Keep last 2 tool-result turns intact (was 1 — gives Claude more context)
+    keep_count = 2
+    if len(tool_result_indices) <= keep_count:
+        to_compress: set[int] = set()
+    else:
+        to_compress = set(tool_result_indices[:-keep_count])
 
-    to_compress = set(tool_result_indices[:-1])  # keep last turn intact
+    # Find the last assistant message index (to preserve its thinking blocks)
+    last_assistant_idx = -1
+    for i in range(len(messages) - 1, -1, -1):
+        if messages[i].get("role") == "assistant":
+            last_assistant_idx = i
+            break
+
     result = []
     for i, msg in enumerate(messages):
+        # Strip thinking blocks from old assistant messages
+        if (
+            msg.get("role") == "assistant"
+            and isinstance(msg.get("content"), list)
+            and i != last_assistant_idx
+        ):
+            stripped = [
+                b for b in msg["content"]
+                if not (isinstance(b, dict) and b.get("type") == "thinking")
+                and not (hasattr(b, "type") and getattr(b, "type", None) == "thinking")
+            ]
+            if stripped != msg["content"]:
+                msg = {**msg, "content": stripped}
+
         if i not in to_compress:
             result.append(msg)
             continue
 
-        # Build tool_use_id → (name, input) map from the preceding assistant block
+        # Build tool_use_id -> (name, input) map from the preceding assistant block
         tool_name_map: dict[str, tuple[str, dict]] = {}
         if i > 0:
             prev = messages[i - 1]
@@ -99,13 +119,66 @@ def _compress_tool_history(messages: list[dict]) -> list[dict]:
                     name, inp = tool_name_map.get(tool_id, ("tool", {}))
                     inp_str = _input_summary(inp)
                     res_str = _result_summary(raw)
-                    # Compact: "tooluse:searchLore(query='bronze')→Argile Vivante…"
-                    compact = f"tooluse:{name}({inp_str})\u2192{res_str}"
+                    compact = f"tooluse:{name}({inp_str})->{res_str}"
                     block = {**block, "content": compact}
             new_blocks.append(block)
         result.append({**msg, "content": new_blocks})
 
     return result
+
+
+def _estimate_tokens(messages: list[dict]) -> int:
+    """Rough token estimate: count chars across all message content, divide by 4."""
+    total = 0
+    for msg in messages:
+        content = msg.get("content", "")
+        if isinstance(content, str):
+            total += len(content)
+        elif isinstance(content, list):
+            for block in content:
+                if isinstance(block, dict):
+                    for v in block.values():
+                        if isinstance(v, str):
+                            total += len(v)
+                elif isinstance(block, str):
+                    total += len(block)
+                elif hasattr(block, "text"):
+                    total += len(getattr(block, "text", ""))
+    return total // 4
+
+
+def _build_context_reminder(messages: list[dict]) -> str | None:
+    """Build a context reminder if the conversation is getting long (>40k tokens).
+
+    Summarizes the user's last question and hints at which tools to use,
+    so Claude doesn't lose track in deep tool-calling chains.
+    """
+    estimated = _estimate_tokens(messages)
+    if estimated < 40_000:
+        return None
+
+    # Find the last actual user message (not a tool_result container)
+    last_user_text = ""
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            content = msg.get("content", "")
+            if isinstance(content, str) and content.strip():
+                last_user_text = content.strip()
+                break
+
+    if not last_user_text:
+        return None
+
+    # Truncate if very long
+    if len(last_user_text) > 300:
+        last_user_text = last_user_text[:300] + "..."
+
+    return (
+        f"[RAPPEL CONTEXTE - conversation longue, ~{estimated} tokens]\n"
+        f"Question originale de l'utilisateur: {last_user_text}\n"
+        "Reste concentre sur cette question. Si tu as deja collecte assez "
+        "d'informations via les outils, formule ta reponse finale maintenant."
+    )
 
 
 OLLAMA_SYSTEM_PROMPT = """\
@@ -255,6 +328,86 @@ class Agent:
         self._ollama_tools = _build_ollama_tools()
         log.info("Ollama backend: model=%s", self._ollama_model)
 
+    async def summarize_for_compress(self, messages: list[dict], mode: str = "compress") -> str:
+        """Summarize conversation messages into a compact block.
+
+        Args:
+            messages: List of {role, content} dicts to summarize.
+            mode: "compress" (summarize ~20 messages) or "resume" (merge compress blocks).
+
+        Returns:
+            A French summary preserving key facts, entity names, and decisions.
+        """
+        import asyncio
+
+        if not messages:
+            return "(Aucun message a resumer.)"
+
+        # Build the conversation text for the summarizer
+        lines = []
+        for msg in messages:
+            prefix = "Utilisateur" if msg.get("role") == "user" else "Agent"
+            content = msg.get("content", "")
+            # Truncate very long messages to keep the summarization prompt reasonable
+            if len(content) > 2000:
+                content = content[:2000] + "..."
+            lines.append(f"{prefix}: {content}")
+
+        conversation_text = "\n\n".join(lines)
+
+        if mode == "resume":
+            prompt = (
+                "Tu recois plusieurs resumes de conversation (blocs compress). "
+                "Fusionne-les en UN SEUL resume coherent et chronologique.\n\n"
+                "PRESERVE ABSOLUMENT:\n"
+                "- Tous les noms d'entites (personnes, lieux, technologies, civilisations)\n"
+                "- Les numeros de tours (T1, T5, Tour 12...)\n"
+                "- Les faits etablis et conclusions importantes\n"
+                "- Les decisions prises par le MJ\n"
+                "- Le contexte necessaire pour comprendre la suite\n\n"
+                "FORMAT: Resume narratif en francais, ~500 mots max. Pas de bullet points.\n\n"
+                "RESUMES A FUSIONNER:\n"
+                f"{conversation_text}"
+            )
+        else:
+            prompt = (
+                "Resume cette conversation entre un MJ (Maitre du Jeu) et son assistant IA "
+                "(archiviste d'un JDR de civilisation).\n\n"
+                "PRESERVE ABSOLUMENT:\n"
+                "- Tous les noms d'entites (personnes, lieux, technologies, civilisations)\n"
+                "- Les numeros de tours mentionnes (T1, T5, Tour 12...)\n"
+                "- Les faits etablis et reponses definitives donnees\n"
+                "- Les recherches effectuees et leurs conclusions\n"
+                "- Les sujets encore ouverts ou en cours d'investigation\n\n"
+                "FORMAT: Resume narratif en francais, ~300 mots max. Commence directement "
+                "par le contenu, pas de preambule.\n\n"
+                "CONVERSATION:\n"
+                f"{conversation_text}"
+            )
+
+        if self._backend == "anthropic":
+            response = await asyncio.to_thread(
+                self._anthropic.messages.create,
+                model="claude-sonnet-4-6",
+                max_tokens=1024 if mode == "compress" else 2048,
+                system="Tu es un assistant specialise dans le resume de conversations.",
+                messages=[{"role": "user", "content": prompt}],
+            )
+            parts = [b.text for b in response.content if hasattr(b, "text")]
+            return "\n".join(parts) if parts else "(Resume indisponible.)"
+        else:
+            import ollama as _ollama
+            response = await asyncio.to_thread(
+                _ollama.chat,
+                model=self._ollama_model,
+                messages=[
+                    {"role": "system", "content": "Tu es un assistant specialise dans le resume de conversations."},
+                    {"role": "user", "content": prompt},
+                ],
+                options={"num_ctx": 8192, "num_predict": 1024 if mode == "compress" else 2048},
+            )
+            return response.message.content or "(Resume indisponible.)"
+
     async def answer(self, user_message: str) -> str:
         if self._backend == "anthropic":
             return await self._answer_anthropic(user_message)
@@ -304,26 +457,38 @@ class Agent:
         total_output_tokens = 0
 
         for _round in range(MAX_TOOL_ROUNDS):
+            # Estimate tokens before compression (raw history size)
+            raw_estimate = _estimate_tokens(messages)
             compressed = _compress_tool_history(messages)
+            compressed_estimate = _estimate_tokens(compressed)
+
+            # Emit local token estimate so Flutter shows context size + compression effect
+            yield ("context_estimate", {
+                "raw_tokens": raw_estimate,
+                "compressed_tokens": compressed_estimate,
+                "round": _round,
+            })
 
             if self._backend == "anthropic":
+                # Inject context reminder if conversation is getting long
+                system_parts = self._claude_prompt
+                reminder = _build_context_reminder(compressed)
+                if reminder:
+                    system_parts = f"{self._claude_prompt}\n\n---\n\n{reminder}"
+
                 response = await asyncio.to_thread(
                     self._anthropic.messages.create,
                     model="claude-sonnet-4-6",
                     max_tokens=4096,
-                    system=self._claude_prompt,
+                    system=system_parts,
                     tools=self._anthropic_tools,
                     messages=compressed,
                 )
 
-                # Accumulate token usage from this round
+                # Accumulate real API token usage (for cost tracking, not display)
                 if hasattr(response, "usage") and response.usage:
                     total_input_tokens += getattr(response.usage, "input_tokens", 0)
                     total_output_tokens += getattr(response.usage, "output_tokens", 0)
-                    yield ("usage", {
-                        "input_tokens": total_input_tokens,
-                        "output_tokens": total_output_tokens,
-                    })
 
                 # Yield thinking blocks
                 for block in response.content:
@@ -447,13 +612,26 @@ class Agent:
         collected_tool_calls: list[dict] = []
 
         for _round in range(MAX_TOOL_ROUNDS):
+            raw_estimate = _estimate_tokens(messages)
             compressed = _compress_tool_history(messages)
+            compressed_estimate = _estimate_tokens(compressed)
+            _emit("context_estimate", {
+                "raw_tokens": raw_estimate,
+                "compressed_tokens": compressed_estimate,
+                "round": _round,
+            })
+
+            # Inject context reminder if conversation is getting long
+            system_parts = self._claude_prompt
+            reminder = _build_context_reminder(compressed)
+            if reminder:
+                system_parts = f"{self._claude_prompt}\n\n---\n\n{reminder}"
 
             response = await asyncio.to_thread(
                 self._anthropic.messages.create,
                 model="claude-sonnet-4-6",
                 max_tokens=4096,
-                system=self._claude_prompt,
+                system=system_parts,
                 tools=self._anthropic_tools,
                 messages=compressed,
             )

@@ -106,13 +106,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
+    if (!_scrollController.hasClients) return;
+    // Wait for layout to settle before scrolling — avoids overshooting
+    // when messages are still being laid out (e.g. session load).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final maxExtent = _scrollController.position.maxScrollExtent;
+      if (maxExtent <= 0) return;
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        maxExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-    }
+    });
   }
 
   @override
@@ -216,8 +222,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           selectedTileColor:
                               Theme.of(context).colorScheme.primaryContainer,
                           onTap: () {
-                            // Switch to this session
-                            ref.read(chatProvider.notifier).setSessionId(session.sessionId);
+                            // Switch to this session (pass name + tags for AppBar)
+                            ref.read(chatProvider.notifier).setSessionId(
+                              session.sessionId,
+                              name: session.name,
+                              tags: session.tags,
+                            );
                             Navigator.pop(context);
                           },
                           trailing: PopupMenuButton(
@@ -362,7 +372,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Scaffold(
         drawer: _buildSessionsDrawer(context, chatState),
         appBar: AppBar(
-        title: const Text('Aurelm Agent'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                chatState.sessionName.isNotEmpty
+                    ? chatState.sessionName
+                    : 'Aurelm Agent',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Session tags as small chips next to the title
+            if (chatState.sessionTags.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              ...chatState.sessionTags.map((tag) => Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    tag,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              )),
+            ],
+          ],
+        ),
         actions: [
           // Online/offline indicator
           Padding(
@@ -423,8 +465,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               (chatState.messageQueue.isNotEmpty ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index < chatState.messages.length) {
-                              return _MessageBubble(
-                                  message: chatState.messages[index]);
+                              final msg = chatState.messages[index];
+                              // Compress/resume blocks get a distinct system-style bubble
+                              if (msg.messageType == MessageType.compress ||
+                                  msg.messageType == MessageType.resume) {
+                                return _SummaryBubble(message: msg);
+                              }
+                              return _MessageBubble(message: msg);
                             }
                             // All queued messages fused into a single faded bubble
                             return _QueuedMessageBubble(
@@ -785,10 +832,12 @@ class _MessageBubble extends ConsumerWidget {
     final isUser = message.role == ChatRole.user;
     final colorScheme = Theme.of(context).colorScheme;
 
-    // For assistant messages, inject lore hyperlinks (cached by provider)
+    // For assistant messages, inject lore hyperlinks in background isolate.
+    // Shows raw text immediately, swaps in linked text when ready (non-blocking).
     String displayContent = message.content;
     if (!isUser && displayContent.isNotEmpty) {
-      displayContent = ref.watch(loreLinkTextProvider(displayContent));
+      final linkedAsync = ref.watch(loreLinkTextProvider(displayContent));
+      displayContent = linkedAsync.valueOrNull ?? displayContent;
     }
 
     final bubble = Align(
@@ -1111,6 +1160,100 @@ class _QueuedMessageBubble extends StatelessWidget {
                 child: Icon(Icons.close, size: 14, color: colorScheme.onPrimary),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Summary bubble — compress/resume blocks, centered, collapsible
+// ---------------------------------------------------------------------------
+
+class _SummaryBubble extends StatefulWidget {
+  final ChatMessage message;
+  const _SummaryBubble({required this.message});
+
+  @override
+  State<_SummaryBubble> createState() => _SummaryBubbleState();
+}
+
+class _SummaryBubbleState extends State<_SummaryBubble> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isResume = widget.message.messageType == MessageType.resume;
+    final icon = isResume ? Icons.auto_stories : Icons.compress;
+    final label = isResume ? 'Resume de session' : 'Historique compresse';
+    final accentColor = isResume
+        ? colorScheme.tertiary
+        : colorScheme.secondary;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.7,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.3),
+                    style: BorderStyle.solid,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header row: icon + label + expand arrow
+                    Row(
+                      children: [
+                        Icon(icon, size: 16, color: accentColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: accentColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          _expanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18,
+                          color: accentColor,
+                        ),
+                      ],
+                    ),
+                    // Collapsible content
+                    if (_expanded) ...[
+                      const SizedBox(height: 8),
+                      Divider(height: 1, color: accentColor.withValues(alpha: 0.2)),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        widget.message.content,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

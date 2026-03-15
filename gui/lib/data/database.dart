@@ -107,6 +107,13 @@ void _ensureMigrations(dynamic db) {
     "ALTER TABLE subject_subjects ADD COLUMN tags TEXT NOT NULL DEFAULT '[]'",
     // Migration 015: source_quote on subjects
     "ALTER TABLE subject_subjects ADD COLUMN source_quote TEXT",
+    // Lore link cache — persists linked text across app restarts.
+    // entity_count tracks when cache should be invalidated (entity set changed).
+    '''CREATE TABLE IF NOT EXISTS _lore_link_cache (
+        text_hash   TEXT PRIMARY KEY,
+        linked_text TEXT NOT NULL,
+        entity_count INTEGER NOT NULL DEFAULT 0
+    )''',
   ];
 
   for (final sql in statements) {

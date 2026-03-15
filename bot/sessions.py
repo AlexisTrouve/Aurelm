@@ -254,12 +254,147 @@ class SessionManager:
             ).fetchall()
         return [r[0] for r in rows]
 
-    def add_compress_block(self, session_id: str, compressed_content: str) -> None:
-        """Add a compress block (phase 1: >=20 messages)."""
+    def count_messages_since_checkpoint(self, session_id: str) -> int:
+        """Count text messages since the last compress or resume block.
+
+        Used as one trigger for compression (threshold: 20 messages).
+        Only counts 'text' message_type — compress/resume/thinking are excluded.
+        """
         session = self.load_session(session_id)
         if not session:
-            raise ValueError(f"Session {session_id} not found")
+            return 0
 
+        count = 0
+        for msg in reversed(session.messages):
+            if msg.message_type in ('compress', 'resume'):
+                break
+            if msg.message_type == 'text':
+                count += 1
+        return count
+
+    def estimate_tokens_since_checkpoint(self, session_id: str) -> int:
+        """Estimate token count since last checkpoint (chars/4 heuristic).
+
+        Includes message content AND tool call results — tool results are
+        the biggest token consumers and must be accounted for.
+        """
+        session = self.load_session(session_id)
+        if not session:
+            return 0
+
+        total_chars = 0
+        for msg in reversed(session.messages):
+            if msg.message_type in ('compress', 'resume'):
+                break
+            if msg.message_type == 'text':
+                total_chars += len(msg.content)
+                # Tool results stored as JSON dicts in tool_calls
+                for tc in msg.tool_calls:
+                    total_chars += len(tc.get("result", ""))
+                    total_chars += len(tc.get("input_summary", ""))
+        return total_chars // 4
+
+    def build_llm_history(self, session_id: str) -> list[dict]:
+        """Build optimized message history for the LLM.
+
+        Finds the latest resume or compress checkpoint and returns:
+        - The checkpoint summary as a leading context message
+        - All raw text messages after that checkpoint
+
+        If no checkpoint exists, returns all text messages (original behavior).
+        Tool calls stored in DB are NOT reconstructed into the Anthropic
+        tool_use/tool_result format — they're summarized in the flat text.
+        """
+        session = self.load_session(session_id)
+        if not session:
+            return []
+
+        # Find the latest checkpoint (resume takes priority over compress)
+        checkpoint_idx = -1
+        for i in range(len(session.messages) - 1, -1, -1):
+            if session.messages[i].message_type in ('compress', 'resume'):
+                checkpoint_idx = i
+                break
+
+        if checkpoint_idx >= 0:
+            # Build history: checkpoint summary + messages after it
+            checkpoint = session.messages[checkpoint_idx]
+            history = []
+
+            # Inject the summary as a user message so Claude knows the context
+            summary_label = (
+                "RESUME DE LA CONVERSATION" if checkpoint.message_type == 'resume'
+                else "RESUME DES ECHANGES PRECEDENTS"
+            )
+            history.append({
+                "role": "user",
+                "content": f"[{summary_label}]\n{checkpoint.content}",
+            })
+            # Add a fake assistant ack so the alternation is valid
+            history.append({
+                "role": "assistant",
+                "content": "Compris, je dispose du contexte resume ci-dessus. Comment puis-je t'aider ?",
+            })
+
+            # Append all text messages after the checkpoint
+            for msg in session.messages[checkpoint_idx + 1:]:
+                if msg.message_type == 'text':
+                    history.append({"role": msg.role, "content": msg.content})
+
+            return history
+
+        # No checkpoint — return all text messages
+        return [
+            {"role": msg.role, "content": msg.content}
+            for msg in session.messages
+            if msg.message_type == 'text'
+        ]
+
+    def get_messages_for_compression(
+        self, session_id: str, keep_recent: int = 10,
+    ) -> list[ChatMessage]:
+        """Get the OLDEST text messages since checkpoint, keeping recent ones intact.
+
+        Per PM spec: compress the 10 oldest, keep the 10 most recent untouched.
+        Only the oldest batch is returned for LLM summarization.
+        """
+        session = self.load_session(session_id)
+        if not session:
+            return []
+
+        # Collect all text messages since last checkpoint
+        all_since_checkpoint = []
+        for msg in reversed(session.messages):
+            if msg.message_type in ('compress', 'resume'):
+                break
+            if msg.message_type == 'text':
+                all_since_checkpoint.append(msg)
+        all_since_checkpoint.reverse()
+
+        # Only compress if we have enough to split (keep_recent stay intact)
+        if len(all_since_checkpoint) <= keep_recent:
+            return []
+
+        # Return only the oldest batch — the recent ones stay in raw form
+        return all_since_checkpoint[:-keep_recent]
+
+    def get_compress_blocks_since_resume(self, session_id: str) -> list[ChatMessage]:
+        """Get compress blocks since the last resume, for merging into a resume."""
+        session = self.load_session(session_id)
+        if not session:
+            return []
+
+        result = []
+        for msg in reversed(session.messages):
+            if msg.message_type == 'resume':
+                break
+            if msg.message_type == 'compress':
+                result.append(msg)
+        result.reverse()
+        return result
+
+    def add_compress_block(self, session_id: str, compressed_content: str) -> None:
+        """Add a compress block (phase 1: >=20 messages since last checkpoint)."""
         compress_msg = ChatMessage(
             role='assistant',
             content=compressed_content,
@@ -267,7 +402,6 @@ class SessionManager:
         )
         self.save_message(session_id, compress_msg)
 
-        # Update compress count
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "UPDATE chat_sessions SET compressed_message_count = compressed_message_count + 1 WHERE uuid = ?",
@@ -276,22 +410,36 @@ class SessionManager:
             conn.commit()
 
     def add_resume_block(self, session_id: str, resume_content: str) -> None:
-        """Add a resume block (phase 2: >=4 compresses, max 3 resumes)."""
+        """Add a resume block (phase 2: >=4 compresses since last resume, max 3 resumes).
+
+        When a resume is created, reset compressed_message_count since those
+        compresses are now folded into the resume.
+        """
         session = self.load_session(session_id)
         if not session:
             raise ValueError(f"Session {session_id} not found")
 
         if session.resume_count >= 3:
-            # Drop oldest resume: find and delete it
+            # Drop oldest resume by message_order (more reliable than created_at)
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
-                    "DELETE FROM chat_messages WHERE session_id = (SELECT id FROM chat_sessions WHERE uuid = ?) "
-                    "AND message_type = 'resume' ORDER BY created_at ASC LIMIT 1",
+                    "DELETE FROM chat_messages WHERE rowid = ("
+                    "  SELECT cm.rowid FROM chat_messages cm"
+                    "  JOIN chat_sessions cs ON cs.id = cm.session_id"
+                    "  WHERE cs.uuid = ? AND cm.message_type = 'resume'"
+                    "  ORDER BY cm.message_order ASC LIMIT 1"
+                    ")",
                     (session_id,)
                 )
                 conn.commit()
         else:
-            session.resume_count += 1
+            # Only increment if not replacing
+            with sqlite3.connect(self.db_path) as conn:
+                conn.execute(
+                    "UPDATE chat_sessions SET resume_count = resume_count + 1 WHERE uuid = ?",
+                    (session_id,)
+                )
+                conn.commit()
 
         resume_msg = ChatMessage(
             role='assistant',
@@ -300,10 +448,10 @@ class SessionManager:
         )
         self.save_message(session_id, resume_msg)
 
-        # Update resume count
+        # Reset compress count — those compresses are folded into this resume
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "UPDATE chat_sessions SET resume_count = resume_count + 1 WHERE uuid = ?",
+                "UPDATE chat_sessions SET compressed_message_count = 0 WHERE uuid = ?",
                 (session_id,)
             )
             conn.commit()

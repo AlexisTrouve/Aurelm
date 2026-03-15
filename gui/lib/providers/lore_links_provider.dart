@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../utils/lore_linker.dart';
@@ -117,37 +122,98 @@ final loreLinksProvider = FutureProvider<Map<String, LoreLink>>((ref) async {
 });
 
 // ---------------------------------------------------------------------------
-// Cached lore-linked text — avoids re-running regex on every widget rebuild.
-// Keyed by raw content string, invalidated when loreLinksProvider changes.
+// Cached lore-linked text — 2-layer cache:
+//   1. In-memory Map (fast path, dies with the process)
+//   2. SQLite _lore_link_cache table (persists across restarts)
+// Regex runs in a background isolate to avoid blocking the main thread.
 // ---------------------------------------------------------------------------
 
-/// Holds the cached link map identity + transformed text cache.
-/// When loreLinksProvider yields a new map object, the cache is wiped.
-Map<String, LoreLink>? _lastLoreLinks;
-final _loreLinkedTextCache = <String, String>{};
+/// In-memory fast path — avoids DB roundtrip on repeated lookups.
+int _lastLoreLinksSize = -1;
+final _memCache = <String, String>{};
 
-/// Returns [rawContent] with lore links injected, using a simple cache.
-/// Cache auto-clears when the underlying lore link map changes.
+/// MD5 hash of raw text — used as DB key to avoid storing huge text blobs.
+String _textHash(String text) =>
+    md5.convert(utf8.encode(text)).toString();
+
+/// Top-level function for compute() — must be static/top-level for isolates.
+String _computeLoreLinks(_LoreLinkPayload payload) {
+  return injectLoreLinks(payload.text, payload.links);
+}
+
+/// Payload for the isolate — compute() requires a single argument.
+class _LoreLinkPayload {
+  final String text;
+  final Map<String, LoreLink> links;
+  const _LoreLinkPayload(this.text, this.links);
+}
+
+/// Async provider: checks mem cache -> DB cache -> compute in isolate.
+/// Widget shows raw text while loading, swaps in linked text when ready.
 final loreLinkTextProvider =
-    Provider.family<String, String>((ref, rawContent) {
+    FutureProvider.family<String, String>((ref, rawContent) async {
   final loreLinksAsync = ref.watch(loreLinksProvider);
   final loreLinks = loreLinksAsync.valueOrNull;
+  final db = ref.watch(databaseProvider);
 
-  // No links available yet — return raw content
+  // No links available yet — return raw content immediately
   if (loreLinks == null || loreLinks.isEmpty) return rawContent;
 
-  // If the link map instance changed, wipe the cache
-  if (!identical(loreLinks, _lastLoreLinks)) {
-    _loreLinkedTextCache.clear();
-    _lastLoreLinks = loreLinks;
+  final entityCount = loreLinks.length;
+
+  // If entity set changed, wipe both caches
+  if (entityCount != _lastLoreLinksSize) {
+    _memCache.clear();
+    _lastLoreLinksSize = entityCount;
+    // Wipe DB cache for stale entity counts
+    if (db != null) {
+      try {
+        await db.customStatement(
+          'DELETE FROM _lore_link_cache WHERE entity_count != ?',
+          [entityCount],
+        );
+      } catch (_) {}
+    }
   }
 
-  // Check cache
-  final cached = _loreLinkedTextCache[rawContent];
-  if (cached != null) return cached;
+  // Layer 1: in-memory cache (instant)
+  final memCached = _memCache[rawContent];
+  if (memCached != null) return memCached;
 
-  // Compute and cache
-  final result = injectLoreLinks(rawContent, loreLinks);
-  _loreLinkedTextCache[rawContent] = result;
+  // Layer 2: DB cache (survives restarts)
+  final hash = _textHash(rawContent);
+  if (db != null) {
+    try {
+      final rows = await db.customSelect(
+        'SELECT linked_text FROM _lore_link_cache WHERE text_hash = ? AND entity_count = ?',
+        variables: [Variable(hash), Variable(entityCount)],
+      ).get();
+      if (rows.isNotEmpty) {
+        final dbCached = rows.first.read<String>('linked_text');
+        _memCache[rawContent] = dbCached;
+        return dbCached;
+      }
+    } catch (_) {
+      // Table might not exist yet on first run
+    }
+  }
+
+  // Cache miss — compute in background isolate
+  final result = await compute(
+    _computeLoreLinks,
+    _LoreLinkPayload(rawContent, loreLinks),
+  );
+
+  // Store in both caches
+  _memCache[rawContent] = result;
+  if (db != null) {
+    try {
+      await db.customStatement(
+        'INSERT OR REPLACE INTO _lore_link_cache (text_hash, linked_text, entity_count) VALUES (?, ?, ?)',
+        [hash, result, entityCount],
+      );
+    } catch (_) {}
+  }
+
   return result;
 });

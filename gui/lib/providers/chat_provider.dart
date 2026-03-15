@@ -14,10 +14,15 @@ export '../services/chat_service.dart' show ToolCallInfo;
 
 enum ChatRole { user, assistant }
 
+/// Distinguishes regular text messages from compress/resume summary blocks.
+enum MessageType { text, compress, resume }
+
 class ChatMessage {
   final ChatRole role;
   final String content;
   final DateTime timestamp;
+  /// Type of message — text (default), compress (summary), or resume (merged summaries).
+  final MessageType messageType;
   /// Tool calls made by the agent while generating this message (assistant only).
   final List<ToolCallInfo> toolCalls;
   /// Claude thinking blocks emitted during this turn.
@@ -27,6 +32,7 @@ class ChatMessage {
     required this.role,
     required this.content,
     required this.timestamp,
+    this.messageType = MessageType.text,
     this.toolCalls = const [],
     this.thinkingBlocks = const [],
   });
@@ -41,6 +47,7 @@ class ChatMessage {
       role: role,
       content: content ?? this.content,
       timestamp: timestamp,
+      messageType: messageType,
       toolCalls: toolCall != null ? [...toolCalls, toolCall] : toolCalls,
       thinkingBlocks: thinkingBlock != null
           ? [...thinkingBlocks, thinkingBlock]
@@ -72,6 +79,9 @@ class ChatState {
   final int outputTokens;
   /// Session-wide cumulative total (sum of all rounds' input+output).
   final int sessionTotalTokens;
+  /// Active session name + tags (displayed in AppBar)
+  final String sessionName;
+  final List<String> sessionTags;
 
   const ChatState({
     this.messages = const [],
@@ -83,6 +93,8 @@ class ChatState {
     this.inputTokens = 0,
     this.outputTokens = 0,
     this.sessionTotalTokens = 0,
+    this.sessionName = '',
+    this.sessionTags = const [],
   });
 
   ChatState copyWith({
@@ -95,6 +107,8 @@ class ChatState {
     int? inputTokens,
     int? outputTokens,
     int? sessionTotalTokens,
+    String? sessionName,
+    List<String>? sessionTags,
     bool clearError = false,
     bool clearSession = false,
   }) {
@@ -110,6 +124,8 @@ class ChatState {
       inputTokens: inputTokens ?? this.inputTokens,
       outputTokens: outputTokens ?? this.outputTokens,
       sessionTotalTokens: sessionTotalTokens ?? this.sessionTotalTokens,
+      sessionName: sessionName ?? this.sessionName,
+      sessionTags: sessionTags ?? this.sessionTags,
     );
   }
 }
@@ -210,25 +226,60 @@ class ChatNotifier extends StateNotifier<ChatState> {
             _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
 
           case UsageEvent():
-            // inputTokens = context window size (last round), grows with conversation
-            // sessionTotalTokens = cumulative input+output across all rounds in session
-            final newSessionTotal = state.sessionTotalTokens
-                + (event.inputTokens - state.inputTokens)
-                + (event.outputTokens - state.outputTokens);
+            // API tokens — for cost tracking only, not displayed in badge
             state = state.copyWith(
-              inputTokens: event.inputTokens,
               outputTokens: event.outputTokens,
-              sessionTotalTokens: newSessionTotal,
+            );
+
+          case ContextEstimateEvent():
+            // Local estimate (chars/4) — replaces API tokens for the badge display.
+            // Shows what Claude actually receives after compression.
+            state = state.copyWith(
+              inputTokens: event.compressedTokens,
             );
 
           case TextEvent():
             responseText = event.content;
             _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
 
+          case CompressEvent():
+            // Append compress block as a special system message
+            state = state.copyWith(
+              messages: [
+                ...state.messages,
+                ChatMessage(
+                  role: ChatRole.assistant,
+                  content: event.content,
+                  timestamp: DateTime.now(),
+                  messageType: MessageType.compress,
+                ),
+              ],
+            );
+
+          case ResumeEvent():
+            // Append resume block as a special system message
+            state = state.copyWith(
+              messages: [
+                ...state.messages,
+                ChatMessage(
+                  role: ChatRole.assistant,
+                  content: event.content,
+                  timestamp: DateTime.now(),
+                  messageType: MessageType.resume,
+                ),
+              ],
+            );
+
           case DoneEvent():
             state = state.copyWith(
               loading: false,
               sessionId: event.sessionId,
+              sessionName: event.sessionName.isNotEmpty
+                  ? event.sessionName
+                  : state.sessionName,
+              sessionTags: event.sessionTags.isNotEmpty
+                  ? event.sessionTags
+                  : state.sessionTags,
               pendingTools: [],
             );
 
@@ -332,7 +383,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     // Create new session in the backend
     try {
       final sessionId = await _sessionsService.createSession('New Session');
-      state = state.copyWith(sessionId: sessionId);
+      state = state.copyWith(sessionId: sessionId, sessionName: 'New Session', sessionTags: []);
     } catch (e) {
       // Silently fail — user can still chat without a saved session
     }
@@ -343,9 +394,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
   /// Clears the current chat view immediately, then populates it with the
   /// session's stored messages. Silently falls back to an empty view on error
   /// (e.g. bot not running).
-  Future<void> setSessionId(String sessionId) async {
+  Future<void> setSessionId(
+    String sessionId, {
+    String? name,
+    List<String>? tags,
+  }) async {
     // Clear immediately so the UI shows a clean slate while loading
-    state = state.copyWith(sessionId: sessionId, messages: [], clearError: true);
+    state = state.copyWith(
+      sessionId: sessionId,
+      messages: [],
+      clearError: true,
+      sessionName: name ?? '',
+      sessionTags: tags ?? const [],
+    );
+
+    // If name not provided, fetch it from the sessions list
+    if (name == null || name.isEmpty) {
+      try {
+        final sessions = await _sessionsService.listSessions();
+        final match = sessions.where((s) => s.sessionId == sessionId).firstOrNull;
+        if (match != null) {
+          state = state.copyWith(
+            sessionName: match.name,
+            sessionTags: match.tags,
+          );
+        }
+      } catch (_) {}
+    }
 
     try {
       final rawMessages = await _sessionsService.getSessionMessages(sessionId);
@@ -358,16 +433,33 @@ class ChatNotifier extends StateNotifier<ChatState> {
             .map(ToolCallInfo.fromJson)
             .toList();
 
+        // Map backend message_type to Flutter enum
+        final rawType = m['message_type'] as String? ?? 'text';
+        final messageType = switch (rawType) {
+          'compress' => MessageType.compress,
+          'resume' => MessageType.resume,
+          _ => MessageType.text,
+        };
+
         return ChatMessage(
           role: (m['role'] as String?) == 'user' ? ChatRole.user : ChatRole.assistant,
           content: m['content'] as String? ?? '',
           timestamp: DateTime.tryParse(m['created_at'] as String? ?? '') ?? DateTime.now(),
+          messageType: messageType,
           toolCalls: toolCalls,
           // Thinking blocks are not persisted — they're transient during streaming
         );
       }).toList();
 
       state = state.copyWith(messages: chatMessages);
+
+      // Fetch context size estimate — same pipeline as LLM send
+      try {
+        final estimate = await _sessionsService.getContextSize(sessionId);
+        state = state.copyWith(inputTokens: estimate);
+      } catch (_) {
+        // Non-critical — badge just won't show until first message
+      }
     } catch (_) {
       // Silently ignore — the session ID is still set, history just won't show
     }

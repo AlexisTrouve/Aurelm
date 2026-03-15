@@ -25,13 +25,19 @@ RegExp fuzzyRegex(String query) {
       .where((w) => w.isNotEmpty)
       .toList();
   if (words.isEmpty) return RegExp(RegExp.escape(query), caseSensitive: false);
-  final pattern = [
+  final inner = [
     for (int i = 0; i < words.length; i++)
       i == words.length - 1
           ? '${RegExp.escape(words[i])}s?'
           : RegExp.escape(words[i]),
   ].join(r'[\s\-]+');
-  return RegExp(pattern, caseSensitive: false);
+  // Unicode-aware word boundaries — \b is ASCII-only in Dart, so we use
+  // lookbehind/lookahead that match start/end or any non-letter/non-accent char.
+  // This prevents "civilisation" from matching inside "civilisationnelle".
+  const lb = r'(?<=\s|^|[^\w\u00C0-\u024F])';
+  const la = r'(?=\s|$|[^\w\u00C0-\u024F])';
+  final pattern = '$lb$inner$la';
+  return RegExp(pattern, caseSensitive: false, unicode: true);
 }
 
 /// Inject Markdown-style links into [text] for every name in [linkMap].
@@ -52,7 +58,9 @@ String injectLoreLinks(String text, Map<String, LoreLink> linkMap) {
 
   for (final entry in linkMap.entries) {
     final name = entry.key;
-    if (name.length < 4) continue;
+    // Skip very short names to avoid noise — but always allow turn refs
+    // like "T1", "T5" which are intentionally short.
+    if (name.length < 4 && entry.value.type != LoreLinkType.turn) continue;
 
     final link = entry.value;
     final regex = fuzzyRegex(name);
