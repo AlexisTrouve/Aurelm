@@ -312,6 +312,7 @@ class Agent:
 
         self._anthropic = anthropic.Anthropic(
             api_key=self.config.anthropic_api_key,
+            base_url=self.config.anthropic_base_url,  # None = api.anthropic.com direct
             http_client=http_client,
         )
         self._anthropic_tools = [

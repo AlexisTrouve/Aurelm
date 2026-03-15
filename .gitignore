@@ -57,6 +57,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Config secrets (clés API, tokens Discord) — utiliser aurelm_config.example.json comme template
+aurelm_config.json
+
 # OS
 desktop.ini
 ehthumbs.db

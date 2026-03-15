@@ -1,0 +1,13 @@
+{
+  "bot_port": 8473,
+  "proxy": "http://127.0.0.1:7897",
+  "anthropic_api_key": "sk-internal-dev",
+  "anthropic_base_url": "http://localhost:4000",
+  "wiki_dir": "../wiki",
+  "ollama_model": "qwen3:14b",
+  "extraction_version": "v22.2.2-pastlevel",
+  "gm_authors": ["Arthur Ignatus"],
+  "channels": {
+    "DISCORD_CHANNEL_ID": {"civ_name": "Nom de la Civilisation", "player": "PseudoJoueur"}
+  }
+}
