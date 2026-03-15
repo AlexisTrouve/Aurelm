@@ -80,3 +80,13 @@ final subjectStatsProvider =
   if (db == null) return const Stream.empty();
   return db.subjectDao.watchSubjectStats(civId);
 });
+
+/// Les 5 sujets les plus récents d'une civ — pour le frame CivDetailScreen.
+final civRecentSubjectsProvider =
+    StreamProvider.family<List<SubjectWithDetails>, int>((ref, civId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.subjectDao
+      .watchSubjects(SubjectFilterState(civId: civId))
+      .map((list) => list.take(5).toList());
+});

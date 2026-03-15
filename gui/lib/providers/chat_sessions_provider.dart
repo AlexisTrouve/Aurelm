@@ -109,3 +109,19 @@ class SessionsNotifier {
 final sessionsProvider = Provider<SessionsNotifier>(
   (ref) => SessionsNotifier(ref.watch(chatSessionsServiceProvider)),
 );
+
+/// Sessions récentes taggées avec le nom d'une civ. Retourne [] si bot offline.
+final civSessionsProvider =
+    FutureProvider.family<List<ChatSessionPreview>, String>((ref, civName) async {
+  final service = ref.watch(chatSessionsServiceProvider);
+  try {
+    final sessions = await service.listSessions(
+      archived: false,
+      tagFilter: civName,
+    );
+    return sessions.take(5).toList();
+  } catch (_) {
+    // Bot offline — dégradé silencieux
+    return [];
+  }
+});

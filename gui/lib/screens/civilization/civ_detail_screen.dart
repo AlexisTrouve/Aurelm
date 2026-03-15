@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/civilization_provider.dart';
+import '../../providers/entity_provider.dart';
+import '../../providers/turn_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/stat_card.dart';
@@ -11,6 +13,8 @@ import '../../screens/entities/widgets/notes_menu_button.dart';
 import 'widgets/entity_breakdown_chart.dart';
 import 'widgets/top_entities_list.dart';
 import 'widgets/recent_turns_list.dart';
+import 'widgets/civ_subjects_frame.dart';
+import 'widgets/civ_sessions_frame.dart';
 
 class CivDetailScreen extends ConsumerWidget {
   final int civId;
@@ -33,6 +37,7 @@ class CivDetailScreen extends ConsumerWidget {
         }
 
         final civ = civWithStats.civ;
+        final briefAsync = ref.watch(civBriefProvider(civId));
         return Scaffold(
           appBar: AppBar(
             title: Text(civ.name),
@@ -49,6 +54,50 @@ class CivDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Civ brief — recent turn summaries
+                briefAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (turns) {
+                    if (turns.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          initiallyExpanded: true,
+                          title: Text('Historique récent',
+                              style: Theme.of(context).textTheme.titleSmall),
+                          children: turns.map((turn) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Tour ${turn.turnNumber}',
+                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  turn.detailedSummary!,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        height: 1.5,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
                 // Header info
                 if (civ.playerName != null)
                   Padding(
@@ -97,11 +146,14 @@ class CivDetailScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // Top entities
+                // Top entities — "View all" pré-filtre par civ
                 SectionHeader(
                   title: 'Top Entities',
                   trailing: TextButton(
-                    onPressed: () => context.go('/entities'),
+                    onPressed: () {
+                      ref.read(entityFilterProvider.notifier).setCivId(civId);
+                      context.go('/entities');
+                    },
                     child: const Text('View all'),
                   ),
                 ),
@@ -109,11 +161,24 @@ class CivDetailScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // Recent turns
+                // Sujets (5 récents + stats + lien filtré)
+                CivSubjectsFrame(civId: civId),
+
+                const SizedBox(height: 24),
+
+                // Sessions chat taggées avec cette civ
+                CivSessionsFrame(civName: civ.name),
+
+                const SizedBox(height: 24),
+
+                // Recent turns — tiles cliquables + "View all" pré-filtré par civ
                 SectionHeader(
                   title: 'Recent Turns',
                   trailing: TextButton(
-                    onPressed: () => context.go('/timeline'),
+                    onPressed: () {
+                      ref.read(timelineFilterProvider.notifier).setCivId(civId);
+                      context.go('/timeline');
+                    },
                     child: const Text('View all'),
                   ),
                 ),
