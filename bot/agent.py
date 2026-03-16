@@ -381,6 +381,9 @@ class Agent:
                 "[Reponses definitives donnees au MJ, conclusions de l'agent]\n\n"
                 "## POINTS OUVERTS\n"
                 "[Questions sans reponse, threads en attente]\n\n"
+                "## CONTEXTE LIBRE\n"
+                "[Paragraphe court : tout ce qui ne rentre pas dans les sections ci-dessus — "
+                "ton de la session, contexte implicite, details utiles pour la suite]\n\n"
                 "BLOCS A FUSIONNER :\n"
                 f"{conversation_text}"
             )
@@ -404,6 +407,9 @@ class Agent:
                 "[Reponses definitives, conclusions, faits etablis en fin d'echange]\n\n"
                 "## POINTS OUVERTS\n"
                 "[Questions sans reponse, threads en cours d'investigation]\n\n"
+                "## CONTEXTE LIBRE\n"
+                "[Paragraphe court : tout ce qui ne rentre pas dans les sections ci-dessus — "
+                "ton de la session, contexte implicite, details utiles pour la suite]\n\n"
                 "CONVERSATION :\n"
                 f"{conversation_text}"
             )
