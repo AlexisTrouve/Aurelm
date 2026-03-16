@@ -139,6 +139,10 @@ final chatServiceProvider = Provider<ChatService>(
   (_) => ChatService(port: AppConstants.botDefaultPort),
 );
 
+/// Persists the input field text across navigation — survives ChatScreen rebuild.
+/// Cleared on send and when the active session changes.
+final chatInputTextProvider = StateProvider<String>((ref) => '');
+
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>(
   (ref) => ChatNotifier(
     ref.watch(chatServiceProvider),

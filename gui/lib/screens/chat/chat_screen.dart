@@ -42,23 +42,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-load session if provided
-    if (widget.initialSessionId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Set the session ID in the state so subsequent messages use it
-        ref.read(chatProvider.notifier).setSessionId(widget.initialSessionId!);
-      });
+
+    // Restore persisted input text (survives navigation away and back)
+    final savedText = ref.read(chatInputTextProvider);
+    if (savedText.isNotEmpty) {
+      _controller.text = savedText;
+      _controller.selection =
+          TextSelection.fromPosition(TextPosition(offset: savedText.length));
     }
+
+    // Sync controller changes → persistent provider so text survives navigation
+    _controller.addListener(() {
+      ref.read(chatInputTextProvider.notifier).state = _controller.text;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Pre-load session if provided via route extra
+      if (widget.initialSessionId != null) {
+        ref.read(chatProvider.notifier).setSessionId(widget.initialSessionId!);
+      }
+      // Restore scroll to bottom when returning to an active session
+      _scrollToBottom();
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh sessions list when a chat turn completes (loading: true→false),
-    // so auto-tags applied by the bot are visible immediately in the drawer.
     ref.listenManual(chatProvider, (prev, next) {
+      // Refresh sessions list when a chat turn completes
       if (prev?.loading == true && next.loading == false) {
         ref.invalidate(filteredSessionsProvider);
+      }
+      // Clear persisted input text when session changes (new or different session)
+      if (prev != null && prev.sessionId != next.sessionId) {
+        ref.read(chatInputTextProvider.notifier).state = '';
+        _controller.clear();
       }
     });
   }
@@ -95,6 +114,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final message = _buildMessage();
     if (message.isEmpty) return;
     _controller.clear();
+    ref.read(chatInputTextProvider.notifier).state = '';
     setState(() {
       _attachments.clear();
       _quotedMessage = null; // clear quote after send
