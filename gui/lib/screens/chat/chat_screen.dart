@@ -966,14 +966,15 @@ class _MessageBubble extends ConsumerWidget {
               dense: true,
             ),
           ),
-          const PopupMenuItem(
-            value: 'duplicate_from',
-            child: ListTile(
-              leading: Icon(Icons.fork_right, size: 18),
-              title: Text('Dupliquer depuis ici'),
-              dense: true,
+          if (!isUser)
+            const PopupMenuItem(
+              value: 'duplicate_from',
+              child: ListTile(
+                leading: Icon(Icons.fork_right, size: 18),
+                title: Text('Dupliquer depuis ici'),
+                dense: true,
+              ),
             ),
-          ),
           if (isUser) ...[
             const PopupMenuItem(
               value: 'edit',

@@ -555,8 +555,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (sessionId == null) return null;
     final newId = await _sessionsService.duplicateSession(sessionId);
     if (newId == null) return null;
-    // Tronquer depuis fromIndex dans la nouvelle session (messages texte seulement)
-    await _sessionsService.deleteMessages(newId, fromIndex);
+    // Tronquer tout ce qui suit fromIndex dans la nouvelle session.
+    // On passe fromIndex+1 pour garder le message cliqué lui-même.
+    await _sessionsService.deleteMessages(newId, fromIndex + 1);
     await setSessionId(newId);
     return newId;
   }
