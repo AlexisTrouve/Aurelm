@@ -437,11 +437,42 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             tooltip: 'Nouvelle conversation',
             onPressed: () async {
               await ref.read(chatProvider.notifier).newSession();
-              // Refresh the sessions list after creating a new one
-              if (mounted) {
-                ref.refresh(filteredSessionsProvider);
+              if (mounted) ref.refresh(filteredSessionsProvider);
+            },
+          ),
+          // Session actions menu (duplicate, copy conversation)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Actions session',
+            onSelected: (value) async {
+              final sessionId = chatState.sessionId;
+              switch (value) {
+                case 'duplicate':
+                  if (sessionId == null) break;
+                  await ref.read(sessionsProvider).duplicateSession(sessionId);
+                  if (mounted) ref.refresh(filteredSessionsProvider);
+                case 'copy_conv':
+                  ref.read(chatProvider.notifier).copyConversation();
               }
             },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'duplicate',
+                child: ListTile(
+                  leading: Icon(Icons.copy_all, size: 18),
+                  title: Text('Dupliquer la session'),
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'copy_conv',
+                child: ListTile(
+                  leading: Icon(Icons.content_copy, size: 18),
+                  title: Text('Copier la conversation'),
+                  dense: true,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -929,6 +960,14 @@ class _MessageBubble extends ConsumerWidget {
               dense: true,
             ),
           ),
+          const PopupMenuItem(
+            value: 'copy_from',
+            child: ListTile(
+              leading: Icon(Icons.content_copy, size: 18),
+              title: Text('Copier depuis ici'),
+              dense: true,
+            ),
+          ),
           if (isUser) ...[
             const PopupMenuItem(
               value: 'edit',
@@ -974,6 +1013,8 @@ class _MessageBubble extends ConsumerWidget {
         switch (result) {
           case 'copy':
             notifier.copyMessage(index);
+          case 'copy_from':
+            notifier.copyConversationFrom(index);
           case 'edit':
             if (!context.mounted) return;
             final controller =

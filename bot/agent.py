@@ -308,7 +308,12 @@ class Agent:
 
         http_client = None
         if self.config.proxy:
-            http_client = httpx.Client(proxy=self.config.proxy)
+            # Si base_url pointe vers localhost, ne pas router via le proxy réseau —
+            # localhost ne passe pas par un proxy externe.
+            base = self.config.anthropic_base_url or ""
+            is_local = "localhost" in base or "127.0.0.1" in base
+            if not is_local:
+                http_client = httpx.Client(proxy=self.config.proxy)
 
         self._anthropic = anthropic.Anthropic(
             api_key=self.config.anthropic_api_key,

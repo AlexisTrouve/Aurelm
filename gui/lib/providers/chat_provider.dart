@@ -473,6 +473,24 @@ class ChatNotifier extends StateNotifier<ChatState> {
     Clipboard.setData(ClipboardData(text: msg.content));
   }
 
+  /// Copie toute la conversation (depuis [fromIndex]) en texte brut.
+  ///
+  /// Format : "User:\n...\n\nAssistant:\n...\n\n..."
+  void copyConversationFrom(int fromIndex) {
+    if (fromIndex < 0) fromIndex = 0;
+    final msgs = state.messages.sublist(fromIndex);
+    final buffer = StringBuffer();
+    for (final m in msgs) {
+      buffer.write(m.role == ChatRole.user ? 'User:\n' : 'Assistant:\n');
+      buffer.writeln(m.content);
+      buffer.writeln();
+    }
+    Clipboard.setData(ClipboardData(text: buffer.toString().trimRight()));
+  }
+
+  /// Copie toute la conversation depuis le début.
+  void copyConversation() => copyConversationFrom(0);
+
   /// Supprime le message à l'index donné et tous les suivants.
   ///
   /// Mise à jour immédiate de l'UI, puis persiste la suppression

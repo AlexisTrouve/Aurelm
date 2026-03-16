@@ -168,15 +168,22 @@ class SessionManager:
         with sqlite3.connect(self.db_path) as conn:
             # Get session id and next message order
             row = conn.execute(
-                "SELECT id, message_count FROM chat_sessions WHERE uuid = ?",
+                "SELECT id FROM chat_sessions WHERE uuid = ?",
                 (session_id,)
             ).fetchone()
 
             if not row:
                 raise ValueError(f"Session {session_id} not found")
 
-            session_db_id, current_count = row
-            next_order = current_count
+            session_db_id = row[0]
+
+            # Use MAX(message_order)+1 — NOT message_count, which can be lower than
+            # max order when compress/resume blocks remain after text message deletion.
+            max_order_row = conn.execute(
+                "SELECT COALESCE(MAX(message_order), -1) FROM chat_messages WHERE session_id = ?",
+                (session_db_id,)
+            ).fetchone()
+            next_order = max_order_row[0] + 1
 
             tool_calls_json = json.dumps(message.tool_calls) if message.tool_calls else None
 
