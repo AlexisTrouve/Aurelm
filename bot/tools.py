@@ -464,7 +464,8 @@ def get_entity_detail(
     sql = """
         SELECT e.id, e.canonical_name, e.entity_type, e.description, e.history,
                c.name AS civ_name, e.is_active,
-               ft.turn_number AS first_turn, lt.turn_number AS last_turn
+               ft.turn_number AS first_turn, lt.turn_number AS last_turn,
+               e.tags
         FROM entity_entities e
         LEFT JOIN civ_civilizations c ON e.civ_id = c.id
         LEFT JOIN turn_turns ft ON e.first_seen_turn = ft.id
@@ -489,7 +490,7 @@ def get_entity_detail(
 
     lines: list[str] = []
     for e in entities:
-        eid, name, etype, desc, history, cn, active, ft, lt = e
+        eid, name, etype, desc, history, cn, active, ft, lt, tags_json = e
         lines.append(f"# {name} ({etype})")
         lines.append("")
         if cn:
@@ -499,6 +500,10 @@ def get_entity_detail(
             lines.append(f"**First seen:** Turn {ft}")
         if lt is not None:
             lines.append(f"**Last seen:** Turn {lt}")
+        # Domain tags — helps agent understand narrative role without extra calls
+        entity_tags = _parse_json_list(tags_json or "[]")
+        if entity_tags:
+            lines.append(f"**Tags:** {', '.join(entity_tags)}")
         if desc:
             lines.append(f"**Description:** {desc}")
 
