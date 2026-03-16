@@ -363,31 +363,48 @@ class Agent:
 
         if mode == "resume":
             prompt = (
-                "Tu recois plusieurs resumes de conversation (blocs compress). "
-                "Fusionne-les en UN SEUL resume coherent et chronologique.\n\n"
-                "PRESERVE ABSOLUMENT:\n"
-                "- Tous les noms d'entites (personnes, lieux, technologies, civilisations)\n"
-                "- Les numeros de tours (T1, T5, Tour 12...)\n"
-                "- Les faits etablis et conclusions importantes\n"
-                "- Les decisions prises par le MJ\n"
-                "- Le contexte necessaire pour comprendre la suite\n\n"
-                "FORMAT: Resume narratif en francais, ~500 mots max. Pas de bullet points.\n\n"
-                "RESUMES A FUSIONNER:\n"
+                "Tu recois plusieurs blocs COMPRESS successifs d'une session MJ/archiviste-IA.\n"
+                "Fusionne-les en UN SEUL bloc structure. Ne perds rien — si une info apparait "
+                "dans un seul bloc, elle doit rester dans la fusion.\n\n"
+                "REMPLIS EXACTEMENT CES SECTIONS (laisse 'aucun' si vraiment vide) :\n\n"
+                "## INTENTION DE SESSION\n"
+                "[Pourquoi le MJ a ouvert cette session — question centrale, civ ciblee]\n\n"
+                "## OUTILS APPELES\n"
+                "[Un bullet par appel : `nom_outil(params) → résultat_clé`]\n\n"
+                "## FAITS DE LORE ETABLIS\n"
+                "[Faits confirmes, sanity checks, verdicts, deductions]\n\n"
+                "## ENTITES MENTIONNEES\n"
+                "[Nom (type, civ, tours ref.) — une ligne par entite]\n\n"
+                "## TOURS REFERENCES\n"
+                "[Liste : T01, T05, Tour 12...]\n\n"
+                "## DECISIONS ET CONCLUSIONS\n"
+                "[Reponses definitives donnees au MJ, conclusions de l'agent]\n\n"
+                "## POINTS OUVERTS\n"
+                "[Questions sans reponse, threads en attente]\n\n"
+                "BLOCS A FUSIONNER :\n"
                 f"{conversation_text}"
             )
         else:
             prompt = (
-                "Resume cette conversation entre un MJ (Maitre du Jeu) et son assistant IA "
-                "(archiviste d'un JDR de civilisation).\n\n"
-                "PRESERVE ABSOLUMENT:\n"
-                "- Tous les noms d'entites (personnes, lieux, technologies, civilisations)\n"
-                "- Les numeros de tours mentionnes (T1, T5, Tour 12...)\n"
-                "- Les faits etablis et reponses definitives donnees\n"
-                "- Les recherches effectuees et leurs conclusions\n"
-                "- Les sujets encore ouverts ou en cours d'investigation\n\n"
-                "FORMAT: Resume narratif en francais, ~300 mots max. Commence directement "
-                "par le contenu, pas de preambule.\n\n"
-                "CONVERSATION:\n"
+                "Tu es un archiviste technique. Resume cette conversation MJ/IA en remplissant "
+                "OBLIGATOIREMENT chaque section ci-dessous. Les sections a remplir forcent la "
+                "preservation des details techniques (noms, tours, outils, faits).\n\n"
+                "REMPLIS EXACTEMENT CES SECTIONS (laisse 'aucun' si vraiment vide) :\n\n"
+                "## DEMANDE DU MJ\n"
+                "[Question/tache precise du MJ — civ ciblee, sujet, contexte]\n\n"
+                "## OUTILS APPELES\n"
+                "[Un bullet par appel : `nom_outil(params) → résultat_clé ou verdict`]\n\n"
+                "## FAITS DE LORE ETABLIS\n"
+                "[Faits confirmes ou infirmes, entites liees, sanity check verdicts]\n\n"
+                "## ENTITES MENTIONNEES\n"
+                "[Nom (type, civ, tours ref.) — une ligne par entite citee]\n\n"
+                "## TOURS REFERENCES\n"
+                "[Liste courte : T01, T05, Tour 12...]\n\n"
+                "## DECISIONS ET CONCLUSIONS\n"
+                "[Reponses definitives, conclusions, faits etablis en fin d'echange]\n\n"
+                "## POINTS OUVERTS\n"
+                "[Questions sans reponse, threads en cours d'investigation]\n\n"
+                "CONVERSATION :\n"
                 f"{conversation_text}"
             )
 
@@ -395,7 +412,7 @@ class Agent:
             response = await asyncio.to_thread(
                 self._anthropic.messages.create,
                 model="claude-sonnet-4-6",
-                max_tokens=1024 if mode == "compress" else 2048,
+                max_tokens=1500 if mode == "compress" else 2500,
                 system="Tu es un assistant specialise dans le resume de conversations.",
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -410,7 +427,7 @@ class Agent:
                     {"role": "system", "content": "Tu es un assistant specialise dans le resume de conversations."},
                     {"role": "user", "content": prompt},
                 ],
-                options={"num_ctx": 8192, "num_predict": 1024 if mode == "compress" else 2048},
+                options={"num_ctx": 8192, "num_predict": 1500 if mode == "compress" else 2500},
             )
             return response.message.content or "(Resume indisponible.)"
 
