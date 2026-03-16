@@ -743,6 +743,23 @@ def sanity_check(
                 f"- **Turn {t[0]}** ({t[3]}): {truncate(t[2] or t[1] or '(no summary)', 200)}"
             )
 
+    # Verdict heuristique basé sur le taux de termes matchés.
+    # Ne remplace pas l'interprétation de l'agent — indique juste si des preuves existent.
+    matched_terms = sum(
+        1 for term in search_terms
+        if any(
+            term.lower() in (e["name"] + " " + " ".join(e["aliases"])).lower()
+            for e in matched_entities
+        )
+    )
+    total_terms = len(search_terms)
+    if not matched_entities:
+        verdict = "⚠️ NO DATA — aucune entité correspondante en base"
+    elif matched_terms == total_terms:
+        verdict = "📋 PREUVES TROUVÉES — tous les termes matchent ; interpréter l'historique ci-dessous"
+    else:
+        verdict = f"📋 PREUVES PARTIELLES — {matched_terms}/{total_terms} termes matchés ; données incomplètes ou terminologie différente"
+
     # Build output
     lines = [
         "# Sanity Check",
@@ -750,6 +767,7 @@ def sanity_check(
         f'**Statement:** "{statement}"',
         f"**Context:** {civ_name or 'global'}",
         f"**Search terms extracted:** {', '.join(search_terms)}",
+        f"**Verdict:** {verdict}",
         "",
     ]
 
@@ -2237,20 +2255,37 @@ def dispatch_tool(
         else:
             resolved_civs = []
             seen_ids: set[int] = set()
+            not_found: list[str] = []
             for cn in civ_names_raw:
                 result = resolve_civ_name(conn, cn)
                 if "error" in result:
-                    return result["error"]
+                    # Don't abort — skip unfound civs and warn at the end
+                    not_found.append(cn)
+                    continue
                 civ = result["civ"]
                 if civ["id"] not in seen_ids:
                     seen_ids.add(civ["id"])
                     resolved_civs.append(civ)
+
         if len(resolved_civs) < 2:
             names = ", ".join(c["name"] for c in resolved_civs) if resolved_civs else "aucune"
             all_civs = conn.execute("SELECT name FROM civ_civilizations ORDER BY name").fetchall()
             civ_list = ", ".join(r[0] for r in all_civs)
-            return f"Cannot compare fewer than 2 civilizations. Found: {names}. Available: {civ_list}. Use listCivs to see all civilizations first."
-        return compare_civs(conn, resolved_civs, aspects=tool_input.get("aspects"))
+            missing = f" (not found: {', '.join(not_found)})" if not_found else ""
+            return (
+                f"Cannot compare fewer than 2 civilizations. Found: {names}{missing}. "
+                f"Available: {civ_list}. Use listCivs to see all civilizations first."
+            )
+
+        # Run comparison — prepend warning for any unresolved civs
+        result_text = compare_civs(conn, resolved_civs, aspects=tool_input.get("aspects"))
+        if not_found:
+            warning = (
+                f"> ⚠️ Civilizations not found (excluded from comparison): "
+                f"{', '.join(not_found)}\n\n"
+            )
+            result_text = warning + result_text
+        return result_text
 
     if tool_name == "searchTurnContent":
         civ_id = None
