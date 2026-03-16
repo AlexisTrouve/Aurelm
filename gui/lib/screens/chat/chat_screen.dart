@@ -445,11 +445,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             icon: const Icon(Icons.more_vert),
             tooltip: 'Actions session',
             onSelected: (value) async {
-              final sessionId = chatState.sessionId;
               switch (value) {
                 case 'duplicate':
-                  if (sessionId == null) break;
-                  await ref.read(sessionsProvider).duplicateSession(sessionId);
+                  await ref.read(chatProvider.notifier).duplicateCurrentSession();
                   if (mounted) ref.refresh(filteredSessionsProvider);
                 case 'copy_conv':
                   ref.read(chatProvider.notifier).copyConversation();
@@ -968,6 +966,14 @@ class _MessageBubble extends ConsumerWidget {
               dense: true,
             ),
           ),
+          const PopupMenuItem(
+            value: 'duplicate_from',
+            child: ListTile(
+              leading: Icon(Icons.fork_right, size: 18),
+              title: Text('Dupliquer depuis ici'),
+              dense: true,
+            ),
+          ),
           if (isUser) ...[
             const PopupMenuItem(
               value: 'edit',
@@ -1015,6 +1021,11 @@ class _MessageBubble extends ConsumerWidget {
             notifier.copyMessage(index);
           case 'copy_from':
             notifier.copyConversationFrom(index);
+          case 'duplicate_from':
+            await notifier.duplicateCurrentSessionFrom(index);
+            if (context.mounted) {
+              ref.refresh(filteredSessionsProvider);
+            }
           case 'edit':
             if (!context.mounted) return;
             final controller =

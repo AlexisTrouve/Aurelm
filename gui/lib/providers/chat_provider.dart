@@ -508,28 +508,57 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
-  /// Retry : supprime le message LLM à l'index et relance sur le dernier message user.
+  /// Retry : retrouve le dernier message user avant [index], supprime depuis
+  /// cet index user (inclus) — ce qui supprime aussi l'assistant — puis relance.
   ///
-  /// Recherche le dernier message user avant [index], supprime depuis [index],
-  /// puis relance l'agent avec ce message.
+  /// On supprime depuis l'index user et pas depuis [index] pour éviter que
+  /// _sendImmediate re-ajoute le user message en doublon (le msg original
+  /// serait encore là sinon).
   Future<void> retryMessage(int index) async {
     if (index < 0 || index >= state.messages.length) return;
 
-    // Trouver le dernier message user avant cet index
-    String? lastUserMessage;
-    for (int i = index - 1; i >= 0; i--) {
+    // Trouver le dernier message user avant cet index (ou à cet index)
+    int? userIndex;
+    for (int i = index; i >= 0; i--) {
       if (state.messages[i].role == ChatRole.user) {
-        lastUserMessage = state.messages[i].content;
+        userIndex = i;
         break;
       }
     }
-    if (lastUserMessage == null) return;
+    if (userIndex == null) return;
 
-    // Supprimer depuis l'index (inclus)
-    await deleteMessageFrom(index);
+    final lastUserMessage = state.messages[userIndex].content;
 
-    // Relancer avec le même message
+    // Supprimer depuis le user message (inclus) — évite le doublon
+    await deleteMessageFrom(userIndex);
+
+    // Relancer : _sendImmediate ajoute le user message dans l'UI
     await _sendImmediate(lastUserMessage);
+  }
+
+  /// Duplique la session courante et switche vers la copie.
+  ///
+  /// Retourne le nouveau session_id, ou null si bot offline / pas de session.
+  Future<String?> duplicateCurrentSession() async {
+    final sessionId = state.sessionId;
+    if (sessionId == null) return null;
+    final newId = await _sessionsService.duplicateSession(sessionId);
+    if (newId != null) await setSessionId(newId);
+    return newId;
+  }
+
+  /// Duplique la session courante puis tronque la copie à partir de [fromIndex].
+  ///
+  /// Utile pour "fork" la conversation à un point précis. Switche vers la copie.
+  Future<String?> duplicateCurrentSessionFrom(int fromIndex) async {
+    final sessionId = state.sessionId;
+    if (sessionId == null) return null;
+    final newId = await _sessionsService.duplicateSession(sessionId);
+    if (newId == null) return null;
+    // Tronquer depuis fromIndex dans la nouvelle session (messages texte seulement)
+    await _sessionsService.deleteMessages(newId, fromIndex);
+    await setSessionId(newId);
+    return newId;
   }
 
   /// Edit : met à jour le contenu d'un message user et relance l'agent.
