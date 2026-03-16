@@ -938,38 +938,57 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     return _withHoverActions(context, content);
   }
 
-  /// Barre d'actions qui apparaît au hover sur la bulle.
-  ///
-  /// Les icônes flottent juste en-dessous du contenu, alignées du même côté
-  /// que la bulle. Apparition/disparition animée (AnimatedOpacity).
+  /// Barre d'icônes hover + clic droit pour "Copier depuis ici".
   Widget _withHoverActions(BuildContext context, Widget content) {
     final isUser = message.role == ChatRole.user;
     final notifier = ref.read(chatProvider.notifier);
 
-    final actions = _buildActionIcons(context, isUser, notifier);
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: Column(
-        crossAxisAlignment:
-            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          content,
-          // Action bar — slides in below the bubble on hover
-          AnimatedOpacity(
-            opacity: _hovered ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 120),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: actions,
+    return GestureDetector(
+      // Clic droit : menu contextuel léger (copier depuis ici uniquement)
+      onSecondaryTapDown: (details) async {
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final result = await showMenu<String>(
+          context: context,
+          position: RelativeRect.fromRect(
+            details.globalPosition & const Size(1, 1),
+            Offset.zero & overlay.size,
+          ),
+          items: [
+            const PopupMenuItem(
+              value: 'copy_from',
+              child: ListTile(
+                leading: Icon(Icons.content_copy, size: 18),
+                title: Text('Copier depuis ici'),
+                dense: true,
               ),
             ),
-          ),
-        ],
+          ],
+        );
+        if (result == 'copy_from') notifier.copyConversationFrom(index);
+      },
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: Column(
+          crossAxisAlignment:
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            content,
+            AnimatedOpacity(
+              opacity: _hovered ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 120),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _buildActionIcons(context, isUser, notifier),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -980,7 +999,6 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     bool isUser,
     ChatNotifier notifier,
   ) {
-    // Petit bouton icône réutilisable
     Widget btn(IconData icon, String tooltip, VoidCallback onTap,
         {Color? color}) {
       return Tooltip(
@@ -991,7 +1009,8 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(4),
-            child: Icon(icon, size: 15, color: color ?? Theme.of(context).colorScheme.onSurfaceVariant),
+            child: Icon(icon, size: 15,
+                color: color ?? Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
@@ -1000,17 +1019,15 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     if (isUser) {
       return [
         btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
-        btn(Icons.content_copy_outlined, 'Copier depuis ici',
-            () => notifier.copyConversationFrom(index)),
-        btn(Icons.edit_outlined, 'Modifier', () => _showEditDialog(context, notifier)),
-        btn(Icons.delete_outline, 'Supprimer', () => notifier.deleteMessageFrom(index),
+        btn(Icons.edit_outlined, 'Modifier',
+            () => _showEditConfirm(context, notifier)),
+        btn(Icons.delete_outline, 'Supprimer',
+            () => _showDeleteConfirm(context, notifier),
             color: Theme.of(context).colorScheme.error),
       ];
     } else {
       return [
         btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
-        btn(Icons.content_copy_outlined, 'Copier depuis ici',
-            () => notifier.copyConversationFrom(index)),
         btn(Icons.fork_right, 'Dupliquer depuis ici', () async {
           await notifier.duplicateCurrentSessionFrom(index);
           if (context.mounted) ref.refresh(filteredSessionsProvider);
@@ -1020,13 +1037,64 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     }
   }
 
-  /// Dialogue d'édition du message user.
-  Future<void> _showEditDialog(BuildContext context, ChatNotifier notifier) async {
+  /// Confirmation avant suppression — avertit que les messages suivants disparaissent.
+  Future<void> _showDeleteConfirm(
+      BuildContext context, ChatNotifier notifier) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer ce message ?'),
+        content: const Text(
+            'Ce message et tous ceux qui suivent seront supprimés définitivement.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await notifier.deleteMessageFrom(index);
+  }
+
+  /// Confirmation + saisie du nouveau texte pour éditer un message user.
+  ///
+  /// L'édition supprime ce message et tout ce qui suit — on avertit avant.
+  Future<void> _showEditConfirm(
+      BuildContext context, ChatNotifier notifier) async {
+    // Étape 1 : avertissement
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Modifier ce message ?'),
+        content: const Text(
+            'Les messages suivants seront supprimés et l\'agent sera relancé avec le nouveau texte.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continuer'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !context.mounted) return;
+
+    // Étape 2 : saisie du nouveau texte
     final controller = TextEditingController(text: message.content);
     final newText = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Modifier le message'),
+        title: const Text('Nouveau message'),
         content: TextField(
           controller: controller,
           maxLines: null,
@@ -1038,7 +1106,7 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
             child: const Text('Envoyer'),
           ),
