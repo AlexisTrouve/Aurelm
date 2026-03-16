@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../services/bot_service.dart';
 import '../services/sync_service.dart';
+import 'database_provider.dart';
 
 final botServiceProvider = Provider<BotService>((ref) {
   final service = BotService();
@@ -14,6 +15,27 @@ final botServiceProvider = Provider<BotService>((ref) {
 
 final syncServiceProvider = Provider<SyncService>((ref) {
   return SyncService(port: AppConstants.botDefaultPort);
+});
+
+/// Auto-starts the bot on app launch if it's not already running.
+///
+/// Watch this provider from the root widget so it activates at startup.
+/// Uses the configured DB path — no-op if no DB is selected yet.
+/// Silent: failures are swallowed (bot may not be installed or path wrong).
+final autoStartBotProvider = FutureProvider<void>((ref) async {
+  final dbPath = ref.watch(dbPathProvider);
+  if (dbPath == null) return; // No DB configured yet
+
+  // Check if already running before spawning a process
+  final syncService = ref.read(syncServiceProvider);
+  final alreadyRunning = await syncService.healthCheck();
+  if (alreadyRunning) return;
+
+  await ref.read(botServiceProvider).start(
+    dbPath: dbPath,
+    pythonPath: 'py',
+    pythonArgs: ['-3.12'],
+  );
 });
 
 // Whether the bot HTTP server is reachable

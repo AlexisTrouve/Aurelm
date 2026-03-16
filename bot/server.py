@@ -34,10 +34,12 @@ class BotServer:
         self._app.router.add_post("/chat/sessions/{session_id}/rename", self._rename_session)
         self._app.router.add_post("/chat/sessions/{session_id}/archive", self._archive_session)
         self._app.router.add_delete("/chat/sessions/{session_id}", self._delete_session)
+        self._app.router.add_post("/chat/sessions/{session_id}/duplicate", self._duplicate_session)
         self._app.router.add_post("/chat/sessions/{session_id}/tags", self._add_tag)
         self._app.router.add_delete("/chat/sessions/{session_id}/tags/{tag}", self._remove_tag)
         # Session message history (Fix 1: load messages on session switch)
         self._app.router.add_get("/chat/sessions/{session_id}/messages", self._get_session_messages)
+        self._app.router.add_delete("/chat/sessions/{session_id}/messages", self._delete_session_messages)
         self._app.router.add_get("/chat/sessions/{session_id}/context_size", self._get_context_size)
         # Hot-reload DB path at runtime (Fix 3)
         self._app.router.add_post("/bot/reload-db", self._reload_db)
@@ -371,6 +373,31 @@ class BotServer:
 
         return web.json_response({"deleted": session_id})
 
+    async def _duplicate_session(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions/{session_id}/duplicate — Clone une session avec tous ses messages."""
+        session_id = request.match_info.get("session_id")
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": f"Session {session_id} not found"}, status=404)
+
+        # Crée une nouvelle session avec le même nom + " (copie)"
+        new_name = f"{session.name} (copie)"
+        new_session = self._session_manager.create_session(new_name, db_path=self.config.db_path)
+
+        # Copie tous les messages dans l'ordre
+        for msg in session.messages:
+            self._session_manager.save_message(new_session.session_id, msg)
+
+        # Copie les tags
+        for tag in session.tags:
+            self._session_manager.add_tag(new_session.session_id, tag)
+
+        return web.json_response({
+            "session_id": new_session.session_id,
+            "name": new_name,
+            "message_count": len(session.messages),
+        }, status=201)
+
     async def _add_tag(self, request: web.Request) -> web.Response:
         """POST /chat/sessions/{session_id}/tags — Add a tag to a session."""
         session_id = request.match_info.get("session_id")
@@ -430,6 +457,26 @@ class BotServer:
             for msg in session.messages
         ]
         return web.json_response({"session_id": session_id, "messages": messages})
+
+    async def _delete_session_messages(self, request: web.Request) -> web.Response:
+        """DELETE /chat/sessions/{session_id}/messages?from_order=N
+
+        Deletes all messages with message_order >= from_order.
+        from_order defaults to 0 (deletes everything).
+        Used by Flutter to truncate history after editing or retrying.
+        """
+        session_id = request.match_info["session_id"]
+        try:
+            from_order = int(request.rel_url.query.get("from_order", "0"))
+        except ValueError:
+            return web.json_response({"error": "from_order must be an integer"}, status=400)
+
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": "Session not found"}, status=404)
+
+        deleted = self._session_manager.delete_messages_from(session_id, from_order)
+        return web.json_response({"deleted": deleted, "from_order": from_order})
 
     async def _get_context_size(self, request: web.Request) -> web.Response:
         """GET /chat/sessions/{session_id}/context_size — Estimate context tokens.

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
+import 'providers/bot_provider.dart';
 import 'providers/settings_provider.dart';
 
 class AurelmApp extends ConsumerWidget {
@@ -10,6 +11,9 @@ class AurelmApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Auto-start bot on launch — no-op if already running or no DB configured
+    ref.watch(autoStartBotProvider);
+
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 

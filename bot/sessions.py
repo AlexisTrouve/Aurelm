@@ -336,10 +336,30 @@ class SessionManager:
                 "content": "Compris, je dispose du contexte resume ci-dessus. Comment puis-je t'aider ?",
             })
 
-            # Append all text messages after the checkpoint
-            for msg in session.messages[checkpoint_idx + 1:]:
-                if msg.message_type == 'text':
-                    history.append({"role": msg.role, "content": msg.content})
+            # Messages texte après le checkpoint (nouveaux messages post-compress)
+            after_msgs = [
+                msg for msg in session.messages[checkpoint_idx + 1:]
+                if msg.message_type == 'text'
+            ]
+
+            # Messages texte AVANT le checkpoint : les 10 récents qui n'ont PAS été
+            # compressés. Le compress block est appendé en fin de liste, donc les
+            # "kept recent" se trouvent juste avant lui dans la séquence.
+            prev_checkpoint_idx = -1
+            for i in range(checkpoint_idx - 1, -1, -1):
+                if session.messages[i].message_type in ('compress', 'resume'):
+                    prev_checkpoint_idx = i
+                    break
+
+            before_msgs = [
+                msg for msg in session.messages[prev_checkpoint_idx + 1:checkpoint_idx]
+                if msg.message_type == 'text'
+            ]
+            # Garder uniquement les plus récents (miroir de keep_recent=10)
+            kept_recent = before_msgs[-10:]
+
+            for msg in kept_recent + after_msgs:
+                history.append({"role": msg.role, "content": msg.content})
 
             return history
 
@@ -392,6 +412,52 @@ class SessionManager:
                 result.append(msg)
         result.reverse()
         return result
+
+    def delete_messages_from(self, session_id: str, from_order: int) -> int:
+        """Delete all messages with message_order >= from_order for this session.
+
+        Used by Flutter to truncate conversation history (e.g. retry from a point,
+        or clear after a compress). Returns the number of rows deleted.
+        Also resets message_count to match the remaining rows.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT id FROM chat_sessions WHERE uuid = ?", (session_id,)
+            ).fetchone()
+            if not row:
+                raise ValueError(f"Session {session_id} not found")
+
+            session_db_id = row[0]
+
+            # from_order=0 is sent by Flutter after a compress event to "clean up".
+            # We ignore it — build_llm_history already slices context via the
+            # compress/resume checkpoint, so old messages are harmless and should
+            # stay visible in the chat history.
+            # from_order>0 is a real edit/delete/retry: prune from that point,
+            # but never touch compress/resume blocks (they hold summarized context).
+            if from_order == 0:
+                deleted = 0
+            else:
+                cursor = conn.execute(
+                    "DELETE FROM chat_messages WHERE session_id = ? AND message_order >= ? "
+                    "AND message_type = 'text'",
+                    (session_db_id, from_order),
+                )
+                deleted = cursor.rowcount
+
+            # Recount the remaining messages to keep message_count accurate
+            remaining = conn.execute(
+                "SELECT COUNT(*) FROM chat_messages WHERE session_id = ?",
+                (session_db_id,),
+            ).fetchone()[0]
+
+            conn.execute(
+                "UPDATE chat_sessions SET message_count = ?, updated_at = ? WHERE id = ?",
+                (remaining, datetime.now().isoformat(), session_db_id),
+            )
+            conn.commit()
+
+        return deleted
 
     def add_compress_block(self, session_id: str, compressed_content: str) -> None:
         """Add a compress block (phase 1: >=20 messages since last checkpoint)."""
