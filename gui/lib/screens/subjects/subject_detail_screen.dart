@@ -147,6 +147,12 @@ class _SubjectDetailView extends ConsumerWidget {
                   style: Theme.of(context).textTheme.bodyMedium),
             ],
 
+            // Verbatim source quote from the GM turn — collapsible
+            if (s.sourceQuote != null && s.sourceQuote!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _SourceQuoteTile(quote: s.sourceQuote!, label: 'Extrait source (tour MJ)'),
+            ],
+
             // Options (for mj_to_pj choices)
             if (detail.options.isNotEmpty) ...[
               const SizedBox(height: 24),
@@ -355,6 +361,70 @@ class _ResolutionCard extends StatelessWidget {
           Text(
             r.resolutionText,
             style: Theme.of(context).textTheme.bodySmall,
+          ),
+          // Verbatim source quote from the player/GM resolution turn — collapsible
+          if (r.sourceQuote != null && r.sourceQuote!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _SourceQuoteTile(quote: r.sourceQuote!, label: 'Extrait source'),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Source quote — collapsible blockquote block
+// ---------------------------------------------------------------------------
+
+/// Collapsible tile showing a verbatim excerpt from a turn segment.
+/// Used for both the subject origin quote and per-resolution quotes.
+class _SourceQuoteTile extends StatelessWidget {
+  final String quote;
+  final String label;
+
+  const _SourceQuoteTile({required this.quote, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Theme(
+      // Remove default ExpansionTile dividers
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        dense: true,
+        leading: Icon(Icons.format_quote, size: 16,
+            color: colorScheme.onSurfaceVariant),
+        title: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+        ),
+        children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+              border: Border(
+                left: BorderSide(
+                  color: colorScheme.primary.withValues(alpha: 0.5),
+                  width: 3,
+                ),
+              ),
+            ),
+            child: SelectableText(
+              quote,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+            ),
           ),
         ],
       ),
