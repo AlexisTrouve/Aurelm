@@ -782,6 +782,22 @@ class TestGranularParams:
         result = get_entity_detail(db, "Argile Vivante", show_facts=True)
         assert "Chronologie" in result or "Decouverte" in result
 
+    def test_entity_detail_shows_tags(self, db):
+        """Tags stored on entity_entities should appear in getEntityDetail output."""
+        db.execute("UPDATE entity_entities SET tags = '[\"technologique\",\"militaire\"]' WHERE canonical_name = 'Argile Vivante'")
+        db.commit()
+        result = get_entity_detail(db, "Argile Vivante")
+        assert "**Tags:**" in result
+        assert "technologique" in result
+        assert "militaire" in result
+
+    def test_entity_detail_no_tags_when_empty(self, db):
+        """Tags line should be omitted when tags is empty array."""
+        db.execute("UPDATE entity_entities SET tags = '[]' WHERE canonical_name = 'Argile Vivante'")
+        db.commit()
+        result = get_entity_detail(db, "Argile Vivante")
+        assert "**Tags:**" not in result
+
 
 # --------------------------------------------------------------------------- #
 # Notes — pinned + note_type filtering
