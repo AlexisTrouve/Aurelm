@@ -73,18 +73,31 @@ class TimelineFilterState {
   final String? turnType;
   /// Thematic tag filter — if set, only turns containing this tag are shown
   final String? selectedTag;
+  /// Turn number range filter (inclusive). null = no bound.
+  final int? fromTurn;
+  final int? toTurn;
 
-  const TimelineFilterState({this.civId, this.turnType, this.selectedTag});
+  const TimelineFilterState({
+    this.civId,
+    this.turnType,
+    this.selectedTag,
+    this.fromTurn,
+    this.toTurn,
+  });
 
   TimelineFilterState copyWith({
     int? Function()? civId,
     String? Function()? turnType,
     String? Function()? selectedTag,
+    int? Function()? fromTurn,
+    int? Function()? toTurn,
   }) {
     return TimelineFilterState(
       civId: civId != null ? civId() : this.civId,
       turnType: turnType != null ? turnType() : this.turnType,
       selectedTag: selectedTag != null ? selectedTag() : this.selectedTag,
+      fromTurn: fromTurn != null ? fromTurn() : this.fromTurn,
+      toTurn: toTurn != null ? toTurn() : this.toTurn,
     );
   }
 }

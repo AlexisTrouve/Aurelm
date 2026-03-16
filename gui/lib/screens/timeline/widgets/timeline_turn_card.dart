@@ -153,9 +153,9 @@ class _TurnCard extends StatelessWidget {
 
                         const Spacer(),
 
-                        // Civ badge (MJ only)
+                        // Civ badge (MJ only) — larger for readability
                         if (isMj) ...[
-                          CivBadge(civName: turn.civName),
+                          CivBadge(civName: turn.civName, prominent: true),
                           const SizedBox(width: 8),
                         ],
 
@@ -188,6 +188,20 @@ class _TurnCard extends StatelessWidget {
                       _TagChip(label: t.fantasyLevel!, color: Colors.deepPurple),
                     ...tags.map((tag) => _TagChip(label: tag, color: _tagColor(tag))),
                   ],
+                ),
+              ],
+
+              // --- LLM summary (MJ only, truncated to 2 lines) ---
+              if (isMj && t.summary != null && t.summary!.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  t.summary!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
                 ),
               ],
             ],

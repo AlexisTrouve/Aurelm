@@ -20,6 +20,8 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
     int? civId,
     String? turnType,
     String? selectedTag,
+    int? fromTurn,
+    int? toTurn,
     int limit = 100,
   }) {
     var query = select(turnTurns).join([
@@ -36,6 +38,13 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
     // Tag filter: thematic_tags is a JSON array string — LIKE match on the tag value
     if (selectedTag != null) {
       query.where(turnTurns.thematicTags.like('%"$selectedTag"%'));
+    }
+    // Turn number range filter (inclusive bounds)
+    if (fromTurn != null) {
+      query.where(turnTurns.turnNumber.isBiggerOrEqualValue(fromTurn));
+    }
+    if (toTurn != null) {
+      query.where(turnTurns.turnNumber.isSmallerOrEqualValue(toTurn));
     }
 
     query

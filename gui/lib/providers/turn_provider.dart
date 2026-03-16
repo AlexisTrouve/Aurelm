@@ -28,6 +28,14 @@ class TimelineFilterNotifier extends StateNotifier<TimelineFilterState> {
     state = state.copyWith(selectedTag: () => tag);
   }
 
+  void setFromTurn(int? n) {
+    state = state.copyWith(fromTurn: () => n);
+  }
+
+  void setToTurn(int? n) {
+    state = state.copyWith(toTurn: () => n);
+  }
+
   void reset() {
     state = const TimelineFilterState();
   }
@@ -42,6 +50,8 @@ final timelineProvider = StreamProvider<List<TurnWithEntities>>((ref) {
     civId: filters.civId,
     turnType: filters.turnType,
     selectedTag: filters.selectedTag,
+    fromTurn: filters.fromTurn,
+    toTurn: filters.toTurn,
   );
 });
 
