@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../../providers/chat_provider.dart';
@@ -372,6 +373,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Scaffold(
         drawer: _buildSessionsDrawer(context, chatState),
         appBar: AppBar(
+        // Back button to sessions list — shown only when a session is open
+        leading: chatState.sessionId != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Liste des sessions',
+                onPressed: () => context.go('/chat/sessions'),
+              )
+            : null,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
