@@ -97,7 +97,7 @@ class SubjectFilterBar extends ConsumerWidget {
               const SizedBox(width: 4),
               for (final tag in const [
                 'militaire', 'politique', 'religieux', 'economique',
-                'culturel', 'diplomatique', 'technologique', 'mythologique',
+                'culturel', 'social', 'diplomatique', 'technologique', 'mythologique',
               ]) ...[
                 _DirectionChip(
                   label: tag,

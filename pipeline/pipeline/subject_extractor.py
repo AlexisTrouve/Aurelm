@@ -55,28 +55,42 @@ _SUBJECT_TAG_KEYWORDS: dict[str, list[str]] = {
     "militaire": [
         "guerre", "armee", "armée", "combat", "bataille", "soldat", "attaque",
         "défense", "defense", "troupe", "guerrier", "conflit", "raid", "siège",
-        "siege", "fortif", "garnison", "arme", "milice",
+        "siege", "fortif", "garnison", "arme", "milice", "chasse", "predateur",
+        "prédateur", "ennemi", "menace", "territoire",
     ],
     "religieux": [
         "dieu", "déesse", "deesse", "culte", "temple", "prêtre", "pretre",
         "rituel", "croyance", "sacrifice", "foi", "divin", "sacré", "sacre",
         "prophète", "prophete", "cérémonie", "ceremonie", "offrande",
+        "spirituel", "mort", "défunt", "defunt", "âme", "ame", "esprit",
+        "auspice", "omen", "présage", "presage", "immortal", "funèbre", "funebre",
     ],
     "politique": [
         "loi", "décret", "decret", "gouvernement", "caste", "oligarchie",
         "pouvoir", "dirigeant", "conseil", "vote", "élection", "election",
         "règle", "regle", "autorité", "autorite", "succession", "statut", "rang",
-        "assemblée", "assemblee",
+        "assemblée", "assemblee", "tribu", "chef", "sages", "cercle", "tribunal",
+        "structure", "rôle", "role", "réforme", "reforme", "oracle",
     ],
     "economique": [
         "commerce", "échange", "echange", "ressource", "production", "récolte",
         "recolte", "marché", "marche", "richesse", "tribut", "taxe", "agriculture",
         "artisan", "mine", "forge", "irrigation", "stock", "nourriture",
+        "subsistance", "survie", "pêche", "peche", "cueillette", "chasse",
+        "stockage", "approvisionnement",
     ],
     "culturel": [
         "art", "musique", "fête", "fete", "célébration", "celebration",
         "tradition", "coutume", "festival", "danse", "culture", "monument",
-        "architecture", "sculpture",
+        "architecture", "sculpture", "sagesse", "mémoire", "memoire",
+        "célébrer", "celebrer", "défunt", "defunt", "funéraire", "funeraire",
+    ],
+    "social": [
+        "famille", "tribu", "communauté", "communaute", "mariage", "mère",
+        "mere", "père", "pere", "enfant", "clan", "naissance", "marginaux",
+        "société", "societe", "lien", "groupe", "identité", "identite",
+        "rôle social", "role social", "valorisation", "marginal", "créativité",
+        "creativite",
     ],
     "diplomatique": [
         "alliance", "traité", "traite", "paix", "ambassadeur", "négociation",
@@ -86,12 +100,14 @@ _SUBJECT_TAG_KEYWORDS: dict[str, list[str]] = {
     "technologique": [
         "technologie", "invention", "découverte", "decouverte", "argile",
         "construction", "technique", "outil", "navire", "bateau", "voile",
-        "innovation", "forge", "irrigation", "machine",
+        "innovation", "forge", "irrigation", "machine", "passerelle", "village",
+        "habitat", "ingénierie", "ingenierie", "bâtiment", "batiment",
     ],
     "mythologique": [
         "mythe", "légende", "legende", "ancien", "origine", "cosmogonie",
         "ancêtre", "ancetre", "héros", "heros", "créature", "creature",
-        "divinité", "divinite",
+        "divinité", "divinite", "cosmologie", "immortalité", "immortalite",
+        "prophétie", "prophetie",
     ],
 }
 
