@@ -366,7 +366,9 @@ class Agent:
                 "Tu recois plusieurs blocs COMPRESS successifs d'une session MJ/archiviste-IA.\n"
                 "Fusionne-les en UN SEUL bloc structure. Ne perds rien — si une info apparait "
                 "dans un seul bloc, elle doit rester dans la fusion.\n\n"
-                "REMPLIS EXACTEMENT CES SECTIONS (laisse 'aucun' si vraiment vide) :\n\n"
+                "CONTRAINTE TOKENS : sois ultra-concis. Chaque bullet = max 1 ligne. "
+                "Sections vides = 'aucun'. Total cible : 400 mots max.\n\n"
+                "REMPLIS EXACTEMENT CES SECTIONS :\n\n"
                 "## INTENTION DE SESSION\n"
                 "[Pourquoi le MJ a ouvert cette session — question centrale, civ ciblee]\n\n"
                 "## OUTILS APPELES\n"
@@ -390,9 +392,11 @@ class Agent:
         else:
             prompt = (
                 "Tu es un archiviste technique. Resume cette conversation MJ/IA en remplissant "
-                "OBLIGATOIREMENT chaque section ci-dessous. Les sections a remplir forcent la "
-                "preservation des details techniques (noms, tours, outils, faits).\n\n"
-                "REMPLIS EXACTEMENT CES SECTIONS (laisse 'aucun' si vraiment vide) :\n\n"
+                "OBLIGATOIREMENT chaque section ci-dessous.\n\n"
+                "CONTRAINTE TOKENS : sois ultra-concis. Chaque bullet = max 1 ligne. "
+                "Sections vides = 'aucun'. Total cible : 250 mots max. "
+                "Prefere les abreviations et la densite a la lisibilite.\n\n"
+                "REMPLIS EXACTEMENT CES SECTIONS :\n\n"
                 "## DEMANDE DU MJ\n"
                 "[Question/tache precise du MJ — civ ciblee, sujet, contexte]\n\n"
                 "## OUTILS APPELES\n"
@@ -419,7 +423,7 @@ class Agent:
                 self._anthropic.messages.create,
                 model="claude-sonnet-4-6",
                 max_tokens=1500 if mode == "compress" else 2500,
-                system="Tu es un assistant specialise dans le resume de conversations.",
+                system="Tu es un archiviste technique ultra-concis. Tu extrais les faits essentiels sans phrases de transition, sans reformulation, sans preambule. Densite maximale, tokens minimaux.",
                 messages=[{"role": "user", "content": prompt}],
             )
             parts = [b.text for b in response.content if hasattr(b, "text")]
@@ -430,7 +434,7 @@ class Agent:
                 _ollama.chat,
                 model=self._ollama_model,
                 messages=[
-                    {"role": "system", "content": "Tu es un assistant specialise dans le resume de conversations."},
+                    {"role": "system", "content": "Tu es un archiviste technique ultra-concis. Tu extrais les faits essentiels sans phrases de transition, sans reformulation, sans preambule. Densite maximale, tokens minimaux."},
                     {"role": "user", "content": prompt},
                 ],
                 options={"num_ctx": 8192, "num_predict": 1500 if mode == "compress" else 2500},
