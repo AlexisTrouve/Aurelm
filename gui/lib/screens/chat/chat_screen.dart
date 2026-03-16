@@ -36,6 +36,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// Files attached to the next message — cleared after send.
   final List<({String name, String content})> _attachments = [];
 
+  /// Message being quoted — prepended to the next send as a blockquote.
+  ChatMessage? _quotedMessage;
+
   @override
   void initState() {
     super.initState();
@@ -68,10 +71,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  /// Combine typed text + file attachments into the final message string.
+  /// Combine quoted message + typed text + file attachments into the final message string.
   String _buildMessage() {
     final text = _controller.text.trim();
     final parts = <String>[];
+    // Prepend quoted message as a blockquote so the agent sees the context
+    if (_quotedMessage != null) {
+      final role = _quotedMessage!.role == ChatRole.user ? 'Vous' : 'Aurelm';
+      final quoted = _quotedMessage!.content
+          .split('\n')
+          .map((l) => '> $l')
+          .join('\n');
+      parts.add('[$role a écrit :]\n$quoted');
+    }
     if (text.isNotEmpty) parts.add(text);
     for (final att in _attachments) {
       parts.add('[Fichier: ${att.name}]\n${att.content}');
@@ -83,7 +95,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final message = _buildMessage();
     if (message.isEmpty) return;
     _controller.clear();
-    setState(() => _attachments.clear());
+    setState(() {
+      _attachments.clear();
+      _quotedMessage = null; // clear quote after send
+    });
     ref.read(chatProvider.notifier).send(message);
     // Refocus input so the user can type the next message immediately
     _focusNode.requestFocus();
@@ -509,7 +524,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   msg.messageType == MessageType.resume) {
                                 return _SummaryBubble(message: msg);
                               }
-                              return _MessageBubble(message: msg, index: index);
+                              return _MessageBubble(
+                                message: msg,
+                                index: index,
+                                onQuote: (m) => setState(() => _quotedMessage = m),
+                              );
                             }
                             // All queued messages fused into a single faded bubble
                             return _QueuedMessageBubble(
@@ -545,7 +564,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         ref.read(chatProvider.notifier).newSession(),
                   ),
 
-                // Input bar
+                // Input bar (with optional quote preview)
                 _InputBar(
                   controller: _controller,
                   focusNode: _focusNode,
@@ -554,6 +573,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   onPickFile: _pickFile,
                   attachments: _attachments,
                   onRemoveAttachment: (i) => setState(() => _attachments.removeAt(i)),
+                  quotedMessage: _quotedMessage,
+                  onClearQuote: () => setState(() => _quotedMessage = null),
                 ),
               ],
             ),
@@ -777,8 +798,14 @@ class _FileCardState extends State<_FileCard> {
 class _MessageBubble extends ConsumerStatefulWidget {
   final ChatMessage message;
   final int index;
+  /// Called when the user clicks "Citer" on this bubble.
+  final void Function(ChatMessage) onQuote;
 
-  const _MessageBubble({required this.message, required this.index});
+  const _MessageBubble({
+    required this.message,
+    required this.index,
+    required this.onQuote,
+  });
 
   @override
   ConsumerState<_MessageBubble> createState() => _MessageBubbleState();
@@ -1028,6 +1055,7 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     if (isUser) {
       return [
         btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
+        btn(Icons.format_quote, 'Citer', () => widget.onQuote(message)),
         btn(Icons.edit_outlined, 'Modifier',
             () => _showEditConfirm(context, notifier)),
         btn(Icons.delete_outline, 'Supprimer',
@@ -1037,6 +1065,7 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
     } else {
       return [
         btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
+        btn(Icons.format_quote, 'Citer', () => widget.onQuote(message)),
         btn(Icons.fork_right, 'Dupliquer depuis ici', () async {
           await notifier.duplicateCurrentSessionFrom(index);
           if (context.mounted) ref.refresh(filteredSessionsProvider);
@@ -1130,6 +1159,77 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
 }
 
 // ---------------------------------------------------------------------------
+// Quote preview — strip shown above input when a message is being quoted
+// ---------------------------------------------------------------------------
+
+class _QuotePreview extends StatelessWidget {
+  final ChatMessage message;
+  final VoidCallback onClear;
+
+  const _QuotePreview({required this.message, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isUser = message.role == ChatRole.user;
+    final role = isUser ? 'Vous' : 'Aurelm';
+    final preview = message.content.replaceAll('\n', ' ');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          // Left accent bar — matches bubble color
+          left: BorderSide(
+            color: isUser ? colorScheme.primary : colorScheme.secondary,
+            width: 3,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  role,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: isUser ? colorScheme.primary : colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  preview,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          // Clear quote button
+          InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(Icons.close, size: 16, color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Input bar
 // ---------------------------------------------------------------------------
 
@@ -1141,6 +1241,9 @@ class _InputBar extends StatelessWidget {
   final VoidCallback onPickFile;
   final List<({String name, String content})> attachments;
   final void Function(int index) onRemoveAttachment;
+  /// Message currently quoted — shown as a preview strip above the input.
+  final ChatMessage? quotedMessage;
+  final VoidCallback onClearQuote;
 
   const _InputBar({
     required this.controller,
@@ -1150,6 +1253,8 @@ class _InputBar extends StatelessWidget {
     required this.onPickFile,
     required this.attachments,
     required this.onRemoveAttachment,
+    this.quotedMessage,
+    required this.onClearQuote,
   });
 
   @override
@@ -1167,6 +1272,16 @@ class _InputBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Quote preview — shown when a message is being quoted
+          if (quotedMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: _QuotePreview(
+                message: quotedMessage!,
+                onClear: onClearQuote,
+              ),
+            ),
+
           // Attachment chips — shown when files are attached
           if (attachments.isNotEmpty)
             Padding(
