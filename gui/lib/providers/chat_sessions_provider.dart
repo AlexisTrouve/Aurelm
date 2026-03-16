@@ -104,6 +104,12 @@ class SessionsNotifier {
   Future<void> removeTag(String sessionId, String tag) async {
     await _service.removeTag(sessionId, tag);
   }
+
+  /// Clone une session avec tous ses messages et tags.
+  /// Retourne le nouveau session_id ou null en cas d'échec.
+  Future<String?> duplicateSession(String sessionId) async {
+    return _service.duplicateSession(sessionId);
+  }
 }
 
 final sessionsProvider = Provider<SessionsNotifier>(

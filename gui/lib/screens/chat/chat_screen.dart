@@ -471,7 +471,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                   msg.messageType == MessageType.resume) {
                                 return _SummaryBubble(message: msg);
                               }
-                              return _MessageBubble(message: msg);
+                              return _MessageBubble(message: msg, index: index);
                             }
                             // All queued messages fused into a single faded bubble
                             return _QueuedMessageBubble(
@@ -738,8 +738,9 @@ class _FileCardState extends State<_FileCard> {
 
 class _MessageBubble extends ConsumerWidget {
   final ChatMessage message;
+  final int index;
 
-  const _MessageBubble({required this.message});
+  const _MessageBubble({required this.message, required this.index});
 
   /// Handle taps on lore:// links — open in the side panel.
   /// For turns with multiple civs (lore://turn/-turnNumber), show a civ picker.
@@ -881,25 +882,137 @@ class _MessageBubble extends ConsumerWidget {
     // For assistant messages, show thinking blocks + tool cards above the bubble
     if (!isUser &&
         (message.toolCalls.isNotEmpty || message.thinkingBlocks.isNotEmpty)) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Thinking blocks (brain icon, collapsible)
-            ...message.thinkingBlocks.map(
-              (t) => _ThinkingBlock(content: t),
-            ),
-            // Resolved tool call cards
-            ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
-            // Only show the text bubble if there's actual content
-            if (message.content.isNotEmpty) bubble,
-          ],
+      return _withContextMenu(
+        context,
+        ref,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thinking blocks (brain icon, collapsible)
+              ...message.thinkingBlocks.map(
+                (t) => _ThinkingBlock(content: t),
+              ),
+              // Resolved tool call cards
+              ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
+              // Only show the text bubble if there's actual content
+              if (message.content.isNotEmpty) bubble,
+            ],
+          ),
         ),
       );
     }
 
-    return bubble;
+    return _withContextMenu(context, ref, bubble);
+  }
+
+  /// Enveloppe [child] dans un GestureDetector qui affiche un menu contextuel
+  /// au clic droit (secondary tap). Les options varient selon le rôle du message :
+  /// - user : Copier, Modifier, Supprimer
+  /// - assistant : Copier, Réessayer
+  Widget _withContextMenu(BuildContext context, WidgetRef ref, Widget child) {
+    final isUser = message.role == ChatRole.user;
+    final notifier = ref.read(chatProvider.notifier);
+
+    return GestureDetector(
+      onSecondaryTapDown: (details) async {
+        // RenderBox de l'overlay pour calculer la position du menu
+        final overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final menuItems = <PopupMenuEntry<String>>[
+          const PopupMenuItem(
+            value: 'copy',
+            child: ListTile(
+              leading: Icon(Icons.copy, size: 18),
+              title: Text('Copier'),
+              dense: true,
+            ),
+          ),
+          if (isUser) ...[
+            const PopupMenuItem(
+              value: 'edit',
+              child: ListTile(
+                leading: Icon(Icons.edit, size: 18),
+                title: Text('Modifier'),
+                dense: true,
+              ),
+            ),
+            const PopupMenuDivider(),
+            const PopupMenuItem(
+              value: 'delete',
+              child: ListTile(
+                leading: Icon(Icons.delete, size: 18, color: Colors.red),
+                title: Text('Supprimer',
+                    style: TextStyle(color: Colors.red)),
+                dense: true,
+              ),
+            ),
+          ] else ...[
+            const PopupMenuItem(
+              value: 'retry',
+              child: ListTile(
+                leading: Icon(Icons.refresh, size: 18),
+                title: Text('Réessayer'),
+                dense: true,
+              ),
+            ),
+          ],
+        ];
+
+        final result = await showMenu<String>(
+          context: context,
+          position: RelativeRect.fromRect(
+            details.globalPosition & const Size(1, 1),
+            Offset.zero & overlay.size,
+          ),
+          items: menuItems,
+        );
+
+        if (result == null) return;
+
+        switch (result) {
+          case 'copy':
+            notifier.copyMessage(index);
+          case 'edit':
+            if (!context.mounted) return;
+            final controller =
+                TextEditingController(text: message.content);
+            final newText = await showDialog<String>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Modifier le message'),
+                content: TextField(
+                  controller: controller,
+                  maxLines: null,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                      border: OutlineInputBorder()),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Annuler'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () =>
+                        Navigator.pop(ctx, controller.text.trim()),
+                    child: const Text('Envoyer'),
+                  ),
+                ],
+              ),
+            );
+            if (newText != null && newText.isNotEmpty) {
+              await notifier.editMessage(index, newText);
+            }
+          case 'delete':
+            await notifier.deleteMessageFrom(index);
+          case 'retry':
+            await notifier.retryMessage(index);
+        }
+      },
+      child: child,
+    );
   }
 }
 

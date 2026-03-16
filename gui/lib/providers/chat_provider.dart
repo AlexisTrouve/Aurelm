@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants/app_constants.dart';
@@ -463,5 +464,72 @@ class ChatNotifier extends StateNotifier<ChatState> {
     } catch (_) {
       // Silently ignore — the session ID is still set, history just won't show
     }
+  }
+
+  /// Copie le contenu d'un message dans le presse-papier.
+  void copyMessage(int index) {
+    if (index < 0 || index >= state.messages.length) return;
+    final msg = state.messages[index];
+    Clipboard.setData(ClipboardData(text: msg.content));
+  }
+
+  /// Supprime le message à l'index donné et tous les suivants.
+  ///
+  /// Mise à jour immédiate de l'UI, puis persiste la suppression
+  /// via DELETE /messages?from_order=index sur le bot.
+  Future<void> deleteMessageFrom(int index) async {
+    if (index < 0 || index >= state.messages.length) return;
+    final sessionId = state.sessionId;
+
+    // Mise à jour immédiate de l'UI
+    state = state.copyWith(messages: state.messages.sublist(0, index));
+
+    // Persister en DB
+    if (sessionId != null) {
+      await _sessionsService.deleteMessages(sessionId, index);
+    }
+  }
+
+  /// Retry : supprime le message LLM à l'index et relance sur le dernier message user.
+  ///
+  /// Recherche le dernier message user avant [index], supprime depuis [index],
+  /// puis relance l'agent avec ce message.
+  Future<void> retryMessage(int index) async {
+    if (index < 0 || index >= state.messages.length) return;
+
+    // Trouver le dernier message user avant cet index
+    String? lastUserMessage;
+    for (int i = index - 1; i >= 0; i--) {
+      if (state.messages[i].role == ChatRole.user) {
+        lastUserMessage = state.messages[i].content;
+        break;
+      }
+    }
+    if (lastUserMessage == null) return;
+
+    // Supprimer depuis l'index (inclus)
+    await deleteMessageFrom(index);
+
+    // Relancer avec le même message
+    await _sendImmediate(lastUserMessage);
+  }
+
+  /// Edit : met à jour le contenu d'un message user et relance l'agent.
+  ///
+  /// Supprime depuis [index] dans l'UI + DB, puis relance avec [newContent].
+  /// Ne fonctionne que sur les messages user (rôle vérifié).
+  Future<void> editMessage(int index, String newContent) async {
+    if (index < 0 || index >= state.messages.length) return;
+    if (state.messages[index].role != ChatRole.user) return;
+    final sessionId = state.sessionId;
+
+    // Supprimer depuis index (inclus) dans l'UI + DB
+    state = state.copyWith(messages: state.messages.sublist(0, index));
+    if (sessionId != null) {
+      await _sessionsService.deleteMessages(sessionId, index);
+    }
+
+    // Relancer avec le nouveau contenu
+    await _sendImmediate(newContent);
   }
 }

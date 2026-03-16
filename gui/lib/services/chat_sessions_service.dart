@@ -262,4 +262,53 @@ class ChatSessionsService {
       throw Exception('Error removing tag: $e');
     }
   }
+
+  /// DELETE /chat/sessions/{id}/messages?from_order=N
+  ///
+  /// Truncates all messages at position >= fromOrder.
+  /// Used by retryMessage and editMessage in ChatNotifier.
+  Future<void> deleteMessages(String sessionId, int fromOrder) async {
+    final uri = Uri.parse(
+            '$_baseUrl${AppConstants.botChatEndpoint}/sessions/$sessionId/messages')
+        .replace(queryParameters: {'from_order': fromOrder.toString()});
+    try {
+      await http.delete(uri).timeout(const Duration(seconds: 10));
+    } catch (_) {}
+  }
+
+  /// POST /chat/sessions/{id}/messages/{order}/edit
+  ///
+  /// Updates the content of a message at position [order] in the DB.
+  /// Used when the user edits a past message before resending.
+  Future<void> editMessage(
+      String sessionId, int order, String content) async {
+    final uri = Uri.parse(
+        '$_baseUrl${AppConstants.botChatEndpoint}/sessions/$sessionId/messages/$order/edit');
+    try {
+      await http
+          .post(
+            uri,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'content': content}),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {}
+  }
+
+  /// POST /chat/sessions/{id}/duplicate
+  ///
+  /// Clones a session (all messages + tags) and returns the new session ID.
+  /// Returns null on failure (bot offline or session not found).
+  Future<String?> duplicateSession(String sessionId) async {
+    final uri = Uri.parse(
+        '$_baseUrl${AppConstants.botChatEndpoint}/sessions/$sessionId/duplicate');
+    try {
+      final response = await http.post(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['session_id'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
 }

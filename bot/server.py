@@ -40,6 +40,7 @@ class BotServer:
         # Session message history (Fix 1: load messages on session switch)
         self._app.router.add_get("/chat/sessions/{session_id}/messages", self._get_session_messages)
         self._app.router.add_delete("/chat/sessions/{session_id}/messages", self._delete_session_messages)
+        self._app.router.add_post("/chat/sessions/{session_id}/messages/{order}/edit", self._edit_message)
         self._app.router.add_get("/chat/sessions/{session_id}/context_size", self._get_context_size)
         # Hot-reload DB path at runtime (Fix 3)
         self._app.router.add_post("/bot/reload-db", self._reload_db)
@@ -457,6 +458,31 @@ class BotServer:
             for msg in session.messages
         ]
         return web.json_response({"session_id": session_id, "messages": messages})
+
+    async def _edit_message(self, request: web.Request) -> web.Response:
+        """POST /chat/sessions/{session_id}/messages/{order}/edit
+
+        Updates the content of a message at position {order}.
+        Body: {"content": "new text"}
+        """
+        session_id = request.match_info["session_id"]
+        try:
+            order = int(request.match_info["order"])
+        except ValueError:
+            return web.json_response({"error": "order must be an integer"}, status=400)
+
+        try:
+            body = await request.json()
+        except Exception:
+            return web.json_response({"error": "Invalid JSON"}, status=400)
+
+        content = body.get("content", "")
+        session = self._session_manager.load_session(session_id)
+        if not session:
+            return web.json_response({"error": "Session not found"}, status=404)
+
+        self._session_manager.edit_message(session_id, order, content)
+        return web.json_response({"ok": True, "order": order})
 
     async def _delete_session_messages(self, request: web.Request) -> web.Response:
         """DELETE /chat/sessions/{session_id}/messages?from_order=N

@@ -339,6 +339,18 @@ class _SessionCard extends ConsumerWidget {
                     .toggleArchive(session.sessionId, !session.archived);
                 // ignore: unused_result
                 ref.refresh(filteredSessionsProvider);
+              case 'duplicate':
+                // Clone la session et rafraîchit la liste sur succès
+                final newId = await ref
+                    .read(sessionsProvider)
+                    .duplicateSession(session.sessionId);
+                // ignore: unused_result
+                ref.refresh(filteredSessionsProvider);
+                if (newId == null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Erreur : impossible de dupliquer la session.')),
+                  );
+                }
               case 'delete':
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -374,6 +386,7 @@ class _SessionCard extends ConsumerWidget {
               value: 'archive',
               child: Text(session.archived ? 'Unarchive' : 'Archive'),
             ),
+            const PopupMenuItem(value: 'duplicate', child: Text('Dupliquer')),
             const PopupMenuItem(value: 'delete', child: Text('Delete')),
           ],
         ),

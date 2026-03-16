@@ -459,6 +459,21 @@ class SessionManager:
 
         return deleted
 
+    def edit_message(self, session_id: str, order: int, new_content: str) -> None:
+        """Update the content of a message at a given message_order position."""
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT id FROM chat_sessions WHERE uuid = ?", (session_id,)
+            ).fetchone()
+            if not row:
+                raise ValueError(f"Session {session_id} not found")
+            session_db_id = row[0]
+            conn.execute(
+                "UPDATE chat_messages SET content = ? WHERE session_id = ? AND message_order = ?",
+                (new_content, session_db_id, order),
+            )
+            conn.commit()
+
     def add_compress_block(self, session_id: str, compressed_content: str) -> None:
         """Add a compress block (phase 1: >=20 messages since last checkpoint)."""
         compress_msg = ChatMessage(
