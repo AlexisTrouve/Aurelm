@@ -765,11 +765,21 @@ class _FileCardState extends State<_FileCard> {
 // Message bubble
 // ---------------------------------------------------------------------------
 
-class _MessageBubble extends ConsumerWidget {
+class _MessageBubble extends ConsumerStatefulWidget {
   final ChatMessage message;
   final int index;
 
   const _MessageBubble({required this.message, required this.index});
+
+  @override
+  ConsumerState<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends ConsumerState<_MessageBubble> {
+  bool _hovered = false;
+
+  ChatMessage get message => widget.message;
+  int get index => widget.index;
 
   /// Handle taps on lore:// links — open in the side panel.
   /// For turns with multiple civs (lore://turn/-turnNumber), show a civ picker.
@@ -858,7 +868,7 @@ class _MessageBubble extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final isUser = message.role == ChatRole.user;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -909,164 +919,137 @@ class _MessageBubble extends ConsumerWidget {
     );
 
     // For assistant messages, show thinking blocks + tool cards above the bubble
+    Widget content = bubble;
     if (!isUser &&
         (message.toolCalls.isNotEmpty || message.thinkingBlocks.isNotEmpty)) {
-      return _withContextMenu(
-        context,
-        ref,
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thinking blocks (brain icon, collapsible)
-              ...message.thinkingBlocks.map(
-                (t) => _ThinkingBlock(content: t),
+      content = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...message.thinkingBlocks.map((t) => _ThinkingBlock(content: t)),
+            ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
+            if (message.content.isNotEmpty) bubble,
+          ],
+        ),
+      );
+    }
+
+    return _withHoverActions(context, content);
+  }
+
+  /// Barre d'actions qui apparaît au hover sur la bulle.
+  ///
+  /// Les icônes flottent juste en-dessous du contenu, alignées du même côté
+  /// que la bulle. Apparition/disparition animée (AnimatedOpacity).
+  Widget _withHoverActions(BuildContext context, Widget content) {
+    final isUser = message.role == ChatRole.user;
+    final notifier = ref.read(chatProvider.notifier);
+
+    final actions = _buildActionIcons(context, isUser, notifier);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Column(
+        crossAxisAlignment:
+            isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          content,
+          // Action bar — slides in below the bubble on hover
+          AnimatedOpacity(
+            opacity: _hovered ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 120),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: actions,
               ),
-              // Resolved tool call cards
-              ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
-              // Only show the text bubble if there's actual content
-              if (message.content.isNotEmpty) bubble,
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Construit la liste des icônes d'action selon le rôle du message.
+  List<Widget> _buildActionIcons(
+    BuildContext context,
+    bool isUser,
+    ChatNotifier notifier,
+  ) {
+    // Petit bouton icône réutilisable
+    Widget btn(IconData icon, String tooltip, VoidCallback onTap,
+        {Color? color}) {
+      return Tooltip(
+        message: tooltip,
+        waitDuration: const Duration(milliseconds: 500),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(icon, size: 15, color: color ?? Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       );
     }
 
-    return _withContextMenu(context, ref, bubble);
+    if (isUser) {
+      return [
+        btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
+        btn(Icons.content_copy_outlined, 'Copier depuis ici',
+            () => notifier.copyConversationFrom(index)),
+        btn(Icons.edit_outlined, 'Modifier', () => _showEditDialog(context, notifier)),
+        btn(Icons.delete_outline, 'Supprimer', () => notifier.deleteMessageFrom(index),
+            color: Theme.of(context).colorScheme.error),
+      ];
+    } else {
+      return [
+        btn(Icons.copy_outlined, 'Copier', () => notifier.copyMessage(index)),
+        btn(Icons.content_copy_outlined, 'Copier depuis ici',
+            () => notifier.copyConversationFrom(index)),
+        btn(Icons.fork_right, 'Dupliquer depuis ici', () async {
+          await notifier.duplicateCurrentSessionFrom(index);
+          if (context.mounted) ref.refresh(filteredSessionsProvider);
+        }),
+        btn(Icons.refresh, 'Réessayer', () => notifier.retryMessage(index)),
+      ];
+    }
   }
 
-  /// Enveloppe [child] dans un GestureDetector qui affiche un menu contextuel
-  /// au clic droit (secondary tap). Les options varient selon le rôle du message :
-  /// - user : Copier, Modifier, Supprimer
-  /// - assistant : Copier, Réessayer
-  Widget _withContextMenu(BuildContext context, WidgetRef ref, Widget child) {
-    final isUser = message.role == ChatRole.user;
-    final notifier = ref.read(chatProvider.notifier);
-
-    return GestureDetector(
-      onSecondaryTapDown: (details) async {
-        // RenderBox de l'overlay pour calculer la position du menu
-        final overlay =
-            Overlay.of(context).context.findRenderObject() as RenderBox;
-        final menuItems = <PopupMenuEntry<String>>[
-          const PopupMenuItem(
-            value: 'copy',
-            child: ListTile(
-              leading: Icon(Icons.copy, size: 18),
-              title: Text('Copier'),
-              dense: true,
-            ),
+  /// Dialogue d'édition du message user.
+  Future<void> _showEditDialog(BuildContext context, ChatNotifier notifier) async {
+    final controller = TextEditingController(text: message.content);
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Modifier le message'),
+        content: TextField(
+          controller: controller,
+          maxLines: null,
+          autofocus: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
           ),
-          const PopupMenuItem(
-            value: 'copy_from',
-            child: ListTile(
-              leading: Icon(Icons.content_copy, size: 18),
-              title: Text('Copier depuis ici'),
-              dense: true,
-            ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Envoyer'),
           ),
-          if (!isUser)
-            const PopupMenuItem(
-              value: 'duplicate_from',
-              child: ListTile(
-                leading: Icon(Icons.fork_right, size: 18),
-                title: Text('Dupliquer depuis ici'),
-                dense: true,
-              ),
-            ),
-          if (isUser) ...[
-            const PopupMenuItem(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit, size: 18),
-                title: Text('Modifier'),
-                dense: true,
-              ),
-            ),
-            const PopupMenuDivider(),
-            const PopupMenuItem(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete, size: 18, color: Colors.red),
-                title: Text('Supprimer',
-                    style: TextStyle(color: Colors.red)),
-                dense: true,
-              ),
-            ),
-          ] else ...[
-            const PopupMenuItem(
-              value: 'retry',
-              child: ListTile(
-                leading: Icon(Icons.refresh, size: 18),
-                title: Text('Réessayer'),
-                dense: true,
-              ),
-            ),
-          ],
-        ];
-
-        final result = await showMenu<String>(
-          context: context,
-          position: RelativeRect.fromRect(
-            details.globalPosition & const Size(1, 1),
-            Offset.zero & overlay.size,
-          ),
-          items: menuItems,
-        );
-
-        if (result == null) return;
-
-        switch (result) {
-          case 'copy':
-            notifier.copyMessage(index);
-          case 'copy_from':
-            notifier.copyConversationFrom(index);
-          case 'duplicate_from':
-            await notifier.duplicateCurrentSessionFrom(index);
-            if (context.mounted) {
-              ref.refresh(filteredSessionsProvider);
-            }
-          case 'edit':
-            if (!context.mounted) return;
-            final controller =
-                TextEditingController(text: message.content);
-            final newText = await showDialog<String>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Modifier le message'),
-                content: TextField(
-                  controller: controller,
-                  maxLines: null,
-                  autofocus: true,
-                  decoration: const InputDecoration(
-                      border: OutlineInputBorder()),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Annuler'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () =>
-                        Navigator.pop(ctx, controller.text.trim()),
-                    child: const Text('Envoyer'),
-                  ),
-                ],
-              ),
-            );
-            if (newText != null && newText.isNotEmpty) {
-              await notifier.editMessage(index, newText);
-            }
-          case 'delete':
-            await notifier.deleteMessageFrom(index);
-          case 'retry':
-            await notifier.retryMessage(index);
-        }
-      },
-      child: child,
+        ],
+      ),
     );
+    if (newText != null && newText.isNotEmpty) {
+      await notifier.editMessage(index, newText);
+    }
   }
+
 }
 
 // ---------------------------------------------------------------------------
