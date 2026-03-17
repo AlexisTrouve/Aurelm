@@ -57,6 +57,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   final TextEditingController _titleCtrl = TextEditingController();
   final TextEditingController _summaryCtrl = TextEditingController();
   List<String> _editTags = [];
+  List<String> _editStrategy = [];
 
   @override
   void initState() {
@@ -97,6 +98,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
     _titleCtrl.text = t.title ?? '';
     _summaryCtrl.text = t.summary ?? '';
     _editTags = _parseTags(t.thematicTags);
+    _editStrategy = _parseTags(t.playerStrategy);
     setState(() => _editMode = true);
   }
 
@@ -112,6 +114,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
         title: _titleCtrl.text.trim(),
         summary: _summaryCtrl.text.trim(),
         thematicTags: _editTags,
+        playerStrategy: _editStrategy,
       );
       if (mounted) setState(() => _editMode = false);
     } finally {
@@ -511,21 +514,29 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
 
             // Thematic tags
             _buildTagsEdit(context),
+            const SizedBox(height: 20),
+
+            // Player strategy tags
+            _buildStrategyEdit(context),
           ],
         ),
       ),
     );
   }
 
+  // Fixed strategy tag vocabulary (mirrors _strategyTagColors in _PreanalysisSection)
+  static const _strategyVocab = [
+    'expansion', 'diplomatie', 'defense', 'economie',
+    'culture', 'exploration', 'militaire', 'religieux',
+  ];
+
   Widget _buildTagsEdit(BuildContext context) {
     final tagAsync = ref.watch(turnTagsProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Tags thématiques',
-            style: Theme.of(context).textTheme.titleSmall),
+        Text('Tags thématiques', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        // Current tags as removable chips
         if (_editTags.isNotEmpty)
           Wrap(
             spacing: 6,
@@ -536,26 +547,52 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             )).toList(),
           ),
         const SizedBox(height: 8),
-        // Add tag from existing vocabulary
         tagAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
           data: (allTags) {
             final available = allTags.where((t) => !_editTags.contains(t)).toList();
-            return Row(
-              children: [
-                DropdownButton<String>(
-                  hint: const Text('+ Ajouter un tag'),
-                  value: null,
-                  items: available
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                      .toList(),
-                  onChanged: (tag) {
-                    if (tag != null) setState(() => _editTags.add(tag));
-                  },
-                ),
-              ],
+            return DropdownButton<String>(
+              hint: const Text('+ Ajouter un tag'),
+              value: null,
+              items: available
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .toList(),
+              onChanged: (tag) {
+                if (tag != null) setState(() => _editTags.add(tag));
+              },
             );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStrategyEdit(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Stratégie joueur', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (_editStrategy.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _editStrategy.map((tag) => InputChip(
+              label: Text(tag, style: const TextStyle(fontSize: 12)),
+              onDeleted: () => setState(() => _editStrategy.remove(tag)),
+            )).toList(),
+          ),
+        const SizedBox(height: 8),
+        DropdownButton<String>(
+          hint: const Text('+ Ajouter une stratégie'),
+          value: null,
+          items: _strategyVocab
+              .where((t) => !_editStrategy.contains(t))
+              .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+              .toList(),
+          onChanged: (tag) {
+            if (tag != null) setState(() => _editStrategy.add(tag));
           },
         ),
       ],

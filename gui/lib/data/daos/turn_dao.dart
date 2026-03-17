@@ -173,22 +173,23 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
   // GM edit — correct pipeline-generated fields
   // ---------------------------------------------------------------------------
 
-  /// Update title, summary and/or thematic tags on an existing turn (GM correction).
+  /// Update title, summary, thematic tags and/or player strategy on a turn (GM correction).
   Future<void> updateTurn({
     required int turnId,
     String? title,
     String? summary,
     List<String>? thematicTags,
+    List<String>? playerStrategy,
   }) {
-    final tagsEncoded = thematicTags != null
-        ? jsonEncode(thematicTags)
-        : null;
     return (update(turnTurns)..where((t) => t.id.equals(turnId))).write(
       TurnTurnsCompanion(
         title: title != null ? Value(title.isEmpty ? null : title) : const Value.absent(),
         summary: summary != null ? Value(summary.isEmpty ? null : summary) : const Value.absent(),
         thematicTags: thematicTags != null
-            ? Value(tagsEncoded!.isEmpty || thematicTags.isEmpty ? null : tagsEncoded)
+            ? Value(thematicTags.isEmpty ? null : jsonEncode(thematicTags))
+            : const Value.absent(),
+        playerStrategy: playerStrategy != null
+            ? Value(playerStrategy.isEmpty ? null : jsonEncode(playerStrategy))
             : const Value.absent(),
       ),
     );
