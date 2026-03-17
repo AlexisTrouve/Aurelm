@@ -173,6 +173,20 @@ def analyze_player_strategy(
     # Parse JSON response
     strategy, tags = _parse_strategy_response(response)
 
+    # Check if player_strategy is GM-locked — skip the update if so
+    gm_row = conn.execute(
+        "SELECT gm_fields FROM turn_turns WHERE id = ?", (turn_id,)
+    ).fetchone()
+    gm_fields: set = set()
+    if gm_row and gm_row[0]:
+        try:
+            gm_fields = set(json.loads(gm_row[0]))
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if "player_strategy" in gm_fields:
+        return {"strategy": strategy, "tags": tags}
+
     # Write to DB
     conn.execute(
         "UPDATE turn_turns SET player_strategy = ?, strategy_tags = ? WHERE id = ?",

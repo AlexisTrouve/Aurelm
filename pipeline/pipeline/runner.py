@@ -331,34 +331,46 @@ def run_pipeline(
                 update_fields["geography"] = json.dumps(structured_facts.geography, ensure_ascii=False)
                 update_fields["choices_proposed"] = json.dumps(structured_facts.choices_proposed, ensure_ascii=False)
 
+            # Read GM-locked fields — skip them so GM edits are preserved
+            gm_row = conn.execute(
+                "SELECT gm_fields FROM turn_turns WHERE id = ?", (turn_id,)
+            ).fetchone()
+            gm_fields: set = set()
+            if gm_row and gm_row[0]:
+                try:
+                    gm_fields = set(json.loads(gm_row[0]))
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            # Remove pipeline fields that the GM has locked
+            for locked in gm_fields & {"summary", "thematic_tags"}:
+                update_fields.pop(locked, None)
+
+            # Build dynamic SET clause — only update non-locked fields
+            set_clauses = []
+            values = []
+            # Always-updated fields (not user-editable, never locked)
+            always_update = [
+                "detailed_summary", "key_events", "choices_made", "processed_at",
+                "tech_era", "tech_era_reasoning", "fantasy_level", "fantasy_level_reasoning",
+            ]
+            for col in always_update:
+                set_clauses.append(f"{col} = ?")
+                values.append(update_fields.get(col))
+            # Conditionally-updated fields (skipped if locked)
+            for col in ["summary", "thematic_tags"]:
+                if col in update_fields:
+                    set_clauses.append(f"{col} = ?")
+                    values.append(update_fields[col])
+            # Structured facts (only present when available)
+            for col in ["media_links", "technologies", "resources", "beliefs", "geography", "choices_proposed"]:
+                if col in update_fields:
+                    set_clauses.append(f"{col} = ?")
+                    values.append(update_fields[col])
+            values.append(turn_id)
             conn.execute(
-                """UPDATE turn_turns
-                   SET summary = ?, detailed_summary = ?,
-                       key_events = ?, choices_made = ?, processed_at = ?,
-                       media_links = ?, technologies = ?, resources = ?,
-                       beliefs = ?, geography = ?, choices_proposed = ?,
-                       thematic_tags = ?, tech_era = ?, tech_era_reasoning = ?,
-                       fantasy_level = ?, fantasy_level_reasoning = ?
-                   WHERE id = ?""",
-                (
-                    update_fields["summary"],
-                    update_fields["detailed_summary"],
-                    update_fields["key_events"],
-                    update_fields["choices_made"],
-                    update_fields["processed_at"],
-                    update_fields.get("media_links"),
-                    update_fields.get("technologies"),
-                    update_fields.get("resources"),
-                    update_fields.get("beliefs"),
-                    update_fields.get("geography"),
-                    update_fields.get("choices_proposed"),
-                    update_fields["thematic_tags"],
-                    update_fields["tech_era"],
-                    update_fields["tech_era_reasoning"],
-                    update_fields["fantasy_level"],
-                    update_fields["fantasy_level_reasoning"],
-                    turn_id,
-                ),
+                f"UPDATE turn_turns SET {', '.join(set_clauses)} WHERE id = ?",
+                values,
             )
 
             # Carry forward context for the next turn

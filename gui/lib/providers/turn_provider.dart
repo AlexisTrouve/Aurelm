@@ -96,3 +96,12 @@ final turnSegmentsProvider =
   if (db == null) return const Stream.empty();
   return db.turnDao.watchSegments(turnId);
 });
+
+/// Reactive set of GM-locked fields for a turn.
+/// Empty = no fields protected. Used to show lock badges in turn_detail_screen.
+final turnGmFieldsProvider =
+    StreamProvider.family<Set<String>, int>((ref, turnId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.turnDao.watchGmFields(turnId);
+});

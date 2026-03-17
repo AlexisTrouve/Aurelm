@@ -195,6 +195,29 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // GM-field lock — raw SQL (no codegen)
+  // ---------------------------------------------------------------------------
+
+  /// Reactive stream of GM-locked field names for a turn.
+  Stream<Set<String>> watchGmFields(int turnId) {
+    return customSelect(
+      'SELECT gm_fields FROM turn_turns WHERE id = ?',
+      variables: [Variable.withInt(turnId)],
+      readsFrom: {turnTurns},
+    ).watchSingleOrNull().map(
+          (row) => _parseTurnGmFieldsJson(row?.read<String?>('gm_fields')),
+        );
+  }
+
+  /// Persist the GM-locked fields list for a turn.
+  Future<void> updateGmFields(int turnId, Set<String> fields) async {
+    await customStatement(
+      'UPDATE turn_turns SET gm_fields = ? WHERE id = ?',
+      [fields.isEmpty ? null : jsonEncode(fields.toList()), turnId],
+    );
+  }
+
   /// Returns all unique thematic tags across all turns, sorted by frequency desc.
   Future<List<String>> allThematicTags() async {
     final rows = await (selectOnly(turnTurns)
@@ -214,6 +237,20 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
     final sorted = freq.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.map((e) => e.key).toList();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GM-field lock helpers (raw SQL — no codegen needed)
+// ---------------------------------------------------------------------------
+
+/// Parse a JSON array of field names stored as TEXT in the DB.
+Set<String> _parseTurnGmFieldsJson(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    return Set<String>.from(jsonDecode(raw) as List);
+  } catch (_) {
+    return {};
   }
 }
 

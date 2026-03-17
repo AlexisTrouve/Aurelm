@@ -58,6 +58,8 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   final TextEditingController _summaryCtrl = TextEditingController();
   List<String> _editTags = [];
   List<String> _editStrategy = [];
+  // GM-locked fields snapshot — populated on _enterEditMode
+  Set<String> _gmFields = {};
 
   @override
   void initState() {
@@ -95,6 +97,8 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   }
 
   void _enterEditMode(TurnRow t) {
+    // Snapshot current gm_fields so save can merge correctly
+    _gmFields = ref.read(turnGmFieldsProvider(widget.turnId)).valueOrNull ?? {};
     _titleCtrl.text = t.title ?? '';
     _summaryCtrl.text = t.summary ?? '';
     _editTags = _parseTags(t.thematicTags);
@@ -116,10 +120,46 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
         thematicTags: _editTags,
         playerStrategy: _editStrategy,
       );
-      if (mounted) setState(() => _editMode = false);
+
+      // Auto-lock non-empty fields the GM has explicitly set — pipeline won't overwrite them.
+      // Empty fields stay unlocked so the pipeline can fill them in.
+      final newGmFields = Set<String>.from(_gmFields);
+      if (_summaryCtrl.text.trim().isNotEmpty) newGmFields.add('summary');
+      if (_editTags.isNotEmpty) newGmFields.add('thematic_tags');
+      if (_editStrategy.isNotEmpty) newGmFields.add('player_strategy');
+      await db.turnDao.updateGmFields(widget.turnId, newGmFields);
+
+      if (mounted) setState(() { _editMode = false; _gmFields = newGmFields; });
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Show confirmation dialog then remove [field] from gm_fields — pipeline can re-fill it.
+  Future<void> _unlockField(String field) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Déverrouiller ce champ ?'),
+        content: Text('Le pipeline pourra à nouveau modifier "$field". Continuer ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Déverrouiller'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    final updated = Set<String>.from(_gmFields)..remove(field);
+    await db.turnDao.updateGmFields(widget.turnId, updated);
+    // _gmFields will be refreshed via the provider stream on next render
   }
 
   /// Scroll the view so the first text block containing [query] is centered.
@@ -182,6 +222,9 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
 
         final t = data.turn;
         final typeColor = AppColors.turnTypeColors[t.turnType] ?? Colors.grey;
+
+        // GM-locked fields — used to show lock badges on protected sections
+        final gmFields = ref.watch(turnGmFieldsProvider(widget.turnId)).valueOrNull ?? {};
 
         // Build entity name → id map for auto-hyperlinking in turn text
         final turnEntities = ref.watch(turnEntitiesProvider(widget.turnId));
@@ -331,7 +374,13 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                 // AI summary
                 if (t.summary != null && t.summary!.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  const SectionHeader(title: 'Résumé'),
+                  Row(children: [
+                    const SectionHeader(title: 'Résumé'),
+                    if (gmFields.contains('summary'))
+                      _TurnGmLockBadge(
+                        onTap: () => _unlockField('summary'),
+                      ),
+                  ]),
                   const SizedBox(height: 8),
                   Container(
                     key: _summaryKey,
@@ -419,10 +468,10 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                 ],
 
                 // Preanalysis — novelty + player strategy
-                _PreanalysisSection(turn: t),
+                _PreanalysisSection(turn: t, gmFields: gmFields, onUnlock: _unlockField),
 
                 // Analysis tags — thematic_tags, tech_era, fantasy_level
-                _TurnTagsSection(turn: t),
+                _TurnTagsSection(turn: t, gmFields: gmFields, onUnlock: _unlockField),
 
                 // Entities mentioned in this turn — fast travel
                 _TurnEntitiesSection(turnId: widget.turnId),
@@ -606,8 +655,14 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
 
 class _PreanalysisSection extends StatelessWidget {
   final TurnRow turn;
+  final Set<String> gmFields;
+  final void Function(String field) onUnlock;
 
-  const _PreanalysisSection({required this.turn});
+  const _PreanalysisSection({
+    required this.turn,
+    this.gmFields = const {},
+    required this.onUnlock,
+  });
 
   List<String> _parseTags(String? raw) {
     if (raw == null || raw.isEmpty) return [];
@@ -701,6 +756,8 @@ class _PreanalysisSection extends StatelessWidget {
                           color: Colors.blue.shade300,
                           fontWeight: FontWeight.w600,
                         )),
+                    if (gmFields.contains('player_strategy'))
+                      _TurnGmLockBadge(onTap: () => onUnlock('player_strategy')),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -737,8 +794,14 @@ class _PreanalysisSection extends StatelessWidget {
 
 class _TurnTagsSection extends StatelessWidget {
   final TurnRow turn;
+  final Set<String> gmFields;
+  final void Function(String field) onUnlock;
 
-  const _TurnTagsSection({required this.turn});
+  const _TurnTagsSection({
+    required this.turn,
+    this.gmFields = const {},
+    required this.onUnlock,
+  });
 
   /// Parse a JSON-like list stored as text: '["tag1","tag2"]' → ['tag1','tag2']
   List<String> _parseTags(String? raw) {
@@ -767,7 +830,11 @@ class _TurnTagsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 20),
-        const SectionHeader(title: 'Analyse'),
+        Row(children: [
+          const SectionHeader(title: 'Analyse'),
+          if (gmFields.contains('thematic_tags'))
+            _TurnGmLockBadge(onTap: () => onUnlock('thematic_tags')),
+        ]),
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
@@ -1064,6 +1131,33 @@ class _Badge extends StatelessWidget {
               color: color,
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// GM lock badge — amber lock icon, tappable to unlock
+// ---------------------------------------------------------------------------
+
+/// Small amber lock icon shown next to a GM-protected field label.
+/// Tapping opens a confirmation dialog to unlock the field.
+class _TurnGmLockBadge extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TurnGmLockBadge({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: const Padding(
+          padding: EdgeInsets.all(2),
+          child: Icon(Icons.lock, size: 14, color: Colors.amber),
+        ),
       ),
     );
   }

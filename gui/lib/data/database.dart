@@ -133,6 +133,8 @@ void _ensureMigrations(dynamic db) {
     // Migration 025: per-field GM lock (JSON array of field names)
     "ALTER TABLE entity_entities ADD COLUMN gm_fields TEXT",
     "ALTER TABLE subject_subjects ADD COLUMN gm_fields TEXT",
+    // Migration 026: same for turns
+    "ALTER TABLE turn_turns ADD COLUMN gm_fields TEXT",
   ];
 
   for (final sql in statements) {
