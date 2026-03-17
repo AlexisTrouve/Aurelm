@@ -1,21 +1,22 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../data/database.dart';
 import '../../../models/subject_with_details.dart';
+import '../../../providers/favorites_provider.dart';
 
 /// A single subject tile in the subjects list.
-class SubjectListTile extends StatelessWidget {
+class SubjectListTile extends ConsumerWidget {
   final SubjectWithDetails subject;
 
   const SubjectListTile({super.key, required this.subject});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = subject.subject;
+    final isFav = ref.watch(favoritesProvider).contains('subject_${s.id}');
     final isResolved = s.status == 'resolved';
     final isMjToPj = s.direction == 'mj_to_pj';
 
@@ -153,6 +154,18 @@ class SubjectListTile extends StatelessWidget {
               ),
 
               const SizedBox(width: 8),
+              // Favorite toggle
+              GestureDetector(
+                onTap: () => ref
+                    .read(favoritesProvider.notifier)
+                    .toggle('subject', s.id, s.civId),
+                child: Icon(
+                  isFav ? Icons.star : Icons.star_border,
+                  size: 18,
+                  color: isFav ? Colors.amber : Colors.grey,
+                ),
+              ),
+              const SizedBox(width: 4),
               const Icon(Icons.chevron_right, size: 18),
             ],
           ),

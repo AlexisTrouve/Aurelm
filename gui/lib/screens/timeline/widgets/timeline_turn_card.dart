@@ -1,23 +1,26 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/turn_with_entities.dart';
+import '../../../providers/favorites_provider.dart';
 import '../../../widgets/common/civ_badge.dart';
 
 /// Affiche une ou deux cartes par tour selon si des segments PJ existent.
-/// - Carte MJ (gold) : narrative GM, entités GM, tags
+/// - Carte MJ (gold) : narrative GM, entités GM, tags + étoile favori
 /// - Carte PJ (purple) : réponse joueur, entités PJ
-class TimelineTurnCard extends StatelessWidget {
+class TimelineTurnCard extends ConsumerWidget {
   final TurnWithEntities turn;
 
   const TimelineTurnCard({super.key, required this.turn});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final showPjCard = turn.hasPjContent;
+    final isFav = ref.watch(favoritesProvider).contains('turn_${turn.turn.id}');
 
     return Column(
       children: [
@@ -25,7 +28,11 @@ class TimelineTurnCard extends StatelessWidget {
           turn: turn,
           source: 'mj',
           entityCount: turn.gmEntityCount,
+          isFav: isFav,
           onTap: () => context.push('/turns/${turn.turn.id}'),
+          onFavTap: () => ref
+              .read(favoritesProvider.notifier)
+              .toggle('turn', turn.turn.id, turn.turn.civId),
         ),
         if (showPjCard) ...[
           const SizedBox(height: 4),
@@ -46,12 +53,17 @@ class _TurnCard extends StatelessWidget {
   final String source; // 'mj' or 'pj'
   final int entityCount;
   final VoidCallback onTap;
+  // Only provided for MJ card — null means no star shown (PJ card)
+  final bool? isFav;
+  final VoidCallback? onFavTap;
 
   const _TurnCard({
     required this.turn,
     required this.source,
     required this.entityCount,
     required this.onTap,
+    this.isFav,
+    this.onFavTap,
   });
 
   @override
@@ -156,6 +168,19 @@ class _TurnCard extends StatelessWidget {
                         // Civ badge (MJ only) — larger for readability
                         if (isMj) ...[
                           CivBadge(civName: turn.civName, prominent: true),
+                          const SizedBox(width: 8),
+                        ],
+
+                        // Favorite star (MJ card only)
+                        if (isMj && isFav != null) ...[
+                          GestureDetector(
+                            onTap: onFavTap,
+                            child: Icon(
+                              isFav! ? Icons.star : Icons.star_border,
+                              size: 16,
+                              color: isFav! ? Colors.amber : Colors.grey,
+                            ),
+                          ),
                           const SizedBox(width: 8),
                         ],
 

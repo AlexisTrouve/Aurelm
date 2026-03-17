@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../models/entity_with_details.dart';
 import '../../../providers/database_provider.dart';
+import '../../../providers/favorites_provider.dart';
 import '../../../widgets/common/entity_type_icon.dart';
 import '../../../widgets/common/entity_type_badge.dart';
 
@@ -66,6 +67,9 @@ class EntityListTile extends ConsumerWidget {
     final tags = entity.entity.tags != null
         ? (jsonDecode(entity.entity.tags!) as List).cast<String>()
         : <String>[];
+    final isFav = ref
+        .watch(favoritesProvider)
+        .contains('entity_${entity.entity.id}');
 
     return Card(
       child: ListTile(
@@ -133,10 +137,22 @@ class EntityListTile extends ConsumerWidget {
             ],
           ],
         ),
-        // Quick-action buttons: hide and disable
+        // Quick-action buttons: favorite + hide + disable
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Favorite toggle
+            IconButton(
+              icon: Icon(
+                isFav ? Icons.star : Icons.star_border,
+                size: 18,
+                color: isFav ? Colors.amber : Colors.grey,
+              ),
+              tooltip: isFav ? 'Retirer des favoris' : 'Ajouter aux favoris',
+              onPressed: () => ref
+                  .read(favoritesProvider.notifier)
+                  .toggle('entity', entity.entity.id, entity.entity.civId),
+            ),
             Tooltip(
               message: entity.entity.hidden
                   ? 'Afficher (retirer du masquage)'
