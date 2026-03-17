@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class AppShell extends StatelessWidget {
+import '../../providers/chat_provider.dart';
+
+class AppShell extends ConsumerWidget {
   final Widget child;
 
   const AppShell({super.key, required this.child});
@@ -66,7 +69,7 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = _selectedIndex(context);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -76,7 +79,13 @@ class AppShell extends StatelessWidget {
           NavigationRail(
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) {
-              context.go(_routes[index]);
+              // Chat tab: go directly to active session if one is open
+              if (index == 5) {
+                final hasSession = ref.read(chatProvider).sessionId != null;
+                context.go(hasSession ? '/chat' : '/chat/sessions');
+              } else {
+                context.go(_routes[index]);
+              }
             },
             destinations: _destinations,
             extended: false,
