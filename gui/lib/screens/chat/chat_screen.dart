@@ -61,8 +61,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (widget.initialSessionId != null) {
         ref.read(chatProvider.notifier).setSessionId(widget.initialSessionId!);
       }
-      // Restore scroll to bottom when returning to an active session
-      _scrollToBottom();
+      // Jump to bottom instantly after layout settles (2 frames needed for ListView extent)
+      _jumpToBottom();
     });
   }
 
@@ -141,10 +141,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Animated scroll to bottom — used when new messages arrive during a session.
   void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
-    // Wait for layout to settle before scrolling — avoids overshooting
-    // when messages are still being laid out (e.g. session load).
+    // Wait for layout to settle before scrolling
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       final maxExtent = _scrollController.position.maxScrollExtent;
@@ -154,6 +154,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
+    });
+  }
+
+  /// Instant jump to bottom — used on initial load / navigation restore.
+  /// Uses a double post-frame to ensure the ListView extent is fully computed.
+  void _jumpToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scrollController.hasClients) return;
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      });
     });
   }
 
