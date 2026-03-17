@@ -81,8 +81,10 @@ class _SubjectDetailStatefulState
   // Controllers (populated when entering edit mode)
   late TextEditingController _titleCtrl;
   late TextEditingController _descCtrl;
+  late TextEditingController _quoteCtrl;
   String _direction = 'mj_to_pj';
   String _category = 'question';
+  String _status = 'open';
   List<String> _editTags = [];
 
   @override
@@ -90,12 +92,14 @@ class _SubjectDetailStatefulState
     super.initState();
     _titleCtrl = TextEditingController();
     _descCtrl = TextEditingController();
+    _quoteCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _titleCtrl.dispose();
     _descCtrl.dispose();
+    _quoteCtrl.dispose();
     super.dispose();
   }
 
@@ -103,8 +107,10 @@ class _SubjectDetailStatefulState
     final s = widget.detail.subject;
     _titleCtrl.text = s.title;
     _descCtrl.text = s.description ?? '';
+    _quoteCtrl.text = s.sourceQuote ?? '';
     _direction = s.direction;
     _category = s.category;
+    _status = s.status;
     // Parse JSON tags array
     final rawTags = s.tags;
     _editTags = _parseTags(rawTags);
@@ -129,7 +135,9 @@ class _SubjectDetailStatefulState
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
         direction: _direction,
         category: _category,
+        status: _status,
         tags: _editTags,
+        sourceQuote: _quoteCtrl.text.trim(),
       );
 
       // Auto-lock edited fields — title is always locked (always has content).
@@ -445,11 +453,27 @@ class _SubjectDetailStatefulState
   // ---------------------------------------------------------------------------
 
   Widget _buildEditBody(BuildContext context, WidgetRef ref) {
-    final civsAsync = ref.watch(civListProvider);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Status
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Statut',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          value: _status,
+          items: const [
+            DropdownMenuItem(value: 'open', child: Text('Ouvert')),
+            DropdownMenuItem(value: 'resolved', child: Text('Résolu')),
+            DropdownMenuItem(value: 'abandoned', child: Text('Abandonné')),
+            DropdownMenuItem(value: 'superseded', child: Text('Supplanté')),
+          ],
+          onChanged: (v) => setState(() => _status = v!),
+        ),
+        const SizedBox(height: 12),
+
         // Direction
         DropdownButtonFormField<String>(
           decoration: const InputDecoration(
@@ -505,6 +529,20 @@ class _SubjectDetailStatefulState
             isDense: true,
           ),
           maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        const SizedBox(height: 12),
+
+        // Source quote (verbatim extract from the GM turn)
+        TextField(
+          controller: _quoteCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Extrait source (optionnel)',
+            border: OutlineInputBorder(),
+            isDense: true,
+            hintText: 'Citation verbatim depuis le tour MJ…',
+          ),
+          maxLines: 4,
           textCapitalization: TextCapitalization.sentences,
         ),
         const SizedBox(height: 20),

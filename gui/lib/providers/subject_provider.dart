@@ -122,6 +122,7 @@ Future<void> updateSubject(
   String? category,
   String? status,
   List<String>? tags,
+  String? sourceQuote,
 }) {
   final db = ref.read(databaseProvider);
   if (db == null) throw StateError('No database');
@@ -133,6 +134,7 @@ Future<void> updateSubject(
     category: category,
     status: status,
     tags: tags,
+    sourceQuote: sourceQuote,
   );
 }
 

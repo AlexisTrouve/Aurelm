@@ -223,6 +223,8 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
     String? category,
     String? status,
     List<String>? tags,
+    // Pass empty string to clear the source quote
+    String? sourceQuote,
   }) {
     return (update(subjectSubjects)..where((s) => s.id.equals(subjectId)))
         .write(SubjectSubjectsCompanion(
@@ -235,6 +237,9 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
           status: status != null ? Value(status) : const Value.absent(),
           tags: tags != null
               ? Value('[${tags.map((t) => '"$t"').join(',')}]')
+              : const Value.absent(),
+          sourceQuote: sourceQuote != null
+              ? Value(sourceQuote.isEmpty ? null : sourceQuote)
               : const Value.absent(),
           updatedAt: Value(DateTime.now().toIso8601String()),
         ));
