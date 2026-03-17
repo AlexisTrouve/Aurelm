@@ -197,9 +197,11 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: widget.item.passages.map((p) => InkWell(
                     borderRadius: BorderRadius.circular(4),
+                    // Extra must be typed as Map<String,dynamic> — Map<String,String>
+                    // fails the cast in the route handler silently (empty page).
                     onTap: () => context.push(
                       '/turns/${p.turnId}',
-                      extra: {'highlight': widget.item.name},
+                      extra: <String, dynamic>{'highlight': widget.item.name},
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -217,12 +219,6 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
                               height: 1.4,
-                            ),
-                          ),
-                          WidgetSpan(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Icon(Icons.open_in_new, size: 11, color: cs.primary),
                             ),
                           ),
                         ]),
