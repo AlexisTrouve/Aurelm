@@ -71,6 +71,15 @@ final entityDetailProvider =
   return db.entityDao.watchEntityDetail(entityId);
 });
 
+/// Reactive set of GM-locked fields for an entity.
+/// Empty = no fields protected. Used to show lock badges in entity_detail_screen.
+final entityGmFieldsProvider =
+    StreamProvider.family<Set<String>, int>((ref, entityId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.entityDao.watchGmFields(entityId);
+});
+
 final entityMentionsProvider =
     StreamProvider.family<List<MentionWithContext>, int>((ref, entityId) {
   final db = ref.watch(databaseProvider);

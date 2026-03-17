@@ -364,11 +364,40 @@ def build_entity_profiles(
                 final_description = profile.description if profile.description else existing_description
 
             tags_json = json.dumps(profile.tags, ensure_ascii=False) if profile.tags else None
+
+            # Respect GM field locks — skip any field the GM has marked as protected.
+            # gm_fields is a JSON array e.g. ["description", "tags"]. Pipeline never
+            # touches locked fields so GM edits survive re-profiling runs.
+            gm_row = conn.execute(
+                "SELECT gm_fields FROM entity_entities WHERE id = ?", (entity_id,)
+            ).fetchone()
+            gm_fields: set[str] = set()
+            if gm_row and gm_row["gm_fields"]:
+                try:
+                    gm_fields = set(json.loads(gm_row["gm_fields"]))
+                except json.JSONDecodeError:
+                    pass
+
+            # Build the UPDATE dynamically, skipping GM-locked fields.
+            # history is always updated (pure pipeline data, never GM-edited).
+            update_cols = ["history = ?", "updated_at = datetime('now')"]
+            update_vals: list = [history_json]
+
+            if "description" not in gm_fields:
+                update_cols.insert(0, "description = ?")
+                update_vals.insert(0, final_description)
+            else:
+                print(f"       -> '{name}': description locked by GM, skipping")
+
+            if "tags" not in gm_fields:
+                update_cols.insert(len(update_cols) - 1, "tags = ?")
+                update_vals.insert(len(update_vals) - 1, tags_json)
+            else:
+                print(f"       -> '{name}': tags locked by GM, skipping")
+
             conn.execute(
-                """UPDATE entity_entities
-                   SET description = ?, history = ?, tags = ?, updated_at = datetime('now')
-                   WHERE id = ?""",
-                (final_description, history_json, tags_json, entity_id),
+                f"UPDATE entity_entities SET {', '.join(update_cols)} WHERE id = ?",
+                (*update_vals, entity_id),
             )
 
         # Commit every 10 entities to avoid losing progress on crash

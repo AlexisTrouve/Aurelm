@@ -6,6 +6,7 @@ import '../../data/database.dart';
 import '../../providers/subject_provider.dart';
 import '../../providers/civilization_provider.dart';
 import '../../providers/favorites_provider.dart';
+import '../../providers/database_provider.dart';
 import '../../models/subject_with_details.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
@@ -74,6 +75,9 @@ class _SubjectDetailStatefulState
   bool _editMode = false;
   bool _saving = false;
 
+  // GM-locked fields snapshot at edit mode entry — extended on save, never replaced
+  Set<String> _gmFields = {};
+
   // Controllers (populated when entering edit mode)
   late TextEditingController _titleCtrl;
   late TextEditingController _descCtrl;
@@ -104,6 +108,10 @@ class _SubjectDetailStatefulState
     // Parse JSON tags array
     final rawTags = s.tags;
     _editTags = _parseTags(rawTags);
+    // Snapshot current GM locks to extend (not replace) on save
+    _gmFields = Set<String>.from(
+      ref.read(subjectGmFieldsProvider(widget.detail.subject.id)).valueOrNull ?? {},
+    );
     setState(() => _editMode = true);
   }
 
@@ -123,9 +131,54 @@ class _SubjectDetailStatefulState
         category: _category,
         tags: _editTags,
       );
+
+      // Auto-lock edited fields — title is always locked (always has content).
+      // Empty fields are not locked: pipeline can re-fill them if GM cleared them.
+      final locked = Set<String>.from(_gmFields);
+      locked.add('title'); // title always non-empty (validated above)
+      if (_descCtrl.text.trim().isNotEmpty) locked.add('description');
+      if (_editTags.isNotEmpty) locked.add('tags');
+      final db = ref.read(databaseProvider);
+      if (db != null) {
+        await db.subjectDao.updateGmFields(widget.detail.subject.id, locked);
+      }
+
       if (mounted) setState(() => _editMode = false);
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Remove a single field from GM locks after user confirmation.
+  Future<void> _unlockField(BuildContext context, WidgetRef ref, int subjectId, String field) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Déverrouiller ce champ ?'),
+        content: const Text(
+          'Le pipeline pourra modifier ce champ lors du prochain run.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Déverrouiller'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final db = ref.read(databaseProvider);
+      if (db == null) return;
+      final current =
+          ref.read(subjectGmFieldsProvider(subjectId)).valueOrNull ?? {};
+      await db.subjectDao.updateGmFields(
+        subjectId,
+        Set<String>.from(current)..remove(field),
+      );
     }
   }
 
@@ -268,6 +321,9 @@ class _SubjectDetailStatefulState
     final isResolved = s.status == 'resolved';
 
     final tags = _parseTags(s.tags);
+    // GM-locked fields — shown as small amber lock badges next to protected content
+    final gmFields =
+        ref.watch(subjectGmFieldsProvider(s.id)).valueOrNull ?? {};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,24 +350,49 @@ class _SubjectDetailStatefulState
         // Tags
         if (tags.isNotEmpty) ...[
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            children: tags
-                .map((t) => Chip(
-                      label: Text(t),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                      labelStyle: Theme.of(context).textTheme.labelSmall,
-                    ))
-                .toList(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 6,
+                  children: tags
+                      .map((t) => Chip(
+                            label: Text(t),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                            labelStyle: Theme.of(context).textTheme.labelSmall,
+                          ))
+                      .toList(),
+                ),
+              ),
+              if (gmFields.contains('tags'))
+                _SubjectGmLockBadge(
+                  tooltip: 'Tags protégés par le GM — cliquer pour déverrouiller',
+                  onUnlock: () => _unlockField(context, ref, s.id, 'tags'),
+                ),
+            ],
           ),
         ],
 
         // Description
         if (s.description != null && s.description!.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(s.description!,
-              style: Theme.of(context).textTheme.bodyMedium),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(s.description!,
+                    style: Theme.of(context).textTheme.bodyMedium),
+              ),
+              if (gmFields.contains('description'))
+                _SubjectGmLockBadge(
+                  tooltip: 'Description protégée par le GM — cliquer pour déverrouiller',
+                  onUnlock: () => _unlockField(context, ref, s.id, 'description'),
+                ),
+            ],
+          ),
         ],
 
         // Verbatim source quote
@@ -878,6 +959,29 @@ class _TurnChip extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     )),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small amber lock badge for GM-protected subject fields.
+class _SubjectGmLockBadge extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onUnlock;
+
+  const _SubjectGmLockBadge({required this.tooltip, required this.onUnlock});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onUnlock,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(4),
+          child: Icon(Icons.lock, size: 14, color: Colors.amber),
         ),
       ),
     );

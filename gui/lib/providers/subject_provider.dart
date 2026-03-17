@@ -70,6 +70,15 @@ final subjectDetailProvider =
   return db.subjectDao.watchSubjectDetail(subjectId);
 });
 
+/// Reactive set of GM-locked fields for a subject.
+/// Empty = no fields protected. Used to show lock badges in subject_detail_screen.
+final subjectGmFieldsProvider =
+    StreamProvider.family<Set<String>, int>((ref, subjectId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.subjectDao.watchGmFields(subjectId);
+});
+
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------

@@ -130,6 +130,9 @@ void _ensureMigrations(dynamic db) {
     "  ON user_favorites(subject_id) WHERE subject_id IS NOT NULL",
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_turn"
     "  ON user_favorites(turn_id) WHERE turn_id IS NOT NULL",
+    // Migration 025: per-field GM lock (JSON array of field names)
+    "ALTER TABLE entity_entities ADD COLUMN gm_fields TEXT",
+    "ALTER TABLE subject_subjects ADD COLUMN gm_fields TEXT",
   ];
 
   for (final sql in statements) {

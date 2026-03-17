@@ -12,6 +12,16 @@ import '../../models/filter_state.dart';
 
 part 'entity_dao.g.dart';
 
+/// Parse a gm_fields JSON column value into a Set of field names.
+Set<String> _parseGmFieldsJson(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    return Set<String>.from(jsonDecode(raw) as List);
+  } catch (_) {
+    return {};
+  }
+}
+
 @DriftAccessor(
     tables: [EntityEntities, EntityAliases, EntityMentions, CivCivilizations, TurnTurns])
 class EntityDao extends DatabaseAccessor<AurelmDatabase>
@@ -413,6 +423,45 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
     });
 
     return history;
+  }
+
+  // ---------------------------------------------------------------------------
+  // GM field locks — per-field protection from pipeline overwrites
+  // ---------------------------------------------------------------------------
+
+  /// Returns the set of GM-locked fields for an entity (e.g. {"description", "tags"}).
+  /// Uses raw SQL since gm_fields is not in the Drift-generated EntityRow (no codegen).
+  Future<Set<String>> getGmFields(int entityId) async {
+    final rows = await customSelect(
+      'SELECT gm_fields FROM entity_entities WHERE id = ?',
+      variables: [Variable.withInt(entityId)],
+      readsFrom: {entityEntities},
+    ).get();
+    if (rows.isEmpty) return {};
+    final raw = rows.first.read<String?>('gm_fields');
+    return _parseGmFieldsJson(raw);
+  }
+
+  /// Reactive stream of GM-locked fields — emits on any change to entityEntities.
+  Stream<Set<String>> watchGmFields(int entityId) {
+    return customSelect(
+      'SELECT gm_fields FROM entity_entities WHERE id = ?',
+      variables: [Variable.withInt(entityId)],
+      readsFrom: {entityEntities},
+    ).watch().map((rows) {
+      if (rows.isEmpty) return <String>{};
+      final raw = rows.first.read<String?>('gm_fields');
+      return _parseGmFieldsJson(raw);
+    });
+  }
+
+  /// Persist the GM-locked field set. Pass empty set to unlock all fields.
+  Future<void> updateGmFields(int entityId, Set<String> fields) async {
+    final encoded = fields.isEmpty ? null : jsonEncode(fields.toList()..sort());
+    await customStatement(
+      'UPDATE entity_entities SET gm_fields = ? WHERE id = ?',
+      [encoded, entityId],
+    );
   }
 
   /// Returns all unique semantic tags across active entities, sorted by frequency.

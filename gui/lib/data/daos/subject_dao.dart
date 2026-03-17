@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../database.dart';
@@ -8,6 +10,16 @@ import '../../models/filter_state.dart';
 import '../../models/subject_with_details.dart';
 
 part 'subject_dao.g.dart';
+
+/// Parse a gm_fields JSON column value into a Set of field names.
+Set<String> _parseSubjectGmFieldsJson(String? raw) {
+  if (raw == null || raw.isEmpty) return {};
+  try {
+    return Set<String>.from(jsonDecode(raw) as List);
+  } catch (_) {
+    return {};
+  }
+}
 
 @DriftAccessor(tables: [
   SubjectSubjects,
@@ -226,6 +238,44 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
               : const Value.absent(),
           updatedAt: Value(DateTime.now().toIso8601String()),
         ));
+  }
+
+  // ---------------------------------------------------------------------------
+  // GM field locks — per-field protection from pipeline overwrites
+  // ---------------------------------------------------------------------------
+
+  /// Returns the set of GM-locked fields for a subject (e.g. {"title", "description"}).
+  Future<Set<String>> getGmFields(int subjectId) async {
+    final rows = await customSelect(
+      'SELECT gm_fields FROM subject_subjects WHERE id = ?',
+      variables: [Variable.withInt(subjectId)],
+      readsFrom: {subjectSubjects},
+    ).get();
+    if (rows.isEmpty) return {};
+    final raw = rows.first.read<String?>('gm_fields');
+    return _parseSubjectGmFieldsJson(raw);
+  }
+
+  /// Reactive stream of GM-locked fields — emits on any change to subjectSubjects.
+  Stream<Set<String>> watchGmFields(int subjectId) {
+    return customSelect(
+      'SELECT gm_fields FROM subject_subjects WHERE id = ?',
+      variables: [Variable.withInt(subjectId)],
+      readsFrom: {subjectSubjects},
+    ).watch().map((rows) {
+      if (rows.isEmpty) return <String>{};
+      final raw = rows.first.read<String?>('gm_fields');
+      return _parseSubjectGmFieldsJson(raw);
+    });
+  }
+
+  /// Persist the GM-locked field set. Pass empty set to unlock all fields.
+  Future<void> updateGmFields(int subjectId, Set<String> fields) async {
+    final encoded = fields.isEmpty ? null : jsonEncode(fields.toList()..sort());
+    await customStatement(
+      'UPDATE subject_subjects SET gm_fields = ? WHERE id = ?',
+      [encoded, subjectId],
+    );
   }
 
   /// Add a resolution attempt manually (GM-entered resolution).

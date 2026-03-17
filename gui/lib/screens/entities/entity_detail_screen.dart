@@ -36,6 +36,10 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
   bool _editMode = false;
   bool _saving = false;
 
+  // GM-locked fields at the time edit mode was entered — used to preserve
+  // existing locks and add new ones on save.
+  Set<String> _gmFields = {};
+
   // Basic fields
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
@@ -81,6 +85,10 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
     _selectedCivId = entity.entity.civId;
     _editTags = _parseTags(entity.entity.tags);
     _showAddRelation = false;
+    // Snapshot current GM locks so we can extend (not replace) them on save
+    _gmFields = Set<String>.from(
+      ref.read(entityGmFieldsProvider(widget.entityId)).valueOrNull ?? {},
+    );
     setState(() => _editMode = true);
   }
 
@@ -104,9 +112,50 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
         description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       );
       await db.entityDao.updateEntityTags(widget.entityId, _editTags);
+
+      // Auto-lock fields that now have GM content — preserves existing locks.
+      // Empty fields are not locked: if GM clears a field, pipeline can re-fill it.
+      final locked = Set<String>.from(_gmFields);
+      if (_descCtrl.text.trim().isNotEmpty) locked.add('description');
+      if (_editTags.isNotEmpty) locked.add('tags');
+      await db.entityDao.updateGmFields(widget.entityId, locked);
+
       if (mounted) setState(() => _editMode = false);
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Remove a single field from GM locks after user confirmation.
+  Future<void> _unlockField(String field) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Déverrouiller ce champ ?'),
+        content: const Text(
+          'Le pipeline pourra modifier ce champ lors du prochain run.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Déverrouiller'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final db = ref.read(databaseProvider);
+      if (db == null) return;
+      final current =
+          ref.read(entityGmFieldsProvider(widget.entityId)).valueOrNull ?? {};
+      await db.entityDao.updateGmFields(
+        widget.entityId,
+        Set<String>.from(current)..remove(field),
+      );
     }
   }
 
@@ -282,6 +331,10 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
 
   List<Widget> _buildViewBody(BuildContext context, EntityWithDetails entity) {
     final tags = _parseTags(entity.entity.tags);
+    // GM-locked fields — shown as small amber lock badges next to protected content
+    final gmFields =
+        ref.watch(entityGmFieldsProvider(widget.entityId)).valueOrNull ?? {};
+
     return [
       // Type + mention count + inactive badge
       Row(
@@ -311,34 +364,58 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
       // Tags (semantic)
       if (tags.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 4,
-          runSpacing: 4,
-          children: tags.map((tag) {
-            final color = AppColors.entityTagColor(tag);
-            return Chip(
-              label: Text(
-                tag,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontSize: 10,
-                      color: color,
-                      fontWeight: FontWeight.w600,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: tags.map((tag) {
+                  final color = AppColors.entityTagColor(tag);
+                  return Chip(
+                    label: Text(
+                      tag,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontSize: 10,
+                            color: color,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    side: BorderSide(color: color.withValues(alpha: 0.5)),
+                    backgroundColor: color.withValues(alpha: 0.08),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  );
+                }).toList(),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              side: BorderSide(color: color.withValues(alpha: 0.5)),
-              backgroundColor: color.withValues(alpha: 0.08),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            );
-          }).toList(),
+            ),
+            // Lock badge — tags protected from pipeline overwrite
+            if (gmFields.contains('tags'))
+              _GmLockBadge(
+                tooltip: 'Tags protégés par le GM — cliquer pour déverrouiller',
+                onUnlock: () => _unlockField('tags'),
+              ),
+          ],
         ),
       ],
 
       // Description
       if (entity.entity.description != null) ...[
         const SizedBox(height: 16),
-        Text(entity.entity.description!),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(entity.entity.description!)),
+            // Lock badge — description protected from pipeline overwrite
+            if (gmFields.contains('description'))
+              _GmLockBadge(
+                tooltip: 'Description protégée par le GM — cliquer pour déverrouiller',
+                onUnlock: () => _unlockField('description'),
+              ),
+          ],
+        ),
       ],
 
       // Naming history
@@ -672,6 +749,30 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small amber lock icon indicating the field is protected from pipeline overwrites.
+/// Tapping it triggers the unlock flow (confirmation dialog in the parent screen).
+class _GmLockBadge extends StatelessWidget {
+  final String tooltip;
+  final VoidCallback onUnlock;
+
+  const _GmLockBadge({required this.tooltip, required this.onUnlock});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onUnlock,
+        borderRadius: BorderRadius.circular(12),
+        child: const Padding(
+          padding: EdgeInsets.all(4),
+          child: Icon(Icons.lock, size: 14, color: Colors.amber),
         ),
       ),
     );
