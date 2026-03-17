@@ -2,12 +2,24 @@ import 'package:drift/drift.dart' show Variable;
 
 import '../database.dart';
 
+/// A single mention passage with its source turn.
+class CivMentionPassage {
+  final int turnId;
+  final int turnNumber;
+  final String text;
+
+  const CivMentionPassage({
+    required this.turnId,
+    required this.turnNumber,
+    required this.text,
+  });
+}
+
 /// A candidate name that the GM hasn't resolved yet.
 class UnresolvedCivName {
   final String name;
   final int mentionCount;
-  /// Sample mention contexts: "Tour X: [context snippet]"
-  final List<String> passages;
+  final List<CivMentionPassage> passages;
 
   const UnresolvedCivName({
     required this.name,
@@ -65,9 +77,9 @@ class CivAliasRepository {
       final name = r.read<String>('name');
       final count = r.read<int>('mention_count');
 
-      // Load up to 3 mention passages with their turn number
+      // Load up to 3 mention passages with their turn id + number
       final passageRows = await _db.customSelect('''
-        SELECT t.turn_number, em.mention_text
+        SELECT t.id AS turn_id, t.turn_number, em.mention_text
         FROM entity_mentions em
         JOIN entity_entities e ON e.id = em.entity_id
         JOIN turn_turns t ON t.id = em.turn_id
@@ -76,11 +88,11 @@ class CivAliasRepository {
         LIMIT 3
       ''', variables: [Variable.withString(name)]).get();
 
-      final passages = passageRows.map((p) {
-        final turnNum = p.read<int>('turn_number');
-        final text = p.read<String?>('mention_text') ?? '';
-        return 'Tour $turnNum: $text';
-      }).toList();
+      final passages = passageRows.map((p) => CivMentionPassage(
+        turnId: p.read<int>('turn_id'),
+        turnNumber: p.read<int>('turn_number'),
+        text: p.read<String?>('mention_text') ?? '',
+      )).toList();
 
       result.add(UnresolvedCivName(name: name, mentionCount: count, passages: passages));
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/civ_alias_repository.dart';
 import '../../providers/civ_alias_provider.dart';
@@ -177,7 +178,7 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
               ],
             ),
 
-            // Mention passages — help GM identify what this name refers to
+            // Mention passages — clickable links to the source turn with highlight
             if (widget.item.passages.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
@@ -189,13 +190,35 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: widget.item.passages.map((p) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      p,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        height: 1.4,
+                  children: widget.item.passages.map((p) => InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => context.push(
+                      '/turns/${p.turnId}',
+                      extra: {'highlight': widget.item.name},
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tour ${p.turnNumber}  ',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              p.text.isEmpty ? '(pas de texte)' : p.text,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.open_in_new, size: 12, color: cs.primary),
+                        ],
                       ),
                     ),
                   )).toList(),
