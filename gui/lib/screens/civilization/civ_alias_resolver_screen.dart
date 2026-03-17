@@ -176,6 +176,33 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
                 ),
               ],
             ),
+
+            // Mention passages — help GM identify what this name refers to
+            if (widget.item.passages.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.item.passages.map((p) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      p,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             // Dropdown + Mapper button

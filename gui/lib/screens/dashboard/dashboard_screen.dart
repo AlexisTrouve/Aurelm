@@ -7,6 +7,7 @@ import '../../providers/database_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../providers/civ_alias_provider.dart';
 import 'widgets/civ_summary_card.dart';
 import 'widgets/pipeline_status_card.dart';
 class DashboardScreen extends ConsumerWidget {
@@ -36,11 +37,7 @@ class DashboardScreen extends ConsumerWidget {
         appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.account_tree_outlined),
-            tooltip: 'Résoudre alias de civilisations',
-            onPressed: () => context.go('/civs/alias-resolver'),
-          ),
+          _AliasResolverButton(),
         ],
       ),
       body: civs.when(
@@ -95,6 +92,29 @@ class DashboardScreen extends ConsumerWidget {
           );
         },
       ),
+      ),
+    );
+  }
+}
+
+/// Alias resolver button with a red badge when there are unresolved civ names.
+class _AliasResolverButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countAsync = ref.watch(unresolvedCivCountProvider);
+    final count = countAsync.valueOrNull ?? 0;
+
+    return IconButton(
+      tooltip: count > 0
+          ? '$count alias de civilisation à résoudre'
+          : 'Alias de civilisations',
+      onPressed: () => context.go('/civs/alias-resolver'),
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text('$count'),
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        child: const Icon(Icons.account_tree_outlined),
       ),
     );
   }

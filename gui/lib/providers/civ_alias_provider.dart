@@ -11,10 +11,16 @@ final civAliasRepositoryProvider = Provider<CivAliasRepository?>((ref) {
 });
 
 /// Reactive list of aliases for a given civ.
-/// Re-fetched on demand — not streamed (alias edits are infrequent).
 final civAliasesProvider =
     FutureProvider.family<List<CivAliasEntry>, int>((ref, civId) async {
   final repo = ref.watch(civAliasRepositoryProvider);
   if (repo == null) return [];
   return repo.loadAliasesForCiv(civId);
+});
+
+/// Count of unresolved civ names — drives the badge on the dashboard button.
+final unresolvedCivCountProvider = FutureProvider<int>((ref) async {
+  final repo = ref.watch(civAliasRepositoryProvider);
+  if (repo == null) return 0;
+  return repo.loadUnresolvedCount();
 });
