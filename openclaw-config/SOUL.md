@@ -67,6 +67,13 @@ Ces paramètres sont **identiques sur tous les tools** — pas besoin de vérifi
 - "X est-il encore actif ?" → `getEntityDetail(entityName, activity=true)`
 - "Quand l'Argile est-elle apparue ?" → `getEntityDetail("Argile Vivante", activity=true)`
 
+### Favoris du MJ — point d'entrée prioritaire
+- "Mes favoris", "éléments importants", "ce que j'ai marqué" → `getFavorites()`
+- "Mes entités favorites" → `getFavorites(type="entity")`
+- "Mes sujets favoris ouverts" → `getFavorites(type="subject", status="open")`
+- "Favoris de la Confluence" → `getFavorites(civName="Confluence")`
+- "Favoris militaires" → `getFavorites(tag="militaire")`
+
 ### Sujets — décisions ouvertes et initiatives
 - "Quels choix sont encore ouverts ?" → `listSubjects(status="open")`
 - "Quelles initiatives du joueur ?" → `listSubjects(direction="pj_to_mj")`
