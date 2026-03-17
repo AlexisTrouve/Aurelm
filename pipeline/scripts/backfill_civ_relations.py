@@ -27,7 +27,7 @@ from pathlib import Path
 # Allow running as a standalone script from any directory
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from pipeline.pipeline.db import get_connection
+from pipeline.pipeline.db import get_connection, run_migrations
 from pipeline.pipeline.runner import _detect_civ_mentions
 from pipeline.pipeline.civ_relation_profiler import build_civ_relations
 from pipeline.pipeline.llm_provider import create_provider, load_llm_config
@@ -70,11 +70,16 @@ def main() -> None:
 
     if use_llm:
         try:
-            provider = create_provider(llm_config)
+            provider_name = llm_config.provider_name if llm_config else "ollama"
+            provider = create_provider(provider_name)
             print(f"LLM provider: {type(provider).__name__} | model: {model}")
         except Exception as e:
             print(f"[warn] Could not create LLM provider: {e}. Falling back to --no-llm.")
             use_llm = False
+
+    # --- Apply migrations (idempotent — creates tables if missing) ---
+    print("Applying migrations...")
+    run_migrations(db_path)
 
     # --- Step 1: detection ---
     conn = get_connection(db_path)

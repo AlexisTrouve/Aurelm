@@ -168,15 +168,19 @@ def build_civ_relations(
                     contexts=contexts_text,
                 )
                 try:
-                    response = provider.complete(
-                        system="Tu es un archiviste expert pour un JDR de civilisation.",
-                        prompt=prompt,
+                    response = provider.chat(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "Tu es un archiviste expert pour un JDR de civilisation."},
+                            {"role": "user", "content": prompt},
+                        ],
                         temperature=0.3,
                         max_tokens=600,
                         num_ctx=8192,
                     )
                     profile = _parse_profile_response(response)
-                except Exception:
+                except Exception as e:
+                    print(f"    [warn] LLM call failed for {source_name}->{target_name}: {e}")
                     profile = {
                         "opinion": "unknown",
                         "description": "",

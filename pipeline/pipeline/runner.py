@@ -1268,16 +1268,24 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
     civ_civilizations to resolve the target civ ID.  Inserts OR IGNOREs into
     civ_mentions so re-runs are idempotent.
     """
-    # Find civilization-type entities mentioned in this turn that aren't our civ
+    # Fetch source civ name for self-exclusion below
+    source_civ_row = conn.execute(
+        "SELECT name FROM civ_civilizations WHERE id = ?", (source_civ_id,)
+    ).fetchone()
+    source_civ_name_lower = source_civ_row["name"].lower() if source_civ_row else ""
+
+    # Find all civilization-type entities mentioned in this turn.
+    # Note: ALL entities extracted from a civ's turns carry that civ's civ_id,
+    # even foreign civs — so we CANNOT filter by civ_id here. Self-exclusion
+    # is done by comparing canonical_name against the source civ's name below.
     rows = conn.execute(
-        """SELECT DISTINCT e.canonical_name, e.civ_id
+        """SELECT DISTINCT e.canonical_name
            FROM entity_mentions em
            JOIN entity_entities e ON e.id = em.entity_id
            WHERE em.turn_id = ?
              AND e.entity_type = 'civilization'
-             AND (e.civ_id IS NULL OR e.civ_id != ?)
              AND e.disabled = 0""",
-        (turn_id, source_civ_id),
+        (turn_id,),
     ).fetchall()
 
     for row in rows:
@@ -1295,6 +1303,17 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
                       OR LOWER(?) LIKE '%' || LOWER(name) || '%'
                    LIMIT 1""",
                 (entity_name, entity_name),
+            ).fetchone()
+        if target is None:
+            # Foreign civ not yet registered — auto-create as a stub (no player, no channel).
+            # This allows the relation system to track contacts with civs not yet run through
+            # the pipeline. The stub can be enriched later when Arthur runs their turns.
+            conn.execute(
+                "INSERT OR IGNORE INTO civ_civilizations (name) VALUES (?)",
+                (entity_name,),
+            )
+            target = conn.execute(
+                "SELECT id FROM civ_civilizations WHERE name = ?", (entity_name,)
             ).fetchone()
         if target is None:
             continue
