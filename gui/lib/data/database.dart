@@ -135,6 +135,28 @@ void _ensureMigrations(dynamic db) {
     "ALTER TABLE subject_subjects ADD COLUMN gm_fields TEXT",
     // Migration 026: same for turns
     "ALTER TABLE turn_turns ADD COLUMN gm_fields TEXT",
+    // Migration 027: inter-civ relations
+    '''CREATE TABLE IF NOT EXISTS civ_mentions (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_civ_id   INTEGER NOT NULL REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        target_civ_id   INTEGER NOT NULL REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        turn_id         INTEGER NOT NULL REFERENCES turn_turns(id) ON DELETE CASCADE,
+        context         TEXT,
+        created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    )''',
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_civ_mentions_unique"
+    "  ON civ_mentions(source_civ_id, target_civ_id, turn_id)",
+    '''CREATE TABLE IF NOT EXISTS civ_relations (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        source_civ_id   INTEGER NOT NULL REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        target_civ_id   INTEGER NOT NULL REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        opinion         TEXT NOT NULL DEFAULT 'unknown',
+        description     TEXT,
+        treaties        TEXT,
+        last_turn_id    INTEGER REFERENCES turn_turns(id),
+        updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(source_civ_id, target_civ_id)
+    )''',
   ];
 
   for (final sql in statements) {

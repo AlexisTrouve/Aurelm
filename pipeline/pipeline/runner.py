@@ -377,6 +377,11 @@ def run_pipeline(
             prev_tech_era = summary.tech_era
             prev_fantasy_level = summary.fantasy_level
 
+            # Detect foreign-civ mentions — scan entity_mentions for civilization-type
+            # entities that don't belong to the current civ, fuzzy-match to civ_civilizations,
+            # and record a civ_mention for the relation profiler to synthesize later.
+            _detect_civ_mentions(conn, civ_id, turn_id, summary.short_summary or "")
+
             # Mark turn as processed
             mark_turn_processed(conn, turn_id, run_id)
 
@@ -482,6 +487,24 @@ def run_pipeline(
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
+        # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from civ_mentions
+        print("[8.5/10] Profiling inter-civ relations...")
+        from .civ_relation_profiler import build_civ_relations
+        rel_stats = build_civ_relations(
+            db_path,
+            source_civ_id=civ_id,
+            model=profiling_model,
+            provider=llm_provider,
+            use_llm=use_llm,
+        )
+        if rel_stats["pairs_found"]:
+            print(
+                f"       -> {rel_stats['relations_built']} relations profiled"
+                f" ({rel_stats['pairs_found']} pairs found)"
+            )
+        else:
+            print("       -> No foreign-civ mentions detected")
+
         # Step 9: Alias resolution
         # Prompt version + score threshold can be set per-stage in llm_config:
         # "aliases": {"prompt_version": "v5-score-pct", "score_threshold": 0.7}
@@ -503,6 +526,10 @@ def run_pipeline(
     else:
         print("[7/10] Skipping subject extraction (--no-llm)")
         print("[8/10] Skipping entity profiling (--no-llm)")
+        # Still register pairs with unknown opinion so the GUI shows known contacts
+        print("[8.5/10] Registering civ contacts (--no-llm, opinion=unknown)...")
+        from .civ_relation_profiler import build_civ_relations
+        build_civ_relations(db_path, source_civ_id=civ_id, use_llm=False)
         print("[9/10] Skipping alias resolution (--no-llm)")
 
     # Step 10: Wiki generation (optional)
@@ -1231,6 +1258,57 @@ def _print_stats(stats: dict) -> None:
             print(f"  Total cost:          ${usage['total_cost']:.4f}")
             print(f"  Total tokens:        {usage['total_tokens']:,}")
     print("=" * 40)
+
+
+def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -> None:
+    """Detect foreign-civilization mentions in a turn and record them in civ_mentions.
+
+    Scans entity_mentions for this turn, finds entities of type 'civilization'
+    that don't belong to source_civ, then fuzzy-matches canonical_name →
+    civ_civilizations to resolve the target civ ID.  Inserts OR IGNOREs into
+    civ_mentions so re-runs are idempotent.
+    """
+    # Find civilization-type entities mentioned in this turn that aren't our civ
+    rows = conn.execute(
+        """SELECT DISTINCT e.canonical_name, e.civ_id
+           FROM entity_mentions em
+           JOIN entity_entities e ON e.id = em.entity_id
+           WHERE em.turn_id = ?
+             AND e.entity_type = 'civilization'
+             AND (e.civ_id IS NULL OR e.civ_id != ?)
+             AND e.disabled = 0""",
+        (turn_id, source_civ_id),
+    ).fetchall()
+
+    for row in rows:
+        entity_name = row["canonical_name"]
+
+        # Exact match first, then partial containment
+        target = conn.execute(
+            "SELECT id FROM civ_civilizations WHERE LOWER(name) = LOWER(?)",
+            (entity_name,),
+        ).fetchone()
+        if target is None:
+            target = conn.execute(
+                """SELECT id FROM civ_civilizations
+                   WHERE LOWER(name) LIKE '%' || LOWER(?) || '%'
+                      OR LOWER(?) LIKE '%' || LOWER(name) || '%'
+                   LIMIT 1""",
+                (entity_name, entity_name),
+            ).fetchone()
+        if target is None:
+            continue
+
+        target_civ_id = target["id"]
+        if target_civ_id == source_civ_id:
+            continue
+
+        conn.execute(
+            """INSERT OR IGNORE INTO civ_mentions
+                   (source_civ_id, target_civ_id, turn_id, context)
+               VALUES (?, ?, ?, ?)""",
+            (source_civ_id, target_civ_id, turn_id, context[:500] if context else None),
+        )
 
 
 def _periodic_entity_dedup(conn, civ_id: int) -> int:

@@ -2164,6 +2164,114 @@ def _estimate_tokens(messages: list) -> int:
 _DEEP_EXPLORE_TOKEN_BUDGET = 60_000
 
 
+# --------------------------------------------------------------------------- #
+# Tool: getCivRelations
+# --------------------------------------------------------------------------- #
+
+def get_civ_relations(
+    conn: sqlite3.Connection,
+    civ_name: str,
+) -> str:
+    """Return the inter-civ relationship profile for a given civilization.
+
+    Shows the civ's unilateral opinion of each other civ it has encountered
+    (opinion + narrative description + treaties), plus the inverse view where
+    available (how other civs see it).
+    """
+    result = resolve_civ_name(conn, civ_name)
+    if "error" in result:
+        return result["error"]
+    civ = result["civ"]
+    civ_id = civ["id"]
+
+    rows = conn.execute(
+        """SELECT r.opinion, r.description, r.treaties,
+                  ca.name AS source_name, cb.name AS target_name,
+                  r.source_civ_id, r.target_civ_id,
+                  t.turn_number AS last_turn
+           FROM civ_relations r
+           JOIN civ_civilizations ca ON ca.id = r.source_civ_id
+           JOIN civ_civilizations cb ON cb.id = r.target_civ_id
+           LEFT JOIN turn_turns t ON t.id = r.last_turn_id
+           WHERE r.source_civ_id = ? OR r.target_civ_id = ?
+           ORDER BY r.updated_at DESC""",
+        (civ_id, civ_id),
+    ).fetchall()
+
+    # Also count raw mentions per pair for context richness indicator
+    mention_counts = {}
+    mc_rows = conn.execute(
+        """SELECT target_civ_id, COUNT(*) as cnt
+           FROM civ_mentions WHERE source_civ_id = ?
+           GROUP BY target_civ_id""",
+        (civ_id,),
+    ).fetchall()
+    for mc in mc_rows:
+        mention_counts[mc["target_civ_id"]] = mc["cnt"]
+
+    if not rows:
+        # Check if there are raw mentions at all (not yet profiled)
+        raw = conn.execute(
+            "SELECT COUNT(*) FROM civ_mentions WHERE source_civ_id = ?", (civ_id,)
+        ).fetchone()[0]
+        if raw:
+            return (
+                f"# Relations de {civ['name']}\n\n"
+                f"{raw} mention(s) inter-civ détectée(s) mais le profiling n'a pas encore été lancé.\n"
+                "Relancez le pipeline avec `--use-llm` pour générer les profils."
+            )
+        return f"# Relations de {civ['name']}\n\nAucune relation inter-civ enregistrée."
+
+    _opinion_labels = {
+        "allied":     "🤝 Allié",
+        "friendly":   "😊 Favorable",
+        "neutral":    "😐 Neutre",
+        "suspicious": "👁️ Méfiant",
+        "hostile":    "💀 Hostile",
+        "unknown":    "❓ Inconnu",
+    }
+
+    outgoing = [r for r in rows if r["source_civ_id"] == civ_id]
+    incoming = [r for r in rows if r["target_civ_id"] == civ_id]
+
+    lines = [f"# Relations de {civ['name']}", ""]
+
+    if outgoing:
+        lines.append(f"## Vision de {civ['name']} envers les autres\n")
+        for r in outgoing:
+            label = _opinion_labels.get(r["opinion"], r["opinion"])
+            mc = mention_counts.get(r["target_civ_id"], 0)
+            lines.append(f"### {r['target_name']} — {label}")
+            if mc:
+                lines.append(f"*{mc} mention(s) dans les tours*")
+            if r["description"]:
+                lines.append(r["description"])
+            if r["treaties"]:
+                try:
+                    treaties = json.loads(r["treaties"])
+                    if treaties:
+                        lines.append("\n**Accords/Traités :**")
+                        for t in treaties:
+                            lines.append(f"- {t}")
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if r["last_turn"]:
+                lines.append(f"\n*Dernière mise à jour : Tour {r['last_turn']}*")
+            lines.append("")
+
+    if incoming:
+        lines.append(f"## Regard des autres civs sur {civ['name']}\n")
+        for r in incoming:
+            label = _opinion_labels.get(r["opinion"], r["opinion"])
+            lines.append(f"### {r['source_name']} → {label}")
+            if r["description"]:
+                desc = r["description"]
+                lines.append(desc[:300] + "..." if len(desc) > 300 else desc)
+            lines.append("")
+
+    return "\n".join(lines)
+
+
 def deep_explore(
     conn: sqlite3.Connection,
     question: str,
@@ -2596,6 +2704,12 @@ def dispatch_tool(
             status=tool_input.get("status"),
             limit=int(tool_input.get("limit") or 20),
         )
+
+    if tool_name == "getCivRelations":
+        civ_name_str = tool_input.get("civName")
+        if not civ_name_str:
+            return "Error: civName is required."
+        return get_civ_relations(conn, civ_name=civ_name_str)
 
     if tool_name == "deepExplore":
         question = tool_input.get("question", "")

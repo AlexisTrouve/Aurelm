@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
+import '../data/repositories/civ_relations_repository.dart';
 import '../models/civ_with_stats.dart';
 import 'database_provider.dart';
 
@@ -15,6 +16,14 @@ final civDetailProvider =
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   return db.civilizationDao.watchCivWithStats(civId);
+});
+
+/// Reactive list of inter-civ relations for a given civ (both outgoing and incoming).
+final civRelationsProvider =
+    StreamProvider.family<List<CivRelation>, int>((ref, civId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return CivRelationsRepository(db).watchRelations(civId);
 });
 
 /// Les 5 derniers tours d'une civ avec leur detailedSummary — pour l'historique

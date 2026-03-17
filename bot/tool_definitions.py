@@ -318,6 +318,25 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "getCivRelations",
+        "description": (
+            "Relations diplomatiques inter-civilisations. Retourne l'opinion unilatérale "
+            "d'une civ envers les autres (allied/friendly/neutral/suspicious/hostile/unknown), "
+            "la description narrative de chaque relation, et les traités/accords détectés. "
+            "Utiliser pour : 'quelles sont les relations de la Confluence ?', 'est-ce que X est alliée avec Y ?'"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {
+                    "type": "string",
+                    "description": "Nom de la civ (fuzzy match). Retourne toutes ses relations connues.",
+                },
+            },
+            "required": ["civName"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "

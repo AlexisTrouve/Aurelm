@@ -15,6 +15,7 @@ import 'widgets/top_entities_list.dart';
 import 'widgets/recent_turns_list.dart';
 import 'widgets/civ_subjects_frame.dart';
 import 'widgets/civ_sessions_frame.dart';
+import 'widgets/civ_relations_frame.dart';
 
 class CivDetailScreen extends ConsumerWidget {
   final int civId;
@@ -168,6 +169,9 @@ class CivDetailScreen extends ConsumerWidget {
 
                 // Sessions chat taggées avec cette civ
                 CivSessionsFrame(civName: civ.name),
+
+                // Inter-civ relations (populated by pipeline profiler)
+                CivRelationsFrame(civId: civId),
 
                 const SizedBox(height: 24),
 
