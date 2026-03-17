@@ -1277,7 +1277,7 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
     # Find all civilization-type entities mentioned in this turn.
     # Note: ALL entities extracted from a civ's turns carry that civ's civ_id,
     # even foreign civs — so we CANNOT filter by civ_id here. Self-exclusion
-    # is done by comparing canonical_name against the source civ's name below.
+    # is done by comparing target_civ_id == source_civ_id after DB lookup.
     rows = conn.execute(
         """SELECT DISTINCT e.canonical_name
            FROM entity_mentions em
@@ -1291,7 +1291,7 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
     for row in rows:
         entity_name = row["canonical_name"]
 
-        # Exact match first, then partial containment
+        # Try canonical name match first (exact, then partial)
         target = conn.execute(
             "SELECT id FROM civ_civilizations WHERE LOWER(name) = LOWER(?)",
             (entity_name,),
@@ -1304,11 +1304,19 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
                    LIMIT 1""",
                 (entity_name, entity_name),
             ).fetchone()
+
+        # Fall back to GM-defined aliases (e.g. "Cheveux de sang" → Nanzagouets)
         if target is None:
-            # No match in known civilizations → skip silently.
-            # We never auto-create civ stubs here: the LLM frequently tags non-playable
-            # entities as "civilization" (e.g. "Courant", "Colonie souterraine"), and names
-            # vary by POV. Only civs explicitly registered by the GM are tracked.
+            target = conn.execute(
+                """SELECT civ_id AS id FROM civ_aliases
+                   WHERE LOWER(alias_name) = LOWER(?)""",
+                (entity_name,),
+            ).fetchone()
+
+        if target is None:
+            # No match in known civs or aliases → skip silently.
+            # We never auto-create stubs: the LLM tags false positives as "civilization".
+            # Use the UI resolver to map unrecognized names.
             continue
 
         target_civ_id = target["id"]

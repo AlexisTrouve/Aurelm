@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/civilization/civ_detail_screen.dart';
+import '../../screens/civilization/civ_alias_resolver_screen.dart';
 import '../../screens/entities/entity_browser_screen.dart';
 import '../../screens/entities/entity_detail_screen.dart';
 import '../../screens/entities/disabled_entities_screen.dart';
@@ -41,6 +42,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               final id = int.parse(state.pathParameters['id']!);
               return NoTransitionPage(child: CivDetailScreen(civId: id));
             },
+          ),
+          GoRoute(
+            path: '/civs/alias-resolver',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CivAliasResolverScreen(),
+            ),
           ),
           GoRoute(
             path: '/entities',

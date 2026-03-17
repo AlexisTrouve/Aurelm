@@ -157,6 +157,18 @@ void _ensureMigrations(dynamic db) {
         updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
         UNIQUE(source_civ_id, target_civ_id)
     )''',
+    // Migration 028: civ alias mappings + dismissed false positives
+    '''CREATE TABLE IF NOT EXISTS civ_aliases (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        civ_id      INTEGER NOT NULL REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        alias_name  TEXT    NOT NULL,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    )''',
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_civ_aliases_name ON civ_aliases(alias_name)",
+    '''CREATE TABLE IF NOT EXISTS civ_alias_dismissed (
+        alias_name  TEXT PRIMARY KEY,
+        created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    )''',
   ];
 
   for (final sql in statements) {

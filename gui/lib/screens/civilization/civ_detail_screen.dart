@@ -16,6 +16,7 @@ import 'widgets/recent_turns_list.dart';
 import 'widgets/civ_subjects_frame.dart';
 import 'widgets/civ_sessions_frame.dart';
 import 'widgets/civ_relations_frame.dart';
+import '../../providers/civ_alias_provider.dart';
 
 class CivDetailScreen extends ConsumerWidget {
   final int civId;
@@ -170,6 +171,10 @@ class CivDetailScreen extends ConsumerWidget {
                 // Sessions chat taggées avec cette civ
                 CivSessionsFrame(civName: civ.name),
 
+                // Civ aliases — noms alternatifs gérés par le GM
+                _CivAliasesSection(civId: civId),
+
+
                 // Inter-civ relations (populated by pipeline profiler)
                 CivRelationsFrame(civId: civId),
 
@@ -193,6 +198,124 @@ class CivDetailScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Shows aliases for a civ with add + delete. Inline, no separate screen.
+class _CivAliasesSection extends ConsumerStatefulWidget {
+  final int civId;
+  const _CivAliasesSection({required this.civId});
+
+  @override
+  ConsumerState<_CivAliasesSection> createState() => _CivAliasesSectionState();
+}
+
+class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
+  final _controller = TextEditingController();
+  bool _adding = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _add() async {
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    final repo = ref.read(civAliasRepositoryProvider);
+    if (repo == null) return;
+    await repo.addAlias(widget.civId, name);
+    _controller.clear();
+    setState(() => _adding = false);
+    ref.invalidate(civAliasesProvider(widget.civId));
+  }
+
+  Future<void> _delete(int aliasId) async {
+    final repo = ref.read(civAliasRepositoryProvider);
+    if (repo == null) return;
+    await repo.deleteAlias(aliasId);
+    ref.invalidate(civAliasesProvider(widget.civId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final aliasesAsync = ref.watch(civAliasesProvider(widget.civId));
+
+    final aliases = aliasesAsync.valueOrNull ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Aliases',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add, size: 18),
+              tooltip: 'Ajouter un alias',
+              onPressed: () => setState(() => _adding = !_adding),
+            ),
+          ],
+        ),
+        if (_adding) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'Nom alternatif...',
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  onSubmitted: (_) => _add(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(onPressed: _add, child: const Text('Ajouter')),
+              const SizedBox(width: 4),
+              TextButton(
+                onPressed: () => setState(() { _adding = false; _controller.clear(); }),
+                child: const Text('Annuler'),
+              ),
+            ],
+          ),
+        ],
+        if (aliases.isEmpty && !_adding)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 4),
+            child: Text('Aucun alias',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+          )
+        else ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: aliases.map((a) => Chip(
+                  label: Text(a.aliasName,
+                      style: theme.textTheme.labelSmall),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  onDeleted: () => _delete(a.id),
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                )).toList(),
+          ),
+        ],
+      ],
     );
   }
 }

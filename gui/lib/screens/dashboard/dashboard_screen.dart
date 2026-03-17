@@ -35,6 +35,13 @@ class DashboardScreen extends ConsumerWidget {
       child: Scaffold(
         appBar: AppBar(
         title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_tree_outlined),
+            tooltip: 'Résoudre alias de civilisations',
+            onPressed: () => context.go('/civs/alias-resolver'),
+          ),
+        ],
       ),
       body: civs.when(
         loading: () => const LoadingIndicator(message: 'Loading civilizations...'),
