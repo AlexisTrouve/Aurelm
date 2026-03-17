@@ -8,7 +8,8 @@ class SubjectSubjects extends Table {
 
   IntColumn get id => integer().autoIncrement()();
   IntColumn get civId => integer().named('civ_id')();
-  IntColumn get sourceTurnId => integer().named('source_turn_id')();
+  /// Nullable: NULL for GM-created subjects not tied to a specific pipeline turn.
+  IntColumn get sourceTurnId => integer().named('source_turn_id').nullable()();
 
   /// 'mj_to_pj' = GM poses a choice; 'pj_to_mj' = player takes an initiative
   TextColumn get direction => text()();

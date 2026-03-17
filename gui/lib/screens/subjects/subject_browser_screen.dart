@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/subject_provider.dart';
 import '../../providers/database_provider.dart';
@@ -8,6 +9,7 @@ import '../../widgets/common/error_view.dart';
 import '../../widgets/common/empty_state.dart';
 import 'widgets/subject_filter_bar.dart';
 import 'widgets/subject_list_tile.dart';
+import 'widgets/subject_create_dialog.dart';
 
 /// Main subjects screen — lists all MJ↔PJ subjects with filter controls.
 class SubjectBrowserScreen extends ConsumerWidget {
@@ -28,6 +30,19 @@ class SubjectBrowserScreen extends ConsumerWidget {
     final subjectsAsync = ref.watch(subjectListProvider);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Nouveau sujet',
+        onPressed: () async {
+          final newId = await showDialog<int>(
+            context: context,
+            builder: (_) => const SubjectCreateDialog(),
+          );
+          if (newId != null && context.mounted) {
+            context.push('/subjects/$newId');
+          }
+        },
+        child: const Icon(Icons.add),
+      ),
       appBar: AppBar(
         title: const Text('Sujets'),
         actions: [

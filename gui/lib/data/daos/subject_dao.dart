@@ -95,10 +95,12 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
         .asyncMap((subject) async {
       if (subject == null) return null;
 
-      // Load source turn number
-      final turn = await (select(turnTurns)
-            ..where((t) => t.id.equals(subject.sourceTurnId)))
-          .getSingleOrNull();
+      // Load source turn number (null for GM-created subjects)
+      final turn = subject.sourceTurnId == null
+          ? null
+          : await (select(turnTurns)
+                ..where((t) => t.id.equals(subject.sourceTurnId!)))
+              .getSingleOrNull();
       final civ = await (select(civCivilizations)
             ..where((c) => c.id.equals(subject.civId)))
           .getSingleOrNull();
@@ -174,6 +176,102 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
           status: Value(status),
           updatedAt: Value(DateTime.now().toIso8601String()),
         ));
+  }
+
+  /// Create a new GM-created subject (no source turn).
+  Future<int> createSubject({
+    required int civId,
+    required String direction,
+    required String title,
+    required String category,
+    String? description,
+    List<String> tags = const [],
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return into(subjectSubjects).insert(
+      SubjectSubjectsCompanion.insert(
+        civId: civId,
+        direction: direction,
+        title: title,
+        category: category,
+        description: Value(description),
+        tags: Value('[${tags.map((t) => '"$t"').join(',')}]'),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
+
+  /// Update editable fields of an existing subject (GM edit).
+  Future<void> updateSubject({
+    required int subjectId,
+    String? title,
+    String? description,
+    String? direction,
+    String? category,
+    String? status,
+    List<String>? tags,
+  }) {
+    return (update(subjectSubjects)..where((s) => s.id.equals(subjectId)))
+        .write(SubjectSubjectsCompanion(
+          title: title != null ? Value(title) : const Value.absent(),
+          description:
+              description != null ? Value(description) : const Value.absent(),
+          direction:
+              direction != null ? Value(direction) : const Value.absent(),
+          category: category != null ? Value(category) : const Value.absent(),
+          status: status != null ? Value(status) : const Value.absent(),
+          tags: tags != null
+              ? Value('[${tags.map((t) => '"$t"').join(',')}]')
+              : const Value.absent(),
+          updatedAt: Value(DateTime.now().toIso8601String()),
+        ));
+  }
+
+  /// Add a resolution attempt manually (GM-entered resolution).
+  Future<void> addResolution({
+    required int subjectId,
+    required int resolvedByTurnId,
+    required String resolutionText,
+    double confidence = 1.0,
+    int? chosenOptionId,
+  }) {
+    return into(subjectResolutions).insert(
+      SubjectResolutionsCompanion.insert(
+        subjectId: subjectId,
+        resolvedByTurnId: resolvedByTurnId,
+        resolutionText: resolutionText,
+        confidence: Value(confidence),
+        chosenOptionId: Value(chosenOptionId),
+        createdAt: DateTime.now().toIso8601String(),
+      ),
+    );
+  }
+
+  /// Add an option to a subject.
+  Future<void> addOption({
+    required int subjectId,
+    required int optionNumber,
+    required String label,
+    String? description,
+    bool isLibre = false,
+  }) {
+    return into(subjectOptions).insert(
+      SubjectOptionsCompanion.insert(
+        subjectId: subjectId,
+        optionNumber: optionNumber,
+        label: label,
+        description: Value(description),
+        isLibre: Value(isLibre),
+      ),
+    );
+  }
+
+  /// Remove an option.
+  Future<void> removeOption(int optionId) {
+    return (delete(subjectOptions)
+          ..where((o) => o.id.equals(optionId)))
+        .go();
   }
 
   // ---------------------------------------------------------------------------

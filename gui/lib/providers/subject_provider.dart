@@ -70,6 +70,52 @@ Future<void> closeSubject(WidgetRef ref, int subjectId, String status) {
   return db.subjectDao.updateSubjectStatus(subjectId, status);
 }
 
+/// Create a new GM-created subject. Returns the new subject id.
+Future<int> createSubject(
+  WidgetRef ref, {
+  required int civId,
+  required String direction,
+  required String title,
+  required String category,
+  String? description,
+  List<String> tags = const [],
+}) {
+  final db = ref.read(databaseProvider);
+  if (db == null) throw StateError('No database');
+  return db.subjectDao.createSubject(
+    civId: civId,
+    direction: direction,
+    title: title,
+    category: category,
+    description: description,
+    tags: tags,
+  );
+}
+
+/// Update editable fields of an existing subject.
+Future<void> updateSubject(
+  WidgetRef ref, {
+  required int subjectId,
+  String? title,
+  String? description,
+  String? direction,
+  String? category,
+  String? status,
+  List<String>? tags,
+}) {
+  final db = ref.read(databaseProvider);
+  if (db == null) throw StateError('No database');
+  return db.subjectDao.updateSubject(
+    subjectId: subjectId,
+    title: title,
+    description: description,
+    direction: direction,
+    category: category,
+    status: status,
+    tags: tags,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Stats per civ (used on CivDetail screen)
 // ---------------------------------------------------------------------------

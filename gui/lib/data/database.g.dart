@@ -4137,8 +4137,8 @@ class $SubjectSubjectsTable extends SubjectSubjects
       const VerificationMeta('sourceTurnId');
   @override
   late final GeneratedColumn<int> sourceTurnId = GeneratedColumn<int>(
-      'source_turn_id', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+      'source_turn_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _directionMeta =
       const VerificationMeta('direction');
   @override
@@ -4233,8 +4233,6 @@ class $SubjectSubjectsTable extends SubjectSubjects
           _sourceTurnIdMeta,
           sourceTurnId.isAcceptableOrUnknown(
               data['source_turn_id']!, _sourceTurnIdMeta));
-    } else if (isInserting) {
-      context.missing(_sourceTurnIdMeta);
     }
     if (data.containsKey('direction')) {
       context.handle(_directionMeta,
@@ -4300,7 +4298,7 @@ class $SubjectSubjectsTable extends SubjectSubjects
       civId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}civ_id'])!,
       sourceTurnId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}source_turn_id'])!,
+          .read(DriftSqlType.int, data['${effectivePrefix}source_turn_id']),
       direction: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}direction'])!,
       title: attachedDatabase.typeMapping
@@ -4331,7 +4329,7 @@ class $SubjectSubjectsTable extends SubjectSubjects
 class SubjectRow extends DataClass implements Insertable<SubjectRow> {
   final int id;
   final int civId;
-  final int sourceTurnId;
+  final int? sourceTurnId;
 
   /// 'mj_to_pj' = GM poses a choice; 'pj_to_mj' = player takes an initiative
   final String direction;
@@ -4354,7 +4352,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
   const SubjectRow(
       {required this.id,
       required this.civId,
-      required this.sourceTurnId,
+      this.sourceTurnId,
       required this.direction,
       required this.title,
       this.description,
@@ -4369,7 +4367,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['civ_id'] = Variable<int>(civId);
-    map['source_turn_id'] = Variable<int>(sourceTurnId);
+    if (sourceTurnId != null) {
+      map['source_turn_id'] = Variable<int>(sourceTurnId!);
+    }
     map['direction'] = Variable<String>(direction);
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || description != null) {
@@ -4390,7 +4390,9 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     return SubjectSubjectsCompanion(
       id: Value(id),
       civId: Value(civId),
-      sourceTurnId: Value(sourceTurnId),
+      sourceTurnId: sourceTurnId == null && nullToAbsent
+          ? const Value.absent()
+          : Value<int?>(sourceTurnId),
       direction: Value(direction),
       title: Value(title),
       description: description == null && nullToAbsent
@@ -4413,7 +4415,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     return SubjectRow(
       id: serializer.fromJson<int>(json['id']),
       civId: serializer.fromJson<int>(json['civId']),
-      sourceTurnId: serializer.fromJson<int>(json['sourceTurnId']),
+      sourceTurnId: serializer.fromJson<int?>(json['sourceTurnId']),
       direction: serializer.fromJson<String>(json['direction']),
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
@@ -4431,7 +4433,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'civId': serializer.toJson<int>(civId),
-      'sourceTurnId': serializer.toJson<int>(sourceTurnId),
+      'sourceTurnId': serializer.toJson<int?>(sourceTurnId),
       'direction': serializer.toJson<String>(direction),
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
@@ -4447,7 +4449,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
   SubjectRow copyWith(
           {int? id,
           int? civId,
-          int? sourceTurnId,
+          Value<int?> sourceTurnId = const Value.absent(),
           String? direction,
           String? title,
           Value<String?> description = const Value.absent(),
@@ -4460,7 +4462,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       SubjectRow(
         id: id ?? this.id,
         civId: civId ?? this.civId,
-        sourceTurnId: sourceTurnId ?? this.sourceTurnId,
+        sourceTurnId: sourceTurnId.present ? sourceTurnId.value : this.sourceTurnId,
         direction: direction ?? this.direction,
         title: title ?? this.title,
         description: description.present ? description.value : this.description,
@@ -4535,7 +4537,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
 class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   final Value<int> id;
   final Value<int> civId;
-  final Value<int> sourceTurnId;
+  final Value<int?> sourceTurnId;
   final Value<String> direction;
   final Value<String> title;
   final Value<String?> description;
@@ -4562,7 +4564,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   SubjectSubjectsCompanion.insert({
     this.id = const Value.absent(),
     required int civId,
-    required int sourceTurnId,
+    int? sourceTurnId,
     required String direction,
     required String title,
     this.description = const Value.absent(),
@@ -4573,7 +4575,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     required String createdAt,
     required String updatedAt,
   })  : civId = Value(civId),
-        sourceTurnId = Value(sourceTurnId),
+        sourceTurnId = Value<int?>(sourceTurnId),
         direction = Value(direction),
         title = Value(title),
         category = Value(category),
@@ -8087,7 +8089,7 @@ typedef $$SubjectSubjectsTableUpdateCompanionBuilder = SubjectSubjectsCompanion
     Function({
   Value<int> id,
   Value<int> civId,
-  Value<int> sourceTurnId,
+  Value<int?> sourceTurnId,
   Value<String> direction,
   Value<String> title,
   Value<String?> description,
@@ -8267,7 +8269,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> civId = const Value.absent(),
-            Value<int> sourceTurnId = const Value.absent(),
+            Value<int?> sourceTurnId = const Value.absent(),
             Value<String> direction = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String?> description = const Value.absent(),

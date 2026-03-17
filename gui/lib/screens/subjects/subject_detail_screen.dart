@@ -4,14 +4,30 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/database.dart';
 import '../../providers/subject_provider.dart';
+import '../../providers/civilization_provider.dart';
 import '../../models/subject_with_details.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
 import '../entities/widgets/notes_menu_button.dart';
 
+// Available tags for subjects (domain tags assigned by LLM pipeline).
+const _kTagVocab = [
+  'militaire',
+  'politique',
+  'économie',
+  'religion',
+  'technologie',
+  'diplomatique',
+  'culturel',
+  'géographique',
+  'social',
+  'exploration',
+];
+
 /// Detail page for a single subject — shows description, options, and all
 /// resolution attempts with confidence percentages.
+/// Supports inline edit mode (no popup).
 class SubjectDetailScreen extends ConsumerWidget {
   final int subjectId;
 
@@ -31,18 +47,432 @@ class SubjectDetailScreen extends ConsumerWidget {
             body: const Center(child: Text('Sujet introuvable')),
           );
         }
-        return _SubjectDetailView(detail: detail);
+        return _SubjectDetailStateful(detail: detail);
       },
     );
   }
 }
 
-class _SubjectDetailView extends ConsumerWidget {
+// ---------------------------------------------------------------------------
+// Stateful shell — handles edit mode state
+// ---------------------------------------------------------------------------
+
+class _SubjectDetailStateful extends ConsumerStatefulWidget {
   final SubjectDetail detail;
 
-  const _SubjectDetailView({required this.detail});
+  const _SubjectDetailStateful({required this.detail});
 
-  /// Shows a dialog asking the user to confirm closing a subject with [status].
+  @override
+  ConsumerState<_SubjectDetailStateful> createState() =>
+      _SubjectDetailStatefulState();
+}
+
+class _SubjectDetailStatefulState
+    extends ConsumerState<_SubjectDetailStateful> {
+  // Edit mode state
+  bool _editMode = false;
+  bool _saving = false;
+
+  // Controllers (populated when entering edit mode)
+  late TextEditingController _titleCtrl;
+  late TextEditingController _descCtrl;
+  String _direction = 'mj_to_pj';
+  String _category = 'question';
+  List<String> _editTags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController();
+    _descCtrl = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  void _enterEditMode() {
+    final s = widget.detail.subject;
+    _titleCtrl.text = s.title;
+    _descCtrl.text = s.description ?? '';
+    _direction = s.direction;
+    _category = s.category;
+    // Parse JSON tags array
+    final rawTags = s.tags;
+    _editTags = _parseTags(rawTags);
+    setState(() => _editMode = true);
+  }
+
+  void _cancelEditMode() => setState(() => _editMode = false);
+
+  Future<void> _saveEditMode() async {
+    final title = _titleCtrl.text.trim();
+    if (title.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      await updateSubject(
+        ref,
+        subjectId: widget.detail.subject.id,
+        title: title,
+        description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+        direction: _direction,
+        category: _category,
+        tags: _editTags,
+      );
+      if (mounted) setState(() => _editMode = false);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Parse JSON tag array string → list of strings.
+  List<String> _parseTags(String raw) {
+    final clean = raw.replaceAll(RegExp(r'[\[\]\s]'), '');
+    if (clean.isEmpty) return [];
+    return clean
+        .split(',')
+        .map((t) => t.replaceAll('"', '').trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Re-watch detail to get live updates even in edit mode
+    final detailAsync = ref.watch(subjectDetailProvider(widget.detail.subject.id));
+    final detail = detailAsync.maybeWhen(data: (d) => d, orElse: () => widget.detail);
+    if (detail == null) return const SizedBox.shrink();
+
+    return Scaffold(
+      appBar: _editMode ? _buildEditAppBar() : _buildViewAppBar(context, ref, detail),
+      body: NotesSideRail(
+        attachment: NoteAttachment.subject,
+        attachmentId: detail.subject.id,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: _editMode
+              ? _buildEditBody(context, ref)
+              : _buildViewBody(context, ref, detail),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // App bars
+  // ---------------------------------------------------------------------------
+
+  AppBar _buildViewAppBar(BuildContext context, WidgetRef ref, SubjectDetail detail) {
+    final s = detail.subject;
+    final isOpen = s.status == 'open';
+
+    return AppBar(
+      toolbarHeight: 44,
+      leadingWidth: 88,
+      title: Text(s.title, overflow: TextOverflow.ellipsis),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () =>
+            context.canPop() ? context.pop() : context.go('/subjects'),
+      ),
+      actions: [
+        // Edit button
+        IconButton(
+          icon: const Icon(Icons.edit_outlined),
+          tooltip: 'Modifier',
+          onPressed: _enterEditMode,
+        ),
+        // Close subject menu
+        if (isOpen)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.check_circle_outline),
+            tooltip: 'Clore le sujet',
+            onSelected: (status) =>
+                _confirmClose(context, ref, s.id, status),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'resolved',
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                    Text('Marquer comme résolu'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'abandoned',
+                child: Row(
+                  children: [
+                    Icon(Icons.cancel, color: Colors.red, size: 18),
+                    SizedBox(width: 8),
+                    Text('Abandonner'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  AppBar _buildEditAppBar() {
+    return AppBar(
+      toolbarHeight: 44,
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: _cancelEditMode,
+      ),
+      title: const Text('Modifier le sujet'),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: FilledButton(
+            onPressed: _saving ? null : _saveEditMode,
+            child: _saving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Enregistrer'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // View body (read-only)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildViewBody(BuildContext context, WidgetRef ref, SubjectDetail detail) {
+    final s = detail.subject;
+    final isMjToPj = s.direction == 'mj_to_pj';
+    final isResolved = s.status == 'resolved';
+
+    final tags = _parseTags(s.tags);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header badges
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            _DirectionBadge(isMjToPj: isMjToPj),
+            _CategoryBadge(category: s.category),
+            _StatusBadge(status: s.status),
+            if (detail.sourceTurnId != 0)
+              _TurnChip(
+                turnId: detail.sourceTurnId,
+                label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
+                highlight: (s.sourceQuote?.isNotEmpty == true)
+                    ? s.sourceQuote
+                    : s.title,
+              ),
+          ],
+        ),
+
+        // Tags
+        if (tags.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            children: tags
+                .map((t) => Chip(
+                      label: Text(t),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      labelStyle: Theme.of(context).textTheme.labelSmall,
+                    ))
+                .toList(),
+          ),
+        ],
+
+        // Description
+        if (s.description != null && s.description!.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(s.description!,
+              style: Theme.of(context).textTheme.bodyMedium),
+        ],
+
+        // Verbatim source quote
+        if (s.sourceQuote != null && s.sourceQuote!.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _SourceQuoteTile(
+              quote: s.sourceQuote!, label: 'Extrait source (tour MJ)'),
+        ],
+
+        // Options
+        if (detail.options.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const SectionHeader(title: 'Options proposées'),
+          const SizedBox(height: 8),
+          ...detail.options.map((opt) => _OptionTile(
+                option: opt,
+                isChosen: detail.bestResolution?.chosenOptionId == opt.id,
+              )),
+        ],
+
+        // Resolutions
+        const SizedBox(height: 24),
+        SectionHeader(
+          title: isResolved
+              ? 'Résolutions (${detail.resolutionCount})'
+              : 'Tentatives de résolution (${detail.resolutionCount})',
+        ),
+        const SizedBox(height: 8),
+
+        if (detail.allResolutions.isEmpty)
+          Text(
+            'Aucune résolution détectée',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+          )
+        else
+          ...detail.allResolutions.map((r) => _ResolutionCard(
+                resolution: r,
+                isAccepted:
+                    detail.bestResolution?.id == r.resolution.id && isResolved,
+              )),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Edit body (inline form)
+  // ---------------------------------------------------------------------------
+
+  Widget _buildEditBody(BuildContext context, WidgetRef ref) {
+    final civsAsync = ref.watch(civListProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Direction
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Direction',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          value: _direction,
+          items: const [
+            DropdownMenuItem(value: 'mj_to_pj', child: Text('MJ → PJ')),
+            DropdownMenuItem(value: 'pj_to_mj', child: Text('PJ → MJ')),
+          ],
+          onChanged: (v) => setState(() => _direction = v!),
+        ),
+        const SizedBox(height: 12),
+
+        // Category
+        DropdownButtonFormField<String>(
+          decoration: const InputDecoration(
+            labelText: 'Catégorie',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          value: _category,
+          items: const [
+            DropdownMenuItem(value: 'choice', child: Text('Choix')),
+            DropdownMenuItem(value: 'question', child: Text('Question')),
+            DropdownMenuItem(value: 'initiative', child: Text('Initiative')),
+            DropdownMenuItem(value: 'request', child: Text('Demande')),
+          ],
+          onChanged: (v) => setState(() => _category = v!),
+        ),
+        const SizedBox(height: 12),
+
+        // Title
+        TextField(
+          controller: _titleCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Titre',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        const SizedBox(height: 12),
+
+        // Description
+        TextField(
+          controller: _descCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Description',
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          maxLines: 5,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        const SizedBox(height: 20),
+
+        // Tags section
+        _buildTagsEdit(context),
+      ],
+    );
+  }
+
+  Widget _buildTagsEdit(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'Tags',
+          trailing: PopupMenuButton<String>(
+            icon: const Icon(Icons.add, size: 18),
+            tooltip: 'Ajouter un tag',
+            onSelected: (tag) {
+              if (!_editTags.contains(tag)) {
+                setState(() => _editTags.add(tag));
+              }
+            },
+            itemBuilder: (_) => _kTagVocab
+                .where((t) => !_editTags.contains(t))
+                .map((t) => PopupMenuItem(value: t, child: Text(t)))
+                .toList(),
+          ),
+        ),
+        const SizedBox(height: 6),
+        if (_editTags.isEmpty)
+          Text(
+            'Aucun tag',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+          )
+        else
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _editTags
+                .map((t) => InputChip(
+                      label: Text(t),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      labelStyle: Theme.of(context).textTheme.labelSmall,
+                      onDeleted: () =>
+                          setState(() => _editTags.remove(t)),
+                    ))
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Close dialog
+  // ---------------------------------------------------------------------------
+
   Future<void> _confirmClose(
       BuildContext context, WidgetRef ref, int subjectId, String status) async {
     final label = status == 'resolved' ? 'résolu' : 'abandonné';
@@ -67,136 +497,12 @@ class _SubjectDetailView extends ConsumerWidget {
       await closeSubject(ref, subjectId, status);
     }
   }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = detail.subject;
-    final isMjToPj = s.direction == 'mj_to_pj';
-    final isResolved = s.status == 'resolved';
-    final isOpen = s.status == 'open';
-
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 44,
-        leadingWidth: 88,
-        title: Text(s.title, overflow: TextOverflow.ellipsis),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.canPop() ? context.pop() : context.go('/subjects'),
-        ),
-        actions: [
-          if (isOpen)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.check_circle_outline),
-              tooltip: 'Clore le sujet',
-              onSelected: (status) =>
-                  _confirmClose(context, ref, s.id, status),
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: 'resolved',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green, size: 18),
-                      SizedBox(width: 8),
-                      Text('Marquer comme résolu'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'abandoned',
-                  child: Row(
-                    children: [
-                      Icon(Icons.cancel, color: Colors.red, size: 18),
-                      SizedBox(width: 8),
-                      Text('Abandonner'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-      body: NotesSideRail(
-        attachment: NoteAttachment.subject,
-        attachmentId: s.id,
-        child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: direction, category, status
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _DirectionBadge(isMjToPj: isMjToPj),
-                _CategoryBadge(category: s.category),
-                _StatusBadge(status: s.status),
-                _TurnChip(
-                    turnId: detail.sourceTurnId,
-                    label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
-                    // Prefer verbatim source_quote for highlight; fall back to title
-                    highlight: (s.sourceQuote?.isNotEmpty == true) ? s.sourceQuote : s.title),
-              ],
-            ),
-
-            // Description
-            if (s.description != null && s.description!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(s.description!,
-                  style: Theme.of(context).textTheme.bodyMedium),
-            ],
-
-            // Verbatim source quote from the GM turn — collapsible
-            if (s.sourceQuote != null && s.sourceQuote!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _SourceQuoteTile(quote: s.sourceQuote!, label: 'Extrait source (tour MJ)'),
-            ],
-
-            // Options (for mj_to_pj choices)
-            if (detail.options.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              const SectionHeader(title: 'Options proposées'),
-              const SizedBox(height: 8),
-              ...detail.options.map((opt) => _OptionTile(
-                    option: opt,
-                    isChosen: detail.bestResolution?.chosenOptionId == opt.id,
-                  )),
-            ],
-
-            // Resolutions
-            const SizedBox(height: 24),
-            SectionHeader(
-              title: isResolved
-                  ? 'Résolutions (${detail.resolutionCount})'
-                  : 'Tentatives de résolution (${detail.resolutionCount})',
-            ),
-            const SizedBox(height: 8),
-
-            if (detail.allResolutions.isEmpty)
-              Text(
-                'Aucune résolution détectée',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontStyle: FontStyle.italic,
-                    ),
-              )
-            else
-              ...detail.allResolutions.map((r) => _ResolutionCard(
-                    resolution: r,
-                    isAccepted: detail.bestResolution?.id == r.resolution.id &&
-                        isResolved,
-                  )),
-
-          ],
-        ),
-      ),
-      ), // NotesSideRail
-    );
-  }
 }
 
-/// Option tile — shows option number, label, description, and "chosen" indicator.
+// ===========================================================================
+// Read-only sub-widgets (unchanged from previous version)
+// ===========================================================================
+
 class _OptionTile extends StatelessWidget {
   final SubjectOptionRow option;
   final bool isChosen;
@@ -270,7 +576,6 @@ class _OptionTile extends StatelessWidget {
   }
 }
 
-/// Card showing one resolution attempt with confidence bar.
 class _ResolutionCard extends StatelessWidget {
   final ResolutionWithTurn resolution;
   final bool isAccepted;
@@ -304,7 +609,6 @@ class _ResolutionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Confidence bar + turn info
           Row(
             children: [
               Expanded(
@@ -312,8 +616,10 @@ class _ResolutionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: r.confidence,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .outline
+                        .withValues(alpha: 0.2),
                     valueColor: AlwaysStoppedAnimation<Color>(barColor),
                     minHeight: 6,
                   ),
@@ -331,16 +637,17 @@ class _ResolutionCard extends StatelessWidget {
               InkWell(
                 onTap: () => context.push(
                   '/turns/${resolution.turnId}',
-                  // Prefer verbatim source_quote; fall back to resolution_text summary
                   extra: {
-                    'highlight': (resolution.resolution.sourceQuote?.isNotEmpty == true)
-                        ? resolution.resolution.sourceQuote
-                        : resolution.resolution.resolutionText,
+                    'highlight':
+                        (resolution.resolution.sourceQuote?.isNotEmpty == true)
+                            ? resolution.resolution.sourceQuote
+                            : resolution.resolution.resolutionText,
                   },
                 ),
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Text(
                     'T${resolution.turnNumber}',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -357,12 +664,7 @@ class _ResolutionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Resolution text
-          Text(
-            r.resolutionText,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          // Verbatim source quote from the player/GM resolution turn — collapsible
+          Text(r.resolutionText, style: Theme.of(context).textTheme.bodySmall),
           if (r.sourceQuote != null && r.sourceQuote!.isNotEmpty) ...[
             const SizedBox(height: 6),
             _SourceQuoteTile(quote: r.sourceQuote!, label: 'Extrait source'),
@@ -374,11 +676,9 @@ class _ResolutionCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Source quote — collapsible blockquote block
+// Source quote — collapsible blockquote
 // ---------------------------------------------------------------------------
 
-/// Collapsible tile showing a verbatim excerpt from a turn segment.
-/// Used for both the subject origin quote and per-resolution quotes.
 class _SourceQuoteTile extends StatelessWidget {
   final String quote;
   final String label;
@@ -389,14 +689,13 @@ class _SourceQuoteTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Theme(
-      // Remove default ExpansionTile dividers
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         tilePadding: EdgeInsets.zero,
         childrenPadding: EdgeInsets.zero,
         dense: true,
-        leading: Icon(Icons.format_quote, size: 16,
-            color: colorScheme.onSurfaceVariant),
+        leading: Icon(Icons.format_quote,
+            size: 16, color: colorScheme.onSurfaceVariant),
         title: Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -407,7 +706,8 @@ class _SourceQuoteTile extends StatelessWidget {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(6),
@@ -432,7 +732,9 @@ class _SourceQuoteTile extends StatelessWidget {
   }
 }
 
-// Small reusable badges
+// ---------------------------------------------------------------------------
+// Badge widgets
+// ---------------------------------------------------------------------------
 
 class _DirectionBadge extends StatelessWidget {
   final bool isMjToPj;
@@ -522,31 +824,9 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _MetaChip extends StatelessWidget {
-  final String label;
-  const _MetaChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              )),
-    );
-  }
-}
-
-/// Chip de tour cliquable — fast travel vers le turn detail avec highlight optionnel.
 class _TurnChip extends StatelessWidget {
   final int turnId;
   final String label;
-  /// Text to auto-highlight in the turn detail on arrival.
   final String? highlight;
   const _TurnChip({required this.turnId, required this.label, this.highlight});
 
@@ -561,10 +841,16 @@ class _TurnChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.5),
+          color: Theme.of(context)
+              .colorScheme
+              .primaryContainer
+              .withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+              color: Theme.of(context)
+                  .colorScheme
+                  .primary
+                  .withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

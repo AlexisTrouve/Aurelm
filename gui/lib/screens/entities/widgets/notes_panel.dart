@@ -30,6 +30,9 @@ class NotesPanel extends ConsumerWidget {
         ref.watch(subjectNotesProvider(attachmentId)),
       NoteAttachment.turn =>
         ref.watch(turnNotesProvider(attachmentId)),
+      NoteAttachment.civ =>
+        // Civ notes not yet supported — return empty stream
+        ref.watch(entityNotesProvider(-1)),
     };
 
     return notesAsync.when(
@@ -158,6 +161,8 @@ class _NotesPanelContentState extends ConsumerState<_NotesPanelContent> {
         await addNoteForSubject(ref, widget.attachmentId, title, content);
       case NoteAttachment.turn:
         await addNoteForTurn(ref, widget.attachmentId, title, content);
+      case NoteAttachment.civ:
+        break; // not supported yet
     }
 
     if (mounted) {
