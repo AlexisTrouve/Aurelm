@@ -10,6 +10,9 @@ class AppConstants {
     'resource',
     'creature',
     'event',
+    'civilization',
+    'caste',
+    'belief',
   ];
 
   static const List<String> segmentTypes = [

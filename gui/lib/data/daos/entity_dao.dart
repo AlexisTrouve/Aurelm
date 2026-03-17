@@ -261,6 +261,47 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
   // MJ actions: hide / disable / reactivate
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // GM CRUD: create + edit entities manually
+  // ---------------------------------------------------------------------------
+
+  /// Create a new entity manually (GM action). Returns the new entity's id.
+  Future<int> createEntity({
+    required String canonicalName,
+    required String entityType,
+    int? civId,
+    String? description,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    return into(entityEntities).insert(EntityEntitiesCompanion(
+      canonicalName: Value(canonicalName),
+      entityType: Value(entityType),
+      civId: Value(civId),
+      description: Value(description),
+      createdAt: Value(now),
+      updatedAt: Value(now),
+    ));
+  }
+
+  /// Update name, type, civ, and description of an existing entity.
+  Future<void> updateEntity({
+    required int entityId,
+    required String canonicalName,
+    required String entityType,
+    int? civId,
+    String? description,
+  }) async {
+    final now = DateTime.now().toIso8601String();
+    await (update(entityEntities)..where((t) => t.id.equals(entityId)))
+        .write(EntityEntitiesCompanion(
+      canonicalName: Value(canonicalName),
+      entityType: Value(entityType),
+      civId: Value(civId),
+      description: Value(description),
+      updatedAt: Value(now),
+    ));
+  }
+
   /// Toggle hidden flag. Hidden entities stay in DB and cross-links work,
   /// but they are filtered out of the main list unless showHidden is true.
   Future<void> setEntityHidden(int entityId, {required bool hidden}) async {

@@ -12,6 +12,7 @@ import 'widgets/naming_history.dart';
 import 'widgets/notes_menu_button.dart';
 import 'widgets/relation_list.dart';
 import 'widgets/mention_timeline.dart';
+import 'widgets/entity_edit_dialog.dart';
 
 class EntityDetailScreen extends ConsumerWidget {
   final int entityId;
@@ -88,6 +89,21 @@ class EntityDetailScreen extends ConsumerWidget {
               onPressed: () => context.canPop() ? context.pop() : context.go('/entities'),
             ),
             actions: [
+              // Edit entity (GM action)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Modifier',
+                onPressed: () => showDialog<bool>(
+                  context: context,
+                  builder: (_) => EntityEditDialog(
+                    entityId: entityId,
+                    initialName: entity.entity.canonicalName,
+                    initialType: entity.entity.entityType,
+                    initialCivId: entity.entity.civId,
+                    initialDescription: entity.entity.description,
+                  ),
+                ),
+              ),
               IconButton(
                 icon: const Icon(Icons.hub),
                 tooltip: 'View in graph',

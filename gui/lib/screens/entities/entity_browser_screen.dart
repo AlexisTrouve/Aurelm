@@ -10,6 +10,7 @@ import '../../widgets/common/empty_state.dart';
 import 'widgets/entity_list_tile.dart';
 import 'widgets/entity_filter_bar.dart';
 import 'widgets/entity_search_field.dart';
+import 'widgets/entity_edit_dialog.dart';
 
 class EntityBrowserScreen extends ConsumerWidget {
   const EntityBrowserScreen({super.key});
@@ -32,6 +33,19 @@ class EntityBrowserScreen extends ConsumerWidget {
 
     return SelectionArea(
       child: Scaffold(
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Créer une entité',
+        onPressed: () => showDialog<int>(
+          context: context,
+          builder: (_) => const EntityEditDialog(),
+        ).then((newId) {
+          // If created, navigate to the new entity detail page
+          if (newId != null && context.mounted) {
+            context.go('/entities/$newId');
+          }
+        }),
+        child: const Icon(Icons.add),
+      ),
       appBar: AppBar(
         title: const Text('Entities'),
         actions: [
