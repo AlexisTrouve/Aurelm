@@ -44,7 +44,12 @@ class _CivAliasResolverScreenState
   Future<void> _mapToCiv(UnresolvedCivName item, int civId) async {
     final repo = ref.read(civAliasRepositoryProvider);
     if (repo == null) return;
-    await repo.addAlias(civId, item.name);
+    await repo.addAlias(
+      civId,
+      item.name,
+      sourceCivId: item.sourceCivId,
+      firstSeenTurnId: item.firstSeenTurnId,
+    );
     await _load();
   }
 

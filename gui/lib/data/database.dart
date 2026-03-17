@@ -169,6 +169,9 @@ void _ensureMigrations(dynamic db) {
         alias_name  TEXT PRIMARY KEY,
         created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     )''',
+    // Migration 029: provenance — which source civ + turn first used this alias
+    "ALTER TABLE civ_aliases ADD COLUMN source_civ_id INTEGER REFERENCES civ_civilizations(id) ON DELETE SET NULL",
+    "ALTER TABLE civ_aliases ADD COLUMN first_seen_turn_id INTEGER REFERENCES turn_turns(id) ON DELETE SET NULL",
   ];
 
   for (final sql in statements) {

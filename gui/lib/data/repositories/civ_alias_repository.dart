@@ -20,11 +20,17 @@ class UnresolvedCivName {
   final String name;
   final int mentionCount;
   final List<CivMentionPassage> passages;
+  /// The source civ that produced the turns where this name appeared.
+  final int? sourceCivId;
+  /// The earliest turn where this name appeared — stored as provenance on map.
+  final int? firstSeenTurnId;
 
   const UnresolvedCivName({
     required this.name,
     required this.mentionCount,
     this.passages = const [],
+    this.sourceCivId,
+    this.firstSeenTurnId,
   });
 }
 
@@ -77,24 +83,35 @@ class CivAliasRepository {
       final name = r.read<String>('name');
       final count = r.read<int>('mention_count');
 
-      // Load up to 3 mention passages with their turn id + number
+      // Load up to 3 mention passages (most recent first) for display,
+      // plus provenance: source civ + earliest turn.
       final passageRows = await _db.customSelect('''
-        SELECT t.id AS turn_id, t.turn_number, em.mention_text
+        SELECT t.id AS turn_id, t.turn_number, em.mention_text, t.civ_id AS source_civ_id
         FROM entity_mentions em
         JOIN entity_entities e ON e.id = em.entity_id
         JOIN turn_turns t ON t.id = em.turn_id
         WHERE e.canonical_name = ? AND e.entity_type = 'civilization'
-        ORDER BY t.turn_number DESC
-        LIMIT 3
+        ORDER BY t.turn_number ASC
       ''', variables: [Variable.withString(name)]).get();
 
-      final passages = passageRows.map((p) => CivMentionPassage(
+      final passages = passageRows.take(3).map((p) => CivMentionPassage(
         turnId: p.read<int>('turn_id'),
         turnNumber: p.read<int>('turn_number'),
         text: p.read<String?>('mention_text') ?? '',
       )).toList();
 
-      result.add(UnresolvedCivName(name: name, mentionCount: count, passages: passages));
+      // Provenance: first seen turn + source civ (from earliest mention)
+      final firstRow = passageRows.isNotEmpty ? passageRows.first : null;
+      final sourceCivId = firstRow?.read<int?>('source_civ_id');
+      final firstSeenTurnId = firstRow?.read<int>('turn_id');
+
+      result.add(UnresolvedCivName(
+        name: name,
+        mentionCount: count,
+        passages: passages,
+        sourceCivId: sourceCivId,
+        firstSeenTurnId: firstSeenTurnId,
+      ));
     }
     return result;
   }
@@ -118,11 +135,17 @@ class CivAliasRepository {
   // Alias management
   // ---------------------------------------------------------------------------
 
-  /// Map [aliasName] to [civId]. Idempotent (UNIQUE index on alias_name).
-  Future<void> addAlias(int civId, String aliasName) async {
+  /// Map [aliasName] to [civId], optionally recording which source civ + turn
+  /// first used this name (provenance). Idempotent (UNIQUE index on alias_name).
+  Future<void> addAlias(int civId, String aliasName, {
+    int? sourceCivId,
+    int? firstSeenTurnId,
+  }) async {
     await _db.customStatement(
-      'INSERT OR IGNORE INTO civ_aliases (civ_id, alias_name) VALUES (?, ?)',
-      [civId, aliasName],
+      '''INSERT OR IGNORE INTO civ_aliases
+             (civ_id, alias_name, source_civ_id, first_seen_turn_id)
+         VALUES (?, ?, ?, ?)''',
+      [civId, aliasName, sourceCivId, firstSeenTurnId],
     );
   }
 
