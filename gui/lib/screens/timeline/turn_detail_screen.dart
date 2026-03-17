@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -9,6 +11,7 @@ import '../../data/database.dart';
 import '../../providers/turn_provider.dart';
 import '../../providers/entity_provider.dart';
 import '../../providers/favorites_provider.dart';
+import '../../providers/database_provider.dart';
 import '../../utils/lore_linker.dart';
 import '../../widgets/common/entity_type_icon.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -34,6 +37,7 @@ class TurnDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
+  // --------------- search state ---------------
   bool _searchVisible = false;
   final TextEditingController _searchCtrl = TextEditingController();
   final FocusNode _scaffoldFocus = FocusNode();
@@ -46,6 +50,13 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
   // Set in initState when opened with highlightText; cleared after first scroll
   bool _pendingScrollToMatch = false;
   String _query = '';
+
+  // --------------- edit mode state ---------------
+  bool _editMode = false;
+  bool _saving = false;
+  final TextEditingController _titleCtrl = TextEditingController();
+  final TextEditingController _summaryCtrl = TextEditingController();
+  List<String> _editTags = [];
 
   @override
   void initState() {
@@ -66,7 +77,46 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
     _scaffoldFocus.dispose();
     _searchFocus.dispose();
     _scrollCtrl.dispose();
+    _titleCtrl.dispose();
+    _summaryCtrl.dispose();
     super.dispose();
+  }
+
+  // --------------- edit mode helpers ---------------
+
+  List<String> _parseTags(String? raw) {
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      return List<String>.from(jsonDecode(raw));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  void _enterEditMode(TurnRow t) {
+    _titleCtrl.text = t.title ?? '';
+    _summaryCtrl.text = t.summary ?? '';
+    _editTags = _parseTags(t.thematicTags);
+    setState(() => _editMode = true);
+  }
+
+  void _cancelEditMode() => setState(() => _editMode = false);
+
+  Future<void> _saveEditMode() async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    setState(() => _saving = true);
+    try {
+      await db.turnDao.updateTurn(
+        turnId: widget.turnId,
+        title: _titleCtrl.text.trim(),
+        summary: _summaryCtrl.text.trim(),
+        thematicTags: _editTags,
+      );
+      if (mounted) setState(() => _editMode = false);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   /// Scroll the view so the first text block containing [query] is centered.
@@ -166,6 +216,11 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             _countMatches(gmText, _query) +
             _countMatches(pjText, _query);
 
+        // Edit mode — full-screen form overlaid instead of the normal content
+        if (_editMode) {
+          return _buildEditScaffold(context, t);
+        }
+
         // Ctrl+F intercepted at scaffold level — works when search bar is not focused
         return Focus(
           focusNode: _scaffoldFocus,
@@ -221,6 +276,11 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             actions: [
               // Favorite toggle — ref available from ConsumerState
               _TurnFavButton(turnId: widget.turnId, civId: t.civId),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Modifier ce tour',
+                onPressed: () => _enterEditMode(t),
+              ),
               IconButton(
                 icon: Icon(_searchVisible ? Icons.close : Icons.search),
                 tooltip: _searchVisible ? 'Fermer (Ctrl+F)' : 'Rechercher (Ctrl+F)',
@@ -385,6 +445,120 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
           ), // NotesSideRail
         )); // closes Focus + Scaffold
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Edit mode scaffold
+  // ---------------------------------------------------------------------------
+
+  Widget _buildEditScaffold(BuildContext context, TurnRow t) {
+    return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 44,
+        title: Text('Modifier Tour ${t.turnNumber}'),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: 'Annuler',
+          onPressed: _cancelEditMode,
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton(
+              onPressed: _saving ? null : _saveEditMode,
+              child: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Enregistrer'),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title
+            TextField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Titre',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 16),
+
+            // Summary
+            TextField(
+              controller: _summaryCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Résumé',
+                border: OutlineInputBorder(),
+                isDense: true,
+                alignLabelWithHint: true,
+              ),
+              maxLines: 6,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 20),
+
+            // Thematic tags
+            _buildTagsEdit(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagsEdit(BuildContext context) {
+    final tagAsync = ref.watch(turnTagsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tags thématiques',
+            style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        // Current tags as removable chips
+        if (_editTags.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: _editTags.map((tag) => InputChip(
+              label: Text(tag, style: const TextStyle(fontSize: 12)),
+              onDeleted: () => setState(() => _editTags.remove(tag)),
+            )).toList(),
+          ),
+        const SizedBox(height: 8),
+        // Add tag from existing vocabulary
+        tagAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (allTags) {
+            final available = allTags.where((t) => !_editTags.contains(t)).toList();
+            return Row(
+              children: [
+                DropdownButton<String>(
+                  hint: const Text('+ Ajouter un tag'),
+                  value: null,
+                  items: available
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
+                  onChanged: (tag) {
+                    if (tag != null) setState(() => _editTags.add(tag));
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
