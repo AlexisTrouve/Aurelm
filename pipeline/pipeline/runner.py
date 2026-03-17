@@ -1305,17 +1305,10 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
                 (entity_name, entity_name),
             ).fetchone()
         if target is None:
-            # Foreign civ not yet registered — auto-create as a stub (no player, no channel).
-            # This allows the relation system to track contacts with civs not yet run through
-            # the pipeline. The stub can be enriched later when Arthur runs their turns.
-            conn.execute(
-                "INSERT OR IGNORE INTO civ_civilizations (name) VALUES (?)",
-                (entity_name,),
-            )
-            target = conn.execute(
-                "SELECT id FROM civ_civilizations WHERE name = ?", (entity_name,)
-            ).fetchone()
-        if target is None:
+            # No match in known civilizations → skip silently.
+            # We never auto-create civ stubs here: the LLM frequently tags non-playable
+            # entities as "civilization" (e.g. "Courant", "Colonie souterraine"), and names
+            # vary by POV. Only civs explicitly registered by the GM are tracked.
             continue
 
         target_civ_id = target["id"]
