@@ -4,6 +4,7 @@ import '../data/daos/entity_dao.dart';
 import '../models/entity_with_details.dart';
 import '../models/filter_state.dart';
 import 'database_provider.dart';
+import 'favorites_provider.dart';
 
 final entityFilterProvider =
     StateNotifierProvider<EntityFilterNotifier, EntityFilterState>((ref) {
@@ -33,6 +34,10 @@ class EntityFilterNotifier extends StateNotifier<EntityFilterState> {
     state = state.copyWith(selectedTag: () => tag);
   }
 
+  void setFavoritesOnly(bool value) {
+    state = state.copyWith(favoritesOnly: value);
+  }
+
   void reset() {
     state = const EntityFilterState();
   }
@@ -50,7 +55,13 @@ final entityListProvider = StreamProvider<List<EntityWithDetails>>((ref) {
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   final filters = ref.watch(entityFilterProvider);
-  return db.entityDao.watchEntities(filters);
+  final favorites = ref.watch(favoritesProvider);
+
+  return db.entityDao.watchEntities(filters).map((list) {
+    // Apply favorites filter in-stream — avoids a DB-level join
+    if (!filters.favoritesOnly) return list;
+    return list.where((e) => favorites.contains('entity_${e.entity.id}')).toList();
+  });
 });
 
 final entityDetailProvider =

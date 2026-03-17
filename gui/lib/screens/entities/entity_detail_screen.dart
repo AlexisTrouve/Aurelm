@@ -12,6 +12,7 @@ import '../../data/daos/relation_dao.dart'; // RelationWithNames
 import '../../providers/entity_provider.dart';
 import '../../providers/civilization_provider.dart';
 import '../../providers/database_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/entity_type_badge.dart';
@@ -191,6 +192,10 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
   }
 
   AppBar _buildViewAppBar(BuildContext context, EntityWithDetails entity) {
+    final isFav = ref
+        .watch(favoritesProvider)
+        .contains('entity_${widget.entityId}');
+
     return AppBar(
       toolbarHeight: 44,
       title: Text(entity.entity.canonicalName),
@@ -200,6 +205,17 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
             context.canPop() ? context.pop() : context.go('/entities'),
       ),
       actions: [
+        // Favorite toggle
+        IconButton(
+          icon: Icon(
+            isFav ? Icons.star : Icons.star_border,
+            color: isFav ? Colors.amber : null,
+          ),
+          tooltip: isFav ? 'Retirer des favoris' : 'Ajouter aux favoris',
+          onPressed: () => ref
+              .read(favoritesProvider.notifier)
+              .toggle('entity', widget.entityId, entity.entity.civId),
+        ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'Modifier',

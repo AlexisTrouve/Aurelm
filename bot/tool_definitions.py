@@ -287,6 +287,37 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "getFavorites",
+        "description": (
+            "Liste les éléments marqués favoris par le MJ (entités, sujets, tours). "
+            "Point d'entrée prioritaire pour les sujets importants — utiliser en premier "
+            "quand le MJ demande 'mes favoris' ou 'les éléments importants'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": ["entity", "subject", "turn"],
+                    "description": "Type d'élément à lister. Omis = tous les types.",
+                },
+                "civName": {
+                    "type": "string",
+                    "description": "Filtrer par civilisation (fuzzy match).",
+                },
+                "tag": {
+                    "type": "string",
+                    "description": "Filtrer par domaine : militaire|politique|religieux|economique|culturel|diplomatique|technologique|mythologique",
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Sujets seulement — open|resolved|abandoned|superseded",
+                },
+                "limit": {"type": "integer", "description": "Nombre max de résultats (défaut: 20)."},
+            },
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "

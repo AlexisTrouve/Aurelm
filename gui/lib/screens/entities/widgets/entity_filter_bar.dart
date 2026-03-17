@@ -90,6 +90,19 @@ class EntityFilterBar extends ConsumerWidget {
 
             const SizedBox(width: 8),
 
+            // Favorites filter
+            FilterChip(
+              avatar: const Icon(Icons.star, size: 14, color: Colors.amber),
+              label: const Text('Favoris'),
+              selected: filters.favoritesOnly,
+              selectedColor: Colors.amber.withValues(alpha: 0.2),
+              onSelected: (v) => ref
+                  .read(entityFilterProvider.notifier)
+                  .setFavoritesOnly(v),
+            ),
+
+            const SizedBox(width: 8),
+
             // Civ dropdown
             civs.when(
               loading: () => const SizedBox.shrink(),

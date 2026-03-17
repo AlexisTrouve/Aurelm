@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/filter_state.dart';
 import '../models/subject_with_details.dart';
 import 'database_provider.dart';
+import 'favorites_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Filter state
@@ -32,6 +33,10 @@ class SubjectFilterNotifier extends StateNotifier<SubjectFilterState> {
     state = state.copyWith(selectedTag: () => tag);
   }
 
+  void setFavoritesOnly(bool value) {
+    state = state.copyWith(favoritesOnly: value);
+  }
+
   void reset() {
     state = const SubjectFilterState();
   }
@@ -45,7 +50,13 @@ final subjectListProvider = StreamProvider<List<SubjectWithDetails>>((ref) {
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   final filters = ref.watch(subjectFilterProvider);
-  return db.subjectDao.watchSubjects(filters);
+  final favorites = ref.watch(favoritesProvider);
+
+  return db.subjectDao.watchSubjects(filters).map((list) {
+    // Apply favorites filter in-stream — avoids a DB-level join
+    if (!filters.favoritesOnly) return list;
+    return list.where((s) => favorites.contains('subject_${s.subject.id}')).toList();
+  });
 });
 
 // ---------------------------------------------------------------------------

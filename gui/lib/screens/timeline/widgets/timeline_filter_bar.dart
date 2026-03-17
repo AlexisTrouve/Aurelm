@@ -111,6 +111,18 @@ class _TimelineFilterBarState extends ConsumerState<TimelineFilterBar> {
 
         const SizedBox(height: 4),
 
+        const SizedBox(height: 4),
+
+        // Favorites filter chip
+        FilterChip(
+          avatar: const Icon(Icons.star, size: 14, color: Colors.amber),
+          label: const Text('Favoris'),
+          selected: filters.favoritesOnly,
+          selectedColor: Colors.amber.withValues(alpha: 0.2),
+          visualDensity: VisualDensity.compact,
+          onSelected: (v) => notifier.setFavoritesOnly(v),
+        ),
+
         // --- Thematic tag chips ---
         tagsAsync.when(
           loading: () => const SizedBox.shrink(),

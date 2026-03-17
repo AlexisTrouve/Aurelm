@@ -111,6 +111,19 @@ class SubjectFilterBar extends ConsumerWidget {
           ),
         ),
 
+        const SizedBox(height: 8),
+
+        // Favorites filter chip
+        FilterChip(
+          avatar: const Icon(Icons.star, size: 14, color: Colors.amber),
+          label: const Text('Favoris'),
+          selected: filters.favoritesOnly,
+          selectedColor: Colors.amber.withValues(alpha: 0.2),
+          visualDensity: VisualDensity.compact,
+          onSelected: (v) =>
+              ref.read(subjectFilterProvider.notifier).setFavoritesOnly(v),
+        ),
+
         // Civ dropdown (if multiple civs)
         civs.when(
           data: (civList) {

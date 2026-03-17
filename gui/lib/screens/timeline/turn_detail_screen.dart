@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/database.dart';
 import '../../providers/turn_provider.dart';
 import '../../providers/entity_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../../utils/lore_linker.dart';
 import '../../widgets/common/entity_type_icon.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -218,6 +219,8 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
               onPressed: () => context.canPop() ? context.pop() : context.go('/timeline'),
             ),
             actions: [
+              // Favorite toggle — ref available from ConsumerState
+              _TurnFavButton(turnId: widget.turnId, civId: t.civId),
               IconButton(
                 icon: Icon(_searchVisible ? Icons.close : Icons.search),
                 tooltip: _searchVisible ? 'Fermer (Ctrl+F)' : 'Rechercher (Ctrl+F)',
@@ -851,6 +854,28 @@ class _Badge extends StatelessWidget {
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
       ),
+    );
+  }
+}
+
+/// Favorite toggle button for a turn — extracted to keep build() clean.
+class _TurnFavButton extends ConsumerWidget {
+  final int turnId;
+  final int civId;
+
+  const _TurnFavButton({required this.turnId, required this.civId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFav = ref.watch(favoritesProvider).contains('turn_$turnId');
+    return IconButton(
+      icon: Icon(
+        isFav ? Icons.star : Icons.star_border,
+        color: isFav ? Colors.amber : null,
+      ),
+      tooltip: isFav ? 'Retirer des favoris' : 'Ajouter aux favoris',
+      onPressed: () =>
+          ref.read(favoritesProvider.notifier).toggle('turn', turnId, civId),
     );
   }
 }

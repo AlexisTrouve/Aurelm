@@ -7,6 +7,7 @@ import '../data/daos/turn_dao.dart';
 import '../models/filter_state.dart';
 import '../models/turn_with_entities.dart';
 import 'database_provider.dart';
+import 'favorites_provider.dart';
 
 final timelineFilterProvider =
     StateNotifierProvider<TimelineFilterNotifier, TimelineFilterState>((ref) {
@@ -36,6 +37,10 @@ class TimelineFilterNotifier extends StateNotifier<TimelineFilterState> {
     state = state.copyWith(toTurn: () => n);
   }
 
+  void setFavoritesOnly(bool value) {
+    state = state.copyWith(favoritesOnly: value);
+  }
+
   void reset() {
     state = const TimelineFilterState();
   }
@@ -45,14 +50,22 @@ final timelineProvider = StreamProvider<List<TurnWithEntities>>((ref) {
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   final filters = ref.watch(timelineFilterProvider);
+  final favorites = ref.watch(favoritesProvider);
+
   // Pass both filters — turnType was previously ignored in the DAO
-  return db.turnDao.watchTimeline(
-    civId: filters.civId,
-    turnType: filters.turnType,
-    selectedTag: filters.selectedTag,
-    fromTurn: filters.fromTurn,
-    toTurn: filters.toTurn,
-  );
+  return db.turnDao
+      .watchTimeline(
+        civId: filters.civId,
+        turnType: filters.turnType,
+        selectedTag: filters.selectedTag,
+        fromTurn: filters.fromTurn,
+        toTurn: filters.toTurn,
+      )
+      .map((list) {
+    // Apply favorites filter in-stream — avoids a DB-level join
+    if (!filters.favoritesOnly) return list;
+    return list.where((t) => favorites.contains('turn_${t.turn.id}')).toList();
+  });
 });
 
 /// All unique thematic tags from the DB, for the filter bar.

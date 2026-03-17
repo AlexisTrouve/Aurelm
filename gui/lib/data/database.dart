@@ -114,6 +114,22 @@ void _ensureMigrations(dynamic db) {
         linked_text TEXT NOT NULL,
         entity_count INTEGER NOT NULL DEFAULT 0
     )''',
+    // Migration 024: user favorites (entities, subjects, turns)
+    '''CREATE TABLE IF NOT EXISTS user_favorites (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        type        TEXT NOT NULL,
+        entity_id   INTEGER,
+        subject_id  INTEGER,
+        turn_id     INTEGER,
+        civ_id      INTEGER,
+        created_at  TEXT NOT NULL
+    )''',
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_entity"
+    "  ON user_favorites(entity_id) WHERE entity_id IS NOT NULL",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_subject"
+    "  ON user_favorites(subject_id) WHERE subject_id IS NOT NULL",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_turn"
+    "  ON user_favorites(turn_id) WHERE turn_id IS NOT NULL",
   ];
 
   for (final sql in statements) {

@@ -1990,6 +1990,138 @@ def get_notes(
 
 
 # --------------------------------------------------------------------------- #
+# Tool: getFavorites
+# --------------------------------------------------------------------------- #
+
+def get_favorites(
+    conn: sqlite3.Connection,
+    item_type: str | None = None,      # 'entity' | 'subject' | 'turn' | None = all
+    civ_id: int | None = None,
+    tag: str | None = None,
+    status: str | None = None,         # subjects only: open|resolved|abandoned|superseded
+    limit: int = 20,
+) -> str:
+    """Return GM-favorited entities, subjects, and/or turns as Markdown.
+
+    Point d'entrée prioritaire pour localiser rapidement les éléments importants
+    marqués par le MJ. Supporte le filtre par type, civ, tag domaine et statut sujet.
+    """
+    lines: list[str] = ["# Favoris du MJ\n"]
+    types_to_query = [item_type] if item_type else ["entity", "subject", "turn"]
+    found_any = False
+
+    for t in types_to_query:
+        rows = _query_favorites_type(conn, t, civ_id=civ_id, tag=tag, status=status, limit=limit)
+        if rows:
+            found_any = True
+            lines.append(f"## {t.capitalize()}s ({len(rows)})\n")
+            lines.extend(rows)
+            lines.append("")
+
+    if not found_any:
+        return "Aucun favori enregistré." if not item_type else f"Aucun favori de type '{item_type}'."
+
+    return "\n".join(lines)
+
+
+def _query_favorites_type(
+    conn: sqlite3.Connection,
+    item_type: str,
+    civ_id: int | None,
+    tag: str | None,
+    status: str | None,
+    limit: int,
+) -> list[str]:
+    """Build per-type rows for get_favorites."""
+    rows: list[str] = []
+
+    if item_type == "entity":
+        sql = """
+            SELECT e.canonical_name, e.entity_type, e.description, c.name AS civ_name, e.tags
+            FROM user_favorites f
+            JOIN entity_entities e ON f.entity_id = e.id
+            LEFT JOIN civ_civilizations c ON e.civ_id = c.id
+            WHERE f.type = 'entity' AND (e.disabled IS NULL OR e.disabled = 0)
+        """
+        params: list = []
+        if civ_id is not None:
+            sql += " AND e.civ_id = ?"
+            params.append(civ_id)
+        if tag:
+            sql += " AND e.tags LIKE ?"
+            params.append(f'%"{tag}"%')
+        sql += " LIMIT ?"
+        params.append(limit)
+
+        for r in conn.execute(sql, params).fetchall():
+            name, etype, desc, civ_name, _ = r
+            line = f"- **{name}** ({etype})"
+            if civ_name:
+                line += f" — {civ_name}"
+            if desc:
+                line += f"\n  {truncate(desc, 120)}"
+            rows.append(line)
+
+    elif item_type == "subject":
+        sql = """
+            SELECT s.id, s.title, s.direction, s.status, s.category, c.name AS civ_name, s.tags
+            FROM user_favorites f
+            JOIN subject_subjects s ON f.subject_id = s.id
+            LEFT JOIN civ_civilizations c ON s.civ_id = c.id
+            WHERE f.type = 'subject'
+        """
+        params = []
+        if civ_id is not None:
+            sql += " AND s.civ_id = ?"
+            params.append(civ_id)
+        if status:
+            sql += " AND s.status = ?"
+            params.append(status)
+        if tag:
+            sql += " AND s.tags LIKE ?"
+            params.append(f'%"{tag}"%')
+        sql += " LIMIT ?"
+        params.append(limit)
+
+        for r in conn.execute(sql, params).fetchall():
+            sid, title, direction, stat, category, civ_name, _ = r
+            direction_label = "MJ→PJ" if direction == "mj_to_pj" else "PJ→MJ"
+            stat_emoji = {"open": "🔴", "resolved": "✅", "abandoned": "❌"}.get(stat, "⬜")
+            line = f"- **{title}** [{direction_label}] {stat_emoji} {stat}"
+            if civ_name:
+                line += f" — {civ_name}"
+            line += f" (sujet #{sid})"
+            rows.append(line)
+
+    elif item_type == "turn":
+        sql = """
+            SELECT t.id, t.turn_number, t.title, t.turn_type, c.name AS civ_name, t.summary
+            FROM user_favorites f
+            JOIN turn_turns t ON f.turn_id = t.id
+            LEFT JOIN civ_civilizations c ON t.civ_id = c.id
+            WHERE f.type = 'turn'
+        """
+        params = []
+        if civ_id is not None:
+            sql += " AND t.civ_id = ?"
+            params.append(civ_id)
+        sql += " ORDER BY t.turn_number LIMIT ?"
+        params.append(limit)
+
+        for r in conn.execute(sql, params).fetchall():
+            _, turn_num, title, turn_type, civ_name, summary = r
+            label = title or f"Tour {turn_num}"
+            line = f"- **Tour {turn_num}** — {label} ({turn_type})"
+            if civ_name:
+                line += f" [{civ_name}]"
+            if summary:
+                line += f"\n  {truncate(summary, 120)}"
+            rows.append(line)
+
+    return rows
+
+
+# --------------------------------------------------------------------------- #
 # Sub-agent: deepExplore
 # --------------------------------------------------------------------------- #
 
@@ -2447,6 +2579,22 @@ def dispatch_tool(
             tag=tag,
             civ_id=civ_id,
             entity_type=tool_input.get("entityType"),
+        )
+
+    if tool_name == "getFavorites":
+        civ_id = None
+        civ_name_str = tool_input.get("civName")
+        if civ_name_str:
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        return get_favorites(
+            conn,
+            item_type=tool_input.get("type"),
+            civ_id=civ_id,
+            tag=tool_input.get("tag"),
+            status=tool_input.get("status"),
+            limit=int(tool_input.get("limit") or 20),
         )
 
     if tool_name == "deepExplore":

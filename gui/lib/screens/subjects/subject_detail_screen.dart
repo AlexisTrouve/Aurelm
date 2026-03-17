@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/database.dart';
 import '../../providers/subject_provider.dart';
 import '../../providers/civilization_provider.dart';
+import '../../providers/favorites_provider.dart';
 import '../../models/subject_with_details.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
@@ -168,6 +169,7 @@ class _SubjectDetailStatefulState
   AppBar _buildViewAppBar(BuildContext context, WidgetRef ref, SubjectDetail detail) {
     final s = detail.subject;
     final isOpen = s.status == 'open';
+    final isFav = ref.watch(favoritesProvider).contains('subject_${s.id}');
 
     return AppBar(
       toolbarHeight: 44,
@@ -179,6 +181,17 @@ class _SubjectDetailStatefulState
             context.canPop() ? context.pop() : context.go('/subjects'),
       ),
       actions: [
+        // Favorite toggle
+        IconButton(
+          icon: Icon(
+            isFav ? Icons.star : Icons.star_border,
+            color: isFav ? Colors.amber : null,
+          ),
+          tooltip: isFav ? 'Retirer des favoris' : 'Ajouter aux favoris',
+          onPressed: () => ref
+              .read(favoritesProvider.notifier)
+              .toggle('subject', s.id, s.civId),
+        ),
         // Edit button
         IconButton(
           icon: const Icon(Icons.edit_outlined),
