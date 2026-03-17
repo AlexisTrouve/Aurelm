@@ -198,27 +198,29 @@ class _UnresolvedCardState extends State<_UnresolvedCard> {
                     ),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tour ${p.turnNumber}  ',
+                      child: Text.rich(
+                        TextSpan(children: [
+                          TextSpan(
+                            text: 'Tour ${p.turnNumber}  ',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: cs.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              p.text.isEmpty ? '(pas de texte)' : p.text,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                                height: 1.4,
-                              ),
+                          TextSpan(
+                            text: p.text.isEmpty ? '(pas de texte)' : p.text,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                              height: 1.4,
                             ),
                           ),
-                          Icon(Icons.open_in_new, size: 12, color: cs.primary),
-                        ],
+                          WidgetSpan(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(Icons.open_in_new, size: 11, color: cs.primary),
+                            ),
+                          ),
+                        ]),
                       ),
                     ),
                   )).toList(),
