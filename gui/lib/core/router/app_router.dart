@@ -37,17 +37,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/civs/alias-resolver',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: CivAliasResolverScreen(),
+            ),
+          ),
+          GoRoute(
             path: '/civs/:id',
             pageBuilder: (context, state) {
               final id = int.parse(state.pathParameters['id']!);
               return NoTransitionPage(child: CivDetailScreen(civId: id));
             },
-          ),
-          GoRoute(
-            path: '/civs/alias-resolver',
-            pageBuilder: (context, state) => const NoTransitionPage(
-              child: CivAliasResolverScreen(),
-            ),
           ),
           GoRoute(
             path: '/entities',
