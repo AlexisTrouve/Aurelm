@@ -87,6 +87,32 @@ class RelationDao extends DatabaseAccessor<AurelmDatabase>
   /// Ego-graph centered on [centerId].
   /// Depth 1 = direct neighbors. Depth 2 = also neighbors-of-neighbors.
   /// Optionally filter by [relationType].
+  // ---------------------------------------------------------------------------
+  // GM CRUD: add / remove relations
+  // ---------------------------------------------------------------------------
+
+  /// Add a directed relation from [sourceEntityId] to [targetEntityId].
+  Future<void> addRelation({
+    required int sourceEntityId,
+    required int targetEntityId,
+    required String relationType,
+    String? description,
+  }) async {
+    await into(entityRelations).insert(EntityRelationsCompanion(
+      sourceEntityId: Value(sourceEntityId),
+      targetEntityId: Value(targetEntityId),
+      relationType: Value(relationType),
+      description: Value(description),
+      createdAt: Value(DateTime.now().toIso8601String()),
+    ));
+  }
+
+  /// Deactivate a relation (soft delete — keeps it in DB for history).
+  Future<void> removeRelation(int relationId) async {
+    await (update(entityRelations)..where((t) => t.id.equals(relationId)))
+        .write(const EntityRelationsCompanion(isActive: Value(0)));
+  }
+
   Stream<GraphData> watchEgoGraph({
     required int centerId,
     int depth = 1,

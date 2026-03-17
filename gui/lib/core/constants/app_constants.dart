@@ -15,6 +15,20 @@ class AppConstants {
     'belief',
   ];
 
+  // Relation types — from entity_profiler.py + pipeline DB (entity_relations)
+  static const List<String> relationTypes = [
+    'located_in',
+    'member_of',
+    'part_of',
+    'allied_with',
+    'enemy_of',
+    'controls',
+    'trades_with',
+    'produces',
+    'worships',
+    'created_by',
+  ];
+
   static const List<String> segmentTypes = [
     'narrative',
     'choice',

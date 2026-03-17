@@ -262,6 +262,18 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
+  // Alias queries (for edit mode — need the alias DB id to delete)
+  // ---------------------------------------------------------------------------
+
+  /// All aliases for an entity, ordered by id (insertion order proxy).
+  Stream<List<AliasRow>> watchAliasesForEntity(int entityId) {
+    return (select(entityAliases)
+          ..where((t) => t.entityId.equals(entityId))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .watch();
+  }
+
+  // ---------------------------------------------------------------------------
   // GM CRUD: create + edit entities manually
   // ---------------------------------------------------------------------------
 
@@ -299,6 +311,29 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       civId: Value(civId),
       description: Value(description),
       updatedAt: Value(now),
+    ));
+  }
+
+  /// Add a new alias to an entity (GM action).
+  Future<void> addAlias(int entityId, String alias) async {
+    await into(entityAliases).insert(EntityAliasesCompanion(
+      entityId: Value(entityId),
+      alias: Value(alias),
+    ));
+  }
+
+  /// Remove an alias by its DB id (GM action).
+  Future<void> removeAlias(int aliasId) async {
+    await (delete(entityAliases)..where((t) => t.id.equals(aliasId))).go();
+  }
+
+  /// Update the tags JSON array for an entity (GM action).
+  Future<void> updateEntityTags(int entityId, List<String> tags) async {
+    final encoded = jsonEncode(tags);
+    await (update(entityEntities)..where((t) => t.id.equals(entityId)))
+        .write(EntityEntitiesCompanion(
+      tags: Value(encoded.isEmpty || tags.isEmpty ? null : encoded),
+      updatedAt: Value(DateTime.now().toIso8601String()),
     ));
   }
 
