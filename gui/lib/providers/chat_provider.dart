@@ -83,6 +83,9 @@ class ChatState {
   /// Active session name + tags (displayed in AppBar)
   final String sessionName;
   final List<String> sessionTags;
+  /// True once the agent fell back from Anthropic to Ollama during this session.
+  /// Used to trigger a one-time toast notification in the UI.
+  final bool usedFallback;
 
   const ChatState({
     this.messages = const [],
@@ -96,6 +99,7 @@ class ChatState {
     this.sessionTotalTokens = 0,
     this.sessionName = '',
     this.sessionTags = const [],
+    this.usedFallback = false,
   });
 
   ChatState copyWith({
@@ -110,6 +114,7 @@ class ChatState {
     int? sessionTotalTokens,
     String? sessionName,
     List<String>? sessionTags,
+    bool? usedFallback,
     bool clearError = false,
     bool clearSession = false,
   }) {
@@ -127,6 +132,7 @@ class ChatState {
       sessionTotalTokens: sessionTotalTokens ?? this.sessionTotalTokens,
       sessionName: sessionName ?? this.sessionName,
       sessionTags: sessionTags ?? this.sessionTags,
+      usedFallback: usedFallback ?? this.usedFallback,
     );
   }
 }
@@ -287,6 +293,10 @@ class ChatNotifier extends StateNotifier<ChatState> {
                   : state.sessionTags,
               pendingTools: [],
             );
+
+          case FallbackEvent():
+            // Signal UI to show a one-time toast (false → true transition)
+            state = state.copyWith(usedFallback: true);
 
           case ErrorEvent():
             state = state.copyWith(

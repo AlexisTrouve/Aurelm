@@ -509,14 +509,28 @@ class Agent:
                 if reminder:
                     system_parts = f"{self._claude_prompt}\n\n---\n\n{reminder}"
 
-                response = await asyncio.to_thread(
-                    self._anthropic.messages.create,
-                    model="claude-sonnet-4-6",
-                    max_tokens=4096,
-                    system=system_parts,
-                    tools=self._anthropic_tools,
-                    messages=compressed,
-                )
+                try:
+                    response = await asyncio.to_thread(
+                        self._anthropic.messages.create,
+                        model="claude-sonnet-4-6",
+                        max_tokens=4096,
+                        system=system_parts,
+                        tools=self._anthropic_tools,
+                        messages=compressed,
+                    )
+                except Exception as _api_exc:
+                    err_str = str(_api_exc)
+                    # Transient Anthropic errors (503 overloaded, 500 internal) → fall back to Ollama
+                    if any(code in err_str for code in ["503", "500", "502", "529", "overloaded"]):
+                        log.warning("Anthropic API error, falling back to Ollama: %s", err_str[:80])
+                        if not hasattr(self, "_ollama_model"):
+                            self._init_ollama()
+                        self._backend = "ollama"
+                        yield ("fallback", {"reason": err_str[:200], "backend": "ollama"})
+                        continue  # retry this round with Ollama backend
+                    # Non-transient error — surface it
+                    yield ("text", {"content": f"Erreur API: {_api_exc}", "tool_calls": collected_tool_calls})
+                    return
 
                 # Accumulate real API token usage (for cost tracking, not display)
                 if hasattr(response, "usage") and response.usage:

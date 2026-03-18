@@ -183,6 +183,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
+    // Show a bottom-right toast when the agent falls back from Anthropic to Ollama.
+    // The false→true transition fires exactly once per fallback event.
+    ref.listen<bool>(
+      chatProvider.select((s) => s.usedFallback),
+      (prev, next) {
+        if (next && prev == false) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.swap_horiz, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Text(
+                    'API indisponible — bascule sur Ollama local',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+              // Large left margin pushes the floating snackbar to the right
+              margin: EdgeInsets.only(
+                left: screenWidth - 360,
+                bottom: 80,
+                right: 16,
+              ),
+              duration: const Duration(seconds: 5),
+              backgroundColor: Colors.orange.shade700,
+            ),
+          );
+        }
+      },
+    );
+
     return Focus(
       // Escape: cancel last queued message or ongoing LLM call
       autofocus: false,
@@ -638,7 +673,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 // Message segment parser — splits user messages into text and file parts
 // ---------------------------------------------------------------------------
 
-/// Represents a segment of a user message: either plain text or an attached file.
+/// Represents a segment of a user message: plain text, attached file, or a quote.
 sealed class _MessageSegment {}
 
 class _TextSegment extends _MessageSegment {
@@ -652,10 +687,38 @@ class _FileSegment extends _MessageSegment {
   _FileSegment(this.filename, this.content);
 }
 
-/// Parse a message string into alternating text/file segments.
-/// Files are delimited by `[Fichier: name]\ncontent` blocks.
+/// A quoted message — rendered as a collapsed card inside the user bubble.
+class _QuoteSegment extends _MessageSegment {
+  final String role;    // 'Vous' or 'Aurelm'
+  final String content; // quote text with > stripped
+  _QuoteSegment(this.role, this.content);
+}
+
+/// Parse a message string into segments: quote (optional, at start), then
+/// alternating text/file blocks.
 List<_MessageSegment> _parseMessageSegments(String message) {
   final segments = <_MessageSegment>[];
+
+  // Detect optional quote block at the very start.
+  // Format produced by _buildMessage(): [Role a écrit :]\n> line1\n> line2...
+  final quoteRe = RegExp(r'^\[([^\]]+) a écrit :\]\n((?:> [^\n]*(?:\n|$))*)');
+  final qMatch = quoteRe.firstMatch(message);
+  if (qMatch != null) {
+    final role = qMatch.group(1)!;
+    final rawLines = qMatch.group(2) ?? '';
+    // Strip the "> " prefix from each line
+    final content = rawLines
+        .split('\n')
+        .where((l) => l.startsWith('> '))
+        .map((l) => l.length > 2 ? l.substring(2) : '')
+        .join('\n')
+        .trim();
+    segments.add(_QuoteSegment(role, content));
+    // Continue parsing the remainder (text + files)
+    message = message.substring(qMatch.end).trimLeft();
+  }
+
+  // Parse file blocks and text from the remaining string.
   final pattern = RegExp(r'\[Fichier: ([^\]]+)\]\n');
   int cursor = 0;
 
@@ -669,12 +732,10 @@ List<_MessageSegment> _parseMessageSegments(String message) {
     final filename = match.group(1)!;
     // File content runs from end of marker to next marker or end of string
     final contentStart = match.end;
-    // Look for next file marker to delimit content
     final nextMatch = pattern.firstMatch(message.substring(contentStart));
     final contentEnd = nextMatch != null
         ? contentStart + nextMatch.start
         : message.length;
-    // Trim trailing whitespace between file blocks
     final content = message.substring(contentStart, contentEnd).trimRight();
     segments.add(_FileSegment(filename, content));
     cursor = contentEnd;
@@ -726,6 +787,12 @@ Widget _buildUserContent(String content, ColorScheme colorScheme) {
             seg.text,
             style: TextStyle(color: colorScheme.onPrimary),
           ),
+        );
+      }
+      if (seg is _QuoteSegment) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: _QuoteCard(role: seg.role, content: seg.content),
         );
       }
       final file = seg as _FileSegment;
@@ -831,6 +898,79 @@ class _FileCardState extends State<_FileCard> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quote card — collapsed by default, shown inside user bubble for quoted msgs
+// ---------------------------------------------------------------------------
+
+class _QuoteCard extends StatefulWidget {
+  final String role;    // 'Vous' or 'Aurelm'
+  final String content; // quote body with > stripped
+
+  const _QuoteCard({required this.role, required this.content});
+
+  @override
+  State<_QuoteCard> createState() => _QuoteCardState();
+}
+
+class _QuoteCardState extends State<_QuoteCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Colors adapted for dark primary background (user bubble)
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+    final preview = widget.content.replaceAll('\n', ' ');
+
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: onPrimary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border(
+            left: BorderSide(color: onPrimary.withValues(alpha: 0.45), width: 2),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Text(
+                  widget.role,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: onPrimary.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const Spacer(),
+                Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 11,
+                  color: onPrimary.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              _expanded ? widget.content : preview,
+              maxLines: _expanded ? null : 1,
+              overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: onPrimary.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                    fontSize: 11,
+                  ),
+            ),
+          ],
         ),
       ),
     );

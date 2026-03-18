@@ -105,6 +105,12 @@ class ErrorEvent extends ChatEvent {
   ErrorEvent({required this.message});
 }
 
+/// Backend fallback — Anthropic API failed (503/500), switched to Ollama.
+class FallbackEvent extends ChatEvent {
+  final String reason;
+  FallbackEvent({required this.reason});
+}
+
 /// HTTP client for the /chat endpoint on the local bot server.
 class ChatService {
   final int port;
@@ -199,6 +205,10 @@ class ChatService {
                 sessionName: json['session_name'] as String? ?? '',
                 sessionTags: (json['session_tags'] as List?)
                     ?.cast<String>() ?? const [],
+              );
+            case 'fallback':
+              yield FallbackEvent(
+                reason: json['reason'] as String? ?? '',
               );
             case 'error':
               yield ErrorEvent(
