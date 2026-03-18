@@ -23,6 +23,50 @@ Color _entityTagColor(String tag) => switch (tag) {
       _ => Colors.blueGrey,
     };
 
+/// Custom entity-type chip — fixed size, no checkmark animation.
+/// Looks like EntityTypeBadge when unselected, filled when selected.
+class _TypeChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TypeChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : color.withValues(alpha: 0.4),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : color,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Two-row filter bar for the entity browser:
 /// Row 1 — entity type chips + "Cachées" toggle + civ dropdown
 /// Row 2 — semantic tag chips (from DB, colored)
@@ -34,6 +78,7 @@ class EntityFilterBar extends ConsumerWidget {
     final filters = ref.watch(entityFilterProvider);
     final civs = ref.watch(civListProvider);
     final tagsAsync = ref.watch(entityTagsProvider);
+    final neutralColor = Theme.of(context).colorScheme.outline;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,44 +91,27 @@ class EntityFilterBar extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    // "All types" chip — neutral style
-                    FilterChip(
-                      label: const Text('All types'),
-                      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
+                    // "All types" — neutral color
+                    _TypeChip(
+                      label: 'All types',
+                      color: neutralColor,
                       selected: filters.entityType == null,
-                      onSelected: (_) => ref
+                      onTap: () => ref
                           .read(entityFilterProvider.notifier)
                           .setEntityType(null),
                     ),
                     const SizedBox(width: 4),
-                    // Per-type chips: always colored like EntityTypeBadge
+                    // Per-type chips — colored like EntityTypeBadge
                     ...AppConstants.entityTypes.map((type) {
                       final color = AppColors.entityColor(type);
                       final isSelected = filters.entityType == type;
                       return Padding(
                         padding: const EdgeInsets.only(right: 4),
-                        child: FilterChip(
-                          label: Text(type),
-                          labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected ? Colors.white : color,
-                              ),
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
+                        child: _TypeChip(
+                          label: type,
+                          color: color,
                           selected: isSelected,
-                          backgroundColor: color.withValues(alpha: 0.1),
-                          selectedColor: color.withValues(alpha: 0.85),
-                          checkmarkColor: Colors.white,
-                          side: BorderSide(color: color.withValues(alpha: 0.4)),
-                          onSelected: (_) => ref
+                          onTap: () => ref
                               .read(entityFilterProvider.notifier)
                               .setEntityType(isSelected ? null : type),
                         ),
