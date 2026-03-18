@@ -368,7 +368,8 @@ class TestStoreAliases:
                 id INTEGER PRIMARY KEY,
                 canonical_name TEXT,
                 is_active INTEGER DEFAULT 1,
-                tags TEXT
+                tags TEXT,
+                first_seen_turn INTEGER
             );
             CREATE TABLE entity_mentions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -384,6 +385,7 @@ class TestStoreAliases:
             CREATE TABLE entity_aliases (
                 entity_id INTEGER,
                 alias TEXT,
+                first_seen_turn_id INTEGER,
                 UNIQUE(entity_id, alias)
             );
         """)

@@ -79,6 +79,8 @@ def _init_test_db() -> sqlite3.Connection:
             description TEXT,
             category TEXT NOT NULL CHECK (category IN ('choice', 'question', 'initiative', 'request')),
             status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'resolved', 'superseded', 'abandoned')),
+            source_quote TEXT,
+            tags TEXT,
             created_at TEXT NOT NULL DEFAULT (datetime('now')),
             updated_at TEXT NOT NULL DEFAULT (datetime('now')),
             UNIQUE(civ_id, source_turn_id, title)
@@ -100,6 +102,7 @@ def _init_test_db() -> sqlite3.Connection:
             resolved_by_turn_id INTEGER NOT NULL REFERENCES turn_turns(id),
             chosen_option_id INTEGER REFERENCES subject_options(id),
             resolution_text TEXT NOT NULL,
+            source_quote TEXT,
             is_libre INTEGER NOT NULL DEFAULT 0,
             confidence REAL NOT NULL DEFAULT 0.0,
             created_at TEXT NOT NULL DEFAULT (datetime('now'))
