@@ -28,6 +28,11 @@ class AppShell extends ConsumerWidget {
     NavigationRailDestination(
       icon: Icon(Icons.hub_outlined),
       selectedIcon: Icon(Icons.hub),
+      label: Text('Relations'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.scatter_plot_outlined),
+      selectedIcon: Icon(Icons.scatter_plot),
       label: Text('Graph'),
     ),
     NavigationRailDestination(
@@ -51,6 +56,7 @@ class AppShell extends ConsumerWidget {
     '/',
     '/entities',
     '/timeline',
+    '/civs/relations',
     '/graph',
     '/subjects',
     '/chat/sessions',
@@ -61,10 +67,11 @@ class AppShell extends ConsumerWidget {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith('/entities')) return 1;
     if (location.startsWith('/timeline')) return 2;
-    if (location.startsWith('/graph')) return 3;
-    if (location.startsWith('/subjects')) return 4;
-    if (location.startsWith('/chat')) return 5;  // matches /chat, /chat/sessions, etc.
-    if (location.startsWith('/settings')) return 6;
+    if (location.startsWith('/civs/relations')) return 3;
+    if (location.startsWith('/graph')) return 4;
+    if (location.startsWith('/subjects')) return 5;
+    if (location.startsWith('/chat')) return 6;
+    if (location.startsWith('/settings')) return 7;
     return 0; // dashboard + /civs/:id
   }
 
@@ -79,8 +86,8 @@ class AppShell extends ConsumerWidget {
           NavigationRail(
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) {
-              // Chat tab: go directly to active session if one is open
-              if (index == 5) {
+              // Chat tab (index 6): go directly to active session if one is open
+              if (index == 6) {
                 final hasSession = ref.read(chatProvider).sessionId != null;
                 context.go(hasSession ? '/chat' : '/chat/sessions');
               } else {

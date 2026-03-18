@@ -47,6 +47,16 @@ class CivDetailScreen extends ConsumerWidget {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go('/'),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.hub_outlined),
+                tooltip: 'Relations de cette civilisation',
+                onPressed: () => context.push(
+                  '/civs/relations',
+                  extra: <String, dynamic>{'focusCivId': civId},
+                ),
+              ),
+            ],
           ),
           body: NotesSideRail(
             attachment: NoteAttachment.civ,

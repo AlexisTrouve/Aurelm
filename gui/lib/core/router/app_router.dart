@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../screens/dashboard/dashboard_screen.dart';
 import '../../screens/civilization/civ_detail_screen.dart';
 import '../../screens/civilization/civ_alias_resolver_screen.dart';
+import '../../screens/civilization/civ_relations_screen.dart';
+import '../../screens/civilization/civ_relation_detail_screen.dart';
 import '../../screens/entities/entity_browser_screen.dart';
 import '../../screens/entities/entity_detail_screen.dart';
 import '../../screens/entities/disabled_entities_screen.dart';
@@ -35,6 +37,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
               child: DashboardScreen(),
             ),
+          ),
+          GoRoute(
+            path: '/civs/relations',
+            pageBuilder: (context, state) {
+              // Optional focusCivId — highlights a specific civ in the graph
+              final extra = state.extra as Map<String, dynamic>?;
+              final focusCivId = extra?['focusCivId'] as int?;
+              return NoTransitionPage(
+                child: CivRelationsScreen(focusCivId: focusCivId),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/civs/relations/:id',
+            pageBuilder: (context, state) {
+              final id = int.parse(state.pathParameters['id']!);
+              return NoTransitionPage(
+                child: CivRelationDetailScreen(relationId: id),
+              );
+            },
           ),
           GoRoute(
             path: '/civs/alias-resolver',

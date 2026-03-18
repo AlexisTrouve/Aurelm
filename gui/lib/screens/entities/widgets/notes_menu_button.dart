@@ -55,24 +55,16 @@ class _NotesSideRailState extends ConsumerState<NotesSideRail> {
     final cs = Theme.of(context).colorScheme;
     final railW = _collapsed ? _kCollapsedWidth : _kRailWidth;
 
-    return Stack(
-      clipBehavior: Clip.none,
+    // Row-based layout — gives the main content bounded height constraints
+    // (Stack + AnimatedPadding caused unbounded height → SingleChildScrollView
+    // rendered at intrinsic size 0 → invisible body content).
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Main content — pushed right by current rail width
-        AnimatedPadding(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(left: railW),
-          child: widget.child,
-        ),
-
         // Rail background strip
-        AnimatedPositioned(
+        AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          left: 0,
-          top: 0,
-          bottom: 0,
           width: railW,
           child: Container(
             decoration: BoxDecoration(
@@ -81,52 +73,56 @@ class _NotesSideRailState extends ConsumerState<NotesSideRail> {
                 right: BorderSide(color: cs.outlineVariant, width: 0.5),
               ),
             ),
-            // Toggle button at the top of the rail
-            alignment: Alignment.topCenter,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: SizedBox(
-                width: _collapsed ? 18 : 24,
-                height: 18,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 14,
-                  icon: Icon(
-                    _collapsed ? Icons.chevron_right : Icons.chevron_left,
-                    color: cs.onSurfaceVariant,
-                  ),
-                  tooltip: _collapsed ? 'Ouvrir les notes' : 'Réduire',
-                  onPressed: () => setState(() => _collapsed = !_collapsed),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Toggle button at the top
+                Positioned(
+                  top: 2, left: 0, right: 0,
+                  child: Center(child: SizedBox(
+                    width: _collapsed ? 18 : 24,
+                    height: 18,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 14,
+                      icon: Icon(
+                        _collapsed ? Icons.chevron_right : Icons.chevron_left,
+                        color: cs.onSurfaceVariant,
+                      ),
+                      tooltip: _collapsed ? 'Ouvrir les notes' : 'Réduire',
+                      onPressed: () => setState(() => _collapsed = !_collapsed),
+                    ),
+                  )),
                 ),
-              ),
+                // Note tags — only when expanded
+                if (!_collapsed) ...[
+                  for (var i = 0; i < notes.length; i++)
+                    Positioned(
+                      left: 4,
+                      top: _kTopPad + 20 + i * (_kTagHeight + _kTagGap),
+                      child: _NoteRailTag(
+                        note: notes[i],
+                        collapsedWidth: _kRailWidth - 8,
+                        onTap: () => showNoteViewWindow(context, notes[i]),
+                      ),
+                    ),
+                  Positioned(
+                    left: 4,
+                    top: _kTopPad + 20 + notes.length * (_kTagHeight + _kTagGap),
+                    child: _AddRailButton(
+                      width: _kRailWidth - 8,
+                      onTap: () => showNoteAddWindow(
+                          context, widget.attachment, widget.attachmentId),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
 
-        // Note tags — only when expanded
-        if (!_collapsed) ...[
-          for (var i = 0; i < notes.length; i++)
-            Positioned(
-              left: 4,
-              top: _kTopPad + 20 + i * (_kTagHeight + _kTagGap),
-              child: _NoteRailTag(
-                note: notes[i],
-                collapsedWidth: _kRailWidth - 8,
-                onTap: () => showNoteViewWindow(context, notes[i]),
-              ),
-            ),
-
-          // "+" add button at the bottom of tags
-          Positioned(
-            left: 4,
-            top: _kTopPad + 20 + notes.length * (_kTagHeight + _kTagGap),
-            child: _AddRailButton(
-              width: _kRailWidth - 8,
-              onTap: () => showNoteAddWindow(
-                  context, widget.attachment, widget.attachmentId),
-            ),
-          ),
-        ],
+        // Main content fills remaining space with bounded constraints
+        Expanded(child: widget.child),
       ],
     );
   }

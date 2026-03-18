@@ -267,19 +267,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
           return _buildEditScaffold(context, t);
         }
 
-        // Ctrl+F intercepted at scaffold level — works when search bar is not focused
-        return Focus(
-          focusNode: _scaffoldFocus,
-          autofocus: !_searchVisible, // don't steal focus from pre-filled search
-          onKeyEvent: (_, event) {
-            if (event is KeyDownEvent &&
-                event.logicalKey == LogicalKeyboardKey.keyF &&
-                HardwareKeyboard.instance.isControlPressed) {
-              _toggleSearch();
-              return KeyEventResult.handled;
-            }
-            return KeyEventResult.ignored;
-          },
+        return SelectionArea(
           child: Scaffold(
           appBar: AppBar(
             toolbarHeight: 44,
@@ -375,7 +363,9 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                 if (t.summary != null && t.summary!.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   Row(children: [
-                    const SectionHeader(title: 'Résumé'),
+                    // Expanded required: SectionHeader has a Spacer internally and
+                    // needs a bounded width constraint from its Row parent.
+                    Expanded(child: SectionHeader(title: 'Résumé')),
                     if (gmFields.contains('summary'))
                       _TurnGmLockBadge(
                         onTap: () => _unlockField('summary'),
@@ -495,7 +485,7 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
             ),
           ),
           ), // NotesSideRail
-        )); // closes Focus + Scaffold
+        )); // closes SelectionArea + Scaffold
       },
     );
   }
@@ -831,7 +821,7 @@ class _TurnTagsSection extends StatelessWidget {
       children: [
         const SizedBox(height: 20),
         Row(children: [
-          const SectionHeader(title: 'Analyse'),
+          Expanded(child: SectionHeader(title: 'Analyse')),
           if (gmFields.contains('thematic_tags'))
             _TurnGmLockBadge(onTap: () => onUnlock('thematic_tags')),
         ]),

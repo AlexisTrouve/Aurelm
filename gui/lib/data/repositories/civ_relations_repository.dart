@@ -4,6 +4,21 @@ import 'package:drift/drift.dart';
 
 import '../database.dart';
 
+/// A single civ_mention row — one turn where source mentioned target.
+class CivRelationMention {
+  final int id;
+  final int turnId;
+  final int turnNumber;
+  final String context;
+
+  const CivRelationMention({
+    required this.id,
+    required this.turnId,
+    required this.turnNumber,
+    required this.context,
+  });
+}
+
 /// A single unilateral inter-civ relationship: how [sourceCivId] perceives [targetCivId].
 /// Populated by the pipeline's civ_relation_profiler (LLM-based).
 class CivRelation {
@@ -48,6 +63,25 @@ class CivRelationsRepository {
 
   const CivRelationsRepository(this._db);
 
+  /// Reactive stream of ALL inter-civ relation rows (global view).
+  Stream<List<CivRelation>> watchAllRelations() {
+    return _db.customSelect(
+      '''SELECT r.id, r.source_civ_id, r.target_civ_id,
+                r.opinion, r.description, r.treaties,
+                ca.name AS source_name, cb.name AS target_name,
+                t.turn_number AS last_turn,
+                (SELECT COUNT(*) FROM civ_mentions m
+                 WHERE m.source_civ_id = r.source_civ_id
+                   AND m.target_civ_id = r.target_civ_id) AS mention_count
+         FROM civ_relations r
+         JOIN civ_civilizations ca ON ca.id = r.source_civ_id
+         JOIN civ_civilizations cb ON cb.id = r.target_civ_id
+         LEFT JOIN turn_turns t ON t.id = r.last_turn_id
+         ORDER BY r.updated_at DESC''',
+      readsFrom: {},
+    ).watch().map((rows) => rows.map((r) => _rowToRelation(r)).toList());
+  }
+
   /// Reactive stream of all [CivRelation] rows involving [civId]
   /// (either as source or target).
   Stream<List<CivRelation>> watchRelations(int civId) {
@@ -70,6 +104,31 @@ class CivRelationsRepository {
     ).watch().map(
           (rows) => rows.map((r) => _rowToRelation(r)).toList(),
         );
+  }
+
+  /// Turn-by-turn mentions for a specific source→target pair.
+  Future<List<CivRelationMention>> loadMentions(
+      int sourceCivId, int targetCivId) async {
+    final rows = await _db.customSelect(
+      '''SELECT m.id, m.turn_id, m.context,
+                t.turn_number
+         FROM civ_mentions m
+         JOIN turn_turns t ON t.id = m.turn_id
+         WHERE m.source_civ_id = ? AND m.target_civ_id = ?
+         ORDER BY t.turn_number ASC''',
+      variables: [
+        Variable.withInt(sourceCivId),
+        Variable.withInt(targetCivId),
+      ],
+    ).get();
+    return rows
+        .map((r) => CivRelationMention(
+              id: r.read<int>('id'),
+              turnId: r.read<int>('turn_id'),
+              turnNumber: r.read<int>('turn_number'),
+              context: r.read<String?>('context') ?? '',
+            ))
+        .toList();
   }
 
   CivRelation _rowToRelation(dynamic r) {

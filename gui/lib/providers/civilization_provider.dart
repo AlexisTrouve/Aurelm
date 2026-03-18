@@ -18,6 +18,13 @@ final civDetailProvider =
   return db.civilizationDao.watchCivWithStats(civId);
 });
 
+/// All inter-civ relations — global map view.
+final allCivRelationsProvider = StreamProvider<List<CivRelation>>((ref) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return CivRelationsRepository(db).watchAllRelations();
+});
+
 /// Reactive list of inter-civ relations for a given civ (both outgoing and incoming).
 final civRelationsProvider =
     StreamProvider.family<List<CivRelation>, int>((ref, civId) {
