@@ -46,27 +46,49 @@ class EntityFilterBar extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
+                    // "All types" chip — neutral style
                     FilterChip(
                       label: const Text('All types'),
+                      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
                       selected: filters.entityType == null,
                       onSelected: (_) => ref
                           .read(entityFilterProvider.notifier)
                           .setEntityType(null),
                     ),
                     const SizedBox(width: 4),
-                    ...AppConstants.entityTypes.map((type) => Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: FilterChip(
-                            label: Text(type),
-                            selected: filters.entityType == type,
-                            selectedColor:
-                                AppColors.entityColor(type).withValues(alpha: 0.2),
-                            onSelected: (_) => ref
-                                .read(entityFilterProvider.notifier)
-                                .setEntityType(
-                                    filters.entityType == type ? null : type),
-                          ),
-                        )),
+                    // Per-type chips: always colored like EntityTypeBadge
+                    ...AppConstants.entityTypes.map((type) {
+                      final color = AppColors.entityColor(type);
+                      final isSelected = filters.entityType == type;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: FilterChip(
+                          label: Text(type),
+                          labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected ? Colors.white : color,
+                              ),
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          selected: isSelected,
+                          backgroundColor: color.withValues(alpha: 0.1),
+                          selectedColor: color.withValues(alpha: 0.85),
+                          checkmarkColor: Colors.white,
+                          side: BorderSide(color: color.withValues(alpha: 0.4)),
+                          onSelected: (_) => ref
+                              .read(entityFilterProvider.notifier)
+                              .setEntityType(isSelected ? null : type),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
