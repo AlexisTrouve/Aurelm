@@ -56,16 +56,27 @@ String injectLoreLinks(String text, Map<String, LoreLink> linkMap) {
 
   String result = text;
 
+  // --- Dedicated pass for #N subject references ---
+  // fuzzyRegex() is unreliable for '#'-prefixed tokens due to lookbehind
+  // interactions with the unicode word-boundary pattern. Use a direct regex.
+  final subjectNumRe = RegExp(r'#(\d+)', unicode: true);
+  result = result.replaceAllMapped(subjectNumRe, (match) {
+    final start = match.start;
+    if (start > 0 && result[start - 1] == '[') return match.group(0)!;
+    if (start > 0 && result[start - 1] == '(') return match.group(0)!;
+    if (_isInsideMarkdownLink(result, start)) return match.group(0)!;
+    final key = '#${match.group(1)}';
+    final link = linkMap[key];
+    if (link == null) return match.group(0)!; // no subject with this id
+    return '[${match.group(0)}](lore://subject/${link.id})';
+  });
+
   for (final entry in linkMap.entries) {
     final name = entry.key;
-    // Skip very short names to avoid noise — but always allow:
-    // - turn refs like "T1", "T5"
-    // - subject refs like "#1", "#18" (hash-prefixed ids)
-    if (name.length < 4 &&
-        entry.value.type != LoreLinkType.turn &&
-        !name.startsWith('#')) {
-      continue;
-    }
+    // Skip very short names to avoid noise — but always allow turn refs like "T1", "T5".
+    // Subject #N refs are already handled above, skip them here.
+    if (name.startsWith('#')) continue;
+    if (name.length < 4 && entry.value.type != LoreLinkType.turn) continue;
 
     final link = entry.value;
     final regex = fuzzyRegex(name);
