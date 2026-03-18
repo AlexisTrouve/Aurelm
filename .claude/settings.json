@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -c \"import sys,json; cmd=json.load(sys.stdin).get('tool_input',{}).get('command',''); exit(0 if 'git commit' in cmd else 1)\" && git add -A 2>/dev/null || true",
+            "command": "python -c \"import sys,json; cmd=json.load(sys.stdin).get('tool_input',{}).get('command',''); exit(0 if 'git commit' in cmd else 1)\" && cd /c/Users/alexi/Documents/projects/Aurelm && git add -A 2>/dev/null || true",
             "statusMessage": "git add -A avant commit..."
           }
         ]
