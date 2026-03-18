@@ -37,11 +37,6 @@ class DashboardScreen extends ConsumerWidget {
         appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
-          IconButton(
-            tooltip: 'Relations inter-civilisations',
-            icon: const Icon(Icons.hub_outlined),
-            onPressed: () => context.push('/civs/relations'),
-          ),
           _AliasResolverButton(),
         ],
       ),

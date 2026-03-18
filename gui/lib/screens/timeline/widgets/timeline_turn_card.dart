@@ -84,8 +84,7 @@ class _TurnCard extends StatelessWidget {
         ? (jsonDecode(t.thematicTags!) as List).cast<String>()
         : <String>[];
 
-    final showTags =
-        isMj && (tags.isNotEmpty || t.techEra != null || t.fantasyLevel != null);
+    final showTags = isMj && tags.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 2),
@@ -207,10 +206,6 @@ class _TurnCard extends StatelessWidget {
                   spacing: 4,
                   runSpacing: 2,
                   children: [
-                    if (t.techEra != null)
-                      _TagChip(label: t.techEra!, color: Colors.teal),
-                    if (t.fantasyLevel != null)
-                      _TagChip(label: t.fantasyLevel!, color: Colors.deepPurple),
                     ...tags.map((tag) => _TagChip(label: tag, color: _tagColor(tag))),
                   ],
                 ),

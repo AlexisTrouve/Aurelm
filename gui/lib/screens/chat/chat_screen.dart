@@ -419,12 +419,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Scaffold(
         drawer: _buildSessionsDrawer(context, chatState),
         appBar: AppBar(
-        // Back button to sessions list — shown only when a session is open
+        // When a session is open: back button + hamburger to open sessions drawer.
+        // leadingWidth widened to fit both icons side by side.
+        leadingWidth: chatState.sessionId != null ? 96 : 56,
         leading: chatState.sessionId != null
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Liste des sessions',
-                onPressed: () => context.go('/chat/sessions'),
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'Liste des sessions',
+                    onPressed: () => context.go('/chat/sessions'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.menu),
+                    tooltip: 'Sessions',
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                  ),
+                ],
               )
             : null,
         title: Row(
