@@ -390,8 +390,12 @@ def build_entity_profiles(
                 print(f"       -> '{name}': description locked by GM, skipping")
 
             if "tags" not in gm_fields:
-                update_cols.insert(len(update_cols) - 1, "tags = ?")
-                update_vals.insert(len(update_vals) - 1, tags_json)
+                # Insert tags at the same index in both cols and vals so they align.
+                # Using len(update_cols) - 1 for cols but len(update_vals) - 1 for vals
+                # would give different positions (vals has one less element at this point).
+                pos = len(update_cols) - 1
+                update_cols.insert(pos, "tags = ?")
+                update_vals.insert(pos, tags_json)
             else:
                 print(f"       -> '{name}': tags locked by GM, skipping")
 

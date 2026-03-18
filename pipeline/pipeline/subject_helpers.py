@@ -78,10 +78,12 @@ def insert_subject(
     Uses INSERT OR IGNORE for idempotency (UNIQUE on civ_id, source_turn_id, title).
     """
     import json as _json
+    from datetime import datetime
+    now = datetime.now().isoformat()
     cursor = conn.execute(
         """INSERT OR IGNORE INTO subject_subjects
-           (civ_id, source_turn_id, direction, title, description, category, source_quote, tags)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+           (civ_id, source_turn_id, direction, title, description, category, source_quote, tags, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             civ_id,
             turn_id,
@@ -91,6 +93,8 @@ def insert_subject(
             subject["category"],
             subject.get("source_quote", ""),
             _json.dumps(subject.get("tags", []), ensure_ascii=False),
+            now,
+            now,
         ),
     )
 
