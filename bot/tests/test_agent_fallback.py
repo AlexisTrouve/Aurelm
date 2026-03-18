@@ -1,4 +1,4 @@
-"""Tests for Agent.answer_streaming — Anthropic→Ollama fallback on 503."""
+"""Tests for Agent.answer_streaming — Anthropic→claude-p fallback."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ def _make_agent_anthropic(tmp_path):
     db = tmp_path / "test.db"
     db.touch()
 
-    # Skip __init__ to avoid real Anthropic/Ollama init
     agent = Agent.__new__(Agent)
     agent.config = MagicMock()
     agent.config.db_path = str(db)
@@ -23,7 +22,6 @@ def _make_agent_anthropic(tmp_path):
     agent._claude_prompt = "System prompt"
     agent._ollama_prompt = OLLAMA_SYSTEM_PROMPT
 
-    # Mock Anthropic client — will raise 503 by default
     mock_client = MagicMock()
     mock_client.messages.create.side_effect = Exception(
         "Error code: 500 - {'error': {'type': 'api_error', 'message': 'HTTP 503'}}"
@@ -34,50 +32,36 @@ def _make_agent_anthropic(tmp_path):
     return agent
 
 
-def _make_ollama_response(text: str) -> MagicMock:
-    """Fake successful Ollama response."""
-    msg = MagicMock()
-    msg.tool_calls = None
-    msg.content = text
-    resp = MagicMock()
-    resp.message = msg
-    resp.prompt_eval_count = 10
-    resp.eval_count = 20
-    return resp
+def _mock_cli_result(text: str, returncode: int = 0) -> MagicMock:
+    """Fake subprocess.run result for claude -p."""
+    r = MagicMock()
+    r.returncode = returncode
+    r.stdout = text
+    r.stderr = ""
+    return r
 
 
 @pytest.mark.asyncio
 async def test_fallback_emits_event_on_503(tmp_path):
-    """503-style error → 'fallback' event emitted + backend switches to ollama."""
+    """503-style error → 'fallback' event + text from claude -p."""
     agent = _make_agent_anthropic(tmp_path)
 
     events = []
-    ollama_resp = _make_ollama_response("Réponse de secours depuis Ollama")
-
-    with patch("ollama.chat", return_value=ollama_resp):
+    with patch("subprocess.run", return_value=_mock_cli_result("Réponse de secours claude -p")):
         async for event_type, data in agent.answer_streaming([], "question de test"):
             events.append((event_type, data))
-            if event_type == "text":
-                break  # stop after final response
 
     types = [e[0] for e in events]
 
-    # Fallback event must be present
-    assert "fallback" in types, f"Expected 'fallback' event, got: {types}"
+    assert "fallback" in types
+    assert "text" in types
 
-    # Backend permanently switched to ollama
-    assert agent._backend == "ollama"
-
-    # Ollama model initialised
-    assert hasattr(agent, "_ollama_model")
-
-    # Fallback reason contains the error
     fallback_data = next(d for t, d in events if t == "fallback")
     assert "503" in fallback_data["reason"]
-    assert fallback_data["backend"] == "ollama"
+    assert fallback_data["backend"] == "claude-cli"
 
-    # Final text response arrived (from Ollama)
-    assert "text" in types
+    text_data = next(d for t, d in events if t == "text")
+    assert "claude -p" in text_data["content"] or "secours" in text_data["content"]
 
 
 @pytest.mark.asyncio
@@ -96,7 +80,6 @@ async def test_no_fallback_on_clean_anthropic(tmp_path):
     agent._claude_prompt = "System"
     agent._ollama_prompt = OLLAMA_SYSTEM_PROMPT
 
-    # Successful Anthropic response
     text_block = MagicMock()
     text_block.text = "Bonne réponse"
     text_block.type = "text"
@@ -120,12 +103,12 @@ async def test_no_fallback_on_clean_anthropic(tmp_path):
     types = [e[0] for e in events]
     assert "fallback" not in types
     assert "text" in types
-    assert agent._backend == "anthropic"  # unchanged
+    assert agent._backend == "anthropic"
 
 
 @pytest.mark.asyncio
 async def test_any_error_triggers_fallback(tmp_path):
-    """Any Anthropic error (including 401 auth) should fall back to Ollama."""
+    """Any Anthropic error (including 401) falls back to claude -p."""
     from bot.agent import Agent, OLLAMA_SYSTEM_PROMPT
 
     db = tmp_path / "test.db"
@@ -141,19 +124,33 @@ async def test_any_error_triggers_fallback(tmp_path):
     agent._anthropic_tools = []
 
     mock_client = MagicMock()
-    # 401 auth error — should also trigger fallback
     mock_client.messages.create.side_effect = Exception("Error code: 401 Unauthorized")
     agent._anthropic = mock_client
 
     events = []
-    ollama_resp = _make_ollama_response("Réponse locale malgré 401")
-    with patch("ollama.chat", return_value=ollama_resp):
+    with patch("subprocess.run", return_value=_mock_cli_result("Réponse locale malgré 401")):
         async for event_type, data in agent.answer_streaming([], "question"):
             events.append((event_type, data))
-            if event_type == "text":
-                break
 
     types = [e[0] for e in events]
-    assert "fallback" in types, "Tout type d'erreur doit déclencher le fallback"
-    assert agent._backend == "ollama"
-    assert "text" in types  # réponse Ollama reçue
+    assert "fallback" in types
+    assert "text" in types
+    # Backend stays anthropic — we don't switch permanently (no more "continue" to ollama)
+    assert agent._backend == "anthropic"
+
+
+@pytest.mark.asyncio
+async def test_fallback_cli_also_fails(tmp_path):
+    """If claude -p also fails, response contains error message (no crash)."""
+    agent = _make_agent_anthropic(tmp_path)
+
+    events = []
+    with patch("subprocess.run", side_effect=FileNotFoundError("claude not found")):
+        async for event_type, data in agent.answer_streaming([], "question"):
+            events.append((event_type, data))
+
+    types = [e[0] for e in events]
+    assert "fallback" in types
+    assert "text" in types  # graceful error message, no exception propagation
+    text_data = next(d for t, d in events if t == "text")
+    assert "indisponible" in text_data["content"]

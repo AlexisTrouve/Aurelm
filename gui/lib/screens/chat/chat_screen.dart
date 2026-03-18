@@ -198,7 +198,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   Icon(Icons.swap_horiz, color: Colors.white, size: 16),
                   SizedBox(width: 8),
                   Text(
-                    'API indisponible — bascule sur Ollama local',
+                    'API indisponible — bascule sur claude -p',
                     style: TextStyle(fontSize: 12),
                   ),
                 ],

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
+import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
@@ -278,6 +279,30 @@ def _run_tool(
         conn.close()
 
 
+async def _run_claude_cli(prompt: str, timeout: int = 120) -> str:
+    """Run `claude -p <prompt>` as a fallback when the Anthropic API is down.
+
+    Uses the Claude Code CLI which has its own auth — independent from the API key.
+    Returns the response text, or an error message if the CLI also fails.
+    """
+    import asyncio
+
+    try:
+        result = await asyncio.to_thread(
+            subprocess.run,
+            ["claude", "-p", prompt],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+        err = (result.stderr or "unknown error").strip()[:200]
+        return f"*(Fallback claude -p indisponible : {err})*"
+    except Exception as exc:
+        return f"*(Fallback claude -p indisponible : {exc})*"
+
+
 class Agent:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
@@ -520,14 +545,12 @@ class Agent:
                     )
                 except Exception as _api_exc:
                     err_str = str(_api_exc)
-                    # Any Anthropic API error → fall back to Ollama.
-                    # Better to get a local answer than nothing.
-                    log.warning("Anthropic API error, falling back to Ollama: %s", err_str[:80])
-                    if not hasattr(self, "_ollama_model"):
-                        self._init_ollama()
-                    self._backend = "ollama"
-                    yield ("fallback", {"reason": err_str[:200], "backend": "ollama"})
-                    continue  # retry this round with Ollama backend
+                    # Any Anthropic API error → fall back to `claude -p` (CLI).
+                    log.warning("Anthropic API error, falling back to claude -p: %s", err_str[:80])
+                    yield ("fallback", {"reason": err_str[:200], "backend": "claude-cli"})
+                    cli_response = await _run_claude_cli(new_message)
+                    yield ("text", {"content": cli_response, "tool_calls": []})
+                    return
 
                 # Accumulate real API token usage (for cost tracking, not display)
                 if hasattr(response, "usage") and response.usage:
