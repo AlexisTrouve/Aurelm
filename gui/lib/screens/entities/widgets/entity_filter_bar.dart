@@ -7,7 +7,7 @@ import '../../../providers/entity_provider.dart';
 import '../../../providers/civilization_provider.dart';
 
 /// Semantic tag colors — same vocabulary as pipeline/pipeline/entity_profiler.py.
-Color _entityTagColor(String tag) => switch (tag) {
+Color _tagColor(String tag) => switch (tag) {
       'militaire' => Colors.red,
       'religieux' => Colors.indigo,
       'politique' => Colors.purple,
@@ -23,53 +23,125 @@ Color _entityTagColor(String tag) => switch (tag) {
       _ => Colors.blueGrey,
     };
 
-/// Custom entity-type chip — fixed size, no checkmark animation.
-/// Looks like EntityTypeBadge when unselected, filled when selected.
-class _TypeChip extends StatelessWidget {
+/// Base chip used for every filter pill in this bar.
+/// Fixed size, smooth color transition, no checkmark weirdness.
+class _Chip extends StatelessWidget {
   final String label;
   final Color color;
   final bool selected;
+  final IconData? icon;
   final VoidCallback onTap;
 
-  const _TypeChip({
+  const _Chip({
     required this.label,
     required this.color,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bg = selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.10);
+    final fg = selected ? Colors.white : color;
+    final border = selected ? color : color.withValues(alpha: 0.40);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 140),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.1),
+          color: bg,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? color : color.withValues(alpha: 0.4),
-            width: selected ? 1.5 : 1,
-          ),
+          border: Border.all(color: border, width: selected ? 1.5 : 1),
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : color,
-              ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 11, color: fg),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: fg,
+                  ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Two-row filter bar for the entity browser:
-/// Row 1 — entity type chips + "Cachées" toggle + civ dropdown
-/// Row 2 — semantic tag chips (from DB, colored)
+/// Compact civ selector — styled like a _Chip, opens a popup menu.
+class _CivChip extends StatelessWidget {
+  final int? selectedCivId;
+  final List<({int id, String name})> civs;
+  final ValueChanged<int?> onChanged;
+
+  const _CivChip({
+    required this.selectedCivId,
+    required this.civs,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = selectedCivId != null;
+    final label = selected
+        ? civs.firstWhere((c) => c.id == selectedCivId).name
+        : 'All civs';
+    final color = Theme.of(context).colorScheme.outline;
+    final bg = selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.10);
+    final fg = selected ? Colors.white : color;
+    final border = selected ? color : color.withValues(alpha: 0.40);
+
+    return PopupMenuButton<int?>(
+      tooltip: 'Filter by civilization',
+      onSelected: onChanged,
+      itemBuilder: (_) => [
+        const PopupMenuItem<int?>(value: null, child: Text('All civs')),
+        ...civs.map((c) => PopupMenuItem<int?>(value: c.id, child: Text(c.name))),
+      ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: border, width: selected ? 1.5 : 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.public, size: 11, color: fg),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: fg,
+                  ),
+            ),
+            const SizedBox(width: 3),
+            Icon(Icons.arrow_drop_down, size: 13, color: fg),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Two-row filter bar for the entity browser.
+/// Row 1 — entity type pills + Cachées / Favoris / Civ controls
+/// Row 2 — semantic tag pills (DB-driven, colored)
 class EntityFilterBar extends ConsumerWidget {
   const EntityFilterBar({super.key});
 
@@ -78,38 +150,36 @@ class EntityFilterBar extends ConsumerWidget {
     final filters = ref.watch(entityFilterProvider);
     final civs = ref.watch(civListProvider);
     final tagsAsync = ref.watch(entityTagsProvider);
-    final neutralColor = Theme.of(context).colorScheme.outline;
+    final neutral = Theme.of(context).colorScheme.outline;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- Row 1: type chips + controls ---
+        // ── Row 1 ──────────────────────────────────────────────────────────
         Row(
           children: [
+            // Type chips — scrollable
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    // "All types" — neutral color
-                    _TypeChip(
+                    _Chip(
                       label: 'All types',
-                      color: neutralColor,
+                      color: neutral,
                       selected: filters.entityType == null,
                       onTap: () => ref
                           .read(entityFilterProvider.notifier)
                           .setEntityType(null),
                     ),
                     const SizedBox(width: 4),
-                    // Per-type chips — colored like EntityTypeBadge
                     ...AppConstants.entityTypes.map((type) {
-                      final color = AppColors.entityColor(type);
                       final isSelected = filters.entityType == type;
                       return Padding(
                         padding: const EdgeInsets.only(right: 4),
-                        child: _TypeChip(
+                        child: _Chip(
                           label: type,
-                          color: color,
+                          color: AppColors.entityColor(type),
                           selected: isSelected,
                           onTap: () => ref
                               .read(entityFilterProvider.notifier)
@@ -124,84 +194,70 @@ class EntityFilterBar extends ConsumerWidget {
 
             const SizedBox(width: 8),
 
-            // Toggle hidden
-            Tooltip(
-              message: filters.showHidden
-                  ? 'Masquer les entités cachées'
-                  : 'Afficher les entités cachées',
-              child: FilterChip(
-                avatar: const Icon(Icons.visibility_off, size: 16),
-                label: const Text('Cachées'),
-                selected: filters.showHidden,
-                onSelected: (_) =>
-                    ref.read(entityFilterProvider.notifier).toggleShowHidden(),
-              ),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Favorites filter
-            FilterChip(
-              avatar: const Icon(Icons.star, size: 14, color: Colors.amber),
-              label: const Text('Favoris'),
-              selected: filters.favoritesOnly,
-              selectedColor: Colors.amber.withValues(alpha: 0.2),
-              onSelected: (v) => ref
-                  .read(entityFilterProvider.notifier)
-                  .setFavoritesOnly(v),
-            ),
-
-            const SizedBox(width: 8),
-
-            // Civ dropdown
-            civs.when(
-              loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (civList) => DropdownButton<int?>(
-                hint: const Text('All civs'),
-                value: filters.civId,
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('All civs')),
-                  ...civList.map((c) => DropdownMenuItem(
-                        value: c.civ.id,
-                        child: Text(c.civ.name),
-                      )),
-                ],
-                onChanged: (id) =>
-                    ref.read(entityFilterProvider.notifier).setCivId(id),
-              ),
+            // Controls — fixed right side
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: filters.showHidden
+                      ? 'Masquer les entités cachées'
+                      : 'Afficher les entités cachées',
+                  child: _Chip(
+                    label: 'Cachées',
+                    icon: Icons.visibility_off,
+                    color: neutral,
+                    selected: filters.showHidden,
+                    onTap: () => ref
+                        .read(entityFilterProvider.notifier)
+                        .toggleShowHidden(),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                _Chip(
+                  label: 'Favoris',
+                  icon: Icons.star,
+                  color: Colors.amber,
+                  selected: filters.favoritesOnly,
+                  onTap: () => ref
+                      .read(entityFilterProvider.notifier)
+                      .setFavoritesOnly(!filters.favoritesOnly),
+                ),
+                const SizedBox(width: 4),
+                civs.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (civList) => _CivChip(
+                    selectedCivId: filters.civId,
+                    civs: civList
+                        .map((c) => (id: c.civ.id, name: c.civ.name))
+                        .toList(),
+                    onChanged: (id) =>
+                        ref.read(entityFilterProvider.notifier).setCivId(id),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
 
-        // --- Row 2: semantic tag chips (only if tags exist in DB) ---
+        // ── Row 2: semantic tag pills ──────────────────────────────────────
         tagsAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
           data: (tags) {
             if (tags.isEmpty) return const SizedBox.shrink();
             return Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 6),
               child: Wrap(
                 spacing: 4,
                 runSpacing: 4,
                 children: tags.map((tag) {
                   final isSelected = filters.selectedTag == tag;
-                  final color = _entityTagColor(tag);
-                  return FilterChip(
-                    label: Text(tag),
-                    labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          fontSize: 10,
-                          color: isSelected ? Colors.white : color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                  return _Chip(
+                    label: tag,
+                    color: _tagColor(tag),
                     selected: isSelected,
-                    selectedColor: color.withValues(alpha: 0.8),
-                    checkmarkColor: Colors.white,
-                    side: BorderSide(color: color.withValues(alpha: 0.5)),
-                    backgroundColor: color.withValues(alpha: 0.08),
-                    onSelected: (_) => ref
+                    onTap: () => ref
                         .read(entityFilterProvider.notifier)
                         .setSelectedTag(isSelected ? null : tag),
                   );
