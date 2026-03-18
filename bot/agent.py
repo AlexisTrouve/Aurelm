@@ -520,17 +520,14 @@ class Agent:
                     )
                 except Exception as _api_exc:
                     err_str = str(_api_exc)
-                    # Transient Anthropic errors (503 overloaded, 500 internal) → fall back to Ollama
-                    if any(code in err_str for code in ["503", "500", "502", "529", "overloaded"]):
-                        log.warning("Anthropic API error, falling back to Ollama: %s", err_str[:80])
-                        if not hasattr(self, "_ollama_model"):
-                            self._init_ollama()
-                        self._backend = "ollama"
-                        yield ("fallback", {"reason": err_str[:200], "backend": "ollama"})
-                        continue  # retry this round with Ollama backend
-                    # Non-transient error — surface it
-                    yield ("text", {"content": f"Erreur API: {_api_exc}", "tool_calls": collected_tool_calls})
-                    return
+                    # Any Anthropic API error → fall back to Ollama.
+                    # Better to get a local answer than nothing.
+                    log.warning("Anthropic API error, falling back to Ollama: %s", err_str[:80])
+                    if not hasattr(self, "_ollama_model"):
+                        self._init_ollama()
+                    self._backend = "ollama"
+                    yield ("fallback", {"reason": err_str[:200], "backend": "ollama"})
+                    continue  # retry this round with Ollama backend
 
                 # Accumulate real API token usage (for cost tracking, not display)
                 if hasattr(response, "usage") and response.usage:
