@@ -850,6 +850,7 @@ def _run_subject_extraction(
                     "description": subj.description,
                     "category": subj.category,
                     "source_quote": subj.source_quote,
+                    "tags": subj.tags,
                     "options": [
                         {
                             "number": opt.number,
@@ -899,6 +900,7 @@ def _run_subject_extraction(
                         "description": subj.description,
                         "category": subj.category,
                         "source_quote": subj.source_quote,
+                        "tags": subj.tags,
                         "options": [],
                     }
                     insert_subject(conn, subj_dict, civ_id, turn_id)
