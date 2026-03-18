@@ -67,19 +67,20 @@ final loreLinksProvider = FutureProvider<Map<String, LoreLink>>((ref) async {
   }
 
   // --- Subjects (open + resolved) ---
+  // Linked by title AND by "#N" (subject id shorthand used by the agent).
   final subjects = await (db.select(db.subjectSubjects)
         ..where((s) =>
             s.status.isIn(const ['open', 'resolved'])))
       .get();
   for (final s in subjects) {
-    map.putIfAbsent(
-      s.title,
-      () => LoreLink(
-        id: s.id,
-        type: LoreLinkType.subject,
-        route: '/subjects/${s.id}',
-      ),
+    final link = LoreLink(
+      id: s.id,
+      type: LoreLinkType.subject,
+      route: '/subjects/${s.id}',
     );
+    map.putIfAbsent(s.title, () => link);
+    // "#18" format — agent often references subjects this way
+    map.putIfAbsent('#${s.id}', () => link);
   }
 
   // --- Turns: "Tour N" and "T0N" patterns ---

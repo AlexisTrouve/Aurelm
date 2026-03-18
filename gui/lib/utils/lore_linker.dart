@@ -58,9 +58,14 @@ String injectLoreLinks(String text, Map<String, LoreLink> linkMap) {
 
   for (final entry in linkMap.entries) {
     final name = entry.key;
-    // Skip very short names to avoid noise — but always allow turn refs
-    // like "T1", "T5" which are intentionally short.
-    if (name.length < 4 && entry.value.type != LoreLinkType.turn) continue;
+    // Skip very short names to avoid noise — but always allow:
+    // - turn refs like "T1", "T5"
+    // - subject refs like "#1", "#18" (hash-prefixed ids)
+    if (name.length < 4 &&
+        entry.value.type != LoreLinkType.turn &&
+        !name.startsWith('#')) {
+      continue;
+    }
 
     final link = entry.value;
     final regex = fuzzyRegex(name);
@@ -109,10 +114,11 @@ bool _isInsideMarkdownLink(String text, int pos) {
     } else if (ch == '(') {
       if (parenDepth > 0) {
         parenDepth--;
-      } else {
-        // Unmatched '(' — we're inside a link URL
+      } else if (i > 0 && text[i - 1] == ']') {
+        // Unmatched '(' preceded by ']' → this is a Markdown link URL opener
         return true;
       }
+      // Bare '(' in normal text — not a link, ignore it
     }
   }
   return false;
