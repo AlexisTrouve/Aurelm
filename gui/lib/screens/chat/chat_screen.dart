@@ -32,6 +32,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _focusNode = FocusNode();
+  // Key targeting our own Scaffold so openDrawer() doesn't hit the nav shell above.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   /// Files attached to the next message — cleared after send.
   final List<({String name, String content})> _attachments = [];
@@ -417,6 +419,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       BuildContext context, ChatState chatState, bool isOnline) {
     return SelectionArea(
       child: Scaffold(
+        key: _scaffoldKey,
         drawer: _buildSessionsDrawer(context, chatState),
         appBar: AppBar(
         // When a session is open: back button + hamburger to open sessions drawer.
@@ -434,7 +437,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   IconButton(
                     icon: const Icon(Icons.menu),
                     tooltip: 'Sessions',
-                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                   ),
                 ],
               )
