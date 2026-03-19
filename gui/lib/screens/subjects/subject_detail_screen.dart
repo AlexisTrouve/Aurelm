@@ -9,6 +9,7 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../models/subject_with_details.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../core/theme/app_colors.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
 import '../entities/widgets/notes_menu_button.dart';
@@ -364,15 +365,21 @@ class _SubjectDetailStatefulState
               Expanded(
                 child: Wrap(
                   spacing: 6,
-                  children: tags
-                      .map((t) => Chip(
-                            label: Text(t),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
-                            labelStyle: Theme.of(context).textTheme.labelSmall,
-                          ))
-                      .toList(),
+                  runSpacing: 4,
+                  children: tags.map((t) {
+                    final color = AppColors.entityTagColor(t);
+                    return Chip(
+                      label: Text(t),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      backgroundColor: color.withValues(alpha: 0.08),
+                      side: BorderSide(color: color.withValues(alpha: 0.5)),
+                    );
+                  }).toList(),
                 ),
               ),
               if (gmFields.contains('tags'))

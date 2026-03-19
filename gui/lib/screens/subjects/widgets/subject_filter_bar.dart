@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/subject_provider.dart';
 import '../../../providers/civilization_provider.dart';
+import '../../../core/theme/app_colors.dart';
 
 // civListProvider from civilization_provider.dart
 
@@ -81,7 +82,7 @@ class SubjectFilterBar extends ConsumerWidget {
 
         const SizedBox(height: 8),
 
-        // Tag filter chips
+        // Tag filter chips — colored per domain, same palette as entity tags
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
@@ -99,11 +100,12 @@ class SubjectFilterBar extends ConsumerWidget {
                 'militaire', 'politique', 'religieux', 'economique',
                 'culturel', 'social', 'diplomatique', 'technologique', 'mythologique',
               ]) ...[
-                _DirectionChip(
-                  label: tag,
+                _TagChip(
+                  tag: tag,
                   selected: filters.selectedTag == tag,
-                  onSelected: (_) =>
-                      ref.read(subjectFilterProvider.notifier).setTag(tag),
+                  onTap: () => ref
+                      .read(subjectFilterProvider.notifier)
+                      .setTag(filters.selectedTag == tag ? null : tag),
                 ),
                 const SizedBox(width: 4),
               ],
@@ -155,6 +157,44 @@ class SubjectFilterBar extends ConsumerWidget {
           error: (_, __) => const SizedBox.shrink(),
         ),
       ],
+    );
+  }
+}
+
+/// Colored tag filter chip — uses the same color palette as entity tags.
+class _TagChip extends StatelessWidget {
+  final String tag;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TagChip({
+    required this.tag,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppColors.entityTagColor(tag);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? color : color.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          tag,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: selected ? Colors.white : color,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../models/subject_with_details.dart';
 import '../../../providers/favorites_provider.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// A single subject tile in the subjects list.
 class SubjectListTile extends ConsumerWidget {
@@ -102,19 +103,25 @@ class SubjectListTile extends ConsumerWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Wrap(
                           spacing: 4,
-                          children: tags.map((tag) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.blueGrey.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              tag,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Colors.blueGrey.shade300,
+                          children: tags.map((tag) {
+                            final color = AppColors.entityTagColor(tag);
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: color.withValues(alpha: 0.3)),
                               ),
-                            ),
-                          )).toList(),
+                              child: Text(
+                                tag,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: color,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       );
                     }),
