@@ -4329,6 +4329,8 @@ class $SubjectSubjectsTable extends SubjectSubjects
 class SubjectRow extends DataClass implements Insertable<SubjectRow> {
   final int id;
   final int civId;
+
+  /// Nullable: NULL for GM-created subjects not tied to a specific pipeline turn.
   final int? sourceTurnId;
 
   /// 'mj_to_pj' = GM poses a choice; 'pj_to_mj' = player takes an initiative
@@ -4367,8 +4369,8 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['civ_id'] = Variable<int>(civId);
-    if (sourceTurnId != null) {
-      map['source_turn_id'] = Variable<int>(sourceTurnId!);
+    if (!nullToAbsent || sourceTurnId != null) {
+      map['source_turn_id'] = Variable<int>(sourceTurnId);
     }
     map['direction'] = Variable<String>(direction);
     map['title'] = Variable<String>(title);
@@ -4392,7 +4394,7 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       civId: Value(civId),
       sourceTurnId: sourceTurnId == null && nullToAbsent
           ? const Value.absent()
-          : Value<int?>(sourceTurnId),
+          : Value(sourceTurnId),
       direction: Value(direction),
       title: Value(title),
       description: description == null && nullToAbsent
@@ -4462,7 +4464,8 @@ class SubjectRow extends DataClass implements Insertable<SubjectRow> {
       SubjectRow(
         id: id ?? this.id,
         civId: civId ?? this.civId,
-        sourceTurnId: sourceTurnId.present ? sourceTurnId.value : this.sourceTurnId,
+        sourceTurnId:
+            sourceTurnId.present ? sourceTurnId.value : this.sourceTurnId,
         direction: direction ?? this.direction,
         title: title ?? this.title,
         description: description.present ? description.value : this.description,
@@ -4564,7 +4567,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   SubjectSubjectsCompanion.insert({
     this.id = const Value.absent(),
     required int civId,
-    int? sourceTurnId,
+    this.sourceTurnId = const Value.absent(),
     required String direction,
     required String title,
     this.description = const Value.absent(),
@@ -4575,7 +4578,6 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
     required String createdAt,
     required String updatedAt,
   })  : civId = Value(civId),
-        sourceTurnId = Value<int?>(sourceTurnId),
         direction = Value(direction),
         title = Value(title),
         category = Value(category),
@@ -4614,7 +4616,7 @@ class SubjectSubjectsCompanion extends UpdateCompanion<SubjectRow> {
   SubjectSubjectsCompanion copyWith(
       {Value<int>? id,
       Value<int>? civId,
-      Value<int>? sourceTurnId,
+      Value<int?>? sourceTurnId,
       Value<String>? direction,
       Value<String>? title,
       Value<String?>? description,
@@ -6083,6 +6085,1409 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   }
 }
 
+class $MapMapsTable extends MapMaps with TableInfo<$MapMapsTable, MapRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapMapsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _imagePathMeta =
+      const VerificationMeta('imagePath');
+  @override
+  late final GeneratedColumn<String> imagePath = GeneratedColumn<String>(
+      'image_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _gridTypeMeta =
+      const VerificationMeta('gridType');
+  @override
+  late final GeneratedColumn<String> gridType = GeneratedColumn<String>(
+      'grid_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('hex'));
+  static const VerificationMeta _gridColsMeta =
+      const VerificationMeta('gridCols');
+  @override
+  late final GeneratedColumn<int> gridCols = GeneratedColumn<int>(
+      'grid_cols', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(20));
+  static const VerificationMeta _gridRowsMeta =
+      const VerificationMeta('gridRows');
+  @override
+  late final GeneratedColumn<int> gridRows = GeneratedColumn<int>(
+      'grid_rows', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(15));
+  static const VerificationMeta _parentMapIdMeta =
+      const VerificationMeta('parentMapId');
+  @override
+  late final GeneratedColumn<int> parentMapId = GeneratedColumn<int>(
+      'parent_map_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _parentCellQMeta =
+      const VerificationMeta('parentCellQ');
+  @override
+  late final GeneratedColumn<int> parentCellQ = GeneratedColumn<int>(
+      'parent_cell_q', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _parentCellRMeta =
+      const VerificationMeta('parentCellR');
+  @override
+  late final GeneratedColumn<int> parentCellR = GeneratedColumn<int>(
+      'parent_cell_r', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        imagePath,
+        gridType,
+        gridCols,
+        gridRows,
+        parentMapId,
+        parentCellQ,
+        parentCellR,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_maps';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('image_path')) {
+      context.handle(_imagePathMeta,
+          imagePath.isAcceptableOrUnknown(data['image_path']!, _imagePathMeta));
+    }
+    if (data.containsKey('grid_type')) {
+      context.handle(_gridTypeMeta,
+          gridType.isAcceptableOrUnknown(data['grid_type']!, _gridTypeMeta));
+    }
+    if (data.containsKey('grid_cols')) {
+      context.handle(_gridColsMeta,
+          gridCols.isAcceptableOrUnknown(data['grid_cols']!, _gridColsMeta));
+    }
+    if (data.containsKey('grid_rows')) {
+      context.handle(_gridRowsMeta,
+          gridRows.isAcceptableOrUnknown(data['grid_rows']!, _gridRowsMeta));
+    }
+    if (data.containsKey('parent_map_id')) {
+      context.handle(
+          _parentMapIdMeta,
+          parentMapId.isAcceptableOrUnknown(
+              data['parent_map_id']!, _parentMapIdMeta));
+    }
+    if (data.containsKey('parent_cell_q')) {
+      context.handle(
+          _parentCellQMeta,
+          parentCellQ.isAcceptableOrUnknown(
+              data['parent_cell_q']!, _parentCellQMeta));
+    }
+    if (data.containsKey('parent_cell_r')) {
+      context.handle(
+          _parentCellRMeta,
+          parentCellR.isAcceptableOrUnknown(
+              data['parent_cell_r']!, _parentCellRMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MapRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      imagePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
+      gridType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}grid_type'])!,
+      gridCols: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}grid_cols'])!,
+      gridRows: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}grid_rows'])!,
+      parentMapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_map_id']),
+      parentCellQ: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_cell_q']),
+      parentCellR: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}parent_cell_r']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapMapsTable createAlias(String alias) {
+    return $MapMapsTable(attachedDatabase, alias);
+  }
+}
+
+class MapRow extends DataClass implements Insertable<MapRow> {
+  final int id;
+  final String name;
+  final String? imagePath;
+
+  /// 'hex' (pointy-top) or 'square'
+  final String gridType;
+  final int gridCols;
+  final int gridRows;
+
+  /// Self-reference: this map drills into a cell of parent_map_id.
+  /// Plain IntColumn — Drift doesn't support typed self-referencing FKs.
+  final int? parentMapId;
+  final int? parentCellQ;
+  final int? parentCellR;
+  final String createdAt;
+  const MapRow(
+      {required this.id,
+      required this.name,
+      this.imagePath,
+      required this.gridType,
+      required this.gridCols,
+      required this.gridRows,
+      this.parentMapId,
+      this.parentCellQ,
+      this.parentCellR,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || imagePath != null) {
+      map['image_path'] = Variable<String>(imagePath);
+    }
+    map['grid_type'] = Variable<String>(gridType);
+    map['grid_cols'] = Variable<int>(gridCols);
+    map['grid_rows'] = Variable<int>(gridRows);
+    if (!nullToAbsent || parentMapId != null) {
+      map['parent_map_id'] = Variable<int>(parentMapId);
+    }
+    if (!nullToAbsent || parentCellQ != null) {
+      map['parent_cell_q'] = Variable<int>(parentCellQ);
+    }
+    if (!nullToAbsent || parentCellR != null) {
+      map['parent_cell_r'] = Variable<int>(parentCellR);
+    }
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapMapsCompanion toCompanion(bool nullToAbsent) {
+    return MapMapsCompanion(
+      id: Value(id),
+      name: Value(name),
+      imagePath: imagePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePath),
+      gridType: Value(gridType),
+      gridCols: Value(gridCols),
+      gridRows: Value(gridRows),
+      parentMapId: parentMapId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentMapId),
+      parentCellQ: parentCellQ == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentCellQ),
+      parentCellR: parentCellR == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentCellR),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapRow(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      imagePath: serializer.fromJson<String?>(json['imagePath']),
+      gridType: serializer.fromJson<String>(json['gridType']),
+      gridCols: serializer.fromJson<int>(json['gridCols']),
+      gridRows: serializer.fromJson<int>(json['gridRows']),
+      parentMapId: serializer.fromJson<int?>(json['parentMapId']),
+      parentCellQ: serializer.fromJson<int?>(json['parentCellQ']),
+      parentCellR: serializer.fromJson<int?>(json['parentCellR']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'imagePath': serializer.toJson<String?>(imagePath),
+      'gridType': serializer.toJson<String>(gridType),
+      'gridCols': serializer.toJson<int>(gridCols),
+      'gridRows': serializer.toJson<int>(gridRows),
+      'parentMapId': serializer.toJson<int?>(parentMapId),
+      'parentCellQ': serializer.toJson<int?>(parentCellQ),
+      'parentCellR': serializer.toJson<int?>(parentCellR),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapRow copyWith(
+          {int? id,
+          String? name,
+          Value<String?> imagePath = const Value.absent(),
+          String? gridType,
+          int? gridCols,
+          int? gridRows,
+          Value<int?> parentMapId = const Value.absent(),
+          Value<int?> parentCellQ = const Value.absent(),
+          Value<int?> parentCellR = const Value.absent(),
+          String? createdAt}) =>
+      MapRow(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        imagePath: imagePath.present ? imagePath.value : this.imagePath,
+        gridType: gridType ?? this.gridType,
+        gridCols: gridCols ?? this.gridCols,
+        gridRows: gridRows ?? this.gridRows,
+        parentMapId: parentMapId.present ? parentMapId.value : this.parentMapId,
+        parentCellQ: parentCellQ.present ? parentCellQ.value : this.parentCellQ,
+        parentCellR: parentCellR.present ? parentCellR.value : this.parentCellR,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapRow copyWithCompanion(MapMapsCompanion data) {
+    return MapRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
+      gridType: data.gridType.present ? data.gridType.value : this.gridType,
+      gridCols: data.gridCols.present ? data.gridCols.value : this.gridCols,
+      gridRows: data.gridRows.present ? data.gridRows.value : this.gridRows,
+      parentMapId:
+          data.parentMapId.present ? data.parentMapId.value : this.parentMapId,
+      parentCellQ:
+          data.parentCellQ.present ? data.parentCellQ.value : this.parentCellQ,
+      parentCellR:
+          data.parentCellR.present ? data.parentCellR.value : this.parentCellR,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('gridType: $gridType, ')
+          ..write('gridCols: $gridCols, ')
+          ..write('gridRows: $gridRows, ')
+          ..write('parentMapId: $parentMapId, ')
+          ..write('parentCellQ: $parentCellQ, ')
+          ..write('parentCellR: $parentCellR, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, imagePath, gridType, gridCols,
+      gridRows, parentMapId, parentCellQ, parentCellR, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.imagePath == this.imagePath &&
+          other.gridType == this.gridType &&
+          other.gridCols == this.gridCols &&
+          other.gridRows == this.gridRows &&
+          other.parentMapId == this.parentMapId &&
+          other.parentCellQ == this.parentCellQ &&
+          other.parentCellR == this.parentCellR &&
+          other.createdAt == this.createdAt);
+}
+
+class MapMapsCompanion extends UpdateCompanion<MapRow> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> imagePath;
+  final Value<String> gridType;
+  final Value<int> gridCols;
+  final Value<int> gridRows;
+  final Value<int?> parentMapId;
+  final Value<int?> parentCellQ;
+  final Value<int?> parentCellR;
+  final Value<String> createdAt;
+  const MapMapsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.imagePath = const Value.absent(),
+    this.gridType = const Value.absent(),
+    this.gridCols = const Value.absent(),
+    this.gridRows = const Value.absent(),
+    this.parentMapId = const Value.absent(),
+    this.parentCellQ = const Value.absent(),
+    this.parentCellR = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapMapsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.imagePath = const Value.absent(),
+    this.gridType = const Value.absent(),
+    this.gridCols = const Value.absent(),
+    this.gridRows = const Value.absent(),
+    this.parentMapId = const Value.absent(),
+    this.parentCellQ = const Value.absent(),
+    this.parentCellR = const Value.absent(),
+    required String createdAt,
+  })  : name = Value(name),
+        createdAt = Value(createdAt);
+  static Insertable<MapRow> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? imagePath,
+    Expression<String>? gridType,
+    Expression<int>? gridCols,
+    Expression<int>? gridRows,
+    Expression<int>? parentMapId,
+    Expression<int>? parentCellQ,
+    Expression<int>? parentCellR,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (imagePath != null) 'image_path': imagePath,
+      if (gridType != null) 'grid_type': gridType,
+      if (gridCols != null) 'grid_cols': gridCols,
+      if (gridRows != null) 'grid_rows': gridRows,
+      if (parentMapId != null) 'parent_map_id': parentMapId,
+      if (parentCellQ != null) 'parent_cell_q': parentCellQ,
+      if (parentCellR != null) 'parent_cell_r': parentCellR,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapMapsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String?>? imagePath,
+      Value<String>? gridType,
+      Value<int>? gridCols,
+      Value<int>? gridRows,
+      Value<int?>? parentMapId,
+      Value<int?>? parentCellQ,
+      Value<int?>? parentCellR,
+      Value<String>? createdAt}) {
+    return MapMapsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      imagePath: imagePath ?? this.imagePath,
+      gridType: gridType ?? this.gridType,
+      gridCols: gridCols ?? this.gridCols,
+      gridRows: gridRows ?? this.gridRows,
+      parentMapId: parentMapId ?? this.parentMapId,
+      parentCellQ: parentCellQ ?? this.parentCellQ,
+      parentCellR: parentCellR ?? this.parentCellR,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (imagePath.present) {
+      map['image_path'] = Variable<String>(imagePath.value);
+    }
+    if (gridType.present) {
+      map['grid_type'] = Variable<String>(gridType.value);
+    }
+    if (gridCols.present) {
+      map['grid_cols'] = Variable<int>(gridCols.value);
+    }
+    if (gridRows.present) {
+      map['grid_rows'] = Variable<int>(gridRows.value);
+    }
+    if (parentMapId.present) {
+      map['parent_map_id'] = Variable<int>(parentMapId.value);
+    }
+    if (parentCellQ.present) {
+      map['parent_cell_q'] = Variable<int>(parentCellQ.value);
+    }
+    if (parentCellR.present) {
+      map['parent_cell_r'] = Variable<int>(parentCellR.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapMapsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('imagePath: $imagePath, ')
+          ..write('gridType: $gridType, ')
+          ..write('gridCols: $gridCols, ')
+          ..write('gridRows: $gridRows, ')
+          ..write('parentMapId: $parentMapId, ')
+          ..write('parentCellQ: $parentCellQ, ')
+          ..write('parentCellR: $parentCellR, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MapCellsTable extends MapCells
+    with TableInfo<$MapCellsTable, MapCellRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapCellsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _terrainTypeMeta =
+      const VerificationMeta('terrainType');
+  @override
+  late final GeneratedColumn<String> terrainType = GeneratedColumn<String>(
+      'terrain_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('plain'));
+  static const VerificationMeta _controllingCivIdMeta =
+      const VerificationMeta('controllingCivId');
+  @override
+  late final GeneratedColumn<int> controllingCivId = GeneratedColumn<int>(
+      'controlling_civ_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+      'entity_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+      'label', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _childMapIdMeta =
+      const VerificationMeta('childMapId');
+  @override
+  late final GeneratedColumn<int> childMapId = GeneratedColumn<int>(
+      'child_map_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _metadataMeta =
+      const VerificationMeta('metadata');
+  @override
+  late final GeneratedColumn<String> metadata = GeneratedColumn<String>(
+      'metadata', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        mapId,
+        q,
+        r,
+        terrainType,
+        controllingCivId,
+        entityId,
+        label,
+        childMapId,
+        metadata
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_cells';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapCellRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('terrain_type')) {
+      context.handle(
+          _terrainTypeMeta,
+          terrainType.isAcceptableOrUnknown(
+              data['terrain_type']!, _terrainTypeMeta));
+    }
+    if (data.containsKey('controlling_civ_id')) {
+      context.handle(
+          _controllingCivIdMeta,
+          controllingCivId.isAcceptableOrUnknown(
+              data['controlling_civ_id']!, _controllingCivIdMeta));
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+          _labelMeta, label.isAcceptableOrUnknown(data['label']!, _labelMeta));
+    }
+    if (data.containsKey('child_map_id')) {
+      context.handle(
+          _childMapIdMeta,
+          childMapId.isAcceptableOrUnknown(
+              data['child_map_id']!, _childMapIdMeta));
+    }
+    if (data.containsKey('metadata')) {
+      context.handle(_metadataMeta,
+          metadata.isAcceptableOrUnknown(data['metadata']!, _metadataMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {mapId, q, r};
+  @override
+  MapCellRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapCellRow(
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      terrainType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}terrain_type'])!,
+      controllingCivId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}controlling_civ_id']),
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}entity_id']),
+      label: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}label']),
+      childMapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}child_map_id']),
+      metadata: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metadata']),
+    );
+  }
+
+  @override
+  $MapCellsTable createAlias(String alias) {
+    return $MapCellsTable(attachedDatabase, alias);
+  }
+}
+
+class MapCellRow extends DataClass implements Insertable<MapCellRow> {
+  final int mapId;
+  final int q;
+  final int r;
+
+  /// plain|forest|mountain|river|coast|sea|desert|swamp|ruins
+  final String terrainType;
+  final int? controllingCivId;
+  final int? entityId;
+  final String? label;
+
+  /// FK to a child map — clicking this cell drills into that map.
+  final int? childMapId;
+
+  /// JSON blob for arbitrary extra data.
+  final String? metadata;
+  const MapCellRow(
+      {required this.mapId,
+      required this.q,
+      required this.r,
+      required this.terrainType,
+      this.controllingCivId,
+      this.entityId,
+      this.label,
+      this.childMapId,
+      this.metadata});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    map['terrain_type'] = Variable<String>(terrainType);
+    if (!nullToAbsent || controllingCivId != null) {
+      map['controlling_civ_id'] = Variable<int>(controllingCivId);
+    }
+    if (!nullToAbsent || entityId != null) {
+      map['entity_id'] = Variable<int>(entityId);
+    }
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    if (!nullToAbsent || childMapId != null) {
+      map['child_map_id'] = Variable<int>(childMapId);
+    }
+    if (!nullToAbsent || metadata != null) {
+      map['metadata'] = Variable<String>(metadata);
+    }
+    return map;
+  }
+
+  MapCellsCompanion toCompanion(bool nullToAbsent) {
+    return MapCellsCompanion(
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      terrainType: Value(terrainType),
+      controllingCivId: controllingCivId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(controllingCivId),
+      entityId: entityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityId),
+      label:
+          label == null && nullToAbsent ? const Value.absent() : Value(label),
+      childMapId: childMapId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(childMapId),
+      metadata: metadata == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metadata),
+    );
+  }
+
+  factory MapCellRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapCellRow(
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      terrainType: serializer.fromJson<String>(json['terrainType']),
+      controllingCivId: serializer.fromJson<int?>(json['controllingCivId']),
+      entityId: serializer.fromJson<int?>(json['entityId']),
+      label: serializer.fromJson<String?>(json['label']),
+      childMapId: serializer.fromJson<int?>(json['childMapId']),
+      metadata: serializer.fromJson<String?>(json['metadata']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'terrainType': serializer.toJson<String>(terrainType),
+      'controllingCivId': serializer.toJson<int?>(controllingCivId),
+      'entityId': serializer.toJson<int?>(entityId),
+      'label': serializer.toJson<String?>(label),
+      'childMapId': serializer.toJson<int?>(childMapId),
+      'metadata': serializer.toJson<String?>(metadata),
+    };
+  }
+
+  MapCellRow copyWith(
+          {int? mapId,
+          int? q,
+          int? r,
+          String? terrainType,
+          Value<int?> controllingCivId = const Value.absent(),
+          Value<int?> entityId = const Value.absent(),
+          Value<String?> label = const Value.absent(),
+          Value<int?> childMapId = const Value.absent(),
+          Value<String?> metadata = const Value.absent()}) =>
+      MapCellRow(
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        terrainType: terrainType ?? this.terrainType,
+        controllingCivId: controllingCivId.present
+            ? controllingCivId.value
+            : this.controllingCivId,
+        entityId: entityId.present ? entityId.value : this.entityId,
+        label: label.present ? label.value : this.label,
+        childMapId: childMapId.present ? childMapId.value : this.childMapId,
+        metadata: metadata.present ? metadata.value : this.metadata,
+      );
+  MapCellRow copyWithCompanion(MapCellsCompanion data) {
+    return MapCellRow(
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      terrainType:
+          data.terrainType.present ? data.terrainType.value : this.terrainType,
+      controllingCivId: data.controllingCivId.present
+          ? data.controllingCivId.value
+          : this.controllingCivId,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      label: data.label.present ? data.label.value : this.label,
+      childMapId:
+          data.childMapId.present ? data.childMapId.value : this.childMapId,
+      metadata: data.metadata.present ? data.metadata.value : this.metadata,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellRow(')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('terrainType: $terrainType, ')
+          ..write('controllingCivId: $controllingCivId, ')
+          ..write('entityId: $entityId, ')
+          ..write('label: $label, ')
+          ..write('childMapId: $childMapId, ')
+          ..write('metadata: $metadata')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(mapId, q, r, terrainType, controllingCivId,
+      entityId, label, childMapId, metadata);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapCellRow &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.terrainType == this.terrainType &&
+          other.controllingCivId == this.controllingCivId &&
+          other.entityId == this.entityId &&
+          other.label == this.label &&
+          other.childMapId == this.childMapId &&
+          other.metadata == this.metadata);
+}
+
+class MapCellsCompanion extends UpdateCompanion<MapCellRow> {
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<String> terrainType;
+  final Value<int?> controllingCivId;
+  final Value<int?> entityId;
+  final Value<String?> label;
+  final Value<int?> childMapId;
+  final Value<String?> metadata;
+  final Value<int> rowid;
+  const MapCellsCompanion({
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.terrainType = const Value.absent(),
+    this.controllingCivId = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.childMapId = const Value.absent(),
+    this.metadata = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MapCellsCompanion.insert({
+    required int mapId,
+    required int q,
+    required int r,
+    this.terrainType = const Value.absent(),
+    this.controllingCivId = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.childMapId = const Value.absent(),
+    this.metadata = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r);
+  static Insertable<MapCellRow> custom({
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<String>? terrainType,
+    Expression<int>? controllingCivId,
+    Expression<int>? entityId,
+    Expression<String>? label,
+    Expression<int>? childMapId,
+    Expression<String>? metadata,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (terrainType != null) 'terrain_type': terrainType,
+      if (controllingCivId != null) 'controlling_civ_id': controllingCivId,
+      if (entityId != null) 'entity_id': entityId,
+      if (label != null) 'label': label,
+      if (childMapId != null) 'child_map_id': childMapId,
+      if (metadata != null) 'metadata': metadata,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MapCellsCompanion copyWith(
+      {Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<String>? terrainType,
+      Value<int?>? controllingCivId,
+      Value<int?>? entityId,
+      Value<String?>? label,
+      Value<int?>? childMapId,
+      Value<String?>? metadata,
+      Value<int>? rowid}) {
+    return MapCellsCompanion(
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      terrainType: terrainType ?? this.terrainType,
+      controllingCivId: controllingCivId ?? this.controllingCivId,
+      entityId: entityId ?? this.entityId,
+      label: label ?? this.label,
+      childMapId: childMapId ?? this.childMapId,
+      metadata: metadata ?? this.metadata,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (terrainType.present) {
+      map['terrain_type'] = Variable<String>(terrainType.value);
+    }
+    if (controllingCivId.present) {
+      map['controlling_civ_id'] = Variable<int>(controllingCivId.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (childMapId.present) {
+      map['child_map_id'] = Variable<int>(childMapId.value);
+    }
+    if (metadata.present) {
+      map['metadata'] = Variable<String>(metadata.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellsCompanion(')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('terrainType: $terrainType, ')
+          ..write('controllingCivId: $controllingCivId, ')
+          ..write('entityId: $entityId, ')
+          ..write('label: $label, ')
+          ..write('childMapId: $childMapId, ')
+          ..write('metadata: $metadata, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MapCellEventsTable extends MapCellEvents
+    with TableInfo<$MapCellEventsTable, MapCellEventRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapCellEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _turnIdMeta = const VerificationMeta('turnId');
+  @override
+  late final GeneratedColumn<int> turnId = GeneratedColumn<int>(
+      'turn_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _eventTypeMeta =
+      const VerificationMeta('eventType');
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+      'event_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('note'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, mapId, q, r, turnId, description, eventType, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_cell_events';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapCellEventRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('turn_id')) {
+      context.handle(_turnIdMeta,
+          turnId.isAcceptableOrUnknown(data['turn_id']!, _turnIdMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    } else if (isInserting) {
+      context.missing(_descriptionMeta);
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(_eventTypeMeta,
+          eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MapCellEventRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapCellEventRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      turnId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}turn_id']),
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
+      eventType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}event_type'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapCellEventsTable createAlias(String alias) {
+    return $MapCellEventsTable(attachedDatabase, alias);
+  }
+}
+
+class MapCellEventRow extends DataClass implements Insertable<MapCellEventRow> {
+  final int id;
+  final int mapId;
+  final int q;
+  final int r;
+
+  /// Optional FK to a game turn.
+  final int? turnId;
+  final String description;
+
+  /// settlement|battle|discovery|diplomatic|note|migration|disaster
+  final String eventType;
+  final String createdAt;
+  const MapCellEventRow(
+      {required this.id,
+      required this.mapId,
+      required this.q,
+      required this.r,
+      this.turnId,
+      required this.description,
+      required this.eventType,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    if (!nullToAbsent || turnId != null) {
+      map['turn_id'] = Variable<int>(turnId);
+    }
+    map['description'] = Variable<String>(description);
+    map['event_type'] = Variable<String>(eventType);
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapCellEventsCompanion toCompanion(bool nullToAbsent) {
+    return MapCellEventsCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      turnId:
+          turnId == null && nullToAbsent ? const Value.absent() : Value(turnId),
+      description: Value(description),
+      eventType: Value(eventType),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapCellEventRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapCellEventRow(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      turnId: serializer.fromJson<int?>(json['turnId']),
+      description: serializer.fromJson<String>(json['description']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'turnId': serializer.toJson<int?>(turnId),
+      'description': serializer.toJson<String>(description),
+      'eventType': serializer.toJson<String>(eventType),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapCellEventRow copyWith(
+          {int? id,
+          int? mapId,
+          int? q,
+          int? r,
+          Value<int?> turnId = const Value.absent(),
+          String? description,
+          String? eventType,
+          String? createdAt}) =>
+      MapCellEventRow(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        turnId: turnId.present ? turnId.value : this.turnId,
+        description: description ?? this.description,
+        eventType: eventType ?? this.eventType,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapCellEventRow copyWithCompanion(MapCellEventsCompanion data) {
+    return MapCellEventRow(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      turnId: data.turnId.present ? data.turnId.value : this.turnId,
+      description:
+          data.description.present ? data.description.value : this.description,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellEventRow(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('turnId: $turnId, ')
+          ..write('description: $description, ')
+          ..write('eventType: $eventType, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, mapId, q, r, turnId, description, eventType, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapCellEventRow &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.turnId == this.turnId &&
+          other.description == this.description &&
+          other.eventType == this.eventType &&
+          other.createdAt == this.createdAt);
+}
+
+class MapCellEventsCompanion extends UpdateCompanion<MapCellEventRow> {
+  final Value<int> id;
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<int?> turnId;
+  final Value<String> description;
+  final Value<String> eventType;
+  final Value<String> createdAt;
+  const MapCellEventsCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.turnId = const Value.absent(),
+    this.description = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapCellEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int mapId,
+    required int q,
+    required int r,
+    this.turnId = const Value.absent(),
+    required String description,
+    this.eventType = const Value.absent(),
+    required String createdAt,
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r),
+        description = Value(description),
+        createdAt = Value(createdAt);
+  static Insertable<MapCellEventRow> custom({
+    Expression<int>? id,
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<int>? turnId,
+    Expression<String>? description,
+    Expression<String>? eventType,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (turnId != null) 'turn_id': turnId,
+      if (description != null) 'description': description,
+      if (eventType != null) 'event_type': eventType,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapCellEventsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<int?>? turnId,
+      Value<String>? description,
+      Value<String>? eventType,
+      Value<String>? createdAt}) {
+    return MapCellEventsCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      turnId: turnId ?? this.turnId,
+      description: description ?? this.description,
+      eventType: eventType ?? this.eventType,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (turnId.present) {
+      map['turn_id'] = Variable<int>(turnId.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('turnId: $turnId, ')
+          ..write('description: $description, ')
+          ..write('eventType: $eventType, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AurelmDatabase extends GeneratedDatabase {
   _$AurelmDatabase(QueryExecutor e) : super(e);
   $AurelmDatabaseManager get managers => $AurelmDatabaseManager(this);
@@ -6102,6 +7507,9 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final $SubjectResolutionsTable subjectResolutions =
       $SubjectResolutionsTable(this);
   late final $NotesTable notes = $NotesTable(this);
+  late final $MapMapsTable mapMaps = $MapMapsTable(this);
+  late final $MapCellsTable mapCells = $MapCellsTable(this);
+  late final $MapCellEventsTable mapCellEvents = $MapCellEventsTable(this);
   late final CivilizationDao civilizationDao =
       CivilizationDao(this as AurelmDatabase);
   late final TurnDao turnDao = TurnDao(this as AurelmDatabase);
@@ -6110,6 +7518,7 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final PipelineDao pipelineDao = PipelineDao(this as AurelmDatabase);
   late final SubjectDao subjectDao = SubjectDao(this as AurelmDatabase);
   late final NotesDao notesDao = NotesDao(this as AurelmDatabase);
+  late final MapDao mapDao = MapDao(this as AurelmDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6126,7 +7535,10 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
         subjectSubjects,
         subjectOptions,
         subjectResolutions,
-        notes
+        notes,
+        mapMaps,
+        mapCells,
+        mapCellEvents
       ];
 }
 
@@ -8074,7 +9486,7 @@ typedef $$SubjectSubjectsTableCreateCompanionBuilder = SubjectSubjectsCompanion
     Function({
   Value<int> id,
   required int civId,
-  required int sourceTurnId,
+  Value<int?> sourceTurnId,
   required String direction,
   required String title,
   Value<String?> description,
@@ -8297,7 +9709,7 @@ class $$SubjectSubjectsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int civId,
-            required int sourceTurnId,
+            Value<int?> sourceTurnId = const Value.absent(),
             required String direction,
             required String title,
             Value<String?> description = const Value.absent(),
@@ -9014,6 +10426,680 @@ typedef $$NotesTableProcessedTableManager = ProcessedTableManager<
     (NoteRow, BaseReferences<_$AurelmDatabase, $NotesTable, NoteRow>),
     NoteRow,
     PrefetchHooks Function()>;
+typedef $$MapMapsTableCreateCompanionBuilder = MapMapsCompanion Function({
+  Value<int> id,
+  required String name,
+  Value<String?> imagePath,
+  Value<String> gridType,
+  Value<int> gridCols,
+  Value<int> gridRows,
+  Value<int?> parentMapId,
+  Value<int?> parentCellQ,
+  Value<int?> parentCellR,
+  required String createdAt,
+});
+typedef $$MapMapsTableUpdateCompanionBuilder = MapMapsCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String?> imagePath,
+  Value<String> gridType,
+  Value<int> gridCols,
+  Value<int> gridRows,
+  Value<int?> parentMapId,
+  Value<int?> parentCellQ,
+  Value<int?> parentCellR,
+  Value<String> createdAt,
+});
+
+class $$MapMapsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapMapsTable> {
+  $$MapMapsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imagePath => $composableBuilder(
+      column: $table.imagePath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get gridType => $composableBuilder(
+      column: $table.gridType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get gridCols => $composableBuilder(
+      column: $table.gridCols, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get gridRows => $composableBuilder(
+      column: $table.gridRows, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentMapId => $composableBuilder(
+      column: $table.parentMapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentCellQ => $composableBuilder(
+      column: $table.parentCellQ, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get parentCellR => $composableBuilder(
+      column: $table.parentCellR, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapMapsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapMapsTable> {
+  $$MapMapsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imagePath => $composableBuilder(
+      column: $table.imagePath, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get gridType => $composableBuilder(
+      column: $table.gridType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get gridCols => $composableBuilder(
+      column: $table.gridCols, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get gridRows => $composableBuilder(
+      column: $table.gridRows, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentMapId => $composableBuilder(
+      column: $table.parentMapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentCellQ => $composableBuilder(
+      column: $table.parentCellQ, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get parentCellR => $composableBuilder(
+      column: $table.parentCellR, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapMapsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapMapsTable> {
+  $$MapMapsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePath =>
+      $composableBuilder(column: $table.imagePath, builder: (column) => column);
+
+  GeneratedColumn<String> get gridType =>
+      $composableBuilder(column: $table.gridType, builder: (column) => column);
+
+  GeneratedColumn<int> get gridCols =>
+      $composableBuilder(column: $table.gridCols, builder: (column) => column);
+
+  GeneratedColumn<int> get gridRows =>
+      $composableBuilder(column: $table.gridRows, builder: (column) => column);
+
+  GeneratedColumn<int> get parentMapId => $composableBuilder(
+      column: $table.parentMapId, builder: (column) => column);
+
+  GeneratedColumn<int> get parentCellQ => $composableBuilder(
+      column: $table.parentCellQ, builder: (column) => column);
+
+  GeneratedColumn<int> get parentCellR => $composableBuilder(
+      column: $table.parentCellR, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapMapsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapMapsTable,
+    MapRow,
+    $$MapMapsTableFilterComposer,
+    $$MapMapsTableOrderingComposer,
+    $$MapMapsTableAnnotationComposer,
+    $$MapMapsTableCreateCompanionBuilder,
+    $$MapMapsTableUpdateCompanionBuilder,
+    (MapRow, BaseReferences<_$AurelmDatabase, $MapMapsTable, MapRow>),
+    MapRow,
+    PrefetchHooks Function()> {
+  $$MapMapsTableTableManager(_$AurelmDatabase db, $MapMapsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapMapsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapMapsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapMapsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> imagePath = const Value.absent(),
+            Value<String> gridType = const Value.absent(),
+            Value<int> gridCols = const Value.absent(),
+            Value<int> gridRows = const Value.absent(),
+            Value<int?> parentMapId = const Value.absent(),
+            Value<int?> parentCellQ = const Value.absent(),
+            Value<int?> parentCellR = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapMapsCompanion(
+            id: id,
+            name: name,
+            imagePath: imagePath,
+            gridType: gridType,
+            gridCols: gridCols,
+            gridRows: gridRows,
+            parentMapId: parentMapId,
+            parentCellQ: parentCellQ,
+            parentCellR: parentCellR,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            Value<String?> imagePath = const Value.absent(),
+            Value<String> gridType = const Value.absent(),
+            Value<int> gridCols = const Value.absent(),
+            Value<int> gridRows = const Value.absent(),
+            Value<int?> parentMapId = const Value.absent(),
+            Value<int?> parentCellQ = const Value.absent(),
+            Value<int?> parentCellR = const Value.absent(),
+            required String createdAt,
+          }) =>
+              MapMapsCompanion.insert(
+            id: id,
+            name: name,
+            imagePath: imagePath,
+            gridType: gridType,
+            gridCols: gridCols,
+            gridRows: gridRows,
+            parentMapId: parentMapId,
+            parentCellQ: parentCellQ,
+            parentCellR: parentCellR,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapMapsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapMapsTable,
+    MapRow,
+    $$MapMapsTableFilterComposer,
+    $$MapMapsTableOrderingComposer,
+    $$MapMapsTableAnnotationComposer,
+    $$MapMapsTableCreateCompanionBuilder,
+    $$MapMapsTableUpdateCompanionBuilder,
+    (MapRow, BaseReferences<_$AurelmDatabase, $MapMapsTable, MapRow>),
+    MapRow,
+    PrefetchHooks Function()>;
+typedef $$MapCellsTableCreateCompanionBuilder = MapCellsCompanion Function({
+  required int mapId,
+  required int q,
+  required int r,
+  Value<String> terrainType,
+  Value<int?> controllingCivId,
+  Value<int?> entityId,
+  Value<String?> label,
+  Value<int?> childMapId,
+  Value<String?> metadata,
+  Value<int> rowid,
+});
+typedef $$MapCellsTableUpdateCompanionBuilder = MapCellsCompanion Function({
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<String> terrainType,
+  Value<int?> controllingCivId,
+  Value<int?> entityId,
+  Value<String?> label,
+  Value<int?> childMapId,
+  Value<String?> metadata,
+  Value<int> rowid,
+});
+
+class $$MapCellsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapCellsTable> {
+  $$MapCellsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get terrainType => $composableBuilder(
+      column: $table.terrainType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get controllingCivId => $composableBuilder(
+      column: $table.controllingCivId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get childMapId => $composableBuilder(
+      column: $table.childMapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metadata => $composableBuilder(
+      column: $table.metadata, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapCellsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapCellsTable> {
+  $$MapCellsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get terrainType => $composableBuilder(
+      column: $table.terrainType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get controllingCivId => $composableBuilder(
+      column: $table.controllingCivId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get label => $composableBuilder(
+      column: $table.label, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get childMapId => $composableBuilder(
+      column: $table.childMapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metadata => $composableBuilder(
+      column: $table.metadata, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapCellsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapCellsTable> {
+  $$MapCellsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<String> get terrainType => $composableBuilder(
+      column: $table.terrainType, builder: (column) => column);
+
+  GeneratedColumn<int> get controllingCivId => $composableBuilder(
+      column: $table.controllingCivId, builder: (column) => column);
+
+  GeneratedColumn<int> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get childMapId => $composableBuilder(
+      column: $table.childMapId, builder: (column) => column);
+
+  GeneratedColumn<String> get metadata =>
+      $composableBuilder(column: $table.metadata, builder: (column) => column);
+}
+
+class $$MapCellsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapCellsTable,
+    MapCellRow,
+    $$MapCellsTableFilterComposer,
+    $$MapCellsTableOrderingComposer,
+    $$MapCellsTableAnnotationComposer,
+    $$MapCellsTableCreateCompanionBuilder,
+    $$MapCellsTableUpdateCompanionBuilder,
+    (MapCellRow, BaseReferences<_$AurelmDatabase, $MapCellsTable, MapCellRow>),
+    MapCellRow,
+    PrefetchHooks Function()> {
+  $$MapCellsTableTableManager(_$AurelmDatabase db, $MapCellsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapCellsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapCellsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapCellsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<String> terrainType = const Value.absent(),
+            Value<int?> controllingCivId = const Value.absent(),
+            Value<int?> entityId = const Value.absent(),
+            Value<String?> label = const Value.absent(),
+            Value<int?> childMapId = const Value.absent(),
+            Value<String?> metadata = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MapCellsCompanion(
+            mapId: mapId,
+            q: q,
+            r: r,
+            terrainType: terrainType,
+            controllingCivId: controllingCivId,
+            entityId: entityId,
+            label: label,
+            childMapId: childMapId,
+            metadata: metadata,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required int mapId,
+            required int q,
+            required int r,
+            Value<String> terrainType = const Value.absent(),
+            Value<int?> controllingCivId = const Value.absent(),
+            Value<int?> entityId = const Value.absent(),
+            Value<String?> label = const Value.absent(),
+            Value<int?> childMapId = const Value.absent(),
+            Value<String?> metadata = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              MapCellsCompanion.insert(
+            mapId: mapId,
+            q: q,
+            r: r,
+            terrainType: terrainType,
+            controllingCivId: controllingCivId,
+            entityId: entityId,
+            label: label,
+            childMapId: childMapId,
+            metadata: metadata,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapCellsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapCellsTable,
+    MapCellRow,
+    $$MapCellsTableFilterComposer,
+    $$MapCellsTableOrderingComposer,
+    $$MapCellsTableAnnotationComposer,
+    $$MapCellsTableCreateCompanionBuilder,
+    $$MapCellsTableUpdateCompanionBuilder,
+    (MapCellRow, BaseReferences<_$AurelmDatabase, $MapCellsTable, MapCellRow>),
+    MapCellRow,
+    PrefetchHooks Function()>;
+typedef $$MapCellEventsTableCreateCompanionBuilder = MapCellEventsCompanion
+    Function({
+  Value<int> id,
+  required int mapId,
+  required int q,
+  required int r,
+  Value<int?> turnId,
+  required String description,
+  Value<String> eventType,
+  required String createdAt,
+});
+typedef $$MapCellEventsTableUpdateCompanionBuilder = MapCellEventsCompanion
+    Function({
+  Value<int> id,
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<int?> turnId,
+  Value<String> description,
+  Value<String> eventType,
+  Value<String> createdAt,
+});
+
+class $$MapCellEventsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapCellEventsTable> {
+  $$MapCellEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get turnId => $composableBuilder(
+      column: $table.turnId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+      column: $table.eventType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapCellEventsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapCellEventsTable> {
+  $$MapCellEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get turnId => $composableBuilder(
+      column: $table.turnId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+      column: $table.eventType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapCellEventsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapCellEventsTable> {
+  $$MapCellEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<int> get turnId =>
+      $composableBuilder(column: $table.turnId, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapCellEventsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapCellEventsTable,
+    MapCellEventRow,
+    $$MapCellEventsTableFilterComposer,
+    $$MapCellEventsTableOrderingComposer,
+    $$MapCellEventsTableAnnotationComposer,
+    $$MapCellEventsTableCreateCompanionBuilder,
+    $$MapCellEventsTableUpdateCompanionBuilder,
+    (
+      MapCellEventRow,
+      BaseReferences<_$AurelmDatabase, $MapCellEventsTable, MapCellEventRow>
+    ),
+    MapCellEventRow,
+    PrefetchHooks Function()> {
+  $$MapCellEventsTableTableManager(
+      _$AurelmDatabase db, $MapCellEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapCellEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapCellEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapCellEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<int?> turnId = const Value.absent(),
+            Value<String> description = const Value.absent(),
+            Value<String> eventType = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapCellEventsCompanion(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            turnId: turnId,
+            description: description,
+            eventType: eventType,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int mapId,
+            required int q,
+            required int r,
+            Value<int?> turnId = const Value.absent(),
+            required String description,
+            Value<String> eventType = const Value.absent(),
+            required String createdAt,
+          }) =>
+              MapCellEventsCompanion.insert(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            turnId: turnId,
+            description: description,
+            eventType: eventType,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapCellEventsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapCellEventsTable,
+    MapCellEventRow,
+    $$MapCellEventsTableFilterComposer,
+    $$MapCellEventsTableOrderingComposer,
+    $$MapCellEventsTableAnnotationComposer,
+    $$MapCellEventsTableCreateCompanionBuilder,
+    $$MapCellEventsTableUpdateCompanionBuilder,
+    (
+      MapCellEventRow,
+      BaseReferences<_$AurelmDatabase, $MapCellEventsTable, MapCellEventRow>
+    ),
+    MapCellEventRow,
+    PrefetchHooks Function()>;
 
 class $AurelmDatabaseManager {
   final _$AurelmDatabase _db;
@@ -9042,4 +11128,10 @@ class $AurelmDatabaseManager {
       $$SubjectResolutionsTableTableManager(_db, _db.subjectResolutions);
   $$NotesTableTableManager get notes =>
       $$NotesTableTableManager(_db, _db.notes);
+  $$MapMapsTableTableManager get mapMaps =>
+      $$MapMapsTableTableManager(_db, _db.mapMaps);
+  $$MapCellsTableTableManager get mapCells =>
+      $$MapCellsTableTableManager(_db, _db.mapCells);
+  $$MapCellEventsTableTableManager get mapCellEvents =>
+      $$MapCellEventsTableTableManager(_db, _db.mapCellEvents);
 }

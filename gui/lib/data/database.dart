@@ -11,6 +11,7 @@ import 'tables/relations.dart';
 import 'tables/pipeline_runs.dart';
 import 'tables/subjects.dart';
 import 'tables/notes.dart';
+import 'tables/maps.dart';
 
 import 'daos/civilization_dao.dart';
 import 'daos/turn_dao.dart';
@@ -19,6 +20,7 @@ import 'daos/relation_dao.dart';
 import 'daos/pipeline_dao.dart';
 import 'daos/subject_dao.dart';
 import 'daos/notes_dao.dart';
+import 'daos/map_dao.dart';
 
 part 'database.g.dart';
 
@@ -38,6 +40,10 @@ part 'database.g.dart';
     SubjectResolutions,
     // Notes (migration 019+020)
     Notes,
+    // Map system (migration 031)
+    MapMaps,
+    MapCells,
+    MapCellEvents,
   ],
   daos: [
     CivilizationDao,
@@ -47,6 +53,7 @@ part 'database.g.dart';
     PipelineDao,
     SubjectDao,
     NotesDao,
+    MapDao,
   ],
 )
 class AurelmDatabase extends _$AurelmDatabase {
@@ -172,6 +179,44 @@ void _ensureMigrations(dynamic db) {
     // Migration 029: provenance — which source civ + turn first used this alias
     "ALTER TABLE civ_aliases ADD COLUMN source_civ_id INTEGER REFERENCES civ_civilizations(id) ON DELETE SET NULL",
     "ALTER TABLE civ_aliases ADD COLUMN first_seen_turn_id INTEGER REFERENCES turn_turns(id) ON DELETE SET NULL",
+    // Migration 031: map system
+    '''CREATE TABLE IF NOT EXISTS map_maps (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        name            TEXT    NOT NULL UNIQUE,
+        image_path      TEXT,
+        grid_type       TEXT    NOT NULL DEFAULT 'hex',
+        grid_cols       INTEGER NOT NULL DEFAULT 20,
+        grid_rows       INTEGER NOT NULL DEFAULT 15,
+        parent_map_id   INTEGER REFERENCES map_maps(id) ON DELETE SET NULL,
+        parent_cell_q   INTEGER,
+        parent_cell_r   INTEGER,
+        created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    )''',
+    '''CREATE TABLE IF NOT EXISTS map_cells (
+        map_id              INTEGER NOT NULL REFERENCES map_maps(id) ON DELETE CASCADE,
+        q                   INTEGER NOT NULL,
+        r                   INTEGER NOT NULL,
+        terrain_type        TEXT    NOT NULL DEFAULT 'plain',
+        controlling_civ_id  INTEGER REFERENCES civ_civilizations(id) ON DELETE SET NULL,
+        entity_id           INTEGER REFERENCES entity_entities(id) ON DELETE SET NULL,
+        label               TEXT,
+        child_map_id        INTEGER REFERENCES map_maps(id) ON DELETE SET NULL,
+        metadata            TEXT,
+        PRIMARY KEY (map_id, q, r)
+    )''',
+    '''CREATE TABLE IF NOT EXISTS map_cell_events (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_id      INTEGER NOT NULL REFERENCES map_maps(id) ON DELETE CASCADE,
+        q           INTEGER NOT NULL,
+        r           INTEGER NOT NULL,
+        turn_id     INTEGER REFERENCES turn_turns(id) ON DELETE SET NULL,
+        description TEXT    NOT NULL,
+        event_type  TEXT    NOT NULL DEFAULT 'note',
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    )''',
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_events_cell ON map_cell_events(map_id, q, r)",
+    "CREATE INDEX IF NOT EXISTS idx_map_cells_civ ON map_cells(controlling_civ_id) WHERE controlling_civ_id IS NOT NULL",
+    "CREATE INDEX IF NOT EXISTS idx_map_cells_entity ON map_cells(entity_id) WHERE entity_id IS NOT NULL",
   ];
 
   for (final sql in statements) {

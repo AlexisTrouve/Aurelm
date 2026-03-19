@@ -2357,6 +2357,227 @@ def deep_explore(
         return "\n".join(text_parts) if text_parts else "(Pas de reponse du sous-agent.)"
 
 
+# --------------------------------------------------------------------------- #
+# Map system tools (migration 031)
+# --------------------------------------------------------------------------- #
+
+def resolve_map_name(conn: sqlite3.Connection, name: str) -> dict | None:
+    """Fuzzy-match a map name. Returns {'id': int, 'name': str} or None if not found."""
+    row = conn.execute("SELECT id, name FROM map_maps WHERE name = ?", (name,)).fetchone()
+    if row:
+        return {"id": row[0], "name": row[1]}
+    rows = conn.execute(
+        "SELECT id, name FROM map_maps WHERE name LIKE ?", (f"%{name}%",)
+    ).fetchall()
+    if len(rows) == 1:
+        return {"id": rows[0][0], "name": rows[0][1]}
+    return None
+
+
+def get_maps(conn: sqlite3.Connection) -> str:
+    """List all maps with indented hierarchy (root maps first, children indented)."""
+    rows = conn.execute(
+        """SELECT id, name, grid_type, grid_cols, grid_rows, parent_map_id
+           FROM map_maps ORDER BY parent_map_id NULLS FIRST, name"""
+    ).fetchall()
+    if not rows:
+        return "Aucune carte enregistrée."
+
+    # Build parent→children index
+    children: dict[int | None, list] = {}
+    for r in rows:
+        parent = r[5]
+        children.setdefault(parent, []).append(r)
+
+    lines = ["# Cartes\n"]
+
+    def _render(parent_id: int | None, indent: str) -> None:
+        for r in children.get(parent_id, []):
+            lines.append(
+                f"{indent}- **{r[1]}** (id={r[0]}, {r[2]}, {r[3]}×{r[4]})"
+            )
+            _render(r[0], indent + "  ")
+
+    _render(None, "")
+    return "\n".join(lines)
+
+
+def get_map_overview(
+    conn: sqlite3.Connection, map_id: int, map_name: str
+) -> str:
+    """Cells table + 10 last events for a map. Truncated at 200 cells."""
+    cells = conn.execute(
+        """SELECT mc.q, mc.r, mc.terrain_type, mc.label,
+                  c.name AS civ_name, e.canonical_name AS entity_name
+           FROM map_cells mc
+           LEFT JOIN civ_civilizations c ON c.id = mc.controlling_civ_id
+           LEFT JOIN entity_entities e ON e.id = mc.entity_id
+           WHERE mc.map_id = ?
+           ORDER BY mc.r, mc.q
+           LIMIT 200""",
+        (map_id,),
+    ).fetchall()
+
+    events = conn.execute(
+        """SELECT q, r, event_type, description, created_at
+           FROM map_cell_events WHERE map_id = ?
+           ORDER BY created_at DESC LIMIT 10""",
+        (map_id,),
+    ).fetchall()
+
+    lines = [f"# Carte : {map_name}\n", "## Cellules\n",
+             "| q | r | Terrain | Label | Civ | Entité |",
+             "|---|---|---------|-------|-----|--------|"]
+    for c in cells:
+        lines.append(
+            f"| {c[0]} | {c[1]} | {c[2]} | {c[3] or ''} "
+            f"| {c[4] or ''} | {c[5] or ''} |"
+        )
+    if not cells:
+        lines.append("*(aucune cellule)*")
+
+    lines.append("\n## 10 derniers événements\n")
+    for ev in events:
+        lines.append(f"- ({ev[0]},{ev[1]}) [{ev[2]}] {ev[3]}  _{ev[4][:10]}_")
+    if not events:
+        lines.append("*(aucun événement)*")
+
+    return "\n".join(lines)
+
+
+def get_cell(conn: sqlite3.Connection, map_id: int, q: int, r: int) -> str:
+    """Detail of a single cell + last 3 events."""
+    cell = conn.execute(
+        """SELECT mc.terrain_type, mc.label, mc.metadata,
+                  c.name AS civ_name, e.canonical_name AS entity_name,
+                  cm.name AS child_map_name
+           FROM map_cells mc
+           LEFT JOIN civ_civilizations c ON c.id = mc.controlling_civ_id
+           LEFT JOIN entity_entities e ON e.id = mc.entity_id
+           LEFT JOIN map_maps cm ON cm.id = mc.child_map_id
+           WHERE mc.map_id = ? AND mc.q = ? AND mc.r = ?""",
+        (map_id, q, r),
+    ).fetchone()
+
+    if not cell:
+        return f"Cellule ({q},{r}) non trouvée dans cette carte."
+
+    lines = [
+        f"# Cellule ({q},{r})\n",
+        f"**Terrain** : {cell[0]}",
+        f"**Label** : {cell[1] or '(none)'}",
+        f"**Civ contrôlante** : {cell[3] or '(aucune)'}",
+        f"**Entité liée** : {cell[4] or '(aucune)'}",
+        f"**Carte enfant** : {cell[5] or '(aucune)'}",
+    ]
+    if cell[2]:
+        lines.append(f"**Metadata** : {truncate(cell[2], 200)}")
+
+    events = conn.execute(
+        """SELECT event_type, description, created_at
+           FROM map_cell_events WHERE map_id=? AND q=? AND r=?
+           ORDER BY created_at DESC LIMIT 3""",
+        (map_id, q, r),
+    ).fetchall()
+    lines.append("\n## Derniers événements")
+    for ev in events:
+        lines.append(f"- [{ev[0]}] {ev[1]}  _{ev[2][:10]}_")
+    if not events:
+        lines.append("*(aucun événement)*")
+
+    return "\n".join(lines)
+
+
+def get_cell_history(
+    conn: sqlite3.Connection, map_id: int, q: int, r: int, limit: int = 20
+) -> str:
+    """Full event history for a cell."""
+    events = conn.execute(
+        """SELECT mce.event_type, mce.description, mce.created_at,
+                  t.turn_number
+           FROM map_cell_events mce
+           LEFT JOIN turn_turns t ON t.id = mce.turn_id
+           WHERE mce.map_id=? AND mce.q=? AND mce.r=?
+           ORDER BY mce.created_at DESC
+           LIMIT ?""",
+        (map_id, q, r, limit),
+    ).fetchall()
+
+    if not events:
+        return f"Aucun événement pour la cellule ({q},{r})."
+
+    lines = [f"# Historique cellule ({q},{r})\n"]
+    for ev in events:
+        turn_str = f" (tour {ev[3]})" if ev[3] else ""
+        lines.append(f"- [{ev[0]}]{turn_str} {ev[1]}  _{ev[2][:10]}_")
+    return "\n".join(lines)
+
+
+def get_territory(
+    conn: sqlite3.Connection, civ_id: int, civ_name: str
+) -> str:
+    """All cells controlled by a civ, grouped by map."""
+    rows = conn.execute(
+        """SELECT m.name, mc.q, mc.r, mc.terrain_type, mc.label
+           FROM map_cells mc
+           JOIN map_maps m ON m.id = mc.map_id
+           WHERE mc.controlling_civ_id = ?
+           ORDER BY m.name, mc.r, mc.q""",
+        (civ_id,),
+    ).fetchall()
+
+    if not rows:
+        return f"**{civ_name}** ne contrôle aucune cellule sur les cartes."
+
+    lines = [f"# Territoire — {civ_name}\n"]
+    current_map = None
+    for r in rows:
+        if r[0] != current_map:
+            current_map = r[0]
+            lines.append(f"\n## {current_map}")
+        label = f" — {r[4]}" if r[4] else ""
+        lines.append(f"- ({r[1]},{r[2]}) {r[3]}{label}")
+    return "\n".join(lines)
+
+
+def find_entity_on_map(conn: sqlite3.Connection, entity_name: str) -> str:
+    """Search for an entity on maps via entity_id or entity_aliases."""
+    # Try direct name match + alias match to get entity ids
+    entity_rows = conn.execute(
+        """SELECT DISTINCT e.id, e.canonical_name
+           FROM entity_entities e
+           LEFT JOIN entity_aliases ea ON ea.entity_id = e.id
+           WHERE e.canonical_name LIKE ? OR ea.alias LIKE ?
+             AND e.disabled = 0""",
+        (f"%{entity_name}%", f"%{entity_name}%"),
+    ).fetchall()
+
+    if not entity_rows:
+        return f"Entité « {entity_name} » introuvable."
+
+    entity_ids = [r[0] for r in entity_rows]
+    placeholders = ",".join("?" * len(entity_ids))
+    cells = conn.execute(
+        f"""SELECT m.name, mc.q, mc.r, mc.terrain_type, mc.label, e.canonical_name
+            FROM map_cells mc
+            JOIN map_maps m ON m.id = mc.map_id
+            JOIN entity_entities e ON e.id = mc.entity_id
+            WHERE mc.entity_id IN ({placeholders})
+            ORDER BY m.name""",
+        entity_ids,
+    ).fetchall()
+
+    if not cells:
+        names = ", ".join(r[1] for r in entity_rows)
+        return f"Entité(s) trouvée(s) ({names}) mais non placée(s) sur une carte."
+
+    lines = [f"# Localisation — {entity_name}\n"]
+    for c in cells:
+        label = f" — {c[4]}" if c[4] else ""
+        lines.append(f"- **{c[0]}** ({c[1]},{c[2]}) {c[3]}{label}  [{c[5]}]")
+    return "\n".join(lines)
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -2723,5 +2944,58 @@ def dispatch_tool(
             anthropic_client=anthropic_client,
             proxy=proxy,
         )
+
+    # --- Map system tools ---
+
+    if tool_name == "getMaps":
+        return get_maps(conn)
+
+    if tool_name == "getMapOverview":
+        map_name = tool_input.get("mapName", "")
+        if not map_name:
+            return "Error: mapName is required."
+        m = resolve_map_name(conn, map_name)
+        if not m:
+            return f"Carte « {map_name} » introuvable."
+        return get_map_overview(conn, m["id"], m["name"])
+
+    if tool_name == "getCell":
+        map_name = tool_input.get("mapName", "")
+        q_raw = tool_input.get("q")
+        r_raw = tool_input.get("r")
+        if not map_name or q_raw is None or r_raw is None:
+            return "Error: mapName, q, and r are required."
+        m = resolve_map_name(conn, map_name)
+        if not m:
+            return f"Carte « {map_name} » introuvable."
+        return get_cell(conn, m["id"], int(q_raw), int(r_raw))
+
+    if tool_name == "getCellHistory":
+        map_name = tool_input.get("mapName", "")
+        q_raw = tool_input.get("q")
+        r_raw = tool_input.get("r")
+        if not map_name or q_raw is None or r_raw is None:
+            return "Error: mapName, q, and r are required."
+        m = resolve_map_name(conn, map_name)
+        if not m:
+            return f"Carte « {map_name} » introuvable."
+        limit = int(tool_input.get("limit") or 20)
+        return get_cell_history(conn, m["id"], int(q_raw), int(r_raw), limit)
+
+    if tool_name == "getTerritory":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        return get_territory(conn, civ["id"], civ["name"])
+
+    if tool_name == "findEntityOnMap":
+        entity_name = tool_input.get("entityName", "")
+        if not entity_name:
+            return "Error: entityName is required."
+        return find_entity_on_map(conn, entity_name)
 
     return f"Unknown tool: {tool_name}"

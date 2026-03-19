@@ -41,6 +41,11 @@ class AppShell extends ConsumerWidget {
       label: Text('Sujets'),
     ),
     NavigationRailDestination(
+      icon: Icon(Icons.map_outlined),
+      selectedIcon: Icon(Icons.map),
+      label: Text('Cartes'),
+    ),
+    NavigationRailDestination(
       icon: Icon(Icons.chat_outlined),
       selectedIcon: Icon(Icons.chat),
       label: Text('Sessions'),
@@ -59,6 +64,7 @@ class AppShell extends ConsumerWidget {
     '/civs/relations',
     '/graph',
     '/subjects',
+    '/map',
     '/chat/sessions',
     '/settings',
   ];
@@ -70,8 +76,9 @@ class AppShell extends ConsumerWidget {
     if (location.startsWith('/civs/relations')) return 3;
     if (location.startsWith('/graph')) return 4;
     if (location.startsWith('/subjects')) return 5;
-    if (location.startsWith('/chat')) return 6;
-    if (location.startsWith('/settings')) return 7;
+    if (location.startsWith('/map')) return 6;
+    if (location.startsWith('/chat')) return 7;
+    if (location.startsWith('/settings')) return 8;
     return 0; // dashboard + /civs/:id
   }
 
@@ -86,8 +93,8 @@ class AppShell extends ConsumerWidget {
           NavigationRail(
             selectedIndex: selectedIndex,
             onDestinationSelected: (index) {
-              // Chat tab (index 6): go directly to active session if one is open
-              if (index == 6) {
+              // Chat tab (index 7): go directly to active session if one is open
+              if (index == 7) {
                 final hasSession = ref.read(chatProvider).sessionId != null;
                 context.go(hasSession ? '/chat' : '/chat/sessions');
               } else {

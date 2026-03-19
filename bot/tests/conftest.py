@@ -159,6 +159,43 @@ CREATE TABLE notes (
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE map_maps (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT    NOT NULL UNIQUE,
+    image_path      TEXT,
+    grid_type       TEXT    NOT NULL DEFAULT 'hex',
+    grid_cols       INTEGER NOT NULL DEFAULT 20,
+    grid_rows       INTEGER NOT NULL DEFAULT 15,
+    parent_map_id   INTEGER REFERENCES map_maps(id),
+    parent_cell_q   INTEGER,
+    parent_cell_r   INTEGER,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE map_cells (
+    map_id              INTEGER NOT NULL REFERENCES map_maps(id),
+    q                   INTEGER NOT NULL,
+    r                   INTEGER NOT NULL,
+    terrain_type        TEXT    NOT NULL DEFAULT 'plain',
+    controlling_civ_id  INTEGER REFERENCES civ_civilizations(id),
+    entity_id           INTEGER REFERENCES entity_entities(id),
+    label               TEXT,
+    child_map_id        INTEGER REFERENCES map_maps(id),
+    metadata            TEXT,
+    PRIMARY KEY (map_id, q, r)
+);
+
+CREATE TABLE map_cell_events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    map_id      INTEGER NOT NULL REFERENCES map_maps(id),
+    q           INTEGER NOT NULL,
+    r           INTEGER NOT NULL,
+    turn_id     INTEGER REFERENCES turn_turns(id),
+    description TEXT    NOT NULL,
+    event_type  TEXT    NOT NULL DEFAULT 'note',
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE pipeline_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -223,6 +260,27 @@ INSERT INTO notes (entity_id, title, content, pinned, note_type) VALUES
 
 INSERT INTO notes (title, content, note_type) VALUES
     ('Regle maison', 'Toujours verifier les technologies avant de valider un tour.', 'agent');
+
+INSERT INTO map_maps (name, grid_type, grid_cols, grid_rows) VALUES
+    ('Monde', 'hex', 20, 15),
+    ('Region Confluent', 'square', 10, 8);
+
+UPDATE map_maps SET parent_map_id = 1, parent_cell_q = 5, parent_cell_r = 3 WHERE id = 2;
+
+INSERT INTO map_cells (map_id, q, r, terrain_type, controlling_civ_id, label) VALUES
+    (1, 0, 0, 'plain', 1, 'Confluent'),
+    (1, 1, 0, 'forest', NULL, NULL),
+    (1, 2, 0, 'mountain', NULL, 'Massif Central'),
+    (2, 0, 0, 'river', 1, 'Source'),
+    (2, 1, 0, 'plain', 1, NULL);
+
+INSERT INTO map_cells (map_id, q, r, terrain_type, entity_id) VALUES
+    (1, 3, 0, 'ruins', 4);
+
+INSERT INTO map_cell_events (map_id, q, r, description, event_type) VALUES
+    (1, 0, 0, 'Fondation de la cite au confluent.', 'settlement'),
+    (1, 0, 0, 'Premier contact avec les etrangers.', 'diplomatic'),
+    (2, 0, 0, 'Source decouverte.', 'discovery');
 """
 
 

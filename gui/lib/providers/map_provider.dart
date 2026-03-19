@@ -1,0 +1,35 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../data/database.dart';
+import '../models/map_with_details.dart';
+import 'database_provider.dart';
+
+/// Currently selected map id in the left panel selector.
+final selectedMapIdProvider = StateProvider<int?>((ref) => null);
+
+/// Currently selected cell coordinates on the canvas.
+final selectedCellProvider =
+    StateProvider<({int q, int r})?>((_) => null);
+
+/// Stream of all maps, ordered by hierarchy.
+final allMapsProvider = StreamProvider<List<MapRow>>((ref) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchAllMaps();
+});
+
+/// Stream of enriched cells for a given map id.
+final mapCellsProvider =
+    StreamProvider.family<List<MapCellWithDetails>, int>((ref, mapId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCells(mapId);
+});
+
+/// Stream of events for a specific cell, keyed by (mapId, q, r).
+final cellEventsProvider = StreamProvider.family<List<MapCellEventRow>,
+    ({int mapId, int q, int r})>((ref, key) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCellEvents(key.mapId, key.q, key.r);
+});

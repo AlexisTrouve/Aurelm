@@ -337,6 +337,71 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "getMaps",
+        "description": "Liste toutes les cartes avec leur hiérarchie (monde → région → local).",
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    {
+        "name": "getMapOverview",
+        "description": "Vue d'ensemble d'une carte : tableau de cellules + 10 derniers événements. Max 200 cellules.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mapName": {"type": "string", "description": "Nom de la carte (fuzzy match)."},
+            },
+            "required": ["mapName"],
+        },
+    },
+    {
+        "name": "getCell",
+        "description": "Détail d'une cellule (terrain, civ contrôlante, entité liée) + 3 derniers événements.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mapName": {"type": "string", "description": "Nom de la carte (fuzzy match)."},
+                "q": {"type": "integer", "description": "Coordonnée colonne."},
+                "r": {"type": "integer", "description": "Coordonnée ligne."},
+            },
+            "required": ["mapName", "q", "r"],
+        },
+    },
+    {
+        "name": "getCellHistory",
+        "description": "Historique complet des événements d'une cellule (batailles, découvertes, colonies…).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mapName": {"type": "string"},
+                "q": {"type": "integer"},
+                "r": {"type": "integer"},
+                "limit": {"type": "integer", "description": "Nb max d'événements (défaut: 20)."},
+            },
+            "required": ["mapName", "q", "r"],
+        },
+    },
+    {
+        "name": "getTerritory",
+        "description": "Toutes les cellules contrôlées par une civ, groupées par carte.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Nom de la civ (fuzzy match)."},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "findEntityOnMap",
+        "description": "Cherche sur quelle carte/cellule se trouve une entité (fuzzy match + aliases).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Nom de l'entité (fuzzy match)."},
+            },
+            "required": ["entityName"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
