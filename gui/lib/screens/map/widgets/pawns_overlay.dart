@@ -192,7 +192,7 @@ class _PawnToken extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         onSecondaryTap: () => _showContextMenu(context, center),
-        child: Draggable<int>(
+        child: LongPressDraggable<int>(
           data: detail.pawn.id,
           feedback: Material(
             elevation: 6,

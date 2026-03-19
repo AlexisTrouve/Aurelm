@@ -488,10 +488,6 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
             child: InteractiveViewer(
             transformationController: _transformCtrl,
             constrained: false,
-            // Pan disabled — use ZQSD/arrows for navigation.
-            // This prevents InteractiveViewer from stealing drag gestures
-            // from pawn Draggables.
-            panEnabled: false,
             minScale: 0.3,
             maxScale: 5,
             child: Stack(
