@@ -15,6 +15,7 @@ import '../../widgets/common/empty_state.dart';
 import 'terrain_detector.dart';
 import 'widgets/asset_panel.dart';
 import 'widgets/cell_assets_overlay.dart';
+import 'widgets/cell_drop_overlay.dart';
 import 'widgets/cell_editor_panel.dart';
 import 'widgets/grid_painter.dart';
 import 'widgets/pawns_overlay.dart';
@@ -553,28 +554,22 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
                   canvasW: canvasW,
                   canvasH: canvasH,
                 ),
-                // Pawn drag targets (long-press to move)
-                PawnDragTargetOverlay(
-                  mapId: widget.mapId,
+                // Unified drop overlay — handles both asset and pawn drops
+                // on a single DragTarget<Object> per cell to avoid conflicts.
+                CellDropOverlay(
                   gridType: gridType,
                   gridCols: cols,
                   gridRows: rows,
                   cellSize: _cellSize,
                   canvasW: canvasW,
                   canvasH: canvasH,
-                ),
-                // Invisible drag targets on every cell (assets)
-                CellDragTargetOverlay(
-                  gridType: gridType,
-                  gridCols: cols,
-                  gridRows: rows,
-                  cellSize: _cellSize,
-                  canvasW: canvasW,
-                  canvasH: canvasH,
-                  onDrop: (assetId, q, r) async {
+                  onAssetDrop: (assetId, q, r) async {
                     final db = ref.read(databaseProvider);
-                    await db?.mapDao.placeAsset(
-                        widget.mapId, q, r, assetId);
+                    await db?.mapDao.placeAsset(widget.mapId, q, r, assetId);
+                  },
+                  onPawnDrop: (pawnId, q, r) async {
+                    final db = ref.read(databaseProvider);
+                    await db?.mapDao.movePawn(pawnId, q, r);
                   },
                 ),
               ],
