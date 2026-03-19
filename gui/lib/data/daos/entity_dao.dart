@@ -489,6 +489,14 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
       ..sort((a, b) => b.value.compareTo(a.value));
     return sorted.map((e) => e.key).toList();
   }
+
+  /// Fetch a batch of entity rows by id list (for pawn overlay enrichment).
+  Future<List<EntityRow>> getEntitiesByIds(List<int> ids) {
+    if (ids.isEmpty) return Future.value([]);
+    return (select(entityEntities)
+          ..where((e) => e.id.isIn(ids)))
+        .get();
+  }
 }
 
 /// One entry in an entity's naming history.

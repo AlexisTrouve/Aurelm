@@ -47,6 +47,8 @@ part 'database.g.dart';
     // Map assets (migration 032)
     MapAssets,
     MapCellAssets,
+    // Map pawns (migration 033)
+    MapEntityPawns,
   ],
   daos: [
     CivilizationDao,
@@ -242,6 +244,18 @@ void _ensureMigrations(dynamic db) {
     )''',
     "CREATE INDEX IF NOT EXISTS idx_map_cell_assets_cell ON map_cell_assets(map_id, q, r)",
     "CREATE INDEX IF NOT EXISTS idx_map_cell_assets_asset ON map_cell_assets(asset_id)",
+    // Migration 033: map pawns
+    '''CREATE TABLE IF NOT EXISTS map_entity_pawns (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_id      INTEGER NOT NULL REFERENCES map_maps(id)        ON DELETE CASCADE,
+        q           INTEGER NOT NULL,
+        r           INTEGER NOT NULL,
+        entity_id   INTEGER NOT NULL REFERENCES entity_entities(id) ON DELETE CASCADE,
+        asset_id    INTEGER REFERENCES map_assets(id) ON DELETE SET NULL,
+        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(map_id, entity_id)
+    )''',
+    "CREATE INDEX IF NOT EXISTS idx_map_pawns_cell ON map_entity_pawns(map_id, q, r)",
   ];
 
   for (final sql in statements) {

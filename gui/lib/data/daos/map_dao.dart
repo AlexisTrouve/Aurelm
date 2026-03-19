@@ -8,7 +8,7 @@ import '../../models/map_with_details.dart';
 
 part 'map_dao.g.dart';
 
-@DriftAccessor(tables: [MapMaps, MapCells, MapCellEvents, MapAssets, MapCellAssets, CivCivilizations, EntityEntities])
+@DriftAccessor(tables: [MapMaps, MapCells, MapCellEvents, MapAssets, MapCellAssets, MapEntityPawns, CivCivilizations, EntityEntities])
 class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
   MapDao(super.db);
 
@@ -238,5 +238,49 @@ class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
             ..where((ca) => ca.id.equals(remaining[i].id)))
           .write(MapCellAssetsCompanion(zOrder: Value(i)));
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Pawns
+  // ---------------------------------------------------------------------------
+
+  /// Stream of all pawns for a map, joined with entity name + type.
+  Stream<List<MapPawnRow>> watchMapPawns(int mapId) {
+    return (select(mapEntityPawns)
+          ..where((p) => p.mapId.equals(mapId)))
+        .watch();
+  }
+
+  /// Place (or move) an entity pawn on a cell.
+  /// UNIQUE(map_id, entity_id) → insertOnConflictUpdate moves it.
+  Future<void> placePawn(
+    int mapId,
+    int q,
+    int r,
+    int entityId, {
+    int? assetId,
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return into(mapEntityPawns).insertOnConflictUpdate(
+      MapEntityPawnsCompanion(
+        mapId: Value(mapId),
+        q: Value(q),
+        r: Value(r),
+        entityId: Value(entityId),
+        assetId: Value(assetId),
+        createdAt: Value(now),
+      ),
+    );
+  }
+
+  /// Move an existing pawn to a new cell.
+  Future<void> movePawn(int pawnId, int q, int r) {
+    return (update(mapEntityPawns)..where((p) => p.id.equals(pawnId)))
+        .write(MapEntityPawnsCompanion(q: Value(q), r: Value(r)));
+  }
+
+  /// Remove a pawn from the map.
+  Future<void> removePawn(int pawnId) {
+    return (delete(mapEntityPawns)..where((p) => p.id.equals(pawnId))).go();
   }
 }

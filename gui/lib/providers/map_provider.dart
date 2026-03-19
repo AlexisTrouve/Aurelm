@@ -49,6 +49,14 @@ final cellAssetsProvider = StreamProvider.family<List<MapCellAssetRow>,
   return db.mapDao.watchCellAssets(key.mapId, key.q, key.r);
 });
 
+/// Stream of all pawns for a map.
+final mapPawnsProvider =
+    StreamProvider.family<List<MapPawnRow>, int>((ref, mapId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchMapPawns(mapId);
+});
+
 /// Stream of ALL cell-asset placements for a map.
 final mapCellAssetsProvider =
     StreamProvider.family<List<MapCellAssetRow>, int>((ref, mapId) {

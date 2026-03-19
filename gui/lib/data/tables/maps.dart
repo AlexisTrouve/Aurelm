@@ -118,3 +118,26 @@ class MapCellEvents extends Table {
       text().named('event_type').withDefault(const Constant('note'))();
   TextColumn get createdAt => text().named('created_at')();
 }
+
+/// Drift table for map_entity_pawns — movable entity tokens on the map.
+/// UNIQUE(map_id, entity_id): one pawn per entity per map.
+@DataClassName('MapPawnRow')
+class MapEntityPawns extends Table {
+  @override
+  String get tableName => 'map_entity_pawns';
+
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get mapId => integer().named('map_id')();
+  IntColumn get q => integer()();
+  IntColumn get r => integer()();
+  IntColumn get entityId => integer().named('entity_id')();
+
+  /// Optional asset for the pawn icon. Falls back to entity initial letter.
+  IntColumn get assetId => integer().named('asset_id').nullable()();
+  TextColumn get createdAt => text().named('created_at')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {mapId, entityId}
+      ];
+}

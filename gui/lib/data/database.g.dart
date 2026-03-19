@@ -8244,6 +8244,382 @@ class MapCellAssetsCompanion extends UpdateCompanion<MapCellAssetRow> {
   }
 }
 
+class $MapEntityPawnsTable extends MapEntityPawns
+    with TableInfo<$MapEntityPawnsTable, MapPawnRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapEntityPawnsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+      'entity_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _assetIdMeta =
+      const VerificationMeta('assetId');
+  @override
+  late final GeneratedColumn<int> assetId = GeneratedColumn<int>(
+      'asset_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, mapId, q, r, entityId, assetId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_entity_pawns';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapPawnRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('asset_id')) {
+      context.handle(_assetIdMeta,
+          assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {mapId, entityId},
+      ];
+  @override
+  MapPawnRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapPawnRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}entity_id'])!,
+      assetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}asset_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapEntityPawnsTable createAlias(String alias) {
+    return $MapEntityPawnsTable(attachedDatabase, alias);
+  }
+}
+
+class MapPawnRow extends DataClass implements Insertable<MapPawnRow> {
+  final int id;
+  final int mapId;
+  final int q;
+  final int r;
+  final int entityId;
+
+  /// Optional asset for the pawn icon. Falls back to entity initial letter.
+  final int? assetId;
+  final String createdAt;
+  const MapPawnRow(
+      {required this.id,
+      required this.mapId,
+      required this.q,
+      required this.r,
+      required this.entityId,
+      this.assetId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    map['entity_id'] = Variable<int>(entityId);
+    if (!nullToAbsent || assetId != null) {
+      map['asset_id'] = Variable<int>(assetId);
+    }
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapEntityPawnsCompanion toCompanion(bool nullToAbsent) {
+    return MapEntityPawnsCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      entityId: Value(entityId),
+      assetId: assetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assetId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapPawnRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapPawnRow(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      entityId: serializer.fromJson<int>(json['entityId']),
+      assetId: serializer.fromJson<int?>(json['assetId']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'entityId': serializer.toJson<int>(entityId),
+      'assetId': serializer.toJson<int?>(assetId),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapPawnRow copyWith(
+          {int? id,
+          int? mapId,
+          int? q,
+          int? r,
+          int? entityId,
+          Value<int?> assetId = const Value.absent(),
+          String? createdAt}) =>
+      MapPawnRow(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        entityId: entityId ?? this.entityId,
+        assetId: assetId.present ? assetId.value : this.assetId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapPawnRow copyWithCompanion(MapEntityPawnsCompanion data) {
+    return MapPawnRow(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapPawnRow(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('entityId: $entityId, ')
+          ..write('assetId: $assetId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, mapId, q, r, entityId, assetId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapPawnRow &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.entityId == this.entityId &&
+          other.assetId == this.assetId &&
+          other.createdAt == this.createdAt);
+}
+
+class MapEntityPawnsCompanion extends UpdateCompanion<MapPawnRow> {
+  final Value<int> id;
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<int> entityId;
+  final Value<int?> assetId;
+  final Value<String> createdAt;
+  const MapEntityPawnsCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.assetId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapEntityPawnsCompanion.insert({
+    this.id = const Value.absent(),
+    required int mapId,
+    required int q,
+    required int r,
+    required int entityId,
+    this.assetId = const Value.absent(),
+    required String createdAt,
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r),
+        entityId = Value(entityId),
+        createdAt = Value(createdAt);
+  static Insertable<MapPawnRow> custom({
+    Expression<int>? id,
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<int>? entityId,
+    Expression<int>? assetId,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (entityId != null) 'entity_id': entityId,
+      if (assetId != null) 'asset_id': assetId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapEntityPawnsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<int>? entityId,
+      Value<int?>? assetId,
+      Value<String>? createdAt}) {
+    return MapEntityPawnsCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      entityId: entityId ?? this.entityId,
+      assetId: assetId ?? this.assetId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (assetId.present) {
+      map['asset_id'] = Variable<int>(assetId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapEntityPawnsCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('entityId: $entityId, ')
+          ..write('assetId: $assetId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AurelmDatabase extends GeneratedDatabase {
   _$AurelmDatabase(QueryExecutor e) : super(e);
   $AurelmDatabaseManager get managers => $AurelmDatabaseManager(this);
@@ -8268,6 +8644,7 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final $MapCellEventsTable mapCellEvents = $MapCellEventsTable(this);
   late final $MapAssetsTable mapAssets = $MapAssetsTable(this);
   late final $MapCellAssetsTable mapCellAssets = $MapCellAssetsTable(this);
+  late final $MapEntityPawnsTable mapEntityPawns = $MapEntityPawnsTable(this);
   late final CivilizationDao civilizationDao =
       CivilizationDao(this as AurelmDatabase);
   late final TurnDao turnDao = TurnDao(this as AurelmDatabase);
@@ -8298,7 +8675,8 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
         mapCells,
         mapCellEvents,
         mapAssets,
-        mapCellAssets
+        mapCellAssets,
+        mapEntityPawns
       ];
 }
 
@@ -12256,6 +12634,204 @@ typedef $$MapCellAssetsTableProcessedTableManager = ProcessedTableManager<
     ),
     MapCellAssetRow,
     PrefetchHooks Function()>;
+typedef $$MapEntityPawnsTableCreateCompanionBuilder = MapEntityPawnsCompanion
+    Function({
+  Value<int> id,
+  required int mapId,
+  required int q,
+  required int r,
+  required int entityId,
+  Value<int?> assetId,
+  required String createdAt,
+});
+typedef $$MapEntityPawnsTableUpdateCompanionBuilder = MapEntityPawnsCompanion
+    Function({
+  Value<int> id,
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<int> entityId,
+  Value<int?> assetId,
+  Value<String> createdAt,
+});
+
+class $$MapEntityPawnsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapEntityPawnsTable> {
+  $$MapEntityPawnsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get assetId => $composableBuilder(
+      column: $table.assetId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapEntityPawnsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapEntityPawnsTable> {
+  $$MapEntityPawnsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get assetId => $composableBuilder(
+      column: $table.assetId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapEntityPawnsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapEntityPawnsTable> {
+  $$MapEntityPawnsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<int> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<int> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapEntityPawnsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapEntityPawnsTable,
+    MapPawnRow,
+    $$MapEntityPawnsTableFilterComposer,
+    $$MapEntityPawnsTableOrderingComposer,
+    $$MapEntityPawnsTableAnnotationComposer,
+    $$MapEntityPawnsTableCreateCompanionBuilder,
+    $$MapEntityPawnsTableUpdateCompanionBuilder,
+    (
+      MapPawnRow,
+      BaseReferences<_$AurelmDatabase, $MapEntityPawnsTable, MapPawnRow>
+    ),
+    MapPawnRow,
+    PrefetchHooks Function()> {
+  $$MapEntityPawnsTableTableManager(
+      _$AurelmDatabase db, $MapEntityPawnsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapEntityPawnsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapEntityPawnsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapEntityPawnsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<int> entityId = const Value.absent(),
+            Value<int?> assetId = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapEntityPawnsCompanion(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            entityId: entityId,
+            assetId: assetId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int mapId,
+            required int q,
+            required int r,
+            required int entityId,
+            Value<int?> assetId = const Value.absent(),
+            required String createdAt,
+          }) =>
+              MapEntityPawnsCompanion.insert(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            entityId: entityId,
+            assetId: assetId,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapEntityPawnsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapEntityPawnsTable,
+    MapPawnRow,
+    $$MapEntityPawnsTableFilterComposer,
+    $$MapEntityPawnsTableOrderingComposer,
+    $$MapEntityPawnsTableAnnotationComposer,
+    $$MapEntityPawnsTableCreateCompanionBuilder,
+    $$MapEntityPawnsTableUpdateCompanionBuilder,
+    (
+      MapPawnRow,
+      BaseReferences<_$AurelmDatabase, $MapEntityPawnsTable, MapPawnRow>
+    ),
+    MapPawnRow,
+    PrefetchHooks Function()>;
 
 class $AurelmDatabaseManager {
   final _$AurelmDatabase _db;
@@ -12294,4 +12870,6 @@ class $AurelmDatabaseManager {
       $$MapAssetsTableTableManager(_db, _db.mapAssets);
   $$MapCellAssetsTableTableManager get mapCellAssets =>
       $$MapCellAssetsTableTableManager(_db, _db.mapCellAssets);
+  $$MapEntityPawnsTableTableManager get mapEntityPawns =>
+      $$MapEntityPawnsTableTableManager(_db, _db.mapEntityPawns);
 }

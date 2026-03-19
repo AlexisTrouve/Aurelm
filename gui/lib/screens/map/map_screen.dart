@@ -16,6 +16,8 @@ import 'widgets/asset_panel.dart';
 import 'widgets/cell_assets_overlay.dart';
 import 'widgets/cell_editor_panel.dart';
 import 'widgets/grid_painter.dart';
+import 'widgets/pawns_overlay.dart';
+import 'widgets/pawns_panel.dart';
 import 'widgets/terrain_preview_dialog.dart';
 
 // ---------------------------------------------------------------------------
@@ -80,21 +82,27 @@ class MapScreen extends ConsumerWidget {
       ),
       body: Row(
         children: [
-          // Left panel: tabbed (Cartes | Assets)
+          // Left panel: tabbed (Cartes | Assets | Pions)
           SizedBox(
             width: 220,
             child: DefaultTabController(
-              length: 2,
+              length: 3,
               child: Column(
                 children: [
                   const TabBar(tabs: [
                     Tab(text: 'Cartes', icon: Icon(Icons.map_outlined, size: 14)),
                     Tab(text: 'Assets', icon: Icon(Icons.image_outlined, size: 14)),
+                    Tab(text: 'Pions', icon: Icon(Icons.people_outline, size: 14)),
                   ]),
                   Expanded(
                     child: TabBarView(children: [
                       _MapSelectorPanel(selectedMapId: selectedMapId),
                       const AssetPanel(),
+                      selectedMapId != null
+                          ? PawnsPanel(mapId: selectedMapId)
+                          : const Center(
+                              child: Text('Sélectionne une carte',
+                                  style: TextStyle(color: Colors.grey, fontSize: 12))),
                     ]),
                   ),
                 ],
@@ -427,7 +435,27 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
                   canvasW: canvasW,
                   canvasH: canvasH,
                 ),
-                // Invisible drag targets on every cell
+                // Pawn tokens (above asset icons)
+                PawnsOverlay(
+                  mapId: widget.mapId,
+                  gridType: gridType,
+                  gridCols: cols,
+                  gridRows: rows,
+                  cellSize: _cellSize,
+                  canvasW: canvasW,
+                  canvasH: canvasH,
+                ),
+                // Pawn drag targets (long-press to move)
+                PawnDragTargetOverlay(
+                  mapId: widget.mapId,
+                  gridType: gridType,
+                  gridCols: cols,
+                  gridRows: rows,
+                  cellSize: _cellSize,
+                  canvasW: canvasW,
+                  canvasH: canvasH,
+                ),
+                // Invisible drag targets on every cell (assets)
                 CellDragTargetOverlay(
                   gridType: gridType,
                   gridCols: cols,

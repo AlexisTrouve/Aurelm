@@ -9,6 +9,7 @@ mixin _$MapDaoMixin on DatabaseAccessor<AurelmDatabase> {
   $MapCellEventsTable get mapCellEvents => attachedDatabase.mapCellEvents;
   $MapAssetsTable get mapAssets => attachedDatabase.mapAssets;
   $MapCellAssetsTable get mapCellAssets => attachedDatabase.mapCellAssets;
+  $MapEntityPawnsTable get mapEntityPawns => attachedDatabase.mapEntityPawns;
   $CivCivilizationsTable get civCivilizations =>
       attachedDatabase.civCivilizations;
   $EntityEntitiesTable get entityEntities => attachedDatabase.entityEntities;
@@ -28,6 +29,9 @@ class MapDaoManager {
       $$MapAssetsTableTableManager(_db.attachedDatabase, _db.mapAssets);
   $$MapCellAssetsTableTableManager get mapCellAssets =>
       $$MapCellAssetsTableTableManager(_db.attachedDatabase, _db.mapCellAssets);
+  $$MapEntityPawnsTableTableManager get mapEntityPawns =>
+      $$MapEntityPawnsTableTableManager(
+          _db.attachedDatabase, _db.mapEntityPawns);
   $$CivCivilizationsTableTableManager get civCivilizations =>
       $$CivCivilizationsTableTableManager(
           _db.attachedDatabase, _db.civCivilizations);
