@@ -18,6 +18,7 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
 import '../entities/widgets/notes_menu_button.dart';
+import '../../widgets/common/gm_lock_toggle.dart';
 
 /// Full turn detail — GM segments with type labels, PJ content as a single
 /// readable block. Search bar highlights matches across all text.
@@ -133,6 +134,14 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Add [field] to gm_fields immediately — no confirmation needed to lock.
+  Future<void> _lockField(String field) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    final updated = Set<String>.from(_gmFields)..add(field);
+    await db.turnDao.updateGmFields(widget.turnId, updated);
   }
 
   /// Show confirmation dialog then remove [field] from gm_fields — pipeline can re-fill it.
@@ -366,10 +375,12 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                     // Expanded required: SectionHeader has a Spacer internally and
                     // needs a bounded width constraint from its Row parent.
                     Expanded(child: SectionHeader(title: 'Résumé')),
-                    if (gmFields.contains('summary'))
-                      _TurnGmLockBadge(
-                        onTap: () => _unlockField('summary'),
-                      ),
+                    GmLockToggle(
+                    locked: gmFields.contains('summary'),
+                    fieldLabel: 'summary',
+                    onLock: () => _lockField('summary'),
+                    onUnlock: () => _unlockField('summary'),
+                  ),
                   ]),
                   const SizedBox(height: 8),
                   Container(
@@ -458,10 +469,10 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                 ],
 
                 // Preanalysis — novelty + player strategy
-                _PreanalysisSection(turn: t, gmFields: gmFields, onUnlock: _unlockField),
+                _PreanalysisSection(turn: t, gmFields: gmFields, onLock: _lockField, onUnlock: _unlockField),
 
                 // Analysis tags — thematic_tags, tech_era, fantasy_level
-                _TurnTagsSection(turn: t, gmFields: gmFields, onUnlock: _unlockField),
+                _TurnTagsSection(turn: t, gmFields: gmFields, onLock: _lockField, onUnlock: _unlockField),
 
                 // Entities mentioned in this turn — fast travel
                 _TurnEntitiesSection(turnId: widget.turnId),
@@ -646,11 +657,13 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
 class _PreanalysisSection extends StatelessWidget {
   final TurnRow turn;
   final Set<String> gmFields;
+  final void Function(String field) onLock;
   final void Function(String field) onUnlock;
 
   const _PreanalysisSection({
     required this.turn,
     this.gmFields = const {},
+    required this.onLock,
     required this.onUnlock,
   });
 
@@ -746,8 +759,12 @@ class _PreanalysisSection extends StatelessWidget {
                           color: Colors.blue.shade300,
                           fontWeight: FontWeight.w600,
                         )),
-                    if (gmFields.contains('player_strategy'))
-                      _TurnGmLockBadge(onTap: () => onUnlock('player_strategy')),
+                    GmLockToggle(
+                      locked: gmFields.contains('player_strategy'),
+                      fieldLabel: 'player_strategy',
+                      onLock: () => onLock('player_strategy'),
+                      onUnlock: () => onUnlock('player_strategy'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -785,11 +802,13 @@ class _PreanalysisSection extends StatelessWidget {
 class _TurnTagsSection extends StatelessWidget {
   final TurnRow turn;
   final Set<String> gmFields;
+  final void Function(String field) onLock;
   final void Function(String field) onUnlock;
 
   const _TurnTagsSection({
     required this.turn,
     this.gmFields = const {},
+    required this.onLock,
     required this.onUnlock,
   });
 
@@ -822,8 +841,12 @@ class _TurnTagsSection extends StatelessWidget {
         const SizedBox(height: 20),
         Row(children: [
           Expanded(child: SectionHeader(title: 'Analyse')),
-          if (gmFields.contains('thematic_tags'))
-            _TurnGmLockBadge(onTap: () => onUnlock('thematic_tags')),
+          GmLockToggle(
+            locked: gmFields.contains('thematic_tags'),
+            fieldLabel: 'thematic_tags',
+            onLock: () => onLock('thematic_tags'),
+            onUnlock: () => onUnlock('thematic_tags'),
+          ),
         ]),
         const SizedBox(height: 8),
         Wrap(
@@ -1121,33 +1144,6 @@ class _Badge extends StatelessWidget {
               color: color,
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// GM lock badge — amber lock icon, tappable to unlock
-// ---------------------------------------------------------------------------
-
-/// Small amber lock icon shown next to a GM-protected field label.
-/// Tapping opens a confirmation dialog to unlock the field.
-class _TurnGmLockBadge extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _TurnGmLockBadge({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 6),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: const Padding(
-          padding: EdgeInsets.all(2),
-          child: Icon(Icons.lock, size: 14, color: Colors.amber),
-        ),
       ),
     );
   }

@@ -22,6 +22,7 @@ import 'widgets/notes_menu_button.dart';
 import 'widgets/relation_list.dart';
 import 'widgets/mention_timeline.dart';
 import '../../models/entity_with_details.dart';
+import '../../widgets/common/gm_lock_toggle.dart';
 
 class EntityDetailScreen extends ConsumerStatefulWidget {
   final int entityId;
@@ -124,6 +125,15 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Add [field] to gm_fields immediately — no confirmation needed to lock.
+  Future<void> _lockField(String field) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    final current = ref.read(entityGmFieldsProvider(widget.entityId)).valueOrNull ?? {};
+    final updated = Set<String>.from(current)..add(field);
+    await db.entityDao.updateGmFields(widget.entityId, updated);
   }
 
   /// Remove a single field from GM locks after user confirmation.
@@ -391,12 +401,13 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
                 }).toList(),
               ),
             ),
-            // Lock badge — tags protected from pipeline overwrite
-            if (gmFields.contains('tags'))
-              _GmLockBadge(
-                tooltip: 'Tags protégés par le GM — cliquer pour déverrouiller',
-                onUnlock: () => _unlockField('tags'),
-              ),
+            // Lock toggle — tags protected from pipeline overwrite
+            GmLockToggle(
+              locked: gmFields.contains('tags'),
+              fieldLabel: 'tags',
+              onLock: () => _lockField('tags'),
+              onUnlock: () => _unlockField('tags'),
+            ),
           ],
         ),
       ],
@@ -408,12 +419,13 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: Text(entity.entity.description!)),
-            // Lock badge — description protected from pipeline overwrite
-            if (gmFields.contains('description'))
-              _GmLockBadge(
-                tooltip: 'Description protégée par le GM — cliquer pour déverrouiller',
-                onUnlock: () => _unlockField('description'),
-              ),
+            // Lock toggle — description protected from pipeline overwrite
+            GmLockToggle(
+              locked: gmFields.contains('description'),
+              fieldLabel: 'description',
+              onLock: () => _lockField('description'),
+              onUnlock: () => _unlockField('description'),
+            ),
           ],
         ),
       ],
@@ -755,26 +767,3 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
   }
 }
 
-/// Small amber lock icon indicating the field is protected from pipeline overwrites.
-/// Tapping it triggers the unlock flow (confirmation dialog in the parent screen).
-class _GmLockBadge extends StatelessWidget {
-  final String tooltip;
-  final VoidCallback onUnlock;
-
-  const _GmLockBadge({required this.tooltip, required this.onUnlock});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onUnlock,
-        borderRadius: BorderRadius.circular(12),
-        child: const Padding(
-          padding: EdgeInsets.all(4),
-          child: Icon(Icons.lock, size: 14, color: Colors.amber),
-        ),
-      ),
-    );
-  }
-}

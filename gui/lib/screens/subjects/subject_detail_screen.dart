@@ -13,6 +13,7 @@ import '../../core/theme/app_colors.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
 import '../entities/widgets/notes_menu_button.dart';
+import '../../widgets/common/gm_lock_toggle.dart';
 
 // Available tags for subjects (domain tags assigned by LLM pipeline).
 const _kTagVocab = [
@@ -156,6 +157,16 @@ class _SubjectDetailStatefulState
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Add [field] to gm_fields immediately — no confirmation needed to lock.
+  Future<void> _lockField(String field) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    final subjectId = widget.detail.subject.id;
+    final current = ref.read(subjectGmFieldsProvider(subjectId)).valueOrNull ?? {};
+    final updated = Set<String>.from(current)..add(field);
+    await db.subjectDao.updateGmFields(subjectId, updated);
   }
 
   /// Remove a single field from GM locks after user confirmation.
@@ -382,11 +393,12 @@ class _SubjectDetailStatefulState
                   }).toList(),
                 ),
               ),
-              if (gmFields.contains('tags'))
-                _SubjectGmLockBadge(
-                  tooltip: 'Tags protégés par le GM — cliquer pour déverrouiller',
-                  onUnlock: () => _unlockField(context, ref, s.id, 'tags'),
-                ),
+              GmLockToggle(
+                locked: gmFields.contains('tags'),
+                fieldLabel: 'tags',
+                onLock: () => _lockField('tags'),
+                onUnlock: () => _unlockField(context, ref, s.id, 'tags'),
+              ),
             ],
           ),
         ],
@@ -401,11 +413,12 @@ class _SubjectDetailStatefulState
                 child: Text(s.description!,
                     style: Theme.of(context).textTheme.bodyMedium),
               ),
-              if (gmFields.contains('description'))
-                _SubjectGmLockBadge(
-                  tooltip: 'Description protégée par le GM — cliquer pour déverrouiller',
-                  onUnlock: () => _unlockField(context, ref, s.id, 'description'),
-                ),
+              GmLockToggle(
+                locked: gmFields.contains('description'),
+                fieldLabel: 'description',
+                onLock: () => _lockField('description'),
+                onUnlock: () => _unlockField(context, ref, s.id, 'description'),
+              ),
             ],
           ),
         ],
@@ -1010,25 +1023,3 @@ class _TurnChip extends StatelessWidget {
   }
 }
 
-/// Small amber lock badge for GM-protected subject fields.
-class _SubjectGmLockBadge extends StatelessWidget {
-  final String tooltip;
-  final VoidCallback onUnlock;
-
-  const _SubjectGmLockBadge({required this.tooltip, required this.onUnlock});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onUnlock,
-        borderRadius: BorderRadius.circular(12),
-        child: const Padding(
-          padding: EdgeInsets.all(4),
-          child: Icon(Icons.lock, size: 14, color: Colors.amber),
-        ),
-      ),
-    );
-  }
-}

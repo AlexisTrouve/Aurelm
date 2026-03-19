@@ -39,13 +39,11 @@ class CivAliasEntry {
   final int id;
   final int civId;
   final String aliasName;
-  final bool gmLock;
 
   const CivAliasEntry({
     required this.id,
     required this.civId,
     required this.aliasName,
-    this.gmLock = false,
   });
 }
 
@@ -139,19 +137,15 @@ class CivAliasRepository {
 
   /// Map [aliasName] to [civId], optionally recording which source civ + turn
   /// first used this name (provenance). Idempotent (UNIQUE index on alias_name).
-  ///
-  /// [gmLock] defaults to true — aliases created manually by the GM are always
-  /// locked against pipeline overwrites. Pass false for pipeline-generated aliases.
   Future<void> addAlias(int civId, String aliasName, {
     int? sourceCivId,
     int? firstSeenTurnId,
-    bool gmLock = true,
   }) async {
     await _db.customStatement(
       '''INSERT OR IGNORE INTO civ_aliases
-             (civ_id, alias_name, source_civ_id, first_seen_turn_id, gm_lock)
-         VALUES (?, ?, ?, ?, ?)''',
-      [civId, aliasName, sourceCivId, firstSeenTurnId, gmLock ? 1 : 0],
+             (civ_id, alias_name, source_civ_id, first_seen_turn_id)
+         VALUES (?, ?, ?, ?)''',
+      [civId, aliasName, sourceCivId, firstSeenTurnId],
     );
   }
 
@@ -166,7 +160,7 @@ class CivAliasRepository {
   /// All aliases for a given civ — shown in CivDetailScreen.
   Future<List<CivAliasEntry>> loadAliasesForCiv(int civId) async {
     final rows = await _db.customSelect(
-      'SELECT id, civ_id, alias_name, gm_lock FROM civ_aliases WHERE civ_id = ? ORDER BY alias_name',
+      'SELECT id, civ_id, alias_name FROM civ_aliases WHERE civ_id = ? ORDER BY alias_name',
       variables: [Variable.withInt(civId)],
     ).get();
 
@@ -175,17 +169,8 @@ class CivAliasRepository {
               id: r.read<int>('id'),
               civId: r.read<int>('civ_id'),
               aliasName: r.read<String>('alias_name'),
-              gmLock: (r.read<int?>('gm_lock') ?? 0) == 1,
             ))
         .toList();
-  }
-
-  /// Toggle gm_lock on an alias row (0→1 or 1→0).
-  Future<void> toggleLock(int aliasId) async {
-    await _db.customStatement(
-      'UPDATE civ_aliases SET gm_lock = CASE WHEN gm_lock = 0 THEN 1 ELSE 0 END WHERE id = ?',
-      [aliasId],
-    );
   }
 
   // ---------------------------------------------------------------------------

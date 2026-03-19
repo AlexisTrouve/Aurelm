@@ -43,9 +43,6 @@ class CivRelation {
   /// Number of raw civ_mentions for this directional pair.
   final int mentionCount;
 
-  /// Whether the GM has locked this relation against pipeline overwrites.
-  final bool gmLock;
-
   const CivRelation({
     required this.id,
     required this.sourceCivId,
@@ -57,7 +54,6 @@ class CivRelation {
     this.treaties = const [],
     this.lastTurnNumber,
     this.mentionCount = 0,
-    this.gmLock = false,
   });
 }
 
@@ -71,7 +67,7 @@ class CivRelationsRepository {
   Stream<List<CivRelation>> watchAllRelations() {
     return _db.customSelect(
       '''SELECT r.id, r.source_civ_id, r.target_civ_id,
-                r.opinion, r.description, r.treaties, r.gm_lock,
+                r.opinion, r.description, r.treaties,
                 ca.name AS source_name, cb.name AS target_name,
                 t.turn_number AS last_turn,
                 (SELECT COUNT(*) FROM civ_mentions m
@@ -91,7 +87,7 @@ class CivRelationsRepository {
   Stream<List<CivRelation>> watchRelations(int civId) {
     return _db.customSelect(
       '''SELECT r.id, r.source_civ_id, r.target_civ_id,
-                r.opinion, r.description, r.treaties, r.gm_lock,
+                r.opinion, r.description, r.treaties,
                 ca.name AS source_name, cb.name AS target_name,
                 t.turn_number AS last_turn,
                 (SELECT COUNT(*) FROM civ_mentions m
@@ -135,14 +131,6 @@ class CivRelationsRepository {
         .toList();
   }
 
-  /// Toggle gm_lock on a relation row (0→1 or 1→0).
-  Future<void> toggleLock(int relationId) async {
-    await _db.customStatement(
-      'UPDATE civ_relations SET gm_lock = CASE WHEN gm_lock = 0 THEN 1 ELSE 0 END WHERE id = ?',
-      [relationId],
-    );
-  }
-
   CivRelation _rowToRelation(dynamic r) {
     final treatiesRaw = r.read<String?>('treaties');
     final List<String> treaties = treatiesRaw != null
@@ -159,7 +147,6 @@ class CivRelationsRepository {
       treaties: treaties,
       lastTurnNumber: r.read<int?>('last_turn'),
       mentionCount: r.read<int>('mention_count'),
-      gmLock: (r.read<int?>('gm_lock') ?? 0) == 1,
     );
   }
 }

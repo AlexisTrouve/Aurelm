@@ -200,8 +200,7 @@ def build_civ_relations(
                        description  = excluded.description,
                        treaties     = excluded.treaties,
                        last_turn_id = excluded.last_turn_id,
-                       updated_at   = excluded.updated_at
-                   WHERE gm_lock = 0""",
+                       updated_at   = excluded.updated_at""",
                 (
                     source_civ_id,
                     target_civ_id,

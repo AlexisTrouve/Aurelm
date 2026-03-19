@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/repositories/civ_relations_repository.dart';
 import '../../providers/civilization_provider.dart';
-import '../../providers/database_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/section_header.dart';
@@ -434,42 +433,10 @@ class _GraphPainter extends CustomPainter {
 }
 
 // ---------------------------------------------------------------------------
-// GM lock button — shared between relations and alias screens
-// ---------------------------------------------------------------------------
-
-/// Amber lock icon that toggles gm_lock on a relation or alias row.
-/// When locked, the pipeline will not overwrite this entry.
-class _GmLockButton extends StatelessWidget {
-  final bool locked;
-  final VoidCallback onToggle;
-
-  const _GmLockButton({required this.locked, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: locked ? 'Verrouillé (pipeline ignorera)' : 'Verrouiller contre le pipeline',
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.all(3),
-          child: Icon(
-            locked ? Icons.lock : Icons.lock_open,
-            size: 14,
-            color: locked ? Colors.amber : Colors.grey,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Relation detail card
 // ---------------------------------------------------------------------------
 
-class _RelationCard extends ConsumerWidget {
+class _RelationCard extends StatelessWidget {
   final CivRelation relation;
   final bool highlighted;
   final VoidCallback onTap;
@@ -500,7 +467,7 @@ class _RelationCard extends ConsumerWidget {
   };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final color = _opinionColors[relation.opinion] ?? _opinionColors['unknown']!;
@@ -563,15 +530,6 @@ class _RelationCard extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  // GM lock button — prevents pipeline from overwriting this relation
-                  _GmLockButton(
-                    locked: relation.gmLock,
-                    onToggle: () {
-                      final db = ref.read(databaseProvider);
-                      if (db != null) CivRelationsRepository(db).toggleLock(relation.id);
-                    },
-                  ),
-                  const SizedBox(width: 6),
                   // Opinion chip
                   Container(
                     padding: const EdgeInsets.symmetric(
