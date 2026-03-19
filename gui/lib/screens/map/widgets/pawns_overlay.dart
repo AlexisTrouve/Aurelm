@@ -9,6 +9,7 @@ import '../../../data/database.dart';
 import '../../../models/map_pawn_with_details.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/map_provider.dart';
+import '../map_drag_types.dart';
 
 // Entity type → badge border color
 const _typeColors = {
@@ -192,8 +193,8 @@ class _PawnToken extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         onSecondaryTap: () => _showContextMenu(context, center),
-        child: LongPressDraggable<int>(
-          data: detail.pawn.id,
+        child: LongPressDraggable<MapPawnDrag>(
+          data: MapPawnDrag(detail.pawn.id),
           feedback: Material(
             elevation: 6,
             shape: const CircleBorder(),
@@ -340,9 +341,9 @@ class PawnDragTargetOverlay extends ConsumerWidget {
       top: center.dy - hitR,
       width: hitR * 2,
       height: hitR * 2,
-      child: DragTarget<int>(
+      child: DragTarget<MapPawnDrag>(
         onAcceptWithDetails: (details) async {
-          await db?.mapDao.movePawn(details.data, q, r);
+          await db?.mapDao.movePawn(details.data.pawnId, q, r);
         },
         builder: (ctx, candidateData, _) {
           final isHovered = candidateData.isNotEmpty;

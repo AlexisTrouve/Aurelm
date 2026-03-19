@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/map_provider.dart';
+import '../map_drag_types.dart';
 
 // ---------------------------------------------------------------------------
 // Slot layout — offsets as fractions of cellSize from cell center.
@@ -224,9 +225,9 @@ class CellDragTargetOverlay extends StatelessWidget {
       top: center.dy - hitR,
       width: hitR * 2,
       height: hitR * 2,
-      child: DragTarget<int>(
+      child: DragTarget<MapAssetDrag>(
         onAcceptWithDetails: (details) =>
-            onDrop(details.data, q, r),
+            onDrop(details.data.assetId, q, r),
         builder: (ctx, candidateData, _) {
           // Subtle highlight when an asset is hovering over this cell
           final isHovered = candidateData.isNotEmpty;

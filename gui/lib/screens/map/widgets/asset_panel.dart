@@ -5,6 +5,7 @@ import '../../../data/database.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/map_provider.dart';
 import '../asset_importer.dart';
+import '../map_drag_types.dart';
 
 /// Left panel — asset library.
 /// Each asset is a [Draggable<int>] (asset id) that can be dropped on canvas cells.
@@ -82,8 +83,8 @@ class _AssetTile extends StatelessWidget {
       gaplessPlayback: true,
     );
 
-    return Draggable<int>(
-      data: asset.id,
+    return Draggable<MapAssetDrag>(
+      data: MapAssetDrag(asset.id),
       // Shown under the finger while dragging
       feedback: Material(
         elevation: 4,
