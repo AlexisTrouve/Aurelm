@@ -75,7 +75,7 @@ Future<List<CellTerrainProposal>> detectTerrainFromImage({
       final double cx;
       final double cy;
       if (gridType == 'hex') {
-        cx = cellSize * sqrt(3) * (q + r * 0.5);
+        cx = cellSize * sqrt(3) * (q + (r % 2) * 0.5);
         cy = cellSize * 1.5 * r;
       } else {
         cx = q * cellSize + cellSize / 2;

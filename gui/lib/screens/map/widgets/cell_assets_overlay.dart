@@ -115,7 +115,7 @@ class CellAssetsOverlay extends ConsumerWidget {
     final Offset center;
     if (gridType == 'hex') {
       center = Offset(
-        cellSize * sqrt(3) * (coord.q + coord.r * 0.5),
+        cellSize * sqrt(3) * (coord.q + (coord.r % 2) * 0.5),
         cellSize * 1.5 * coord.r,
       );
     } else {
@@ -206,7 +206,7 @@ class CellDragTargetOverlay extends StatelessWidget {
     final Offset center;
     if (gridType == 'hex') {
       center = Offset(
-        cellSize * sqrt(3) * (q + r * 0.5),
+        cellSize * sqrt(3) * (q + (r % 2) * 0.5),
         cellSize * 1.5 * r,
       );
     } else {

@@ -140,9 +140,11 @@ class GridPainter extends CustomPainter {
   // Geometry — hex (pointy-top)
   // ---------------------------------------------------------------------------
 
-  /// Center pixel of hex cell (q,r) with pointy-top orientation.
+  /// Center pixel of hex cell (q,r) — offset coordinates (odd-r).
+  /// Even rows: no offset. Odd rows: shifted right by half a hex.
+  /// This keeps columns visually straight (rectangular bounding box).
   Offset _hexCenter(int q, int r, double size) {
-    final x = size * sqrt(3) * (q + r * 0.5);
+    final x = size * sqrt(3) * (q + (r % 2) * 0.5);
     final y = size * 1.5 * r;
     return Offset(x, y);
   }
@@ -220,34 +222,17 @@ class GridPainter extends CustomPainter {
       return (q: q, r: r);
     }
 
-    // Hex pointy-top: invert the forward formula.
-    // Forward: x = size*sqrt(3)*(q + r*0.5), y = size*1.5*r
-    // From y: r_approx = y / (1.5 * size)
-    // From x: q_approx = x / (sqrt(3)*size) - r*0.5
-    // Then cube-round to nearest valid hex.
+    // Hex offset-coordinates (odd-r): invert the forward formula.
+    // Forward: x = size*sqrt(3)*(q + (r%2)*0.5), y = size*1.5*r
+    // From y: r_approx = y / (1.5 * size)  → round to get r
+    // From x: q_approx = x / (sqrt(3)*size) - (r%2)*0.5
     final s = cellSize;
     final fracR = localPos.dy / (1.5 * s);
-    final fracQ = localPos.dx / (sqrt(3) * s) - fracR * 0.5;
+    final rr0 = fracR.round().clamp(0, gridRows - 1);
+    final fracQ = localPos.dx / (sqrt(3) * s) - (rr0 % 2) * 0.5;
     // Cube coordinates
-    final fracS = -fracQ - fracR;
-
-    var rq = fracQ.round();
-    var rr = fracR.round();
-    var rs = fracS.round();
-
-    final dq = (rq - fracQ).abs();
-    final dr = (rr - fracR).abs();
-    final ds = (rs - fracS).abs();
-
-    if (dq > dr && dq > ds) {
-      rq = -rr - rs;
-    } else if (dr > ds) {
-      rr = -rq - rs;
-    } else {
-      rs = -rq - rr;
-    }
-
-    if (rq < 0 || rr < 0 || rq >= gridCols || rr >= gridRows) return null;
-    return (q: rq, r: rr);
+    final rq = fracQ.round().clamp(0, gridCols - 1);
+    if (rq < 0 || rr0 < 0 || rq >= gridCols || rr0 >= gridRows) return null;
+    return (q: rq, r: rr0);
   }
 }
