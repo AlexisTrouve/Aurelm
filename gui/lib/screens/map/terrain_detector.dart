@@ -225,6 +225,6 @@ String _classify(double h, double s, double v) {
     return 'mountain';
   }
 
-  // Ruins: fallback
-  return 'ruins';
+  // Plain: fallback (unclassified = open ground)
+  return 'plain';
 }

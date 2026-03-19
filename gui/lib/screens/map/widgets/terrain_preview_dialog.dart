@@ -21,7 +21,6 @@ const _terrainColors = {
   'swamp':    Color(0xFF558B2F),
   'tundra':   Color(0xFF80CBC4),
   'glacier':  Color(0xFFE0F7FA),
-  'ruins':    Color(0xFF8D6E63),
 };
 
 Color _color(String t) => _terrainColors[t] ?? const Color(0xFF616161);

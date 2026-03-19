@@ -17,7 +17,6 @@ const _terrainColors = {
   'sea':      Color(0xFF1565C0),
   'desert':   Color(0xFFFFD54F),
   'swamp':    Color(0xFF558B2F),
-  'ruins':    Color(0xFF8D6E63),
 };
 
 Color _terrainColor(String type) =>

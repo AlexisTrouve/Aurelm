@@ -9,8 +9,8 @@ import '../../../providers/database_provider.dart';
 import '../../../providers/civilization_provider.dart';
 
 const _terrainOptions = [
-  'plain', 'forest', 'mountain', 'river',
-  'coast', 'sea', 'desert', 'swamp', 'ruins',
+  'plain', 'forest', 'hills', 'mountain',
+  'river', 'coast', 'sea', 'desert', 'swamp', 'tundra', 'glacier',
 ];
 
 const _eventTypeOptions = [
