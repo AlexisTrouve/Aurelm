@@ -22,16 +22,16 @@ Color _terrainColor(String type) =>
     _terrainColors[type] ?? const Color(0xFF616161);
 
 // ---------------------------------------------------------------------------
-// Civ tint colors (cycled by civ index)
+// Civ border colors (solid, cycled by civ index)
 // ---------------------------------------------------------------------------
 
-const _civTints = [
-  Color(0x55E53935), // red
-  Color(0x551E88E5), // blue
-  Color(0x5543A047), // green
-  Color(0x55FB8C00), // orange
-  Color(0x558E24AA), // purple
-  Color(0x5500ACC1), // cyan
+const _civColors = [
+  Color(0xFFE53935), // red
+  Color(0xFF1E88E5), // blue
+  Color(0xFF43A047), // green
+  Color(0xFFFB8C00), // orange
+  Color(0xFF8E24AA), // purple
+  Color(0xFF00ACC1), // cyan
 ];
 
 // ---------------------------------------------------------------------------
@@ -63,21 +63,20 @@ class GridPainter extends CustomPainter {
     int idx = 0;
     for (final c in cells) {
       if (c.civName != null && !_civIndex.containsKey(c.civName)) {
-        _civIndex[c.civName!] = idx++ % _civTints.length;
+        _civIndex[c.civName!] = idx++ % _civColors.length;
       }
     }
   }
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Build a fast lookup: (q,r) → cell
+    // Build a fast lookup: (q,r) → civName
     final cellMap = <({int q, int r}), MapCellWithDetails>{};
     for (final c in cells) {
       cellMap[(q: c.cell.q, r: c.cell.r)] = c;
     }
 
     final terrainPaint = Paint()..style = PaintingStyle.fill;
-    final civPaint = Paint()..style = PaintingStyle.fill;
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8
@@ -86,6 +85,11 @@ class GridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..color = Colors.white;
+    // Civ border: thick stroke on exterior edges only
+    final civBorderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
 
     final labelStyle = TextStyle(
       fontSize: cellSize * 0.22,
@@ -110,22 +114,32 @@ class GridPainter extends CustomPainter {
         terrainPaint.color = _terrainColor(terrain);
         canvas.drawPath(path, terrainPaint);
 
-        // Overlay civ tint
-        if (civName != null) {
-          final tintIdx = _civIndex[civName] ?? 0;
-          civPaint.color = _civTints[tintIdx];
-          canvas.drawPath(path, civPaint);
-        }
-
         // Grid border
         canvas.drawPath(path, borderPaint);
+
+        // Civ territory border — only on exterior edges
+        if (civName != null) {
+          final civIdx = _civIndex[civName] ?? 0;
+          final civColor = _civColors[civIdx % _civColors.length];
+          civBorderPaint
+            ..color = civColor
+            ..strokeWidth = (cellSize * 0.18).clamp(2.0, 8.0);
+
+          final edgePath = gridType == 'hex'
+              ? _hexExteriorEdges(q, r, cellSize, civName, cellMap)
+              : _squareExteriorEdges(q, r, cellSize, civName, cellMap);
+
+          if (edgePath != null) {
+            canvas.drawPath(edgePath, civBorderPaint);
+          }
+        }
 
         // Selection highlight
         if (isSelected) {
           canvas.drawPath(path, selectedPaint);
         }
 
-        // Label text (clipped to cell)
+        // Label text
         if (label != null && label.isNotEmpty) {
           final center = gridType == 'hex'
               ? _hexCenter(q, r, cellSize)
@@ -134,6 +148,126 @@ class GridPainter extends CustomPainter {
         }
       }
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Exterior edge helpers
+  // ---------------------------------------------------------------------------
+
+  /// Returns a Path containing only the edges of hex (q,r) that border a cell
+  /// with a different civ (or no civ).  Returns null if all edges are interior.
+  Path? _hexExteriorEdges(
+    int q,
+    int r,
+    double size,
+    String civName,
+    Map<({int q, int r}), MapCellWithDetails> cellMap,
+  ) {
+    // Pointy-top hex: 6 neighbours in odd-r offset coordinates.
+    // Each neighbour corresponds to an edge between corner i and i+1.
+    final neighbors = _hexNeighbors(q, r);
+    final center = _hexCenter(q, r, size);
+
+    // Pre-compute the 6 corner points
+    final corners = List.generate(6, (i) {
+      final angle = (pi / 180) * (60 * i - 30);
+      return Offset(center.dx + size * cos(angle),
+                    center.dy + size * sin(angle));
+    });
+
+    final path = Path();
+    bool hasEdge = false;
+
+    for (int i = 0; i < 6; i++) {
+      final nb = neighbors[i];
+      final nbCiv = nb != null ? cellMap[nb]?.civName : null;
+      if (nbCiv != civName) {
+        // Exterior edge — draw from corner i to corner (i+1)%6
+        final a = corners[i];
+        final b = corners[(i + 1) % 6];
+        path.moveTo(a.dx, a.dy);
+        path.lineTo(b.dx, b.dy);
+        hasEdge = true;
+      }
+    }
+    return hasEdge ? path : null;
+  }
+
+  /// Hex neighbours in odd-r offset coordinates.
+  /// Returns a list of 6 nullable coords (null if out of bounds),
+  /// indexed by edge: [0]=NE, [1]=E, [2]=SE, [3]=SW, [4]=W, [5]=NW.
+  List<({int q, int r})?> _hexNeighbors(int q, int r) {
+    // Odd-r offset: parity-dependent neighbour offsets
+    final parity = r % 2; // 0 = even row, 1 = odd row
+    final offsets = parity == 0
+        ? const [
+            (dq:  0, dr: -1), // NE (edge 0: corner 0→1)
+            (dq:  1, dr:  0), // E  (edge 1: corner 1→2)
+            (dq:  0, dr:  1), // SE (edge 2: corner 2→3)
+            (dq: -1, dr:  1), // SW (edge 3: corner 3→4)
+            (dq: -1, dr:  0), // W  (edge 4: corner 4→5)
+            (dq: -1, dr: -1), // NW (edge 5: corner 5→0)
+          ]
+        : const [
+            (dq:  1, dr: -1),
+            (dq:  1, dr:  0),
+            (dq:  1, dr:  1),
+            (dq:  0, dr:  1),
+            (dq: -1, dr:  0),
+            (dq:  0, dr: -1),
+          ];
+
+    return offsets.map((o) {
+      final nq = q + o.dq;
+      final nr = r + o.dr;
+      if (nq < 0 || nq >= gridCols || nr < 0 || nr >= gridRows) return null;
+      return (q: nq, r: nr);
+    }).toList();
+  }
+
+  /// Returns exterior edges path for a square cell.
+  Path? _squareExteriorEdges(
+    int q,
+    int r,
+    double size,
+    String civName,
+    Map<({int q, int r}), MapCellWithDetails> cellMap,
+  ) {
+    // 4 neighbours: top, right, bottom, left
+    final neighbors = [
+      (q: q,   r: r-1), // top
+      (q: q+1, r: r  ), // right
+      (q: q,   r: r+1), // bottom
+      (q: q-1, r: r  ), // left
+    ];
+    final x = q * size;
+    final y = r * size;
+    // Corners: TL, TR, BR, BL
+    final corners = [
+      Offset(x,        y       ), // TL
+      Offset(x + size, y       ), // TR
+      Offset(x + size, y + size), // BR
+      Offset(x,        y + size), // BL
+    ];
+    // Edge i goes from corner i to corner (i+1)%4
+    // [0]=top(TL→TR), [1]=right(TR→BR), [2]=bottom(BR→BL), [3]=left(BL→TL)
+    final path = Path();
+    bool hasEdge = false;
+
+    for (int i = 0; i < 4; i++) {
+      final nb = neighbors[i];
+      final nbCiv = (nb.q >= 0 && nb.q < gridCols && nb.r >= 0 && nb.r < gridRows)
+          ? cellMap[(q: nb.q, r: nb.r)]?.civName
+          : null;
+      if (nbCiv != civName) {
+        final a = corners[i];
+        final b = corners[(i + 1) % 4];
+        path.moveTo(a.dx, a.dy);
+        path.lineTo(b.dx, b.dy);
+        hasEdge = true;
+      }
+    }
+    return hasEdge ? path : null;
   }
 
   // ---------------------------------------------------------------------------
