@@ -194,7 +194,7 @@ String _classify(double h, double s, double v) {
   // Sea: deep blue
   if (h >= 200 && h <= 240 && s > 0.40) return 'sea';
 
-  // Coast: light cyan-blue
+  // Coast / river: light cyan-blue or soft blue
   if (h >= 175 && h <= 215 && s >= 0.15 && s <= 0.50) return 'coast';
 
   // Tundra: muted cyan

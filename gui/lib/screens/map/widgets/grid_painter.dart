@@ -12,7 +12,6 @@ const _terrainColors = {
   'plain':    Color(0xFF8BC34A),
   'forest':   Color(0xFF388E3C),
   'mountain': Color(0xFF9E9E9E),
-  'river':    Color(0xFF29B6F6),
   'coast':    Color(0xFF80DEEA),
   'sea':      Color(0xFF1565C0),
   'desert':   Color(0xFFFFD54F),
