@@ -522,14 +522,17 @@ class _CanvasToolbar extends ConsumerWidget {
           ],
         ),
         actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Non, annuler'),
-          ),
+          // Destructif à gauche, gris discret
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: Colors.grey),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Oui, écraser quand même'),
+          ),
+          // Safe à droite, vert bien visible
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
           ),
         ],
       ),
