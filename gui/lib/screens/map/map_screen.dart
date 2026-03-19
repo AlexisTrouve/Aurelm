@@ -493,6 +493,29 @@ class _CanvasToolbar extends ConsumerWidget {
         ? mapRow.imagePath!
         : p.join(p.dirname(dbPath), mapRow.imagePath!);
 
+    // Confirmation — évite les missclicks
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Écraser le terrain actuel ?'),
+        content: const Text(
+          'L\'auto-détection va remplacer le terrain de toutes les cellules '
+          'de cette carte. Cette action ne peut pas être annulée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Continuer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
     // Show loading indicator while sampling pixels
     if (context.mounted) {
       showDialog<void>(
