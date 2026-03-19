@@ -15,7 +15,6 @@ class DisabledEntitiesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final civs = ref.watch(civListProvider);
     // null = all civs
     final disabledAsync = ref.watch(disabledEntitiesProvider(null));
 

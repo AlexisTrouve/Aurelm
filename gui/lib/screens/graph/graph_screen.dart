@@ -25,8 +25,6 @@ class GraphScreen extends ConsumerStatefulWidget {
 class _GraphScreenState extends ConsumerState<GraphScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
-  int? _hoveredNodeId;
-  String? _selectedRelType;
   bool _showLegend = false;
 
   @override

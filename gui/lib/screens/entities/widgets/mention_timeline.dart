@@ -59,7 +59,7 @@ class MentionTimeline extends ConsumerWidget {
                 // Fast travel → turn detail, auto-highlight the entity name
                 onTap: () => context.push(
                   '/turns/${m.mention.turnId}',
-                  extra: {'highlight': m.mention.mentionText ?? entityName},
+                  extra: {'highlight': m.mention.mentionText},
                 ),
               );
             }).toList(),

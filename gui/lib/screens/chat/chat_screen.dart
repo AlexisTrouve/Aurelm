@@ -259,7 +259,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       Navigator.pop(context);
                       await ref.read(chatProvider.notifier).newSession();
                       // Refresh the sessions list
-                      ref.refresh(filteredSessionsProvider);
+                      ref.invalidate(filteredSessionsProvider);
                     },
                     icon: const Icon(Icons.add),
                     label: const Text('Nouvelle'),
@@ -425,7 +425,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onSubmitted: (v) {
             if (v.trim().isNotEmpty) {
               ref.read(sessionsProvider).addTag(session.sessionId, v.trim());
-              ref.refresh(filteredSessionsProvider);
+              ref.invalidate(filteredSessionsProvider);
               Navigator.pop(context);
             }
           },
@@ -439,7 +439,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
                 ref.read(sessionsProvider).addTag(session.sessionId, controller.text.trim());
-                ref.refresh(filteredSessionsProvider);
+                ref.invalidate(filteredSessionsProvider);
                 Navigator.pop(context);
               }
             },
@@ -542,7 +542,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             tooltip: 'Nouvelle conversation',
             onPressed: () async {
               await ref.read(chatProvider.notifier).newSession();
-              if (mounted) ref.refresh(filteredSessionsProvider);
+              if (mounted) ref.invalidate(filteredSessionsProvider);
             },
           ),
           // Session actions menu (duplicate, copy conversation)
@@ -553,7 +553,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               switch (value) {
                 case 'duplicate':
                   await ref.read(chatProvider.notifier).duplicateCurrentSession();
-                  if (mounted) ref.refresh(filteredSessionsProvider);
+                  if (mounted) ref.invalidate(filteredSessionsProvider);
                 case 'copy_conv':
                   ref.read(chatProvider.notifier).copyConversation();
               }
@@ -1254,7 +1254,7 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
         btn(Icons.format_quote, 'Citer', () => widget.onQuote(message)),
         btn(Icons.fork_right, 'Dupliquer depuis ici', () async {
           await notifier.duplicateCurrentSessionFrom(index);
-          if (context.mounted) ref.refresh(filteredSessionsProvider);
+          if (context.mounted) ref.invalidate(filteredSessionsProvider);
         }),
         btn(Icons.refresh, 'Réessayer', () => notifier.retryMessage(index)),
       ];
