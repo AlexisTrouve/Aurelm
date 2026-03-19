@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -338,8 +339,103 @@ class _MapCanvas extends ConsumerStatefulWidget {
 }
 
 class _MapCanvasState extends ConsumerState<_MapCanvas> {
-  // Zoom level — adjusts cell size
+  // Cell size drives grid rendering resolution (toolbar slider)
   double _cellSize = 30.0;
+
+  // InteractiveViewer transform controller — allows programmatic pan/zoom
+  final _transformCtrl = TransformationController();
+
+  // Focus node to capture keyboard events on the canvas area
+  final _focusNode = FocusNode();
+
+  // Canvas units moved per key press (before scale factor).
+  // Actual screen-space movement = _panStep * currentScale, so the amount
+  // of canvas terrain covered per key press stays constant regardless of zoom.
+  static const _panStep = 40.0;
+  // Zoom factor per A/E key press
+  static const _zoomIn  = 1.15;
+  static const _zoomOut = 0.87;
+
+  @override
+  void dispose() {
+    _transformCtrl.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// True when a text input widget has keyboard focus — navigation keys should
+  /// not fire in that case to avoid interfering with typing.
+  bool get _textFieldFocused {
+    final focus = FocusManager.instance.primaryFocus;
+    // EditableText is the base widget behind TextField / TextFormField
+    return focus?.context?.widget is EditableText;
+  }
+
+  /// Handle keyboard navigation: arrows + ZQSD → pan, A → zoom out, E → zoom in.
+  KeyEventResult _onKeyEvent(FocusNode _, KeyEvent event) {
+    // Only act on down or repeat events, and never steal from text fields
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (_textFieldFocused) return KeyEventResult.ignored;
+
+    final scale = _transformCtrl.value.getMaxScaleOnAxis();
+    // Screen-space step: constant canvas-space movement → scales with zoom
+    final step = _panStep * scale;
+
+    Offset? pan;
+    double? zoomFactor;
+
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:
+      case LogicalKeyboardKey.keyQ:
+        pan = Offset(step, 0);
+      case LogicalKeyboardKey.arrowRight:
+      case LogicalKeyboardKey.keyD:
+        pan = Offset(-step, 0);
+      case LogicalKeyboardKey.arrowUp:
+      case LogicalKeyboardKey.keyZ:
+        pan = Offset(0, step);
+      case LogicalKeyboardKey.arrowDown:
+      case LogicalKeyboardKey.keyS:
+        pan = Offset(0, -step);
+      case LogicalKeyboardKey.keyA:
+        zoomFactor = _zoomOut;
+      case LogicalKeyboardKey.keyE:
+        zoomFactor = _zoomIn;
+      default:
+        return KeyEventResult.ignored;
+    }
+
+    if (pan != null) {
+      // Shift the translation entries of the matrix directly (screen-space)
+      final m = _transformCtrl.value.clone();
+      m.storage[12] += pan.dx;
+      m.storage[13] += pan.dy;
+      _transformCtrl.value = m;
+    } else if (zoomFactor != null) {
+      final currentScale = _transformCtrl.value.getMaxScaleOnAxis();
+      final newScale = (currentScale * zoomFactor).clamp(0.3, 5.0);
+      final actualFactor = newScale / currentScale;
+      if (actualFactor == 1.0) return KeyEventResult.handled;
+
+      // Zoom around the center of the canvas area
+      final size = context.size;
+      final cx = (size?.width ?? 400) / 2;
+      final cy = (size?.height ?? 300) / 2;
+
+      final m = _transformCtrl.value.clone();
+      // Adjust translation so the focal center stays fixed on screen
+      m.storage[12] = actualFactor * (m.storage[12] - cx) + cx;
+      m.storage[13] = actualFactor * (m.storage[13] - cy) + cy;
+      // Scale uniformly (only the diagonal x/y entries)
+      m.storage[0]  *= actualFactor;
+      m.storage[5]  *= actualFactor;
+      _transformCtrl.value = m;
+    }
+
+    return KeyEventResult.handled;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +465,11 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
         ? _cellSize * 1.5 * rows + _cellSize * 0.5
         : _cellSize * rows.toDouble();
 
-    return Column(
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _onKeyEvent,
+      child: Column(
       children: [
         // Toolbar: image upload + zoom slider
         _CanvasToolbar(
@@ -381,7 +481,12 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: InteractiveViewer(
+          child: GestureDetector(
+            // Clicking the canvas re-requests focus so keys work after
+            // the user clicks away to a text field and back
+            onTap: () => _focusNode.requestFocus(),
+            child: InteractiveViewer(
+            transformationController: _transformCtrl,
             constrained: false,
             minScale: 0.3,
             maxScale: 5,
@@ -473,7 +578,9 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
             ),
           ),
         ),
+        ),
       ],
+      ),
     );
   }
 
