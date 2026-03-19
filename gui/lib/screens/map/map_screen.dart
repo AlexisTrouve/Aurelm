@@ -497,19 +497,39 @@ class _CanvasToolbar extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Écraser le terrain actuel ?'),
-        content: const Text(
-          'L\'auto-détection va remplacer le terrain de toutes les cellules '
-          'de cette carte. Cette action ne peut pas être annulée.',
+        icon: const Icon(Icons.warning_amber_rounded,
+            color: Colors.red, size: 48),
+        title: const Text(
+          'ATTENTION — Action irréversible',
+          style: TextStyle(
+              color: Colors.red, fontWeight: FontWeight.bold),
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'L\'auto-détection va ÉCRASER DÉFINITIVEMENT le terrain '
+              'de toutes les cellules de cette carte.',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Tout terrain modifié manuellement sera perdu. '
+              'Il n\'y a aucun moyen d\'annuler cette opération.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
-          ),
           FilledButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Non, annuler'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Continuer'),
+            child: const Text('Oui, écraser quand même'),
           ),
         ],
       ),
