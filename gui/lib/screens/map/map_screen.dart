@@ -11,8 +11,10 @@ import '../../models/map_with_details.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/map_provider.dart';
 import '../../widgets/common/empty_state.dart';
+import 'terrain_detector.dart';
 import 'widgets/cell_editor_panel.dart';
 import 'widgets/grid_painter.dart';
+import 'widgets/terrain_preview_dialog.dart';
 
 // ---------------------------------------------------------------------------
 // Map screen — 3-panel layout
@@ -457,6 +459,16 @@ class _CanvasToolbar extends ConsumerWidget {
           ),
           const Icon(Icons.zoom_in, size: 16),
           const SizedBox(width: 8),
+          // Auto-detect terrain from image
+          IconButton(
+            icon: const Icon(Icons.auto_fix_high, size: 18),
+            tooltip: mapRow.imagePath == null
+                ? 'Charger une image d\'abord'
+                : 'Auto-détecter le terrain',
+            onPressed: mapRow.imagePath == null || dbPath == null
+                ? null
+                : () => _autoDetect(context, ref, mapRow, dbPath!),
+          ),
           // Image upload
           IconButton(
             icon: const Icon(Icons.image_outlined, size: 18),
@@ -466,6 +478,58 @@ class _CanvasToolbar extends ConsumerWidget {
                 : () => _pickImage(context, ref, dbPath!),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _autoDetect(
+    BuildContext context,
+    WidgetRef ref,
+    MapRow mapRow,
+    String dbPath,
+  ) async {
+    // Resolve absolute image path
+    final imagePath = p.isAbsolute(mapRow.imagePath!)
+        ? mapRow.imagePath!
+        : p.join(p.dirname(dbPath), mapRow.imagePath!);
+
+    // Show loading indicator while sampling pixels
+    if (context.mounted) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AlertDialog(
+          content: Row(children: [
+            CircularProgressIndicator(),
+            SizedBox(width: 16),
+            Text('Analyse en cours…'),
+          ]),
+        ),
+      );
+    }
+
+    final proposals = await detectTerrainFromImage(
+      imagePath: imagePath,
+      gridType: mapRow.gridType,
+      gridCols: mapRow.gridCols,
+      gridRows: mapRow.gridRows,
+      cellSize: 30.0, // reference cell size — only proportions matter
+    );
+
+    // Dismiss loading
+    if (context.mounted) Navigator.of(context).pop();
+
+    if (proposals.isEmpty || !context.mounted) return;
+
+    // Show preview dialog
+    await showDialog<bool>(
+      context: context,
+      builder: (_) => TerrainPreviewDialog(
+        mapId: mapId,
+        proposals: proposals,
+        gridCols: mapRow.gridCols,
+        gridRows: mapRow.gridRows,
+        gridType: mapRow.gridType,
       ),
     );
   }
