@@ -49,6 +49,9 @@ part 'database.g.dart';
     MapCellAssets,
     // Map pawns (migration 033)
     MapEntityPawns,
+    // Map cell links — entities + subjects on cells (migration 034)
+    MapCellEntities,
+    MapCellSubjects,
   ],
   daos: [
     CivilizationDao,
@@ -256,6 +259,33 @@ void _ensureMigrations(dynamic db) {
         UNIQUE(map_id, entity_id)
     )''',
     "CREATE INDEX IF NOT EXISTS idx_map_pawns_cell ON map_entity_pawns(map_id, q, r)",
+    // Migration 034: map cell links
+    '''CREATE TABLE IF NOT EXISTS map_cell_entities (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_id      INTEGER NOT NULL REFERENCES map_maps(id)        ON DELETE CASCADE,
+        q           INTEGER NOT NULL,
+        r           INTEGER NOT NULL,
+        entity_id   INTEGER NOT NULL REFERENCES entity_entities(id) ON DELETE CASCADE,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(map_id, q, r, entity_id)
+    )''',
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_entities_cell   ON map_cell_entities(map_id, q, r)",
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_entities_entity ON map_cell_entities(entity_id)",
+    '''CREATE TABLE IF NOT EXISTS map_cell_subjects (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_id      INTEGER NOT NULL REFERENCES map_maps(id)          ON DELETE CASCADE,
+        q           INTEGER NOT NULL,
+        r           INTEGER NOT NULL,
+        subject_id  INTEGER NOT NULL REFERENCES subject_subjects(id)  ON DELETE CASCADE,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(map_id, q, r, subject_id)
+    )''',
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_subjects_cell    ON map_cell_subjects(map_id, q, r)",
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_subjects_subject ON map_cell_subjects(subject_id)",
+    // Extend notes with map cell reference
+    "ALTER TABLE notes ADD COLUMN map_id      INTEGER REFERENCES map_maps(id) ON DELETE CASCADE",
+    "ALTER TABLE notes ADD COLUMN map_cell_q  INTEGER",
+    "ALTER TABLE notes ADD COLUMN map_cell_r  INTEGER",
   ];
 
   for (final sql in statements) {

@@ -119,6 +119,44 @@ class MapCellEvents extends Table {
   TextColumn get createdAt => text().named('created_at')();
 }
 
+/// Drift table for map_cell_entities — entities linked to a specific cell (many-to-many).
+@DataClassName('MapCellEntityRow')
+class MapCellEntities extends Table {
+  @override
+  String get tableName => 'map_cell_entities';
+
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get mapId => integer().named('map_id')();
+  IntColumn get q => integer()();
+  IntColumn get r => integer()();
+  IntColumn get entityId => integer().named('entity_id')();
+  TextColumn get createdAt => text().named('created_at')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {mapId, q, r, entityId}
+      ];
+}
+
+/// Drift table for map_cell_subjects — subjects linked to a specific cell (many-to-many).
+@DataClassName('MapCellSubjectRow')
+class MapCellSubjects extends Table {
+  @override
+  String get tableName => 'map_cell_subjects';
+
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get mapId => integer().named('map_id')();
+  IntColumn get q => integer()();
+  IntColumn get r => integer()();
+  IntColumn get subjectId => integer().named('subject_id')();
+  TextColumn get createdAt => text().named('created_at')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {mapId, q, r, subjectId}
+      ];
+}
+
 /// Drift table for map_entity_pawns — movable entity tokens on the map.
 /// UNIQUE(map_id, entity_id): one pawn per entity per map.
 @DataClassName('MapPawnRow')

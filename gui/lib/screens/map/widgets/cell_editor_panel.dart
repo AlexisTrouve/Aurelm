@@ -1,12 +1,19 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../data/database.dart';
 import '../../../models/map_with_details.dart';
+import '../../../models/cell_linked_entity.dart';
+import '../../../models/cell_linked_subject.dart';
+import '../../../models/entity_with_details.dart';
+import '../../../models/subject_with_details.dart';
 import '../../../providers/map_provider.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/civilization_provider.dart';
+import '../../../providers/entity_provider.dart';
+import '../../../providers/subject_provider.dart';
 
 const _terrainOptions = [
   'plain', 'forest', 'hills', 'mountain',
@@ -273,6 +280,30 @@ class _CellEditorPanelState extends ConsumerState<CellEditorPanel> {
                 ),
                 const SizedBox(height: 16),
 
+                // Linked entities
+                _CellEntitiesSection(
+                  mapId: widget.mapId,
+                  q: widget.coord.q,
+                  r: widget.coord.r,
+                ),
+                const SizedBox(height: 16),
+
+                // Linked subjects
+                _CellSubjectsSection(
+                  mapId: widget.mapId,
+                  q: widget.coord.q,
+                  r: widget.coord.r,
+                ),
+                const SizedBox(height: 16),
+
+                // Cell notes
+                _CellNotesSection(
+                  mapId: widget.mapId,
+                  q: widget.coord.q,
+                  r: widget.coord.r,
+                ),
+                const SizedBox(height: 16),
+
                 // Events section
                 Row(
                   children: [
@@ -402,6 +433,455 @@ class _CellIconsSection extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Linked entities section
+// ---------------------------------------------------------------------------
+
+class _CellEntitiesSection extends ConsumerStatefulWidget {
+  final int mapId;
+  final int q;
+  final int r;
+  const _CellEntitiesSection(
+      {required this.mapId, required this.q, required this.r});
+
+  @override
+  ConsumerState<_CellEntitiesSection> createState() =>
+      _CellEntitiesSectionState();
+}
+
+class _CellEntitiesSectionState extends ConsumerState<_CellEntitiesSection> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final linkedAsync = ref.watch(
+        cellLinkedEntitiesProvider((mapId: widget.mapId, q: widget.q, r: widget.r)));
+    final allEntitiesAsync = ref.watch(entityListProvider);
+
+    final linked = linkedAsync.valueOrNull ?? [];
+    final linkedIds = linked.map((e) => e.entityId).toSet();
+
+    // Filter for search suggestions — exclude already linked
+    final allEntities = allEntitiesAsync.valueOrNull ?? [];
+    final suggestions = _query.isEmpty
+        ? <EntityWithDetails>[]
+        : allEntities
+            .where((e) =>
+                e.entity.canonicalName
+                    .toLowerCase()
+                    .contains(_query.toLowerCase()) &&
+                !linkedIds.contains(e.entity.id))
+            .take(6)
+            .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Entités', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 6),
+        // Chips of linked entities
+        if (linked.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: linked
+                .map((e) => _LinkedChip(
+                      label: e.entityName,
+                      color: _entityTypeColor(e.entityType),
+                      onDelete: () {
+                        final db = ref.read(databaseProvider);
+                        db?.mapDao.removeCellEntity(
+                            widget.mapId, widget.q, widget.r, e.entityId);
+                      },
+                      onTap: () =>
+                          context.push('/entities/${e.entityId}'),
+                    ))
+                .toList(),
+          ),
+        const SizedBox(height: 6),
+        // Search field to add
+        TextField(
+          controller: _searchCtrl,
+          decoration: const InputDecoration(
+            hintText: 'Lier une entité...',
+            prefixIcon: Icon(Icons.search, size: 14),
+            isDense: true,
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          ),
+          style: const TextStyle(fontSize: 12),
+          onChanged: (v) => setState(() => _query = v),
+        ),
+        if (suggestions.isNotEmpty)
+          Material(
+            elevation: 2,
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: suggestions.length,
+              itemBuilder: (_, i) {
+                final ewd = suggestions[i];
+                return ListTile(
+                  dense: true,
+                  title: Text(ewd.entity.canonicalName,
+                      style: const TextStyle(fontSize: 12)),
+                  subtitle: Text(ewd.entity.entityType,
+                      style: const TextStyle(fontSize: 10)),
+                  onTap: () async {
+                    final db = ref.read(databaseProvider);
+                    await db?.mapDao.addCellEntity(
+                        widget.mapId, widget.q, widget.r, ewd.entity.id);
+                    setState(() {
+                      _query = '';
+                      _searchCtrl.clear();
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Linked subjects section
+// ---------------------------------------------------------------------------
+
+class _CellSubjectsSection extends ConsumerStatefulWidget {
+  final int mapId;
+  final int q;
+  final int r;
+  const _CellSubjectsSection(
+      {required this.mapId, required this.q, required this.r});
+
+  @override
+  ConsumerState<_CellSubjectsSection> createState() =>
+      _CellSubjectsSectionState();
+}
+
+class _CellSubjectsSectionState extends ConsumerState<_CellSubjectsSection> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final linkedAsync = ref.watch(
+        cellLinkedSubjectsProvider((mapId: widget.mapId, q: widget.q, r: widget.r)));
+    final allSubjectsAsync = ref.watch(subjectListProvider);
+
+    final linked = linkedAsync.valueOrNull ?? [];
+    final linkedIds = linked.map((s) => s.subjectId).toSet();
+
+    final allSubjects = allSubjectsAsync.valueOrNull ?? [];
+    final suggestions = _query.isEmpty
+        ? <SubjectWithDetails>[]
+        : allSubjects
+            .where((s) =>
+                s.subject.title
+                    .toLowerCase()
+                    .contains(_query.toLowerCase()) &&
+                !linkedIds.contains(s.subject.id))
+            .take(6)
+            .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Sujets', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 6),
+        if (linked.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: linked
+                .map((s) => _LinkedChip(
+                      label: s.title,
+                      color: _subjectStatusColor(s.status),
+                      onDelete: () {
+                        final db = ref.read(databaseProvider);
+                        db?.mapDao.removeCellSubject(
+                            widget.mapId, widget.q, widget.r, s.subjectId);
+                      },
+                      onTap: () =>
+                          context.push('/subjects/${s.subjectId}'),
+                    ))
+                .toList(),
+          ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _searchCtrl,
+          decoration: const InputDecoration(
+            hintText: 'Lier un sujet...',
+            prefixIcon: Icon(Icons.search, size: 14),
+            isDense: true,
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          ),
+          style: const TextStyle(fontSize: 12),
+          onChanged: (v) => setState(() => _query = v),
+        ),
+        if (suggestions.isNotEmpty)
+          Material(
+            elevation: 2,
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: suggestions.length,
+              itemBuilder: (_, i) {
+                final swd = suggestions[i];
+                return ListTile(
+                  dense: true,
+                  title: Text(swd.subject.title,
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis),
+                  subtitle: Text(
+                      '${swd.civName} · ${swd.subject.status}',
+                      style: const TextStyle(fontSize: 10)),
+                  onTap: () async {
+                    final db = ref.read(databaseProvider);
+                    await db?.mapDao.addCellSubject(
+                        widget.mapId, widget.q, widget.r, swd.subject.id);
+                    setState(() {
+                      _query = '';
+                      _searchCtrl.clear();
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cell notes section
+// ---------------------------------------------------------------------------
+
+class _CellNotesSection extends ConsumerWidget {
+  final int mapId;
+  final int q;
+  final int r;
+  const _CellNotesSection(
+      {required this.mapId, required this.q, required this.r});
+
+  Future<void> _addNote(BuildContext context, WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+
+    String title = '';
+    String content = '';
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajouter une note'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                  labelText: 'Titre', border: OutlineInputBorder()),
+              onChanged: (v) => title = v,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              decoration: const InputDecoration(
+                  labelText: 'Contenu', border: OutlineInputBorder()),
+              maxLines: 4,
+              onChanged: (v) => content = v,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (content.trim().isEmpty) return;
+              await db.mapDao.addCellNote(mapId, q, r,
+                  title: title.trim(), content: content.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notesAsync =
+        ref.watch(cellNotesProvider((mapId: mapId, q: q, r: r)));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('Notes', style: Theme.of(context).textTheme.labelLarge),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.add, size: 18),
+              tooltip: 'Ajouter une note',
+              onPressed: () => _addNote(context, ref),
+            ),
+          ],
+        ),
+        notesAsync.when(
+          data: (notesList) {
+            if (notesList.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text('Aucune note',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+              );
+            }
+            return Column(
+              children: notesList
+                  .map((n) => _NoteTile(
+                        note: n,
+                        onDelete: () {
+                          final db = ref.read(databaseProvider);
+                          db?.mapDao.deleteCellNote(n.id);
+                        },
+                      ))
+                  .toList(),
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+/// Reusable chip for linked entities / subjects.
+class _LinkedChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
+
+  const _LinkedChip({
+    required this.label,
+    required this.color,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Chip(
+        avatar: CircleAvatar(backgroundColor: color, radius: 5),
+        label: Text(label, style: const TextStyle(fontSize: 11)),
+        deleteIcon: const Icon(Icons.close, size: 12),
+        onDeleted: onDelete,
+        padding: EdgeInsets.zero,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+}
+
+class _NoteTile extends StatelessWidget {
+  final NoteRow note;
+  final VoidCallback onDelete;
+  const _NoteTile({required this.note, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (note.title.isNotEmpty)
+                  Text(note.title,
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(note.content,
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
+            tooltip: 'Supprimer',
+            onPressed: onDelete,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Entity type → accent color (for the chip avatar dot).
+Color _entityTypeColor(String type) {
+  const palette = {
+    'person': Color(0xFFE57373),
+    'civilization': Color(0xFF64B5F6),
+    'institution': Color(0xFFFFD54F),
+    'place': Color(0xFF81C784),
+    'technology': Color(0xFF4DD0E1),
+    'resource': Color(0xFFA1887F),
+    'creature': Color(0xFFCE93D8),
+    'event': Color(0xFFFF8A65),
+    'caste': Color(0xFFB0BEC5),
+    'belief': Color(0xFFF48FB1),
+  };
+  return palette[type] ?? const Color(0xFF90A4AE);
+}
+
+/// Subject status → color.
+Color _subjectStatusColor(String status) {
+  switch (status) {
+    case 'open':
+      return Colors.orange;
+    case 'resolved':
+      return Colors.green;
+    case 'abandoned':
+      return Colors.red;
+    default:
+      return Colors.grey;
   }
 }
 

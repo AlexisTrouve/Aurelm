@@ -4,11 +4,20 @@ import '../database.dart';
 import '../tables/maps.dart';
 import '../tables/civilizations.dart';
 import '../tables/entities.dart';
+import '../tables/subjects.dart';
+import '../tables/notes.dart';
 import '../../models/map_with_details.dart';
+import '../../models/cell_linked_entity.dart';
+import '../../models/cell_linked_subject.dart';
 
 part 'map_dao.g.dart';
 
-@DriftAccessor(tables: [MapMaps, MapCells, MapCellEvents, MapAssets, MapCellAssets, MapEntityPawns, CivCivilizations, EntityEntities])
+@DriftAccessor(tables: [
+  MapMaps, MapCells, MapCellEvents, MapAssets, MapCellAssets, MapEntityPawns,
+  MapCellEntities, MapCellSubjects,
+  CivCivilizations, EntityEntities,
+  SubjectSubjects, Notes,
+])
 class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
   MapDao(super.db);
 
@@ -282,5 +291,160 @@ class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
   /// Remove a pawn from the map.
   Future<void> removePawn(int pawnId) {
     return (delete(mapEntityPawns)..where((p) => p.id.equals(pawnId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cell ↔ entity links (map_cell_entities)
+  // ---------------------------------------------------------------------------
+
+  /// Stream of entities linked to a cell, ordered by name.
+  Stream<List<CellLinkedEntity>> watchCellLinkedEntities(
+      int mapId, int q, int r) {
+    return customSelect(
+      '''
+      SELECT mce.id AS cell_entity_id, e.id AS entity_id,
+             e.canonical_name, e.entity_type
+      FROM map_cell_entities mce
+      JOIN entity_entities e ON e.id = mce.entity_id
+      WHERE mce.map_id = ? AND mce.q = ? AND mce.r = ?
+      ORDER BY e.canonical_name
+      ''',
+      variables: [
+        Variable.withInt(mapId),
+        Variable.withInt(q),
+        Variable.withInt(r),
+      ],
+      readsFrom: {mapCellEntities, entityEntities},
+    ).watch().map((rows) => rows
+        .map((row) => CellLinkedEntity(
+              cellEntityId: row.read<int>('cell_entity_id'),
+              entityId: row.read<int>('entity_id'),
+              entityName: row.read<String>('canonical_name'),
+              entityType: row.read<String>('entity_type'),
+            ))
+        .toList());
+  }
+
+  /// Link an entity to a cell (idempotent via UNIQUE constraint).
+  Future<void> addCellEntity(int mapId, int q, int r, int entityId) {
+    final now = DateTime.now().toIso8601String();
+    return into(mapCellEntities).insertOnConflictUpdate(
+      MapCellEntitiesCompanion(
+        mapId: Value(mapId),
+        q: Value(q),
+        r: Value(r),
+        entityId: Value(entityId),
+        createdAt: Value(now),
+      ),
+    );
+  }
+
+  /// Remove an entity link from a cell.
+  Future<void> removeCellEntity(int mapId, int q, int r, int entityId) {
+    return (delete(mapCellEntities)
+          ..where((mce) =>
+              mce.mapId.equals(mapId) &
+              mce.q.equals(q) &
+              mce.r.equals(r) &
+              mce.entityId.equals(entityId)))
+        .go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cell ↔ subject links (map_cell_subjects)
+  // ---------------------------------------------------------------------------
+
+  /// Stream of subjects linked to a cell, ordered by title.
+  Stream<List<CellLinkedSubject>> watchCellLinkedSubjects(
+      int mapId, int q, int r) {
+    return customSelect(
+      '''
+      SELECT mcs.id AS cell_subject_id, s.id AS subject_id,
+             s.title, s.status, s.direction
+      FROM map_cell_subjects mcs
+      JOIN subject_subjects s ON s.id = mcs.subject_id
+      WHERE mcs.map_id = ? AND mcs.q = ? AND mcs.r = ?
+      ORDER BY s.title
+      ''',
+      variables: [
+        Variable.withInt(mapId),
+        Variable.withInt(q),
+        Variable.withInt(r),
+      ],
+      readsFrom: {mapCellSubjects, subjectSubjects},
+    ).watch().map((rows) => rows
+        .map((row) => CellLinkedSubject(
+              cellSubjectId: row.read<int>('cell_subject_id'),
+              subjectId: row.read<int>('subject_id'),
+              title: row.read<String>('title'),
+              status: row.read<String>('status'),
+              direction: row.read<String>('direction'),
+            ))
+        .toList());
+  }
+
+  /// Link a subject to a cell (idempotent).
+  Future<void> addCellSubject(int mapId, int q, int r, int subjectId) {
+    final now = DateTime.now().toIso8601String();
+    return into(mapCellSubjects).insertOnConflictUpdate(
+      MapCellSubjectsCompanion(
+        mapId: Value(mapId),
+        q: Value(q),
+        r: Value(r),
+        subjectId: Value(subjectId),
+        createdAt: Value(now),
+      ),
+    );
+  }
+
+  /// Remove a subject link from a cell.
+  Future<void> removeCellSubject(int mapId, int q, int r, int subjectId) {
+    return (delete(mapCellSubjects)
+          ..where((mcs) =>
+              mcs.mapId.equals(mapId) &
+              mcs.q.equals(q) &
+              mcs.r.equals(r) &
+              mcs.subjectId.equals(subjectId)))
+        .go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cell notes (uses the global notes table with map_id / map_cell_q / map_cell_r)
+  // ---------------------------------------------------------------------------
+
+  /// Stream of notes attached to a cell, newest first.
+  Stream<List<NoteRow>> watchCellNotes(int mapId, int q, int r) {
+    return (select(notes)
+          ..where((n) =>
+              n.mapId.equals(mapId) &
+              n.mapCellQ.equals(q) &
+              n.mapCellR.equals(r))
+          ..orderBy([(n) => OrderingTerm.desc(n.createdAt)]))
+        .watch();
+  }
+
+  /// Add a note to a cell.
+  Future<int> addCellNote(
+    int mapId,
+    int q,
+    int r, {
+    required String title,
+    required String content,
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return into(notes).insert(NotesCompanion(
+      mapId: Value(mapId),
+      mapCellQ: Value(q),
+      mapCellR: Value(r),
+      title: Value(title),
+      content: Value(content),
+      createdAt: Value(now),
+      updatedAt: Value(now),
+    ));
+  }
+
+  /// Delete a cell note by its id.
+  Future<void> deleteCellNote(int noteId) {
+    return (delete(notes)..where((n) => n.id.equals(noteId))).go();
   }
 }

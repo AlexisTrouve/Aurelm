@@ -5583,6 +5583,23 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
   late final GeneratedColumn<int> civId = GeneratedColumn<int>(
       'civ_id', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mapCellQMeta =
+      const VerificationMeta('mapCellQ');
+  @override
+  late final GeneratedColumn<int> mapCellQ = GeneratedColumn<int>(
+      'map_cell_q', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _mapCellRMeta =
+      const VerificationMeta('mapCellR');
+  @override
+  late final GeneratedColumn<int> mapCellR = GeneratedColumn<int>(
+      'map_cell_r', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -5632,6 +5649,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
         subjectId,
         turnId,
         civId,
+        mapId,
+        mapCellQ,
+        mapCellR,
         title,
         content,
         pinned,
@@ -5667,6 +5687,18 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
     if (data.containsKey('civ_id')) {
       context.handle(
           _civIdMeta, civId.isAcceptableOrUnknown(data['civ_id']!, _civIdMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    }
+    if (data.containsKey('map_cell_q')) {
+      context.handle(_mapCellQMeta,
+          mapCellQ.isAcceptableOrUnknown(data['map_cell_q']!, _mapCellQMeta));
+    }
+    if (data.containsKey('map_cell_r')) {
+      context.handle(_mapCellRMeta,
+          mapCellR.isAcceptableOrUnknown(data['map_cell_r']!, _mapCellRMeta));
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -5715,6 +5747,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, NoteRow> {
           .read(DriftSqlType.int, data['${effectivePrefix}turn_id']),
       civId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}civ_id']),
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id']),
+      mapCellQ: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_cell_q']),
+      mapCellR: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_cell_r']),
       title: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}title'])!,
       content: attachedDatabase.typeMapping
@@ -5750,6 +5788,11 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
 
   /// FK to civ_civilizations.id — null if note is on an entity/subject/turn
   final int? civId;
+
+  /// FK to a map cell — set when note is attached to a map cell.
+  final int? mapId;
+  final int? mapCellQ;
+  final int? mapCellR;
   final String title;
   final String content;
 
@@ -5766,6 +5809,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       this.subjectId,
       this.turnId,
       this.civId,
+      this.mapId,
+      this.mapCellQ,
+      this.mapCellR,
       required this.title,
       required this.content,
       required this.pinned,
@@ -5787,6 +5833,15 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
     }
     if (!nullToAbsent || civId != null) {
       map['civ_id'] = Variable<int>(civId);
+    }
+    if (!nullToAbsent || mapId != null) {
+      map['map_id'] = Variable<int>(mapId);
+    }
+    if (!nullToAbsent || mapCellQ != null) {
+      map['map_cell_q'] = Variable<int>(mapCellQ);
+    }
+    if (!nullToAbsent || mapCellR != null) {
+      map['map_cell_r'] = Variable<int>(mapCellR);
     }
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
@@ -5810,6 +5865,14 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           turnId == null && nullToAbsent ? const Value.absent() : Value(turnId),
       civId:
           civId == null && nullToAbsent ? const Value.absent() : Value(civId),
+      mapId:
+          mapId == null && nullToAbsent ? const Value.absent() : Value(mapId),
+      mapCellQ: mapCellQ == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mapCellQ),
+      mapCellR: mapCellR == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mapCellR),
       title: Value(title),
       content: Value(content),
       pinned: Value(pinned),
@@ -5828,6 +5891,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       subjectId: serializer.fromJson<int?>(json['subjectId']),
       turnId: serializer.fromJson<int?>(json['turnId']),
       civId: serializer.fromJson<int?>(json['civId']),
+      mapId: serializer.fromJson<int?>(json['mapId']),
+      mapCellQ: serializer.fromJson<int?>(json['mapCellQ']),
+      mapCellR: serializer.fromJson<int?>(json['mapCellR']),
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
       pinned: serializer.fromJson<int>(json['pinned']),
@@ -5845,6 +5911,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       'subjectId': serializer.toJson<int?>(subjectId),
       'turnId': serializer.toJson<int?>(turnId),
       'civId': serializer.toJson<int?>(civId),
+      'mapId': serializer.toJson<int?>(mapId),
+      'mapCellQ': serializer.toJson<int?>(mapCellQ),
+      'mapCellR': serializer.toJson<int?>(mapCellR),
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
       'pinned': serializer.toJson<int>(pinned),
@@ -5860,6 +5929,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           Value<int?> subjectId = const Value.absent(),
           Value<int?> turnId = const Value.absent(),
           Value<int?> civId = const Value.absent(),
+          Value<int?> mapId = const Value.absent(),
+          Value<int?> mapCellQ = const Value.absent(),
+          Value<int?> mapCellR = const Value.absent(),
           String? title,
           String? content,
           int? pinned,
@@ -5872,6 +5944,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
         subjectId: subjectId.present ? subjectId.value : this.subjectId,
         turnId: turnId.present ? turnId.value : this.turnId,
         civId: civId.present ? civId.value : this.civId,
+        mapId: mapId.present ? mapId.value : this.mapId,
+        mapCellQ: mapCellQ.present ? mapCellQ.value : this.mapCellQ,
+        mapCellR: mapCellR.present ? mapCellR.value : this.mapCellR,
         title: title ?? this.title,
         content: content ?? this.content,
         pinned: pinned ?? this.pinned,
@@ -5886,6 +5961,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
       subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
       turnId: data.turnId.present ? data.turnId.value : this.turnId,
       civId: data.civId.present ? data.civId.value : this.civId,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      mapCellQ: data.mapCellQ.present ? data.mapCellQ.value : this.mapCellQ,
+      mapCellR: data.mapCellR.present ? data.mapCellR.value : this.mapCellR,
       title: data.title.present ? data.title.value : this.title,
       content: data.content.present ? data.content.value : this.content,
       pinned: data.pinned.present ? data.pinned.value : this.pinned,
@@ -5903,6 +5981,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           ..write('subjectId: $subjectId, ')
           ..write('turnId: $turnId, ')
           ..write('civId: $civId, ')
+          ..write('mapId: $mapId, ')
+          ..write('mapCellQ: $mapCellQ, ')
+          ..write('mapCellR: $mapCellR, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
           ..write('pinned: $pinned, ')
@@ -5914,8 +5995,21 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
   }
 
   @override
-  int get hashCode => Object.hash(id, entityId, subjectId, turnId, civId, title,
-      content, pinned, noteType, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      entityId,
+      subjectId,
+      turnId,
+      civId,
+      mapId,
+      mapCellQ,
+      mapCellR,
+      title,
+      content,
+      pinned,
+      noteType,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5925,6 +6019,9 @@ class NoteRow extends DataClass implements Insertable<NoteRow> {
           other.subjectId == this.subjectId &&
           other.turnId == this.turnId &&
           other.civId == this.civId &&
+          other.mapId == this.mapId &&
+          other.mapCellQ == this.mapCellQ &&
+          other.mapCellR == this.mapCellR &&
           other.title == this.title &&
           other.content == this.content &&
           other.pinned == this.pinned &&
@@ -5939,6 +6036,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
   final Value<int?> subjectId;
   final Value<int?> turnId;
   final Value<int?> civId;
+  final Value<int?> mapId;
+  final Value<int?> mapCellQ;
+  final Value<int?> mapCellR;
   final Value<String> title;
   final Value<String> content;
   final Value<int> pinned;
@@ -5951,6 +6051,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     this.subjectId = const Value.absent(),
     this.turnId = const Value.absent(),
     this.civId = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.mapCellQ = const Value.absent(),
+    this.mapCellR = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
     this.pinned = const Value.absent(),
@@ -5964,6 +6067,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     this.subjectId = const Value.absent(),
     this.turnId = const Value.absent(),
     this.civId = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.mapCellQ = const Value.absent(),
+    this.mapCellR = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
     this.pinned = const Value.absent(),
@@ -5978,6 +6084,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     Expression<int>? subjectId,
     Expression<int>? turnId,
     Expression<int>? civId,
+    Expression<int>? mapId,
+    Expression<int>? mapCellQ,
+    Expression<int>? mapCellR,
     Expression<String>? title,
     Expression<String>? content,
     Expression<int>? pinned,
@@ -5991,6 +6100,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       if (subjectId != null) 'subject_id': subjectId,
       if (turnId != null) 'turn_id': turnId,
       if (civId != null) 'civ_id': civId,
+      if (mapId != null) 'map_id': mapId,
+      if (mapCellQ != null) 'map_cell_q': mapCellQ,
+      if (mapCellR != null) 'map_cell_r': mapCellR,
       if (title != null) 'title': title,
       if (content != null) 'content': content,
       if (pinned != null) 'pinned': pinned,
@@ -6006,6 +6118,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       Value<int?>? subjectId,
       Value<int?>? turnId,
       Value<int?>? civId,
+      Value<int?>? mapId,
+      Value<int?>? mapCellQ,
+      Value<int?>? mapCellR,
       Value<String>? title,
       Value<String>? content,
       Value<int>? pinned,
@@ -6018,6 +6133,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
       subjectId: subjectId ?? this.subjectId,
       turnId: turnId ?? this.turnId,
       civId: civId ?? this.civId,
+      mapId: mapId ?? this.mapId,
+      mapCellQ: mapCellQ ?? this.mapCellQ,
+      mapCellR: mapCellR ?? this.mapCellR,
       title: title ?? this.title,
       content: content ?? this.content,
       pinned: pinned ?? this.pinned,
@@ -6044,6 +6162,15 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
     }
     if (civId.present) {
       map['civ_id'] = Variable<int>(civId.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (mapCellQ.present) {
+      map['map_cell_q'] = Variable<int>(mapCellQ.value);
+    }
+    if (mapCellR.present) {
+      map['map_cell_r'] = Variable<int>(mapCellR.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -6074,6 +6201,9 @@ class NotesCompanion extends UpdateCompanion<NoteRow> {
           ..write('subjectId: $subjectId, ')
           ..write('turnId: $turnId, ')
           ..write('civId: $civId, ')
+          ..write('mapId: $mapId, ')
+          ..write('mapCellQ: $mapCellQ, ')
+          ..write('mapCellR: $mapCellR, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
           ..write('pinned: $pinned, ')
@@ -8620,6 +8750,676 @@ class MapEntityPawnsCompanion extends UpdateCompanion<MapPawnRow> {
   }
 }
 
+class $MapCellEntitiesTable extends MapCellEntities
+    with TableInfo<$MapCellEntitiesTable, MapCellEntityRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapCellEntitiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+      'entity_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, mapId, q, r, entityId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_cell_entities';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapCellEntityRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {mapId, q, r, entityId},
+      ];
+  @override
+  MapCellEntityRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapCellEntityRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}entity_id'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapCellEntitiesTable createAlias(String alias) {
+    return $MapCellEntitiesTable(attachedDatabase, alias);
+  }
+}
+
+class MapCellEntityRow extends DataClass
+    implements Insertable<MapCellEntityRow> {
+  final int id;
+  final int mapId;
+  final int q;
+  final int r;
+  final int entityId;
+  final String createdAt;
+  const MapCellEntityRow(
+      {required this.id,
+      required this.mapId,
+      required this.q,
+      required this.r,
+      required this.entityId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    map['entity_id'] = Variable<int>(entityId);
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapCellEntitiesCompanion toCompanion(bool nullToAbsent) {
+    return MapCellEntitiesCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      entityId: Value(entityId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapCellEntityRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapCellEntityRow(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      entityId: serializer.fromJson<int>(json['entityId']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'entityId': serializer.toJson<int>(entityId),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapCellEntityRow copyWith(
+          {int? id,
+          int? mapId,
+          int? q,
+          int? r,
+          int? entityId,
+          String? createdAt}) =>
+      MapCellEntityRow(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        entityId: entityId ?? this.entityId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapCellEntityRow copyWithCompanion(MapCellEntitiesCompanion data) {
+    return MapCellEntityRow(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellEntityRow(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('entityId: $entityId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, mapId, q, r, entityId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapCellEntityRow &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.entityId == this.entityId &&
+          other.createdAt == this.createdAt);
+}
+
+class MapCellEntitiesCompanion extends UpdateCompanion<MapCellEntityRow> {
+  final Value<int> id;
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<int> entityId;
+  final Value<String> createdAt;
+  const MapCellEntitiesCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapCellEntitiesCompanion.insert({
+    this.id = const Value.absent(),
+    required int mapId,
+    required int q,
+    required int r,
+    required int entityId,
+    required String createdAt,
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r),
+        entityId = Value(entityId),
+        createdAt = Value(createdAt);
+  static Insertable<MapCellEntityRow> custom({
+    Expression<int>? id,
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<int>? entityId,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (entityId != null) 'entity_id': entityId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapCellEntitiesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<int>? entityId,
+      Value<String>? createdAt}) {
+    return MapCellEntitiesCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      entityId: entityId ?? this.entityId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellEntitiesCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('entityId: $entityId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MapCellSubjectsTable extends MapCellSubjects
+    with TableInfo<$MapCellSubjectsTable, MapCellSubjectRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapCellSubjectsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _subjectIdMeta =
+      const VerificationMeta('subjectId');
+  @override
+  late final GeneratedColumn<int> subjectId = GeneratedColumn<int>(
+      'subject_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, mapId, q, r, subjectId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_cell_subjects';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapCellSubjectRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('subject_id')) {
+      context.handle(_subjectIdMeta,
+          subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta));
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {mapId, q, r, subjectId},
+      ];
+  @override
+  MapCellSubjectRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapCellSubjectRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      subjectId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}subject_id'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapCellSubjectsTable createAlias(String alias) {
+    return $MapCellSubjectsTable(attachedDatabase, alias);
+  }
+}
+
+class MapCellSubjectRow extends DataClass
+    implements Insertable<MapCellSubjectRow> {
+  final int id;
+  final int mapId;
+  final int q;
+  final int r;
+  final int subjectId;
+  final String createdAt;
+  const MapCellSubjectRow(
+      {required this.id,
+      required this.mapId,
+      required this.q,
+      required this.r,
+      required this.subjectId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    map['subject_id'] = Variable<int>(subjectId);
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapCellSubjectsCompanion toCompanion(bool nullToAbsent) {
+    return MapCellSubjectsCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      subjectId: Value(subjectId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapCellSubjectRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapCellSubjectRow(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      subjectId: serializer.fromJson<int>(json['subjectId']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'subjectId': serializer.toJson<int>(subjectId),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapCellSubjectRow copyWith(
+          {int? id,
+          int? mapId,
+          int? q,
+          int? r,
+          int? subjectId,
+          String? createdAt}) =>
+      MapCellSubjectRow(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        subjectId: subjectId ?? this.subjectId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapCellSubjectRow copyWithCompanion(MapCellSubjectsCompanion data) {
+    return MapCellSubjectRow(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellSubjectRow(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, mapId, q, r, subjectId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapCellSubjectRow &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.subjectId == this.subjectId &&
+          other.createdAt == this.createdAt);
+}
+
+class MapCellSubjectsCompanion extends UpdateCompanion<MapCellSubjectRow> {
+  final Value<int> id;
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<int> subjectId;
+  final Value<String> createdAt;
+  const MapCellSubjectsCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapCellSubjectsCompanion.insert({
+    this.id = const Value.absent(),
+    required int mapId,
+    required int q,
+    required int r,
+    required int subjectId,
+    required String createdAt,
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r),
+        subjectId = Value(subjectId),
+        createdAt = Value(createdAt);
+  static Insertable<MapCellSubjectRow> custom({
+    Expression<int>? id,
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<int>? subjectId,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (subjectId != null) 'subject_id': subjectId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapCellSubjectsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<int>? subjectId,
+      Value<String>? createdAt}) {
+    return MapCellSubjectsCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      subjectId: subjectId ?? this.subjectId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (subjectId.present) {
+      map['subject_id'] = Variable<int>(subjectId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellSubjectsCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AurelmDatabase extends GeneratedDatabase {
   _$AurelmDatabase(QueryExecutor e) : super(e);
   $AurelmDatabaseManager get managers => $AurelmDatabaseManager(this);
@@ -8645,6 +9445,10 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final $MapAssetsTable mapAssets = $MapAssetsTable(this);
   late final $MapCellAssetsTable mapCellAssets = $MapCellAssetsTable(this);
   late final $MapEntityPawnsTable mapEntityPawns = $MapEntityPawnsTable(this);
+  late final $MapCellEntitiesTable mapCellEntities =
+      $MapCellEntitiesTable(this);
+  late final $MapCellSubjectsTable mapCellSubjects =
+      $MapCellSubjectsTable(this);
   late final CivilizationDao civilizationDao =
       CivilizationDao(this as AurelmDatabase);
   late final TurnDao turnDao = TurnDao(this as AurelmDatabase);
@@ -8676,7 +9480,9 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
         mapCellEvents,
         mapAssets,
         mapCellAssets,
-        mapEntityPawns
+        mapEntityPawns,
+        mapCellEntities,
+        mapCellSubjects
       ];
 }
 
@@ -11321,6 +12127,9 @@ typedef $$NotesTableCreateCompanionBuilder = NotesCompanion Function({
   Value<int?> subjectId,
   Value<int?> turnId,
   Value<int?> civId,
+  Value<int?> mapId,
+  Value<int?> mapCellQ,
+  Value<int?> mapCellR,
   Value<String> title,
   Value<String> content,
   Value<int> pinned,
@@ -11334,6 +12143,9 @@ typedef $$NotesTableUpdateCompanionBuilder = NotesCompanion Function({
   Value<int?> subjectId,
   Value<int?> turnId,
   Value<int?> civId,
+  Value<int?> mapId,
+  Value<int?> mapCellQ,
+  Value<int?> mapCellR,
   Value<String> title,
   Value<String> content,
   Value<int> pinned,
@@ -11365,6 +12177,15 @@ class $$NotesTableFilterComposer
 
   ColumnFilters<int> get civId => $composableBuilder(
       column: $table.civId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapCellQ => $composableBuilder(
+      column: $table.mapCellQ, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapCellR => $composableBuilder(
+      column: $table.mapCellR, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get title => $composableBuilder(
       column: $table.title, builder: (column) => ColumnFilters(column));
@@ -11409,6 +12230,15 @@ class $$NotesTableOrderingComposer
   ColumnOrderings<int> get civId => $composableBuilder(
       column: $table.civId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapCellQ => $composableBuilder(
+      column: $table.mapCellQ, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapCellR => $composableBuilder(
+      column: $table.mapCellR, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get title => $composableBuilder(
       column: $table.title, builder: (column) => ColumnOrderings(column));
 
@@ -11451,6 +12281,15 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<int> get civId =>
       $composableBuilder(column: $table.civId, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get mapCellQ =>
+      $composableBuilder(column: $table.mapCellQ, builder: (column) => column);
+
+  GeneratedColumn<int> get mapCellR =>
+      $composableBuilder(column: $table.mapCellR, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -11499,6 +12338,9 @@ class $$NotesTableTableManager extends RootTableManager<
             Value<int?> subjectId = const Value.absent(),
             Value<int?> turnId = const Value.absent(),
             Value<int?> civId = const Value.absent(),
+            Value<int?> mapId = const Value.absent(),
+            Value<int?> mapCellQ = const Value.absent(),
+            Value<int?> mapCellR = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> content = const Value.absent(),
             Value<int> pinned = const Value.absent(),
@@ -11512,6 +12354,9 @@ class $$NotesTableTableManager extends RootTableManager<
             subjectId: subjectId,
             turnId: turnId,
             civId: civId,
+            mapId: mapId,
+            mapCellQ: mapCellQ,
+            mapCellR: mapCellR,
             title: title,
             content: content,
             pinned: pinned,
@@ -11525,6 +12370,9 @@ class $$NotesTableTableManager extends RootTableManager<
             Value<int?> subjectId = const Value.absent(),
             Value<int?> turnId = const Value.absent(),
             Value<int?> civId = const Value.absent(),
+            Value<int?> mapId = const Value.absent(),
+            Value<int?> mapCellQ = const Value.absent(),
+            Value<int?> mapCellR = const Value.absent(),
             Value<String> title = const Value.absent(),
             Value<String> content = const Value.absent(),
             Value<int> pinned = const Value.absent(),
@@ -11538,6 +12386,9 @@ class $$NotesTableTableManager extends RootTableManager<
             subjectId: subjectId,
             turnId: turnId,
             civId: civId,
+            mapId: mapId,
+            mapCellQ: mapCellQ,
+            mapCellR: mapCellR,
             title: title,
             content: content,
             pinned: pinned,
@@ -12832,6 +13683,372 @@ typedef $$MapEntityPawnsTableProcessedTableManager = ProcessedTableManager<
     ),
     MapPawnRow,
     PrefetchHooks Function()>;
+typedef $$MapCellEntitiesTableCreateCompanionBuilder = MapCellEntitiesCompanion
+    Function({
+  Value<int> id,
+  required int mapId,
+  required int q,
+  required int r,
+  required int entityId,
+  required String createdAt,
+});
+typedef $$MapCellEntitiesTableUpdateCompanionBuilder = MapCellEntitiesCompanion
+    Function({
+  Value<int> id,
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<int> entityId,
+  Value<String> createdAt,
+});
+
+class $$MapCellEntitiesTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapCellEntitiesTable> {
+  $$MapCellEntitiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapCellEntitiesTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapCellEntitiesTable> {
+  $$MapCellEntitiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get entityId => $composableBuilder(
+      column: $table.entityId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapCellEntitiesTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapCellEntitiesTable> {
+  $$MapCellEntitiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<int> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapCellEntitiesTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapCellEntitiesTable,
+    MapCellEntityRow,
+    $$MapCellEntitiesTableFilterComposer,
+    $$MapCellEntitiesTableOrderingComposer,
+    $$MapCellEntitiesTableAnnotationComposer,
+    $$MapCellEntitiesTableCreateCompanionBuilder,
+    $$MapCellEntitiesTableUpdateCompanionBuilder,
+    (
+      MapCellEntityRow,
+      BaseReferences<_$AurelmDatabase, $MapCellEntitiesTable, MapCellEntityRow>
+    ),
+    MapCellEntityRow,
+    PrefetchHooks Function()> {
+  $$MapCellEntitiesTableTableManager(
+      _$AurelmDatabase db, $MapCellEntitiesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapCellEntitiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapCellEntitiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapCellEntitiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<int> entityId = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapCellEntitiesCompanion(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            entityId: entityId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int mapId,
+            required int q,
+            required int r,
+            required int entityId,
+            required String createdAt,
+          }) =>
+              MapCellEntitiesCompanion.insert(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            entityId: entityId,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapCellEntitiesTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapCellEntitiesTable,
+    MapCellEntityRow,
+    $$MapCellEntitiesTableFilterComposer,
+    $$MapCellEntitiesTableOrderingComposer,
+    $$MapCellEntitiesTableAnnotationComposer,
+    $$MapCellEntitiesTableCreateCompanionBuilder,
+    $$MapCellEntitiesTableUpdateCompanionBuilder,
+    (
+      MapCellEntityRow,
+      BaseReferences<_$AurelmDatabase, $MapCellEntitiesTable, MapCellEntityRow>
+    ),
+    MapCellEntityRow,
+    PrefetchHooks Function()>;
+typedef $$MapCellSubjectsTableCreateCompanionBuilder = MapCellSubjectsCompanion
+    Function({
+  Value<int> id,
+  required int mapId,
+  required int q,
+  required int r,
+  required int subjectId,
+  required String createdAt,
+});
+typedef $$MapCellSubjectsTableUpdateCompanionBuilder = MapCellSubjectsCompanion
+    Function({
+  Value<int> id,
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<int> subjectId,
+  Value<String> createdAt,
+});
+
+class $$MapCellSubjectsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapCellSubjectsTable> {
+  $$MapCellSubjectsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get subjectId => $composableBuilder(
+      column: $table.subjectId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapCellSubjectsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapCellSubjectsTable> {
+  $$MapCellSubjectsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get subjectId => $composableBuilder(
+      column: $table.subjectId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapCellSubjectsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapCellSubjectsTable> {
+  $$MapCellSubjectsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<int> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapCellSubjectsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapCellSubjectsTable,
+    MapCellSubjectRow,
+    $$MapCellSubjectsTableFilterComposer,
+    $$MapCellSubjectsTableOrderingComposer,
+    $$MapCellSubjectsTableAnnotationComposer,
+    $$MapCellSubjectsTableCreateCompanionBuilder,
+    $$MapCellSubjectsTableUpdateCompanionBuilder,
+    (
+      MapCellSubjectRow,
+      BaseReferences<_$AurelmDatabase, $MapCellSubjectsTable, MapCellSubjectRow>
+    ),
+    MapCellSubjectRow,
+    PrefetchHooks Function()> {
+  $$MapCellSubjectsTableTableManager(
+      _$AurelmDatabase db, $MapCellSubjectsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapCellSubjectsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapCellSubjectsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapCellSubjectsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<int> subjectId = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapCellSubjectsCompanion(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            subjectId: subjectId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int mapId,
+            required int q,
+            required int r,
+            required int subjectId,
+            required String createdAt,
+          }) =>
+              MapCellSubjectsCompanion.insert(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            subjectId: subjectId,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapCellSubjectsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapCellSubjectsTable,
+    MapCellSubjectRow,
+    $$MapCellSubjectsTableFilterComposer,
+    $$MapCellSubjectsTableOrderingComposer,
+    $$MapCellSubjectsTableAnnotationComposer,
+    $$MapCellSubjectsTableCreateCompanionBuilder,
+    $$MapCellSubjectsTableUpdateCompanionBuilder,
+    (
+      MapCellSubjectRow,
+      BaseReferences<_$AurelmDatabase, $MapCellSubjectsTable, MapCellSubjectRow>
+    ),
+    MapCellSubjectRow,
+    PrefetchHooks Function()>;
 
 class $AurelmDatabaseManager {
   final _$AurelmDatabase _db;
@@ -12872,4 +14089,8 @@ class $AurelmDatabaseManager {
       $$MapCellAssetsTableTableManager(_db, _db.mapCellAssets);
   $$MapEntityPawnsTableTableManager get mapEntityPawns =>
       $$MapEntityPawnsTableTableManager(_db, _db.mapEntityPawns);
+  $$MapCellEntitiesTableTableManager get mapCellEntities =>
+      $$MapCellEntitiesTableTableManager(_db, _db.mapCellEntities);
+  $$MapCellSubjectsTableTableManager get mapCellSubjects =>
+      $$MapCellSubjectsTableTableManager(_db, _db.mapCellSubjects);
 }

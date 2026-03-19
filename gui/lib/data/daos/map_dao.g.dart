@@ -10,9 +10,13 @@ mixin _$MapDaoMixin on DatabaseAccessor<AurelmDatabase> {
   $MapAssetsTable get mapAssets => attachedDatabase.mapAssets;
   $MapCellAssetsTable get mapCellAssets => attachedDatabase.mapCellAssets;
   $MapEntityPawnsTable get mapEntityPawns => attachedDatabase.mapEntityPawns;
+  $MapCellEntitiesTable get mapCellEntities => attachedDatabase.mapCellEntities;
+  $MapCellSubjectsTable get mapCellSubjects => attachedDatabase.mapCellSubjects;
   $CivCivilizationsTable get civCivilizations =>
       attachedDatabase.civCivilizations;
   $EntityEntitiesTable get entityEntities => attachedDatabase.entityEntities;
+  $SubjectSubjectsTable get subjectSubjects => attachedDatabase.subjectSubjects;
+  $NotesTable get notes => attachedDatabase.notes;
   MapDaoManager get managers => MapDaoManager(this);
 }
 
@@ -32,10 +36,21 @@ class MapDaoManager {
   $$MapEntityPawnsTableTableManager get mapEntityPawns =>
       $$MapEntityPawnsTableTableManager(
           _db.attachedDatabase, _db.mapEntityPawns);
+  $$MapCellEntitiesTableTableManager get mapCellEntities =>
+      $$MapCellEntitiesTableTableManager(
+          _db.attachedDatabase, _db.mapCellEntities);
+  $$MapCellSubjectsTableTableManager get mapCellSubjects =>
+      $$MapCellSubjectsTableTableManager(
+          _db.attachedDatabase, _db.mapCellSubjects);
   $$CivCivilizationsTableTableManager get civCivilizations =>
       $$CivCivilizationsTableTableManager(
           _db.attachedDatabase, _db.civCivilizations);
   $$EntityEntitiesTableTableManager get entityEntities =>
       $$EntityEntitiesTableTableManager(
           _db.attachedDatabase, _db.entityEntities);
+  $$SubjectSubjectsTableTableManager get subjectSubjects =>
+      $$SubjectSubjectsTableTableManager(
+          _db.attachedDatabase, _db.subjectSubjects);
+  $$NotesTableTableManager get notes =>
+      $$NotesTableTableManager(_db.attachedDatabase, _db.notes);
 }

@@ -22,6 +22,11 @@ class Notes extends Table {
   /// FK to civ_civilizations.id — null if note is on an entity/subject/turn
   IntColumn get civId => integer().named('civ_id').nullable()();
 
+  /// FK to a map cell — set when note is attached to a map cell.
+  IntColumn get mapId => integer().named('map_id').nullable()();
+  IntColumn get mapCellQ => integer().named('map_cell_q').nullable()();
+  IntColumn get mapCellR => integer().named('map_cell_r').nullable()();
+
   TextColumn get title => text().withDefault(const Constant(''))();
   TextColumn get content => text().withDefault(const Constant(''))();
 

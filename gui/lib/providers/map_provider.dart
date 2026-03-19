@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database.dart';
 import '../models/map_with_details.dart';
+import '../models/cell_linked_entity.dart';
+import '../models/cell_linked_subject.dart';
 import 'database_provider.dart';
 
 /// Currently selected map id in the left panel selector.
@@ -63,4 +65,28 @@ final mapCellAssetsProvider =
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
   return db.mapDao.watchMapCellAssets(mapId);
+});
+
+/// Stream of entities linked to a specific cell.
+final cellLinkedEntitiesProvider = StreamProvider.family<List<CellLinkedEntity>,
+    ({int mapId, int q, int r})>((ref, key) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCellLinkedEntities(key.mapId, key.q, key.r);
+});
+
+/// Stream of subjects linked to a specific cell.
+final cellLinkedSubjectsProvider = StreamProvider.family<List<CellLinkedSubject>,
+    ({int mapId, int q, int r})>((ref, key) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCellLinkedSubjects(key.mapId, key.q, key.r);
+});
+
+/// Stream of notes attached to a specific cell.
+final cellNotesProvider = StreamProvider.family<List<NoteRow>,
+    ({int mapId, int q, int r})>((ref, key) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCellNotes(key.mapId, key.q, key.r);
 });
