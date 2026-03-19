@@ -225,9 +225,13 @@ class CellDragTargetOverlay extends StatelessWidget {
       top: center.dy - hitR,
       width: hitR * 2,
       height: hitR * 2,
-      child: DragTarget<MapAssetDrag>(
-        onAcceptWithDetails: (details) =>
-            onDrop(details.data.assetId, q, r),
+      child: DragTarget<Object>(
+        onWillAccept: (data) => data is MapAssetDrag,
+        onAcceptWithDetails: (details) {
+          if (details.data is MapAssetDrag) {
+            onDrop((details.data as MapAssetDrag).assetId, q, r);
+          }
+        },
         builder: (ctx, candidateData, _) {
           // Subtle highlight when an asset is hovering over this cell
           final isHovered = candidateData.isNotEmpty;

@@ -341,9 +341,12 @@ class PawnDragTargetOverlay extends ConsumerWidget {
       top: center.dy - hitR,
       width: hitR * 2,
       height: hitR * 2,
-      child: DragTarget<MapPawnDrag>(
+      child: DragTarget<Object>(
+        onWillAccept: (data) => data is MapPawnDrag,
         onAcceptWithDetails: (details) async {
-          await db?.mapDao.movePawn(details.data.pawnId, q, r);
+          if (details.data is MapPawnDrag) {
+            await db?.mapDao.movePawn((details.data as MapPawnDrag).pawnId, q, r);
+          }
         },
         builder: (ctx, candidateData, _) {
           final isHovered = candidateData.isNotEmpty;
