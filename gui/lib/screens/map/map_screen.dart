@@ -12,6 +12,8 @@ import '../../providers/database_provider.dart';
 import '../../providers/map_provider.dart';
 import '../../widgets/common/empty_state.dart';
 import 'terrain_detector.dart';
+import 'widgets/asset_panel.dart';
+import 'widgets/cell_assets_overlay.dart';
 import 'widgets/cell_editor_panel.dart';
 import 'widgets/grid_painter.dart';
 import 'widgets/terrain_preview_dialog.dart';
@@ -78,10 +80,26 @@ class MapScreen extends ConsumerWidget {
       ),
       body: Row(
         children: [
-          // Left panel: map selector
+          // Left panel: tabbed (Cartes | Assets)
           SizedBox(
             width: 220,
-            child: _MapSelectorPanel(selectedMapId: selectedMapId),
+            child: DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  const TabBar(tabs: [
+                    Tab(text: 'Cartes', icon: Icon(Icons.map_outlined, size: 14)),
+                    Tab(text: 'Assets', icon: Icon(Icons.image_outlined, size: 14)),
+                  ]),
+                  Expanded(
+                    child: TabBarView(children: [
+                      _MapSelectorPanel(selectedMapId: selectedMapId),
+                      const AssetPanel(),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
           ),
           const VerticalDivider(width: 1, thickness: 1),
 
@@ -398,6 +416,30 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
                       selectedCell: selectedCell,
                     ),
                   ),
+                ),
+                // Asset icons overlay (above grid, below drag targets)
+                CellAssetsOverlay(
+                  mapId: widget.mapId,
+                  gridType: gridType,
+                  gridCols: cols,
+                  gridRows: rows,
+                  cellSize: _cellSize,
+                  canvasW: canvasW,
+                  canvasH: canvasH,
+                ),
+                // Invisible drag targets on every cell
+                CellDragTargetOverlay(
+                  gridType: gridType,
+                  gridCols: cols,
+                  gridRows: rows,
+                  cellSize: _cellSize,
+                  canvasW: canvasW,
+                  canvasH: canvasH,
+                  onDrop: (assetId, q, r) async {
+                    final db = ref.read(databaseProvider);
+                    await db?.mapDao.placeAsset(
+                        widget.mapId, q, r, assetId);
+                  },
                 ),
               ],
             ),

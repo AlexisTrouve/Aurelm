@@ -56,6 +56,48 @@ class MapCells extends Table {
   Set<Column> get primaryKey => {mapId, q, r};
 }
 
+/// Drift table for map_assets — compressed image blobs (WebP).
+@DataClassName('MapAssetRow')
+class MapAssets extends Table {
+  @override
+  String get tableName => 'map_assets';
+
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+
+  /// WebP-encoded bytes at user-defined resolution.
+  BlobColumn get data => blob()();
+  TextColumn get originalFormat =>
+      text().named('original_format').withDefault(const Constant('unknown'))();
+  IntColumn get storedWidth => integer().named('stored_width')();
+  IntColumn get storedHeight => integer().named('stored_height')();
+  TextColumn get createdAt => text().named('created_at')();
+}
+
+/// Drift table for map_cell_assets — asset placements on cells.
+/// z_order 0–6 → slot index (max 7 icons per cell).
+@DataClassName('MapCellAssetRow')
+class MapCellAssets extends Table {
+  @override
+  String get tableName => 'map_cell_assets';
+
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get mapId => integer().named('map_id')();
+  IntColumn get q => integer()();
+  IntColumn get r => integer()();
+  IntColumn get assetId => integer().named('asset_id')();
+
+  /// Slot index 0–6. Determines icon position within the cell.
+  IntColumn get zOrder =>
+      integer().named('z_order').withDefault(const Constant(0))();
+  TextColumn get createdAt => text().named('created_at')();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {mapId, q, r, assetId}
+      ];
+}
+
 /// Drift table for map_cell_events — historical events on a cell.
 @DataClassName('MapCellEventRow')
 class MapCellEvents extends Table {

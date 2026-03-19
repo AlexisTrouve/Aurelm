@@ -24,6 +24,7 @@ dependencies:
   http: ^1.2.2
   flutter_markdown: ^0.7.4
   crypto: ^3.0.7
+  image: ^4.2.0
 
 dev_dependencies:
   flutter_test:

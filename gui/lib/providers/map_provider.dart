@@ -33,3 +33,18 @@ final cellEventsProvider = StreamProvider.family<List<MapCellEventRow>,
   if (db == null) return const Stream.empty();
   return db.mapDao.watchCellEvents(key.mapId, key.q, key.r);
 });
+
+/// Stream of ALL assets in the library.
+final allAssetsProvider = StreamProvider<List<MapAssetRow>>((ref) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchAllAssets();
+});
+
+/// Stream of ALL cell-asset placements for a map.
+final mapCellAssetsProvider =
+    StreamProvider.family<List<MapCellAssetRow>, int>((ref, mapId) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchMapCellAssets(mapId);
+});

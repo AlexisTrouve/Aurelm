@@ -7488,6 +7488,762 @@ class MapCellEventsCompanion extends UpdateCompanion<MapCellEventRow> {
   }
 }
 
+class $MapAssetsTable extends MapAssets
+    with TableInfo<$MapAssetsTable, MapAssetRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapAssetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<Uint8List> data = GeneratedColumn<Uint8List>(
+      'data', aliasedName, false,
+      type: DriftSqlType.blob, requiredDuringInsert: true);
+  static const VerificationMeta _originalFormatMeta =
+      const VerificationMeta('originalFormat');
+  @override
+  late final GeneratedColumn<String> originalFormat = GeneratedColumn<String>(
+      'original_format', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('unknown'));
+  static const VerificationMeta _storedWidthMeta =
+      const VerificationMeta('storedWidth');
+  @override
+  late final GeneratedColumn<int> storedWidth = GeneratedColumn<int>(
+      'stored_width', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _storedHeightMeta =
+      const VerificationMeta('storedHeight');
+  @override
+  late final GeneratedColumn<int> storedHeight = GeneratedColumn<int>(
+      'stored_height', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, data, originalFormat, storedWidth, storedHeight, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_assets';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapAssetRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+          _dataMeta, this.data.isAcceptableOrUnknown(data['data']!, _dataMeta));
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('original_format')) {
+      context.handle(
+          _originalFormatMeta,
+          originalFormat.isAcceptableOrUnknown(
+              data['original_format']!, _originalFormatMeta));
+    }
+    if (data.containsKey('stored_width')) {
+      context.handle(
+          _storedWidthMeta,
+          storedWidth.isAcceptableOrUnknown(
+              data['stored_width']!, _storedWidthMeta));
+    } else if (isInserting) {
+      context.missing(_storedWidthMeta);
+    }
+    if (data.containsKey('stored_height')) {
+      context.handle(
+          _storedHeightMeta,
+          storedHeight.isAcceptableOrUnknown(
+              data['stored_height']!, _storedHeightMeta));
+    } else if (isInserting) {
+      context.missing(_storedHeightMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MapAssetRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapAssetRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      data: attachedDatabase.typeMapping
+          .read(DriftSqlType.blob, data['${effectivePrefix}data'])!,
+      originalFormat: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}original_format'])!,
+      storedWidth: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}stored_width'])!,
+      storedHeight: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}stored_height'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapAssetsTable createAlias(String alias) {
+    return $MapAssetsTable(attachedDatabase, alias);
+  }
+}
+
+class MapAssetRow extends DataClass implements Insertable<MapAssetRow> {
+  final int id;
+  final String name;
+
+  /// WebP-encoded bytes at user-defined resolution.
+  final Uint8List data;
+  final String originalFormat;
+  final int storedWidth;
+  final int storedHeight;
+  final String createdAt;
+  const MapAssetRow(
+      {required this.id,
+      required this.name,
+      required this.data,
+      required this.originalFormat,
+      required this.storedWidth,
+      required this.storedHeight,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['data'] = Variable<Uint8List>(data);
+    map['original_format'] = Variable<String>(originalFormat);
+    map['stored_width'] = Variable<int>(storedWidth);
+    map['stored_height'] = Variable<int>(storedHeight);
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapAssetsCompanion toCompanion(bool nullToAbsent) {
+    return MapAssetsCompanion(
+      id: Value(id),
+      name: Value(name),
+      data: Value(data),
+      originalFormat: Value(originalFormat),
+      storedWidth: Value(storedWidth),
+      storedHeight: Value(storedHeight),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapAssetRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapAssetRow(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      data: serializer.fromJson<Uint8List>(json['data']),
+      originalFormat: serializer.fromJson<String>(json['originalFormat']),
+      storedWidth: serializer.fromJson<int>(json['storedWidth']),
+      storedHeight: serializer.fromJson<int>(json['storedHeight']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'data': serializer.toJson<Uint8List>(data),
+      'originalFormat': serializer.toJson<String>(originalFormat),
+      'storedWidth': serializer.toJson<int>(storedWidth),
+      'storedHeight': serializer.toJson<int>(storedHeight),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapAssetRow copyWith(
+          {int? id,
+          String? name,
+          Uint8List? data,
+          String? originalFormat,
+          int? storedWidth,
+          int? storedHeight,
+          String? createdAt}) =>
+      MapAssetRow(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        data: data ?? this.data,
+        originalFormat: originalFormat ?? this.originalFormat,
+        storedWidth: storedWidth ?? this.storedWidth,
+        storedHeight: storedHeight ?? this.storedHeight,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapAssetRow copyWithCompanion(MapAssetsCompanion data) {
+    return MapAssetRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      data: data.data.present ? data.data.value : this.data,
+      originalFormat: data.originalFormat.present
+          ? data.originalFormat.value
+          : this.originalFormat,
+      storedWidth:
+          data.storedWidth.present ? data.storedWidth.value : this.storedWidth,
+      storedHeight: data.storedHeight.present
+          ? data.storedHeight.value
+          : this.storedHeight,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapAssetRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('data: $data, ')
+          ..write('originalFormat: $originalFormat, ')
+          ..write('storedWidth: $storedWidth, ')
+          ..write('storedHeight: $storedHeight, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, $driftBlobEquality.hash(data),
+      originalFormat, storedWidth, storedHeight, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapAssetRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          $driftBlobEquality.equals(other.data, this.data) &&
+          other.originalFormat == this.originalFormat &&
+          other.storedWidth == this.storedWidth &&
+          other.storedHeight == this.storedHeight &&
+          other.createdAt == this.createdAt);
+}
+
+class MapAssetsCompanion extends UpdateCompanion<MapAssetRow> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<Uint8List> data;
+  final Value<String> originalFormat;
+  final Value<int> storedWidth;
+  final Value<int> storedHeight;
+  final Value<String> createdAt;
+  const MapAssetsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.data = const Value.absent(),
+    this.originalFormat = const Value.absent(),
+    this.storedWidth = const Value.absent(),
+    this.storedHeight = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapAssetsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required Uint8List data,
+    this.originalFormat = const Value.absent(),
+    required int storedWidth,
+    required int storedHeight,
+    required String createdAt,
+  })  : name = Value(name),
+        data = Value(data),
+        storedWidth = Value(storedWidth),
+        storedHeight = Value(storedHeight),
+        createdAt = Value(createdAt);
+  static Insertable<MapAssetRow> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<Uint8List>? data,
+    Expression<String>? originalFormat,
+    Expression<int>? storedWidth,
+    Expression<int>? storedHeight,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (data != null) 'data': data,
+      if (originalFormat != null) 'original_format': originalFormat,
+      if (storedWidth != null) 'stored_width': storedWidth,
+      if (storedHeight != null) 'stored_height': storedHeight,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapAssetsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<Uint8List>? data,
+      Value<String>? originalFormat,
+      Value<int>? storedWidth,
+      Value<int>? storedHeight,
+      Value<String>? createdAt}) {
+    return MapAssetsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      data: data ?? this.data,
+      originalFormat: originalFormat ?? this.originalFormat,
+      storedWidth: storedWidth ?? this.storedWidth,
+      storedHeight: storedHeight ?? this.storedHeight,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<Uint8List>(data.value);
+    }
+    if (originalFormat.present) {
+      map['original_format'] = Variable<String>(originalFormat.value);
+    }
+    if (storedWidth.present) {
+      map['stored_width'] = Variable<int>(storedWidth.value);
+    }
+    if (storedHeight.present) {
+      map['stored_height'] = Variable<int>(storedHeight.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapAssetsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('data: $data, ')
+          ..write('originalFormat: $originalFormat, ')
+          ..write('storedWidth: $storedWidth, ')
+          ..write('storedHeight: $storedHeight, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MapCellAssetsTable extends MapCellAssets
+    with TableInfo<$MapCellAssetsTable, MapCellAssetRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MapCellAssetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _mapIdMeta = const VerificationMeta('mapId');
+  @override
+  late final GeneratedColumn<int> mapId = GeneratedColumn<int>(
+      'map_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _qMeta = const VerificationMeta('q');
+  @override
+  late final GeneratedColumn<int> q = GeneratedColumn<int>(
+      'q', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rMeta = const VerificationMeta('r');
+  @override
+  late final GeneratedColumn<int> r = GeneratedColumn<int>(
+      'r', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _assetIdMeta =
+      const VerificationMeta('assetId');
+  @override
+  late final GeneratedColumn<int> assetId = GeneratedColumn<int>(
+      'asset_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _zOrderMeta = const VerificationMeta('zOrder');
+  @override
+  late final GeneratedColumn<int> zOrder = GeneratedColumn<int>(
+      'z_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, mapId, q, r, assetId, zOrder, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'map_cell_assets';
+  @override
+  VerificationContext validateIntegrity(Insertable<MapCellAssetRow> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('map_id')) {
+      context.handle(
+          _mapIdMeta, mapId.isAcceptableOrUnknown(data['map_id']!, _mapIdMeta));
+    } else if (isInserting) {
+      context.missing(_mapIdMeta);
+    }
+    if (data.containsKey('q')) {
+      context.handle(_qMeta, q.isAcceptableOrUnknown(data['q']!, _qMeta));
+    } else if (isInserting) {
+      context.missing(_qMeta);
+    }
+    if (data.containsKey('r')) {
+      context.handle(_rMeta, r.isAcceptableOrUnknown(data['r']!, _rMeta));
+    } else if (isInserting) {
+      context.missing(_rMeta);
+    }
+    if (data.containsKey('asset_id')) {
+      context.handle(_assetIdMeta,
+          assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta));
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('z_order')) {
+      context.handle(_zOrderMeta,
+          zOrder.isAcceptableOrUnknown(data['z_order']!, _zOrderMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {mapId, q, r, assetId},
+      ];
+  @override
+  MapCellAssetRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MapCellAssetRow(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      mapId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}map_id'])!,
+      q: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}q'])!,
+      r: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}r'])!,
+      assetId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}asset_id'])!,
+      zOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}z_order'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $MapCellAssetsTable createAlias(String alias) {
+    return $MapCellAssetsTable(attachedDatabase, alias);
+  }
+}
+
+class MapCellAssetRow extends DataClass implements Insertable<MapCellAssetRow> {
+  final int id;
+  final int mapId;
+  final int q;
+  final int r;
+  final int assetId;
+
+  /// Slot index 0–6. Determines icon position within the cell.
+  final int zOrder;
+  final String createdAt;
+  const MapCellAssetRow(
+      {required this.id,
+      required this.mapId,
+      required this.q,
+      required this.r,
+      required this.assetId,
+      required this.zOrder,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['map_id'] = Variable<int>(mapId);
+    map['q'] = Variable<int>(q);
+    map['r'] = Variable<int>(r);
+    map['asset_id'] = Variable<int>(assetId);
+    map['z_order'] = Variable<int>(zOrder);
+    map['created_at'] = Variable<String>(createdAt);
+    return map;
+  }
+
+  MapCellAssetsCompanion toCompanion(bool nullToAbsent) {
+    return MapCellAssetsCompanion(
+      id: Value(id),
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      assetId: Value(assetId),
+      zOrder: Value(zOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MapCellAssetRow.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MapCellAssetRow(
+      id: serializer.fromJson<int>(json['id']),
+      mapId: serializer.fromJson<int>(json['mapId']),
+      q: serializer.fromJson<int>(json['q']),
+      r: serializer.fromJson<int>(json['r']),
+      assetId: serializer.fromJson<int>(json['assetId']),
+      zOrder: serializer.fromJson<int>(json['zOrder']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'mapId': serializer.toJson<int>(mapId),
+      'q': serializer.toJson<int>(q),
+      'r': serializer.toJson<int>(r),
+      'assetId': serializer.toJson<int>(assetId),
+      'zOrder': serializer.toJson<int>(zOrder),
+      'createdAt': serializer.toJson<String>(createdAt),
+    };
+  }
+
+  MapCellAssetRow copyWith(
+          {int? id,
+          int? mapId,
+          int? q,
+          int? r,
+          int? assetId,
+          int? zOrder,
+          String? createdAt}) =>
+      MapCellAssetRow(
+        id: id ?? this.id,
+        mapId: mapId ?? this.mapId,
+        q: q ?? this.q,
+        r: r ?? this.r,
+        assetId: assetId ?? this.assetId,
+        zOrder: zOrder ?? this.zOrder,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  MapCellAssetRow copyWithCompanion(MapCellAssetsCompanion data) {
+    return MapCellAssetRow(
+      id: data.id.present ? data.id.value : this.id,
+      mapId: data.mapId.present ? data.mapId.value : this.mapId,
+      q: data.q.present ? data.q.value : this.q,
+      r: data.r.present ? data.r.value : this.r,
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      zOrder: data.zOrder.present ? data.zOrder.value : this.zOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellAssetRow(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('assetId: $assetId, ')
+          ..write('zOrder: $zOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, mapId, q, r, assetId, zOrder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MapCellAssetRow &&
+          other.id == this.id &&
+          other.mapId == this.mapId &&
+          other.q == this.q &&
+          other.r == this.r &&
+          other.assetId == this.assetId &&
+          other.zOrder == this.zOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class MapCellAssetsCompanion extends UpdateCompanion<MapCellAssetRow> {
+  final Value<int> id;
+  final Value<int> mapId;
+  final Value<int> q;
+  final Value<int> r;
+  final Value<int> assetId;
+  final Value<int> zOrder;
+  final Value<String> createdAt;
+  const MapCellAssetsCompanion({
+    this.id = const Value.absent(),
+    this.mapId = const Value.absent(),
+    this.q = const Value.absent(),
+    this.r = const Value.absent(),
+    this.assetId = const Value.absent(),
+    this.zOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MapCellAssetsCompanion.insert({
+    this.id = const Value.absent(),
+    required int mapId,
+    required int q,
+    required int r,
+    required int assetId,
+    this.zOrder = const Value.absent(),
+    required String createdAt,
+  })  : mapId = Value(mapId),
+        q = Value(q),
+        r = Value(r),
+        assetId = Value(assetId),
+        createdAt = Value(createdAt);
+  static Insertable<MapCellAssetRow> custom({
+    Expression<int>? id,
+    Expression<int>? mapId,
+    Expression<int>? q,
+    Expression<int>? r,
+    Expression<int>? assetId,
+    Expression<int>? zOrder,
+    Expression<String>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (mapId != null) 'map_id': mapId,
+      if (q != null) 'q': q,
+      if (r != null) 'r': r,
+      if (assetId != null) 'asset_id': assetId,
+      if (zOrder != null) 'z_order': zOrder,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MapCellAssetsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? mapId,
+      Value<int>? q,
+      Value<int>? r,
+      Value<int>? assetId,
+      Value<int>? zOrder,
+      Value<String>? createdAt}) {
+    return MapCellAssetsCompanion(
+      id: id ?? this.id,
+      mapId: mapId ?? this.mapId,
+      q: q ?? this.q,
+      r: r ?? this.r,
+      assetId: assetId ?? this.assetId,
+      zOrder: zOrder ?? this.zOrder,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (mapId.present) {
+      map['map_id'] = Variable<int>(mapId.value);
+    }
+    if (q.present) {
+      map['q'] = Variable<int>(q.value);
+    }
+    if (r.present) {
+      map['r'] = Variable<int>(r.value);
+    }
+    if (assetId.present) {
+      map['asset_id'] = Variable<int>(assetId.value);
+    }
+    if (zOrder.present) {
+      map['z_order'] = Variable<int>(zOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MapCellAssetsCompanion(')
+          ..write('id: $id, ')
+          ..write('mapId: $mapId, ')
+          ..write('q: $q, ')
+          ..write('r: $r, ')
+          ..write('assetId: $assetId, ')
+          ..write('zOrder: $zOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AurelmDatabase extends GeneratedDatabase {
   _$AurelmDatabase(QueryExecutor e) : super(e);
   $AurelmDatabaseManager get managers => $AurelmDatabaseManager(this);
@@ -7510,6 +8266,8 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
   late final $MapMapsTable mapMaps = $MapMapsTable(this);
   late final $MapCellsTable mapCells = $MapCellsTable(this);
   late final $MapCellEventsTable mapCellEvents = $MapCellEventsTable(this);
+  late final $MapAssetsTable mapAssets = $MapAssetsTable(this);
+  late final $MapCellAssetsTable mapCellAssets = $MapCellAssetsTable(this);
   late final CivilizationDao civilizationDao =
       CivilizationDao(this as AurelmDatabase);
   late final TurnDao turnDao = TurnDao(this as AurelmDatabase);
@@ -7538,7 +8296,9 @@ abstract class _$AurelmDatabase extends GeneratedDatabase {
         notes,
         mapMaps,
         mapCells,
-        mapCellEvents
+        mapCellEvents,
+        mapAssets,
+        mapCellAssets
       ];
 }
 
@@ -11100,6 +11860,402 @@ typedef $$MapCellEventsTableProcessedTableManager = ProcessedTableManager<
     ),
     MapCellEventRow,
     PrefetchHooks Function()>;
+typedef $$MapAssetsTableCreateCompanionBuilder = MapAssetsCompanion Function({
+  Value<int> id,
+  required String name,
+  required Uint8List data,
+  Value<String> originalFormat,
+  required int storedWidth,
+  required int storedHeight,
+  required String createdAt,
+});
+typedef $$MapAssetsTableUpdateCompanionBuilder = MapAssetsCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<Uint8List> data,
+  Value<String> originalFormat,
+  Value<int> storedWidth,
+  Value<int> storedHeight,
+  Value<String> createdAt,
+});
+
+class $$MapAssetsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapAssetsTable> {
+  $$MapAssetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<Uint8List> get data => $composableBuilder(
+      column: $table.data, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get originalFormat => $composableBuilder(
+      column: $table.originalFormat,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get storedWidth => $composableBuilder(
+      column: $table.storedWidth, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get storedHeight => $composableBuilder(
+      column: $table.storedHeight, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapAssetsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapAssetsTable> {
+  $$MapAssetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<Uint8List> get data => $composableBuilder(
+      column: $table.data, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get originalFormat => $composableBuilder(
+      column: $table.originalFormat,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get storedWidth => $composableBuilder(
+      column: $table.storedWidth, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get storedHeight => $composableBuilder(
+      column: $table.storedHeight,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapAssetsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapAssetsTable> {
+  $$MapAssetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<String> get originalFormat => $composableBuilder(
+      column: $table.originalFormat, builder: (column) => column);
+
+  GeneratedColumn<int> get storedWidth => $composableBuilder(
+      column: $table.storedWidth, builder: (column) => column);
+
+  GeneratedColumn<int> get storedHeight => $composableBuilder(
+      column: $table.storedHeight, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapAssetsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapAssetsTable,
+    MapAssetRow,
+    $$MapAssetsTableFilterComposer,
+    $$MapAssetsTableOrderingComposer,
+    $$MapAssetsTableAnnotationComposer,
+    $$MapAssetsTableCreateCompanionBuilder,
+    $$MapAssetsTableUpdateCompanionBuilder,
+    (
+      MapAssetRow,
+      BaseReferences<_$AurelmDatabase, $MapAssetsTable, MapAssetRow>
+    ),
+    MapAssetRow,
+    PrefetchHooks Function()> {
+  $$MapAssetsTableTableManager(_$AurelmDatabase db, $MapAssetsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapAssetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapAssetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapAssetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<Uint8List> data = const Value.absent(),
+            Value<String> originalFormat = const Value.absent(),
+            Value<int> storedWidth = const Value.absent(),
+            Value<int> storedHeight = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapAssetsCompanion(
+            id: id,
+            name: name,
+            data: data,
+            originalFormat: originalFormat,
+            storedWidth: storedWidth,
+            storedHeight: storedHeight,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            required Uint8List data,
+            Value<String> originalFormat = const Value.absent(),
+            required int storedWidth,
+            required int storedHeight,
+            required String createdAt,
+          }) =>
+              MapAssetsCompanion.insert(
+            id: id,
+            name: name,
+            data: data,
+            originalFormat: originalFormat,
+            storedWidth: storedWidth,
+            storedHeight: storedHeight,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapAssetsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapAssetsTable,
+    MapAssetRow,
+    $$MapAssetsTableFilterComposer,
+    $$MapAssetsTableOrderingComposer,
+    $$MapAssetsTableAnnotationComposer,
+    $$MapAssetsTableCreateCompanionBuilder,
+    $$MapAssetsTableUpdateCompanionBuilder,
+    (
+      MapAssetRow,
+      BaseReferences<_$AurelmDatabase, $MapAssetsTable, MapAssetRow>
+    ),
+    MapAssetRow,
+    PrefetchHooks Function()>;
+typedef $$MapCellAssetsTableCreateCompanionBuilder = MapCellAssetsCompanion
+    Function({
+  Value<int> id,
+  required int mapId,
+  required int q,
+  required int r,
+  required int assetId,
+  Value<int> zOrder,
+  required String createdAt,
+});
+typedef $$MapCellAssetsTableUpdateCompanionBuilder = MapCellAssetsCompanion
+    Function({
+  Value<int> id,
+  Value<int> mapId,
+  Value<int> q,
+  Value<int> r,
+  Value<int> assetId,
+  Value<int> zOrder,
+  Value<String> createdAt,
+});
+
+class $$MapCellAssetsTableFilterComposer
+    extends Composer<_$AurelmDatabase, $MapCellAssetsTable> {
+  $$MapCellAssetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get assetId => $composableBuilder(
+      column: $table.assetId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get zOrder => $composableBuilder(
+      column: $table.zOrder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MapCellAssetsTableOrderingComposer
+    extends Composer<_$AurelmDatabase, $MapCellAssetsTable> {
+  $$MapCellAssetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mapId => $composableBuilder(
+      column: $table.mapId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get q => $composableBuilder(
+      column: $table.q, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get r => $composableBuilder(
+      column: $table.r, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get assetId => $composableBuilder(
+      column: $table.assetId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get zOrder => $composableBuilder(
+      column: $table.zOrder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MapCellAssetsTableAnnotationComposer
+    extends Composer<_$AurelmDatabase, $MapCellAssetsTable> {
+  $$MapCellAssetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get mapId =>
+      $composableBuilder(column: $table.mapId, builder: (column) => column);
+
+  GeneratedColumn<int> get q =>
+      $composableBuilder(column: $table.q, builder: (column) => column);
+
+  GeneratedColumn<int> get r =>
+      $composableBuilder(column: $table.r, builder: (column) => column);
+
+  GeneratedColumn<int> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<int> get zOrder =>
+      $composableBuilder(column: $table.zOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MapCellAssetsTableTableManager extends RootTableManager<
+    _$AurelmDatabase,
+    $MapCellAssetsTable,
+    MapCellAssetRow,
+    $$MapCellAssetsTableFilterComposer,
+    $$MapCellAssetsTableOrderingComposer,
+    $$MapCellAssetsTableAnnotationComposer,
+    $$MapCellAssetsTableCreateCompanionBuilder,
+    $$MapCellAssetsTableUpdateCompanionBuilder,
+    (
+      MapCellAssetRow,
+      BaseReferences<_$AurelmDatabase, $MapCellAssetsTable, MapCellAssetRow>
+    ),
+    MapCellAssetRow,
+    PrefetchHooks Function()> {
+  $$MapCellAssetsTableTableManager(
+      _$AurelmDatabase db, $MapCellAssetsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MapCellAssetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MapCellAssetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MapCellAssetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> mapId = const Value.absent(),
+            Value<int> q = const Value.absent(),
+            Value<int> r = const Value.absent(),
+            Value<int> assetId = const Value.absent(),
+            Value<int> zOrder = const Value.absent(),
+            Value<String> createdAt = const Value.absent(),
+          }) =>
+              MapCellAssetsCompanion(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            assetId: assetId,
+            zOrder: zOrder,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int mapId,
+            required int q,
+            required int r,
+            required int assetId,
+            Value<int> zOrder = const Value.absent(),
+            required String createdAt,
+          }) =>
+              MapCellAssetsCompanion.insert(
+            id: id,
+            mapId: mapId,
+            q: q,
+            r: r,
+            assetId: assetId,
+            zOrder: zOrder,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MapCellAssetsTableProcessedTableManager = ProcessedTableManager<
+    _$AurelmDatabase,
+    $MapCellAssetsTable,
+    MapCellAssetRow,
+    $$MapCellAssetsTableFilterComposer,
+    $$MapCellAssetsTableOrderingComposer,
+    $$MapCellAssetsTableAnnotationComposer,
+    $$MapCellAssetsTableCreateCompanionBuilder,
+    $$MapCellAssetsTableUpdateCompanionBuilder,
+    (
+      MapCellAssetRow,
+      BaseReferences<_$AurelmDatabase, $MapCellAssetsTable, MapCellAssetRow>
+    ),
+    MapCellAssetRow,
+    PrefetchHooks Function()>;
 
 class $AurelmDatabaseManager {
   final _$AurelmDatabase _db;
@@ -11134,4 +12290,8 @@ class $AurelmDatabaseManager {
       $$MapCellsTableTableManager(_db, _db.mapCells);
   $$MapCellEventsTableTableManager get mapCellEvents =>
       $$MapCellEventsTableTableManager(_db, _db.mapCellEvents);
+  $$MapAssetsTableTableManager get mapAssets =>
+      $$MapAssetsTableTableManager(_db, _db.mapAssets);
+  $$MapCellAssetsTableTableManager get mapCellAssets =>
+      $$MapCellAssetsTableTableManager(_db, _db.mapCellAssets);
 }

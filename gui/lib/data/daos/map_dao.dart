@@ -8,7 +8,7 @@ import '../../models/map_with_details.dart';
 
 part 'map_dao.g.dart';
 
-@DriftAccessor(tables: [MapMaps, MapCells, MapCellEvents, CivCivilizations, EntityEntities])
+@DriftAccessor(tables: [MapMaps, MapCells, MapCellEvents, MapAssets, MapCellAssets, CivCivilizations, EntityEntities])
 class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
   MapDao(super.db);
 
@@ -149,5 +149,94 @@ class MapDao extends DatabaseAccessor<AurelmDatabase> with _$MapDaoMixin {
     return into(mapCellEvents).insert(
       e.copyWith(createdAt: Value(now)),
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Assets
+  // ---------------------------------------------------------------------------
+
+  /// All assets ordered by name.
+  Stream<List<MapAssetRow>> watchAllAssets() {
+    return (select(mapAssets)..orderBy([(a) => OrderingTerm.asc(a.name)]))
+        .watch();
+  }
+
+  /// Insert a new asset (WebP blob).
+  Future<int> insertAsset(MapAssetsCompanion a) {
+    final now = DateTime.now().toIso8601String();
+    return into(mapAssets).insert(a.copyWith(createdAt: Value(now)));
+  }
+
+  /// Delete an asset — cascades to map_cell_assets.
+  Future<void> deleteAsset(int assetId) {
+    return (delete(mapAssets)..where((a) => a.id.equals(assetId))).go();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cell ↔ asset placements
+  // ---------------------------------------------------------------------------
+
+  /// Stream of placements for a cell, ordered by z_order.
+  Stream<List<MapCellAssetRow>> watchCellAssets(int mapId, int q, int r) {
+    return (select(mapCellAssets)
+          ..where((ca) =>
+              ca.mapId.equals(mapId) & ca.q.equals(q) & ca.r.equals(r))
+          ..orderBy([(ca) => OrderingTerm.asc(ca.zOrder)]))
+        .watch();
+  }
+
+  /// Stream of ALL placements for a map (used by overlay painter).
+  Stream<List<MapCellAssetRow>> watchMapCellAssets(int mapId) {
+    return (select(mapCellAssets)
+          ..where((ca) => ca.mapId.equals(mapId))
+          ..orderBy([(ca) => OrderingTerm.asc(ca.zOrder)]))
+        .watch();
+  }
+
+  /// Place an asset on a cell.
+  /// Assigns the next z_order slot (max 6 → 7 icons per cell).
+  Future<void> placeAsset(int mapId, int q, int r, int assetId) async {
+    // Count existing placements for this cell
+    final count = await (select(mapCellAssets)
+          ..where((ca) =>
+              ca.mapId.equals(mapId) & ca.q.equals(q) & ca.r.equals(r)))
+        .get()
+        .then((rows) => rows.length);
+
+    if (count >= 7) return; // max 7 icons per cell
+
+    final now = DateTime.now().toIso8601String();
+    await into(mapCellAssets).insertOnConflictUpdate(MapCellAssetsCompanion(
+      mapId: Value(mapId),
+      q: Value(q),
+      r: Value(r),
+      assetId: Value(assetId),
+      zOrder: Value(count), // next available slot
+      createdAt: Value(now),
+    ));
+  }
+
+  /// Remove an asset from a cell and compact z_order of remaining slots.
+  Future<void> removeAsset(int mapId, int q, int r, int assetId) async {
+    await (delete(mapCellAssets)
+          ..where((ca) =>
+              ca.mapId.equals(mapId) &
+              ca.q.equals(q) &
+              ca.r.equals(r) &
+              ca.assetId.equals(assetId)))
+        .go();
+
+    // Recompact z_order to keep slots contiguous
+    final remaining = await (select(mapCellAssets)
+          ..where((ca) =>
+              ca.mapId.equals(mapId) & ca.q.equals(q) & ca.r.equals(r))
+          ..orderBy([(ca) => OrderingTerm.asc(ca.zOrder)]))
+        .get();
+
+    for (int i = 0; i < remaining.length; i++) {
+      await (update(mapCellAssets)
+            ..where((ca) => ca.id.equals(remaining[i].id)))
+          .write(MapCellAssetsCompanion(zOrder: Value(i)));
+    }
   }
 }

@@ -44,6 +44,9 @@ part 'database.g.dart';
     MapMaps,
     MapCells,
     MapCellEvents,
+    // Map assets (migration 032)
+    MapAssets,
+    MapCellAssets,
   ],
   daos: [
     CivilizationDao,
@@ -217,6 +220,28 @@ void _ensureMigrations(dynamic db) {
     "CREATE INDEX IF NOT EXISTS idx_map_cell_events_cell ON map_cell_events(map_id, q, r)",
     "CREATE INDEX IF NOT EXISTS idx_map_cells_civ ON map_cells(controlling_civ_id) WHERE controlling_civ_id IS NOT NULL",
     "CREATE INDEX IF NOT EXISTS idx_map_cells_entity ON map_cells(entity_id) WHERE entity_id IS NOT NULL",
+    // Migration 032: map assets
+    '''CREATE TABLE IF NOT EXISTS map_assets (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        name            TEXT    NOT NULL,
+        data            BLOB    NOT NULL,
+        original_format TEXT    NOT NULL DEFAULT 'unknown',
+        stored_width    INTEGER NOT NULL,
+        stored_height   INTEGER NOT NULL,
+        created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    )''',
+    '''CREATE TABLE IF NOT EXISTS map_cell_assets (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        map_id      INTEGER NOT NULL REFERENCES map_maps(id)   ON DELETE CASCADE,
+        q           INTEGER NOT NULL,
+        r           INTEGER NOT NULL,
+        asset_id    INTEGER NOT NULL REFERENCES map_assets(id) ON DELETE CASCADE,
+        z_order     INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(map_id, q, r, asset_id)
+    )''',
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_assets_cell ON map_cell_assets(map_id, q, r)",
+    "CREATE INDEX IF NOT EXISTS idx_map_cell_assets_asset ON map_cell_assets(asset_id)",
   ];
 
   for (final sql in statements) {
