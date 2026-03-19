@@ -126,8 +126,8 @@ class CellAssetsOverlay extends ConsumerWidget {
     }
 
     final count = placements.length.clamp(1, 7);
-    // Icon size shrinks as count grows to fit all in the cell
-    final iconSize = cellSize * (count <= 2 ? 0.45 : count <= 4 ? 0.36 : 0.28);
+    // Icon size: bigger base, shrinks as count grows to keep all icons in cell
+    final iconSize = cellSize * (count == 1 ? 0.80 : count <= 2 ? 0.62 : count <= 4 ? 0.50 : 0.38);
     final slotDefs = _slots[count - 1];
 
     final widgets = <Widget>[];

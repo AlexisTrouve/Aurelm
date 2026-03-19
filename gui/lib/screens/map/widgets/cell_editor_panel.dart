@@ -265,6 +265,14 @@ class _CellEditorPanelState extends ConsumerState<CellEditorPanel> {
                 ),
                 const SizedBox(height: 16),
 
+                // Icons section
+                _CellIconsSection(
+                  mapId: widget.mapId,
+                  q: widget.coord.q,
+                  r: widget.coord.r,
+                ),
+                const SizedBox(height: 16),
+
                 // Events section
                 Row(
                   children: [
@@ -299,6 +307,100 @@ class _CellEditorPanelState extends ConsumerState<CellEditorPanel> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Icons section — shows assets on this cell with remove button
+// ---------------------------------------------------------------------------
+
+class _CellIconsSection extends ConsumerWidget {
+  final int mapId;
+  final int q;
+  final int r;
+  const _CellIconsSection(
+      {required this.mapId, required this.q, required this.r});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cellAssetsAsync = ref.watch(
+      cellAssetsProvider((mapId: mapId, q: q, r: r)),
+    );
+    final allAssetsAsync = ref.watch(allAssetsProvider);
+
+    return cellAssetsAsync.when(
+      data: (placements) {
+        if (placements.isEmpty) return const SizedBox.shrink();
+
+        // Build asset lookup id → row
+        final assetMap = <int, MapAssetRow>{};
+        if (allAssetsAsync.valueOrNull != null) {
+          for (final a in allAssetsAsync.valueOrNull!) {
+            assetMap[a.id] = a;
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Icônes (${placements.length}/7)',
+                style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: placements.map((p) {
+                final asset = assetMap[p.assetId];
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white24),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: asset == null
+                          ? const Icon(Icons.broken_image, size: 20)
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(5),
+                              child: Image.memory(asset.data,
+                                  fit: BoxFit.contain,
+                                  gaplessPlayback: true),
+                            ),
+                    ),
+                    // Remove button — top-right corner
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: GestureDetector(
+                        onTap: () async {
+                          final db = ref.read(databaseProvider);
+                          await db?.mapDao.removeAsset(mapId, q, r, p.assetId);
+                        },
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.close,
+                              size: 10, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

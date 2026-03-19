@@ -41,6 +41,14 @@ final allAssetsProvider = StreamProvider<List<MapAssetRow>>((ref) {
   return db.mapDao.watchAllAssets();
 });
 
+/// Stream of asset placements for one specific cell.
+final cellAssetsProvider = StreamProvider.family<List<MapCellAssetRow>,
+    ({int mapId, int q, int r})>((ref, key) {
+  final db = ref.watch(databaseProvider);
+  if (db == null) return const Stream.empty();
+  return db.mapDao.watchCellAssets(key.mapId, key.q, key.r);
+});
+
 /// Stream of ALL cell-asset placements for a map.
 final mapCellAssetsProvider =
     StreamProvider.family<List<MapCellAssetRow>, int>((ref, mapId) {
