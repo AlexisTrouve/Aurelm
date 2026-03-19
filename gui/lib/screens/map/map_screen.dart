@@ -41,7 +41,19 @@ class MapScreen extends ConsumerWidget {
       );
     }
 
+    final mapsForAutoLoad = ref.watch(allMapsProvider);
     final selectedMapId = ref.watch(selectedMapIdProvider);
+
+    // Auto-select first map when none is selected and maps are loaded
+    if (selectedMapId == null) {
+      final firstMap = mapsForAutoLoad.valueOrNull?.firstOrNull;
+      if (firstMap != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(selectedMapIdProvider.notifier).state = firstMap.id;
+        });
+      }
+    }
+
     final selectedCell = ref.watch(selectedCellProvider);
 
     // Cells for the selected map
@@ -283,9 +295,9 @@ class _MapSelectorPanel extends ConsumerWidget {
                     : null,
                 padding: EdgeInsets.only(
                   left: 12.0 + item.depth * 16,
-                  right: 8,
-                  top: 10,
-                  bottom: 10,
+                  right: 4,
+                  top: 6,
+                  bottom: 6,
                 ),
                 child: Row(
                   children: [
@@ -313,6 +325,16 @@ class _MapSelectorPanel extends ConsumerWidget {
                       '${item.map.gridCols}×${item.map.gridRows}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    // Delete button
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 14),
+                      color: Colors.red[300],
+                      tooltip: 'Supprimer la carte',
+                      padding: const EdgeInsets.all(4),
+                      constraints: const BoxConstraints(),
+                      onPressed: () =>
+                          _confirmDeleteMap(context, ref, item.map),
+                    ),
                   ],
                 ),
               ),
@@ -323,6 +345,36 @@ class _MapSelectorPanel extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, _) => Center(child: Text('$err')),
     );
+  }
+
+  Future<void> _confirmDeleteMap(
+      BuildContext context, WidgetRef ref, MapRow map) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Supprimer "${map.name}" ?'),
+        content: const Text(
+            'La carte et toutes ses cellules seront supprimées définitivement.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final db = ref.read(databaseProvider);
+    await db?.mapDao.deleteMap(map.id);
+    // Deselect if the deleted map was selected
+    if (ref.read(selectedMapIdProvider) == map.id) {
+      ref.read(selectedMapIdProvider.notifier).state = null;
+      ref.read(selectedCellProvider.notifier).state = null;
+    }
   }
 }
 
@@ -349,19 +401,32 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
   // Focus node to capture keyboard events on the canvas area
   final _focusNode = FocusNode();
 
-  // Canvas units moved per key press (before scale factor).
-  // Actual screen-space movement = _panStep * currentScale, so the amount
-  // of canvas terrain covered per key press stays constant regardless of zoom.
   static const _panStep = 40.0;
-  // Zoom factor per A/E key press
   static const _zoomIn  = 1.15;
   static const _zoomOut = 0.87;
 
   @override
+  void initState() {
+    super.initState();
+    // HardwareKeyboard handler fires regardless of widget focus — reliable on Desktop.
+    HardwareKeyboard.instance.addHandler(_handleHardwareKey);
+  }
+
+  @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKey);
     _transformCtrl.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  /// Global key handler — fires even when no widget has explicit focus.
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) return false;
+    if (_textFieldFocused) return false;
+    // Only act when this canvas is mounted and visible
+    if (!mounted) return false;
+    return _applyKeyNavigation(event.logicalKey);
   }
 
   /// True when a text input widget has keyboard focus — navigation keys should
@@ -372,22 +437,15 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
     return focus?.context?.widget is EditableText;
   }
 
-  /// Handle keyboard navigation: arrows + ZQSD → pan, A → zoom out, E → zoom in.
-  KeyEventResult _onKeyEvent(FocusNode _, KeyEvent event) {
-    // Only act on down or repeat events, and never steal from text fields
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
-      return KeyEventResult.ignored;
-    }
-    if (_textFieldFocused) return KeyEventResult.ignored;
-
+  /// Shared navigation logic — returns true if the key was handled.
+  bool _applyKeyNavigation(LogicalKeyboardKey key) {
     final scale = _transformCtrl.value.getMaxScaleOnAxis();
-    // Screen-space step: constant canvas-space movement → scales with zoom
-    final step = _panStep * scale;
+    final step  = _panStep * scale;
 
     Offset? pan;
     double? zoomFactor;
 
-    switch (event.logicalKey) {
+    switch (key) {
       case LogicalKeyboardKey.arrowLeft:
       case LogicalKeyboardKey.keyQ:
         pan = Offset(step, 0);
@@ -405,11 +463,10 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
       case LogicalKeyboardKey.keyE:
         zoomFactor = _zoomIn;
       default:
-        return KeyEventResult.ignored;
+        return false;
     }
 
     if (pan != null) {
-      // Shift the translation entries of the matrix directly (screen-space)
       final m = _transformCtrl.value.clone();
       m.storage[12] += pan.dx;
       m.storage[13] += pan.dy;
@@ -418,24 +475,30 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
       final currentScale = _transformCtrl.value.getMaxScaleOnAxis();
       final newScale = (currentScale * zoomFactor).clamp(0.3, 5.0);
       final actualFactor = newScale / currentScale;
-      if (actualFactor == 1.0) return KeyEventResult.handled;
+      if (actualFactor == 1.0) return true;
 
-      // Zoom around the center of the canvas area
       final size = context.size;
       final cx = (size?.width ?? 400) / 2;
       final cy = (size?.height ?? 300) / 2;
 
       final m = _transformCtrl.value.clone();
-      // Adjust translation so the focal center stays fixed on screen
       m.storage[12] = actualFactor * (m.storage[12] - cx) + cx;
       m.storage[13] = actualFactor * (m.storage[13] - cy) + cy;
-      // Scale uniformly (only the diagonal x/y entries)
       m.storage[0]  *= actualFactor;
       m.storage[5]  *= actualFactor;
       _transformCtrl.value = m;
     }
+    return true;
+  }
 
-    return KeyEventResult.handled;
+  KeyEventResult _onKeyEvent(FocusNode _, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (_textFieldFocused) return KeyEventResult.ignored;
+    return _applyKeyNavigation(event.logicalKey)
+        ? KeyEventResult.handled
+        : KeyEventResult.ignored;
   }
 
   @override
@@ -520,6 +583,24 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
                     );
                     if (coord != null) {
                       ref.read(selectedCellProvider.notifier).state = coord;
+                    }
+                  },
+                  // Double-click: open child map if the cell has one
+                  onDoubleTapDown: (details) {
+                    final coord = GridPainter.coordAt(
+                      details.localPosition,
+                      gridType,
+                      cols,
+                      rows,
+                      _cellSize,
+                    );
+                    if (coord == null) return;
+                    final cell = cells.where((c) =>
+                        c.cell.q == coord.q && c.cell.r == coord.r).firstOrNull;
+                    if (cell?.cell.childMapId != null) {
+                      ref.read(selectedMapIdProvider.notifier).state =
+                          cell!.cell.childMapId!;
+                      ref.read(selectedCellProvider.notifier).state = null;
                     }
                   },
                   child: CustomPaint(

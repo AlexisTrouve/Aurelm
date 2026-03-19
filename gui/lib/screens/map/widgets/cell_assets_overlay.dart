@@ -150,10 +150,14 @@ class CellAssetsOverlay extends ConsumerWidget {
           top: top,
           width: iconSize,
           height: iconSize,
-          child: Image.memory(
-            bytes,
-            fit: BoxFit.contain,
-            gaplessPlayback: true,
+          // IgnorePointer: clicks pass through to the grid GestureDetector
+          // so tapping a cell icon selects the cell, not the icon.
+          child: IgnorePointer(
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+            ),
           ),
         ),
       );

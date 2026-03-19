@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -85,11 +86,6 @@ class GridPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..color = Colors.white;
-    // Civ border: thick stroke on exterior edges only
-    final civBorderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
 
     final labelStyle = TextStyle(
       fontSize: cellSize * 0.22,
@@ -117,21 +113,12 @@ class GridPainter extends CustomPainter {
         // Grid border
         canvas.drawPath(path, borderPaint);
 
-        // Civ territory border — only on exterior edges
+        // Civ territory: radial gradient clipped to cell shape.
+        // Transparent at center → civ color at edges, never exceeds the cell.
         if (civName != null) {
           final civIdx = _civIndex[civName] ?? 0;
-          final civColor = _civColors[civIdx % _civColors.length];
-          civBorderPaint
-            ..color = civColor
-            ..strokeWidth = (cellSize * 0.18).clamp(2.0, 8.0);
-
-          final edgePath = gridType == 'hex'
-              ? _hexExteriorEdges(q, r, cellSize, civName, cellMap)
-              : _squareExteriorEdges(q, r, cellSize, civName, cellMap);
-
-          if (edgePath != null) {
-            canvas.drawPath(edgePath, civBorderPaint);
-          }
+          _drawCivGradient(canvas, q, r,
+              _civColors[civIdx % _civColors.length], cellMap, civName);
         }
 
         // Selection highlight
@@ -151,123 +138,116 @@ class GridPainter extends CustomPainter {
   }
 
   // ---------------------------------------------------------------------------
-  // Exterior edge helpers
+  // Civ gradient fill
   // ---------------------------------------------------------------------------
 
-  /// Returns a Path containing only the edges of hex (q,r) that border a cell
-  /// with a different civ (or no civ).  Returns null if all edges are interior.
-  Path? _hexExteriorEdges(
+  /// Per-edge inward linear gradient.
+  /// Each exterior edge (facing a different/absent civ) gets a gradient from
+  /// civ color at the edge → transparent toward center.
+  /// Shared edges between same-civ cells are skipped: no border between allies.
+  void _drawCivGradient(
+    Canvas canvas,
     int q,
     int r,
-    double size,
-    String civName,
+    Color civColor,
     Map<({int q, int r}), MapCellWithDetails> cellMap,
+    String civName,
   ) {
-    // Pointy-top hex: 6 neighbours in odd-r offset coordinates.
-    // Each neighbour corresponds to an edge between corner i and i+1.
-    final neighbors = _hexNeighbors(q, r);
-    final center = _hexCenter(q, r, size);
+    final center = gridType == 'hex'
+        ? _hexCenter(q, r, cellSize)
+        : _squareCenter(q, r, cellSize);
+    final path = gridType == 'hex'
+        ? _hexPath(q, r, cellSize)
+        : _squarePath(q, r, cellSize);
 
-    // Pre-compute the 6 corner points
-    final corners = List.generate(6, (i) {
-      final angle = (pi / 180) * (60 * i - 30);
-      return Offset(center.dx + size * cos(angle),
-                    center.dy + size * sin(angle));
-    });
+    // Depth inward that the gradient fades over
+    final depth = cellSize * 0.40;
 
-    final path = Path();
-    bool hasEdge = false;
+    void drawEdge(Offset a, Offset b, ({int q, int r})? nbCoord) {
+      final nbCiv = (nbCoord != null &&
+              nbCoord.q >= 0 && nbCoord.q < gridCols &&
+              nbCoord.r >= 0 && nbCoord.r < gridRows)
+          ? cellMap[nbCoord]?.civName
+          : null;
+      if (nbCiv == civName) return; // interior edge → skip
 
-    for (int i = 0; i < 6; i++) {
-      final nb = neighbors[i];
-      final nbCiv = nb != null ? cellMap[nb]?.civName : null;
-      if (nbCiv != civName) {
-        // Exterior edge — draw from corner i to corner (i+1)%6
-        final a = corners[i];
-        final b = corners[(i + 1) % 6];
-        path.moveTo(a.dx, a.dy);
-        path.lineTo(b.dx, b.dy);
-        hasEdge = true;
+      final mid = Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
+      final dx = center.dx - mid.dx;
+      final dy = center.dy - mid.dy;
+      final dist = sqrt(dx * dx + dy * dy);
+      if (dist == 0) return;
+      final inner = Offset(
+          mid.dx + dx / dist * depth, mid.dy + dy / dist * depth);
+
+      final shader = ui.Gradient.linear(
+        mid, inner,
+        [civColor.withAlpha(200), civColor.withAlpha(0)],
+      );
+      canvas.drawPath(path, Paint()
+        ..style = PaintingStyle.fill
+        ..shader = shader);
+    }
+
+    if (gridType == 'hex') {
+      final corners = List.generate(6, (i) {
+        final angle = (pi / 180) * (60 * i - 30);
+        return Offset(center.dx + cellSize * cos(angle),
+                      center.dy + cellSize * sin(angle));
+      });
+      final neighbors = _hexNeighbors(q, r);
+      for (int i = 0; i < 6; i++) {
+        drawEdge(corners[i], corners[(i + 1) % 6], neighbors[i]);
+      }
+    } else {
+      final x = q * cellSize;
+      final y = r * cellSize;
+      final corners = [
+        Offset(x,            y           ),
+        Offset(x + cellSize, y           ),
+        Offset(x + cellSize, y + cellSize),
+        Offset(x,            y + cellSize),
+      ];
+      final neighbors = [
+        (q: q,   r: r - 1),
+        (q: q+1, r: r    ),
+        (q: q,   r: r + 1),
+        (q: q-1, r: r    ),
+      ];
+      for (int i = 0; i < 4; i++) {
+        drawEdge(corners[i], corners[(i + 1) % 4], neighbors[i]);
       }
     }
-    return hasEdge ? path : null;
   }
 
-  /// Hex neighbours in odd-r offset coordinates.
-  /// Returns a list of 6 nullable coords (null if out of bounds),
-  /// indexed by edge: [0]=NE, [1]=E, [2]=SE, [3]=SW, [4]=W, [5]=NW.
+  /// Hex neighbours in odd-r offset, indexed by edge 0–5.
+  /// Edge i goes from corner i to corner (i+1)%6 (corners at -30°+60°*i).
+  /// Corner 0 = upper-right, so edge 0 = right face → E neighbour.
+  /// Order: E, SE, SW, W, NW, NE.
   List<({int q, int r})?> _hexNeighbors(int q, int r) {
-    // Odd-r offset: parity-dependent neighbour offsets
-    final parity = r % 2; // 0 = even row, 1 = odd row
+    final parity = r % 2;
     final offsets = parity == 0
         ? const [
-            (dq:  0, dr: -1), // NE (edge 0: corner 0→1)
-            (dq:  1, dr:  0), // E  (edge 1: corner 1→2)
-            (dq:  0, dr:  1), // SE (edge 2: corner 2→3)
-            (dq: -1, dr:  1), // SW (edge 3: corner 3→4)
-            (dq: -1, dr:  0), // W  (edge 4: corner 4→5)
-            (dq: -1, dr: -1), // NW (edge 5: corner 5→0)
+            (dq:  1, dr:  0), // E   edge 0
+            (dq:  0, dr:  1), // SE  edge 1
+            (dq: -1, dr:  1), // SW  edge 2
+            (dq: -1, dr:  0), // W   edge 3
+            (dq: -1, dr: -1), // NW  edge 4
+            (dq:  0, dr: -1), // NE  edge 5
           ]
         : const [
-            (dq:  1, dr: -1),
-            (dq:  1, dr:  0),
-            (dq:  1, dr:  1),
-            (dq:  0, dr:  1),
-            (dq: -1, dr:  0),
-            (dq:  0, dr: -1),
+            (dq:  1, dr:  0), // E   edge 0
+            (dq:  1, dr:  1), // SE  edge 1
+            (dq:  0, dr:  1), // SW  edge 2
+            (dq: -1, dr:  0), // W   edge 3
+            (dq:  0, dr: -1), // NW  edge 4
+            (dq:  1, dr: -1), // NE  edge 5
           ];
-
     return offsets.map((o) {
       final nq = q + o.dq;
       final nr = r + o.dr;
       if (nq < 0 || nq >= gridCols || nr < 0 || nr >= gridRows) return null;
       return (q: nq, r: nr);
     }).toList();
-  }
-
-  /// Returns exterior edges path for a square cell.
-  Path? _squareExteriorEdges(
-    int q,
-    int r,
-    double size,
-    String civName,
-    Map<({int q, int r}), MapCellWithDetails> cellMap,
-  ) {
-    // 4 neighbours: top, right, bottom, left
-    final neighbors = [
-      (q: q,   r: r-1), // top
-      (q: q+1, r: r  ), // right
-      (q: q,   r: r+1), // bottom
-      (q: q-1, r: r  ), // left
-    ];
-    final x = q * size;
-    final y = r * size;
-    // Corners: TL, TR, BR, BL
-    final corners = [
-      Offset(x,        y       ), // TL
-      Offset(x + size, y       ), // TR
-      Offset(x + size, y + size), // BR
-      Offset(x,        y + size), // BL
-    ];
-    // Edge i goes from corner i to corner (i+1)%4
-    // [0]=top(TL→TR), [1]=right(TR→BR), [2]=bottom(BR→BL), [3]=left(BL→TL)
-    final path = Path();
-    bool hasEdge = false;
-
-    for (int i = 0; i < 4; i++) {
-      final nb = neighbors[i];
-      final nbCiv = (nb.q >= 0 && nb.q < gridCols && nb.r >= 0 && nb.r < gridRows)
-          ? cellMap[(q: nb.q, r: nb.r)]?.civName
-          : null;
-      if (nbCiv != civName) {
-        final a = corners[i];
-        final b = corners[(i + 1) % 4];
-        path.moveTo(a.dx, a.dy);
-        path.lineTo(b.dx, b.dy);
-        hasEdge = true;
-      }
-    }
-    return hasEdge ? path : null;
   }
 
   // ---------------------------------------------------------------------------

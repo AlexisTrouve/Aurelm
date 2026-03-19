@@ -193,7 +193,9 @@ class _PawnToken extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         onSecondaryTap: () => _showContextMenu(context, center),
-        child: LongPressDraggable<MapPawnDrag>(
+        // Desktop drag: regular Draggable (no long-press needed since
+        // panEnabled:false on InteractiveViewer removes gesture competition).
+        child: Draggable<MapPawnDrag>(
           data: MapPawnDrag(detail.pawn.id),
           feedback: Material(
             elevation: 6,
