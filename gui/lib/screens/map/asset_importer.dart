@@ -49,8 +49,10 @@ class _AssetImportDialogState extends State<_AssetImportDialog> {
   int? _origH;
 
   Future<void> _pickFile() async {
+    // Restrict to formats the `image` package can decode
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'tga', 'tiff', 'webp'],
       allowMultiple: false,
     );
     if (result == null || result.files.isEmpty) return;
@@ -59,16 +61,22 @@ class _AssetImportDialogState extends State<_AssetImportDialog> {
 
     // Decode just to get dimensions for the preview
     final bytes = await File(path).readAsBytes();
-    final decoded = img.decodeImage(bytes);
+    img.Image? decoded;
+    try {
+      decoded = img.decodeImage(bytes);
+    } catch (_) {
+      decoded = null;
+    }
     if (decoded == null) {
-      setState(() => _error = 'Format non reconnu');
+      setState(() => _error =
+          'Format non supporté. Utilise PNG, JPG, GIF, BMP ou WebP.');
       return;
     }
 
     setState(() {
       _filePath = path;
       _name = p.basenameWithoutExtension(path);
-      _origW = decoded.width;
+      _origW = decoded!.width;
       _origH = decoded.height;
       _previewBytes = Uint8List.fromList(img.encodePng(
         img.copyResize(decoded, width: 96, height: 96),
@@ -263,7 +271,12 @@ Future<_CompressResult> _compressToWebP({
   required int maxDim,
 }) async {
   final rawBytes = await File(filePath).readAsBytes();
-  final decoded = img.decodeImage(rawBytes);
+  img.Image? decoded;
+  try {
+    decoded = img.decodeImage(rawBytes);
+  } catch (e) {
+    throw Exception('Décodage impossible : $e');
+  }
   if (decoded == null) throw Exception('Format image non reconnu');
 
   // Resize keeping aspect ratio
