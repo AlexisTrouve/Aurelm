@@ -348,22 +348,55 @@ class _SubjectDetailStatefulState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header badges
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
+        // Header badges + lock toggles for direction, category, status, title
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _DirectionBadge(isMjToPj: isMjToPj),
-            _CategoryBadge(category: s.category),
-            _StatusBadge(status: s.status),
-            if (detail.sourceTurnId != 0)
-              _TurnChip(
-                turnId: detail.sourceTurnId,
-                label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
-                highlight: (s.sourceQuote?.isNotEmpty == true)
-                    ? s.sourceQuote
-                    : s.title,
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _DirectionBadge(isMjToPj: isMjToPj),
+                  _CategoryBadge(category: s.category),
+                  _StatusBadge(status: s.status),
+                  if (detail.sourceTurnId != 0)
+                    _TurnChip(
+                      turnId: detail.sourceTurnId,
+                      label: 'T${detail.sourceTurnNumber} · ${detail.civName}',
+                      highlight: (s.sourceQuote?.isNotEmpty == true)
+                          ? s.sourceQuote
+                          : s.title,
+                    ),
+                ],
               ),
+            ),
+            // Lock toggles for the metadata fields
+            GmLockToggle(
+              locked: gmFields.contains('direction'),
+              fieldLabel: 'direction',
+              onLock: () => _lockField('direction'),
+              onUnlock: () => _unlockField(context, ref, s.id, 'direction'),
+            ),
+            GmLockToggle(
+              locked: gmFields.contains('category'),
+              fieldLabel: 'catégorie',
+              onLock: () => _lockField('category'),
+              onUnlock: () => _unlockField(context, ref, s.id, 'category'),
+            ),
+            GmLockToggle(
+              locked: gmFields.contains('status'),
+              fieldLabel: 'statut',
+              onLock: () => _lockField('status'),
+              onUnlock: () => _unlockField(context, ref, s.id, 'status'),
+            ),
+            // Lock toggle for title (displayed in appbar, locked here as metadata)
+            GmLockToggle(
+              locked: gmFields.contains('title'),
+              fieldLabel: 'titre',
+              onLock: () => _lockField('title'),
+              onUnlock: () => _unlockField(context, ref, s.id, 'title'),
+            ),
           ],
         ),
 
@@ -426,8 +459,22 @@ class _SubjectDetailStatefulState
         // Verbatim source quote
         if (s.sourceQuote != null && s.sourceQuote!.isNotEmpty) ...[
           const SizedBox(height: 8),
-          _SourceQuoteTile(
-              quote: s.sourceQuote!, label: 'Extrait source (tour MJ)'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _SourceQuoteTile(
+                    quote: s.sourceQuote!, label: 'Extrait source (tour MJ)'),
+              ),
+              // Lock toggle — source_quote protected from pipeline overwrite
+              GmLockToggle(
+                locked: gmFields.contains('source_quote'),
+                fieldLabel: 'extrait source',
+                onLock: () => _lockField('source_quote'),
+                onUnlock: () => _unlockField(context, ref, s.id, 'source_quote'),
+              ),
+            ],
+          ),
         ],
 
         // Options

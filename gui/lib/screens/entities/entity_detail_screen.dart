@@ -350,7 +350,14 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
       Row(
         children: [
           EntityTypeBadge(entityType: entity.entity.entityType),
-          const SizedBox(width: 12),
+          // Lock toggle — entity_type protected from pipeline overwrite
+          GmLockToggle(
+            locked: gmFields.contains('entity_type'),
+            fieldLabel: 'type',
+            onLock: () => _lockField('entity_type'),
+            onUnlock: () => _unlockField('entity_type'),
+          ),
+          const SizedBox(width: 8),
           Text(
             '${entity.mentionCount} mentions',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -368,6 +375,14 @@ class _EntityDetailScreenState extends ConsumerState<EntityDetailScreen> {
               ),
             ),
           ],
+          const Spacer(),
+          // Lock toggle — canonical_name protected from pipeline overwrite
+          GmLockToggle(
+            locked: gmFields.contains('canonical_name'),
+            fieldLabel: 'nom',
+            onLock: () => _lockField('canonical_name'),
+            onUnlock: () => _unlockField('canonical_name'),
+          ),
         ],
       ),
 

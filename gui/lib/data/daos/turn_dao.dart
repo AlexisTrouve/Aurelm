@@ -212,9 +212,14 @@ class TurnDao extends DatabaseAccessor<AurelmDatabase> with _$TurnDaoMixin {
 
   /// Persist the GM-locked fields list for a turn.
   Future<void> updateGmFields(int turnId, Set<String> fields) async {
-    await customStatement(
+    final encoded = fields.isEmpty ? null : jsonEncode(fields.toList()..sort());
+    await customUpdate(
       'UPDATE turn_turns SET gm_fields = ? WHERE id = ?',
-      [fields.isEmpty ? null : jsonEncode(fields.toList()), turnId],
+      variables: [
+        encoded == null ? Variable<String>(null) : Variable.withString(encoded),
+        Variable.withInt(turnId),
+      ],
+      updates: {turnTurns},
     );
   }
 

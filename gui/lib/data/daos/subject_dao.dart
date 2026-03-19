@@ -277,9 +277,13 @@ class SubjectDao extends DatabaseAccessor<AurelmDatabase>
   /// Persist the GM-locked field set. Pass empty set to unlock all fields.
   Future<void> updateGmFields(int subjectId, Set<String> fields) async {
     final encoded = fields.isEmpty ? null : jsonEncode(fields.toList()..sort());
-    await customStatement(
+    await customUpdate(
       'UPDATE subject_subjects SET gm_fields = ? WHERE id = ?',
-      [encoded, subjectId],
+      variables: [
+        encoded == null ? Variable<String>(null) : Variable.withString(encoded),
+        Variable.withInt(subjectId),
+      ],
+      updates: {subjectSubjects},
     );
   }
 

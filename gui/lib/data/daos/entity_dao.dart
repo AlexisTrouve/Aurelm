@@ -458,9 +458,14 @@ class EntityDao extends DatabaseAccessor<AurelmDatabase>
   /// Persist the GM-locked field set. Pass empty set to unlock all fields.
   Future<void> updateGmFields(int entityId, Set<String> fields) async {
     final encoded = fields.isEmpty ? null : jsonEncode(fields.toList()..sort());
-    await customStatement(
+    // customUpdate (not customStatement) so Drift notifies table watchers → stream rebuilds.
+    await customUpdate(
       'UPDATE entity_entities SET gm_fields = ? WHERE id = ?',
-      [encoded, entityId],
+      variables: [
+        encoded == null ? Variable<String>(null) : Variable.withString(encoded),
+        Variable.withInt(entityId),
+      ],
+      updates: {entityEntities},
     );
   }
 

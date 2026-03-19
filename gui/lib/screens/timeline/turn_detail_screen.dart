@@ -480,15 +480,35 @@ class _TurnDetailScreenState extends ConsumerState<TurnDetailScreen> {
                 // Game date
                 if (t.gameDateStart != null) ...[
                   const SizedBox(height: 20),
-                  Text(
-                    'Période : ${t.gameDateStart}'
-                    '${t.gameDateEnd != null ? ' → ${t.gameDateEnd}' : ''}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Période : ${t.gameDateStart}'
+                          '${t.gameDateEnd != null ? ' → ${t.gameDateEnd}' : ''}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                                fontStyle: FontStyle.italic,
+                              ),
                         ),
+                      ),
+                      // Lock toggles — game dates protected from pipeline overwrite
+                      GmLockToggle(
+                        locked: gmFields.contains('game_date_start'),
+                        fieldLabel: 'date début',
+                        onLock: () => _lockField('game_date_start'),
+                        onUnlock: () => _unlockField('game_date_start'),
+                      ),
+                      GmLockToggle(
+                        locked: gmFields.contains('game_date_end'),
+                        fieldLabel: 'date fin',
+                        onLock: () => _lockField('game_date_end'),
+                        onUnlock: () => _unlockField('game_date_end'),
+                      ),
+                    ],
                   ),
                 ],
 
@@ -732,6 +752,13 @@ class _PreanalysisSection extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Lock toggle — novelty_summary protected from pipeline overwrite
+                GmLockToggle(
+                  locked: gmFields.contains('novelty_summary'),
+                  fieldLabel: 'nouveautés',
+                  onLock: () => onLock('novelty_summary'),
+                  onUnlock: () => onUnlock('novelty_summary'),
+                ),
               ],
             ),
           ),
@@ -778,13 +805,27 @@ class _PreanalysisSection extends StatelessWidget {
                 // Strategy tags
                 if (_parseTags(turn.strategyTags).isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: _parseTags(turn.strategyTags).map((tag) {
-                      final color = _strategyTagColors[tag] ?? cs.primary;
-                      return _TagChip(label: tag, color: color);
-                    }).toList(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: _parseTags(turn.strategyTags).map((tag) {
+                            final color = _strategyTagColors[tag] ?? cs.primary;
+                            return _TagChip(label: tag, color: color);
+                          }).toList(),
+                        ),
+                      ),
+                      // Lock toggle — strategy_tags protected from pipeline overwrite
+                      GmLockToggle(
+                        locked: gmFields.contains('strategy_tags'),
+                        fieldLabel: 'tags stratégie',
+                        onLock: () => onLock('strategy_tags'),
+                        onUnlock: () => onUnlock('strategy_tags'),
+                      ),
+                    ],
                   ),
                 ],
               ],
@@ -849,20 +890,55 @@ class _TurnTagsSection extends StatelessWidget {
           ),
         ]),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            if (techEra != null)
+
+        // tech_era chip + lock toggle
+        if (techEra != null) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               _TagChip(label: techEra, icon: Icons.science_outlined,
                   color: Colors.teal),
-            if (fantasyLevel != null)
+              const SizedBox(width: 4),
+              // Lock toggle — tech_era protected from pipeline overwrite
+              GmLockToggle(
+                locked: gmFields.contains('tech_era'),
+                fieldLabel: 'ère technologique',
+                onLock: () => onLock('tech_era'),
+                onUnlock: () => onUnlock('tech_era'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+
+        // fantasy_level chip + lock toggle
+        if (fantasyLevel != null) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               _TagChip(label: fantasyLevel, icon: Icons.auto_awesome,
                   color: Colors.purple),
-            ...thematicTags.map((tag) => _TagChip(label: tag,
-                color: Theme.of(context).colorScheme.primary)),
-          ],
-        ),
+              const SizedBox(width: 4),
+              // Lock toggle — fantasy_level protected from pipeline overwrite
+              GmLockToggle(
+                locked: gmFields.contains('fantasy_level'),
+                fieldLabel: 'niveau fantastique',
+                onLock: () => onLock('fantasy_level'),
+                onUnlock: () => onUnlock('fantasy_level'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+        ],
+
+        // Thematic tags
+        if (thematicTags.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: thematicTags.map((tag) => _TagChip(label: tag,
+                color: Theme.of(context).colorScheme.primary)).toList(),
+          ),
       ],
     );
   }
