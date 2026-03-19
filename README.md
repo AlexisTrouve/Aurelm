@@ -12,8 +12,8 @@ Flutter Desktop GUI (Dashboard)
         ├── Discord Sync (read-only bot + HTTP API)
         ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
-        ├── SQLite Database (14 migrations)
-        └── OpenClaw Agent (Claude API primary, local LLM fallback)
+        ├── SQLite Database (28 migrations)
+        └── Claude Agent (Claude API primary, claude -p CLI fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -26,9 +26,9 @@ Flutter Desktop GUI (Dashboard)
 | Local LLM | qwen3:8b (dev, 5.2GB VRAM) / qwen3:14b (prod, 12GB VRAM) |
 | Cloud LLM | OpenRouter (dev inference, no proxy needed) |
 | Wiki | MkDocs Material (auto-generated markdown) |
-| Database | SQLite (single file, 14 migrations) |
+| Database | SQLite (single file, 28 migrations) |
 | MCP Server | TypeScript (strict, ES2022) |
-| Agent | OpenClaw + Claude API (primary) + local LLM fallback |
+| Agent | Claude API (primary) + `claude -p` CLI fallback |
 | Discord | discord.py (read-only) + aiohttp HTTP API |
 
 ## Project Structure
@@ -47,11 +47,15 @@ Aurelm/
 
 ## Key Features
 
-- **10-stage ML pipeline** — markdown ingestion → LLM entity extraction (v22.2.2) → summarization → subject tracking (MJ↔PJ) → entity profiling with tags → alias resolution with full entity merge
+- **10-stage ML pipeline** — markdown ingestion → LLM entity extraction (v22.2.2) → summarization → subject tracking (MJ↔PJ) → entity profiling with tags → alias resolution with full entity merge → civ relation profiling
 - **Entity system** — canonical names, alias history with naming timeline, semantic tags, hide/disable, mention tracking
-- **Subject tracking** — open threads between GM and players (choices awaiting response, player initiatives awaiting GM treatment), confidence-filtered resolution matching
-- **Flutter dashboard** — entity browser with tag filters, turn timeline with Ctrl+F search + fuzzy highlight, entity→turn fast travel with auto-scroll, force-directed relation graph, subjects screen
-- **Discord bot** — syncs channel history, runs pipeline, answers GM queries via Claude agent
+- **Subject tracking** — open threads between GM and players (choices awaiting response, player initiatives awaiting GM treatment), confidence-filtered resolution matching, domain tags
+- **Civ relations** — LLM-extracted inter-civ relations (diplomacy, trade, conflicts) stored in DB, exposed in Flutter + bot tool `getCivRelations`
+- **Favorites** — star entities, subjects, turns; filterable in all browsers; exposed to agent via `getFavorites`
+- **Flutter dashboard** — entity browser with tag/favorites filters, turn timeline with Ctrl+F search + fuzzy highlight, entity→turn fast travel, subjects screen, civ relations view, civ alias resolver
+- **Chat system** — NDJSON streaming, thinking blocks display, tool use cards, persistent sessions, lore hyperlinks (entities/civs/turns/subjects), quote stealth display, graceful `claude -p` fallback on API error
+- **Notes** — CRUD notes attached to entities/subjects/turns, side rail UI with draggable floating windows, pinned notes always shown to agent
+- **Discord bot** — syncs channel history, runs pipeline, 16 tools, answers GM queries via Claude agent
 
 ## Quick Start
 

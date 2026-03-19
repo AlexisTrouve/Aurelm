@@ -49,8 +49,8 @@ Flutter Desktop GUI (Dashboard)
 
 ### Directory Layout
 
-- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. 99 Dart source files, 7 test files. Flutter 3.38.8 installed locally. CI also builds via GitHub Actions. Run `dart run build_runner build --delete-conflicting-outputs` after any schema/DAO change.
-- **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 14 tools (listCivs, getCivState, getTurnDetail, searchLore, getEntityDetail, sanityCheck, timeline, compareCivs, searchTurnContent, getStructuredFacts, listSubjects, getNotes, getSubjectDetail, deepExplore), aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API with NDJSON streaming. 94 tests passing.
+- **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. ~110 Dart source files, 7 test files. Flutter 3.38.8 installed locally. CI also builds via GitHub Actions. Run `dart run build_runner build --delete-conflicting-outputs` after any schema/DAO change.
+- **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 16 tools (listCivs, getCivState, getTurnDetail, searchLore, getEntityDetail, sanityCheck, timeline, compareCivs, searchTurnContent, getStructuredFacts, listSubjects, getNotes, getSubjectDetail, deepExplore, getFavorites, getCivRelations), aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API with NDJSON streaming + graceful `claude -p` CLI fallback. 94+ tests passing.
 - **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline (+ stage 6.5 preanalysis). `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **pipeline/scripts/**: Standalone benchmark/scoring/profiling utilities. See `pipeline/scripts/README.md` for usage. Not part of the pipeline itself — run manually for evaluation and tuning.
 - **wiki/**: MkDocs Material — auto-generated game wiki
@@ -102,10 +102,22 @@ Flutter Desktop GUI (Dashboard)
 
 - [x] **Step 8i**: Notes system — migration 019 (notes table with entity_id/subject_id/turn_id FK), Flutter notes CRUD with side rail UI (vertical rail on left of detail screens, hover-expanding tags showing note titles, draggable floating windows via OverlayEntry for view/edit/add). NotesSideRail wrapper on entity/subject/turn detail screens. NotesPanel alternative for inline display.
 
+- [x] **Step 8j**: Notes bug fix + enhancements — FK constraint fixes, pinned notes flag, agent notes type (system prompt injection), migration 020.
+
+- [x] **Step 8k**: Granular tool params — showMentions, showFacts, showTimeline, showNotes per detail tool to reduce context bloat.
+
+- [x] **Step 8l**: deepExplore sub-agent — internal Claude API call within tool execution for autonomous DB exploration.
+
+- [x] **Step 8m**: Favorites system — migration 024 (`user_favorites` table), `FavoritesRepository` (raw SQL, no codegen), `favoritesProvider` (StateNotifier, Set<"type_id">), `favoritesOnly` filter on entities/subjects/timeline, star buttons in detail screens (entity/subject/turn), ⭐ chip in 3 filter bars, bot tool `getFavorites`.
+
+- [x] **Step 8n**: Relations inter-civilisations — civ relation profiler LLM (`civ_relation_profiler.py`), detection in `runner.py`, `getCivRelations` bot tool, Flutter `CivRelationsRepository` + relations UI in civ detail screen.
+
+- [x] **Step 8p**: Chat enhancements — quote stealth display (collapsed `_QuoteCard` instead of raw blockquote in user bubble), graceful `claude -p` CLI fallback on any Anthropic API error with orange bottom-right toast, lore hyperlinks in chat (turns T4, civ names, subjects #18 — fixed `_isInsideMarkdownLink` for bare `(`, dedicated `#N` regex pass), subject tags colored with entity palette (list tile, detail, filter bar).
+
+### In Progress
+- [ ] **Step 8o**: Civ Alias Resolver — UI-driven mapping of unresolved civ entity names to known civs. Migration 028 (`civ_aliases` + `civ_alias_dismissed`), pipeline `_detect_civ_mentions` uses aliases, `CivAliasResolverScreen` (done), `CivAliasRepository` (done), CivDetailScreen aliases section, backfill test, `gm_lock` buttons in relations/alias screens.
+
 ### Next Steps
-- [ ] **Step 8j**: Notes bug fix + enhancements — GUI notes not persisting to DB (FK constraint investigation), pinned notes flag (always shown to agent), agent notes type (GM customizes agent behavior via system prompt injection), migration 020
-- [ ] **Step 8k**: Granular tool params — showMentions, showFacts, showTimeline, showNotes per detail tool to reduce context bloat
-- [ ] **Step 8l**: deepExplore sub-agent — internal Claude API call within tool execution for autonomous DB exploration
 - [ ] **Step 9**: Graph redesign — current force-directed graph unusable, needs rethink
 - [ ] **Step 10**: Deployment — packaging, Arthur's machine setup, Discord bot invite
 

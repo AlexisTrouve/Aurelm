@@ -17,6 +17,7 @@ import 'widgets/civ_subjects_frame.dart';
 import 'widgets/civ_sessions_frame.dart';
 import 'widgets/civ_relations_frame.dart';
 import '../../providers/civ_alias_provider.dart';
+import '../../data/repositories/civ_alias_repository.dart';
 
 class CivDetailScreen extends ConsumerWidget {
   final int civId;
@@ -249,6 +250,13 @@ class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
     ref.invalidate(civAliasesProvider(widget.civId));
   }
 
+  Future<void> _toggleLock(int aliasId) async {
+    final repo = ref.read(civAliasRepositoryProvider);
+    if (repo == null) return;
+    await repo.toggleLock(aliasId);
+    ref.invalidate(civAliasesProvider(widget.civId));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -315,17 +323,77 @@ class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
           Wrap(
             spacing: 6,
             runSpacing: 4,
-            children: aliases.map((a) => Chip(
-                  label: Text(a.aliasName,
-                      style: theme.textTheme.labelSmall),
-                  deleteIcon: const Icon(Icons.close, size: 14),
-                  onDeleted: () => _delete(a.id),
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+            children: aliases.map((a) => _AliasChip(
+                  alias: a,
+                  onDelete: () => _delete(a.id),
+                  onToggleLock: () => _toggleLock(a.id),
                 )).toList(),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// A compact chip showing an alias name with a lock toggle and a delete button.
+/// Locked aliases (gm_lock=1) display an amber lock icon; unlocked show a grey open lock.
+class _AliasChip extends StatelessWidget {
+  final CivAliasEntry alias;
+  final VoidCallback onDelete;
+  final VoidCallback onToggleLock;
+
+  const _AliasChip({
+    required this.alias,
+    required this.onDelete,
+    required this.onToggleLock,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Lock toggle button
+          Tooltip(
+            message: alias.gmLock
+                ? 'Verrouillé — pipeline ignorera'
+                : 'Verrouiller contre le pipeline',
+            child: InkWell(
+              onTap: onToggleLock,
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  alias.gmLock ? Icons.lock : Icons.lock_open,
+                  size: 13,
+                  color: alias.gmLock ? Colors.amber : cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(alias.aliasName, style: theme.textTheme.labelSmall),
+          const SizedBox(width: 2),
+          // Delete button
+          InkWell(
+            onTap: onDelete,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(Icons.close, size: 13, color: cs.onSurfaceVariant),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

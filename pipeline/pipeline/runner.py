@@ -1269,6 +1269,11 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
     that don't belong to source_civ, then fuzzy-matches canonical_name →
     civ_civilizations to resolve the target civ ID.  Inserts OR IGNOREs into
     civ_mentions so re-runs are idempotent.
+
+    Context stored per (turn, target_civ) pair is built from entity_mentions.context
+    — the surrounding text at extraction time — rather than the full turn summary.
+    This makes the profiler LLM work from specific passages rather than a generic
+    summary that may not even mention the target civ by name.
     """
     # Fetch source civ name for self-exclusion below
     source_civ_row = conn.execute(
@@ -1276,12 +1281,13 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
     ).fetchone()
     source_civ_name_lower = source_civ_row["name"].lower() if source_civ_row else ""
 
-    # Find all civilization-type entities mentioned in this turn.
+    # Find all civilization-type entities mentioned in this turn, with their
+    # per-mention context snippets (surrounding text from the source segment).
     # Note: ALL entities extracted from a civ's turns carry that civ's civ_id,
     # even foreign civs — so we CANNOT filter by civ_id here. Self-exclusion
     # is done by comparing target_civ_id == source_civ_id after DB lookup.
     rows = conn.execute(
-        """SELECT DISTINCT e.canonical_name
+        """SELECT e.canonical_name, em.mention_text, em.context AS mention_ctx
            FROM entity_mentions em
            JOIN entity_entities e ON e.id = em.entity_id
            WHERE em.turn_id = ?
@@ -1290,9 +1296,44 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
         (turn_id,),
     ).fetchall()
 
-    for row in rows:
-        entity_name = row["canonical_name"]
+    # Also fetch known aliases for all civs so we can validate mention_text below.
+    alias_rows = conn.execute(
+        "SELECT alias_name, civ_id FROM civ_aliases"
+    ).fetchall()
+    civ_alias_names: dict[str, int] = {
+        r["alias_name"].lower(): r["civ_id"] for r in alias_rows
+    }
 
+    # Group mention snippets by canonical_name so we can build a rich context
+    # per (turn, target_civ) even when the civ is mentioned multiple times.
+    # Filter: only include a snippet when mention_text roughly matches the entity's
+    # canonical name or a known alias — this excludes alias-merged entities whose
+    # mention_text refers to a completely different concept (e.g. "Mériadoques"
+    # merged into "Nanzagouet" would pollute the Nanzagouets relation context).
+    from collections import defaultdict
+    snippets_by_name: dict[str, list[str]] = defaultdict(list)
+    for row in rows:
+        canonical = row["canonical_name"]
+        mention = (row["mention_text"] or "").strip().lower()
+        canonical_lower = canonical.lower()
+
+        # Accept if mention_text contains part of canonical name or vice versa,
+        # OR if mention_text matches a known civ alias.
+        mention_matches = (
+            canonical_lower in mention
+            or mention in canonical_lower
+            or mention in civ_alias_names
+        )
+        if not mention_matches:
+            continue  # skip — different concept merged under this entity
+
+        ctx_snippet = (row["mention_ctx"] or "").strip()
+        if ctx_snippet:
+            snippets_by_name[canonical].append(ctx_snippet)
+        elif canonical not in snippets_by_name:
+            snippets_by_name[canonical] = []  # ensure key exists
+
+    for entity_name, snippets in snippets_by_name.items():
         # Try canonical name match first (exact, then partial)
         target = conn.execute(
             "SELECT id FROM civ_civilizations WHERE LOWER(name) = LOWER(?)",
@@ -1307,7 +1348,7 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
                 (entity_name, entity_name),
             ).fetchone()
 
-        # Fall back to GM-defined aliases (e.g. "Cheveux de sang" → Nanzagouets)
+        # Fall back to GM-defined aliases (e.g. "Nanzagouet" → Nanzagouets)
         if target is None:
             target = conn.execute(
                 """SELECT civ_id AS id FROM civ_aliases
@@ -1325,11 +1366,21 @@ def _detect_civ_mentions(conn, source_civ_id: int, turn_id: int, context: str) -
         if target_civ_id == source_civ_id:
             continue
 
+        # Build specific context from mention snippets; fall back to turn summary
+        # only if no snippets are available (older DB rows without em.context).
+        if snippets:
+            # Deduplicate and join snippets, cap at 500 chars
+            seen: set[str] = set()
+            unique = [s for s in snippets if not (s in seen or seen.add(s))]  # type: ignore[func-returns-value]
+            specific_context: str | None = " | ".join(unique)[:500]
+        else:
+            specific_context = context[:500] if context else None
+
         conn.execute(
             """INSERT OR IGNORE INTO civ_mentions
                    (source_civ_id, target_civ_id, turn_id, context)
                VALUES (?, ?, ?, ?)""",
-            (source_civ_id, target_civ_id, turn_id, context[:500] if context else None),
+            (source_civ_id, target_civ_id, turn_id, specific_context),
         )
 
 
