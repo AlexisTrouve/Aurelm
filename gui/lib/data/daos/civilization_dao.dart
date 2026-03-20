@@ -48,6 +48,40 @@ class CivilizationDao extends DatabaseAccessor<AurelmDatabase>
     });
   }
 
+  /// Stream of all civs (no stats, lighter).
+  Stream<List<CivRow>> watchAllCivs() {
+    return (select(civCivilizations)
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .watch();
+  }
+
+  /// Create a new civilization and return its id.
+  Future<int> createCiv({
+    required String name,
+    String? playerName,
+    String? discordChannelId,
+  }) {
+    final now = DateTime.now().toIso8601String();
+    return into(civCivilizations).insert(CivCivilizationsCompanion.insert(
+      name: name,
+      playerName: Value(playerName),
+      discordChannelId: Value(discordChannelId),
+      createdAt: now,
+      updatedAt: now,
+    ));
+  }
+
+  /// Update the Discord channel binding for an existing civ.
+  Future<void> updateCivChannel(int civId, String? channelId) {
+    final now = DateTime.now().toIso8601String();
+    return (update(civCivilizations)..where((t) => t.id.equals(civId))).write(
+      CivCivilizationsCompanion(
+        discordChannelId: Value(channelId),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
   Stream<CivWithStats?> watchCivWithStats(int civId) {
     final turnCountExpr = turnTurns.id.count();
     final entityCountExpr = entityEntities.id.count();

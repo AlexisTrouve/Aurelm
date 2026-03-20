@@ -286,6 +286,10 @@ void _ensureMigrations(dynamic db) {
     "ALTER TABLE notes ADD COLUMN map_id      INTEGER REFERENCES map_maps(id) ON DELETE CASCADE",
     "ALTER TABLE notes ADD COLUMN map_cell_q  INTEGER",
     "ALTER TABLE notes ADD COLUMN map_cell_r  INTEGER",
+    // Migration 035: pipeline run metadata
+    "ALTER TABLE pipeline_runs ADD COLUMN extraction_version TEXT",
+    "ALTER TABLE pipeline_runs ADD COLUMN llm_model TEXT",
+    "ALTER TABLE pipeline_runs ADD COLUMN llm_provider TEXT",
   ];
 
   for (final sql in statements) {

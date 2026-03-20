@@ -149,7 +149,12 @@ def run_pipeline(
     ) if use_llm else None
 
     conn = get_connection(db_path)
-    run_id = _start_pipeline_run(conn)
+    run_id = _start_pipeline_run(
+        conn,
+        extraction_version=extraction_version,
+        llm_model=model,
+        llm_provider=llm_provider,
+    )
 
     # Build entity lookup from DB before the loop — starts empty for a fresh run,
     # populated from previous turns on incremental runs.
@@ -1134,10 +1139,17 @@ def _upsert_entity(conn, name: str, entity_type: str, civ_id: int, turn_id: int)
     return entity_id
 
 
-def _start_pipeline_run(conn) -> int:
-    """Record the start of a pipeline run."""
+def _start_pipeline_run(
+    conn,
+    extraction_version: str | None = None,
+    llm_model: str | None = None,
+    llm_provider: str | None = None,
+) -> int:
+    """Record the start of a pipeline run with metadata."""
     cursor = conn.execute(
-        "INSERT INTO pipeline_runs (status) VALUES ('running')"
+        """INSERT INTO pipeline_runs (status, extraction_version, llm_model, llm_provider)
+           VALUES ('running', ?, ?, ?)""",
+        (extraction_version, llm_model, llm_provider),
     )
     conn.commit()
     return cursor.lastrowid  # type: ignore[return-value]
@@ -1711,7 +1723,12 @@ def run_pipeline_for_channels(
 
         civ_stats = {"turns_created": 0, "entities_extracted": 0, "segments_created": 0}
         conn = get_connection(db_path)
-        run_id = _start_pipeline_run(conn)
+        run_id = _start_pipeline_run(
+            conn,
+            extraction_version=extraction_version,
+            llm_model=model,
+            llm_provider=llm_provider.name if hasattr(llm_provider, 'name') else None,
+        )
 
         try:
             turn_number = _get_next_turn_number(conn, civ_id)

@@ -49,6 +49,8 @@ class BotServer:
         self._app.router.add_post("/notes", self._create_note)
         self._app.router.add_put("/notes/{note_id}", self._update_note)
         self._app.router.add_delete("/notes/{note_id}", self._delete_note)
+        # Discord channel listing for Flutter config UI
+        self._app.router.add_get("/discord/channels", self._discord_channels)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -58,6 +60,8 @@ class BotServer:
 
         # Agent wired by main.py when API key is available
         self._agent: "Agent | None" = None
+        # Discord client reference — set by main.py for /discord/channels
+        self._discord_client: "AurelmBot | None" = None
         # Session manager for persistent conversation history
         self._session_manager = SessionManager(config.db_path)
         # Legacy in-memory conversation histories keyed by UUID (deprecated, kept for backwards compatibility)
@@ -72,6 +76,10 @@ class BotServer:
     def set_agent(self, agent) -> None:
         """Attach the LLM agent for /chat endpoint."""
         self._agent = agent
+
+    def set_discord_client(self, client) -> None:
+        """Attach the Discord client for /discord/channels endpoint."""
+        self._discord_client = client
 
     async def start(self) -> None:
         self._runner = web.AppRunner(self._app)
@@ -101,6 +109,23 @@ class BotServer:
             "last_sync_result": self._last_sync_result,
             "last_pipeline_run": pipeline_info,
         })
+
+    async def _discord_channels(self, _request: web.Request) -> web.Response:
+        """Return text channels the bot can see, grouped by guild."""
+        if not self._discord_client or not self._discord_connected:
+            return web.json_response(
+                {"error": "Discord not connected"}, status=503)
+
+        channels = []
+        for guild in self._discord_client.guilds:
+            for ch in guild.text_channels:
+                channels.append({
+                    "id": str(ch.id),
+                    "name": ch.name,
+                    "guild_id": str(guild.id),
+                    "guild_name": guild.name,
+                })
+        return web.json_response({"channels": channels})
 
     async def _progress(self, _request: web.Request) -> web.Response:
         """Return current pipeline progress for UI polling."""

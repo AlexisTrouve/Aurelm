@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/chat_sessions_service.dart';
+import 'bot_config_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -91,6 +92,14 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Bot & Discord section
+          Text('Bot & Discord',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          const BotConfigSection(),
 
           const SizedBox(height: 24),
 

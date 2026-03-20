@@ -85,6 +85,7 @@ async def run(config: BotConfig) -> None:
     if config.has_discord:
         bot = AurelmBot(agent, proxy=config.proxy)
         bot.set_on_ready(lambda: server.set_discord_connected(True))
+        server.set_discord_client(bot)
     else:
         log.info("DISCORD_BOT_TOKEN not set -- running HTTP-only mode")
 

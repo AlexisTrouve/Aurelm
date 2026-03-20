@@ -71,7 +71,10 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
         cfg.bot_port = port_override
 
     # Secrets: env vars take priority over aurelm_config.json values
-    cfg.discord_token = os.environ.get("DISCORD_BOT_TOKEN", "")
+    cfg.discord_token = (
+        os.environ.get("DISCORD_BOT_TOKEN")
+        or data.get("discord_token", "")
+    )
     cfg.anthropic_api_key = (
         os.environ.get("ANTHROPIC_API_KEY")
         or data.get("anthropic_api_key", "")
