@@ -26,7 +26,9 @@ class BotConfig:
     wiki_dir: str | None = None
     gm_authors: list[str] = field(default_factory=lambda: ["Arthur Ignatus"])
     channels: list[ChannelConfig] = field(default_factory=list)
-    ollama_model: str = "llama3.1:8b"
+    llm_provider: str = "ollama"  # 'ollama' | 'openrouter'
+    ollama_model: str = "qwen3:14b"
+    extraction_version: str = "v22.2.2-pastlevel"
     discord_token: str = ""
     anthropic_api_key: str = ""
     # Base URL du proxy Anthropic (ex: http://localhost:4000). None = api.anthropic.com direct.
@@ -57,7 +59,9 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
         cfg.proxy = data.get("proxy")
         cfg.wiki_dir = data.get("wiki_dir")
         cfg.gm_authors = data.get("gm_authors", cfg.gm_authors)
+        cfg.llm_provider = data.get("llm_provider", cfg.llm_provider)
         cfg.ollama_model = data.get("ollama_model", cfg.ollama_model)
+        cfg.extraction_version = data.get("extraction_version", cfg.extraction_version)
         cfg.anthropic_base_url = data.get("anthropic_base_url")
 
         for ch_id, ch_data in data.get("channels", {}).items():

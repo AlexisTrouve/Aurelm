@@ -38,12 +38,17 @@ async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
         try:
             sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
             from pipeline.pipeline.runner import run_pipeline_for_channels
+            from pipeline.pipeline.llm_provider import create_provider
+            provider = create_provider(config.llm_provider)
             return run_pipeline_for_channels(
                 db_path=config.db_path,
-                use_llm=False,
+                use_llm=True,
                 wiki_dir=config.wiki_dir,
                 gm_authors=set(config.gm_authors),
                 track_progress=True,
+                model=config.ollama_model,
+                provider=provider,
+                extraction_version=config.extraction_version,
             )
         except ImportError:
             log.warning("Pipeline module not available, skipping")

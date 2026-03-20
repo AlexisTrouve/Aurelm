@@ -55,8 +55,8 @@ def run_pipeline(
     use_llm: bool = True,
     wiki_dir: str | None = None,
     track_progress: bool = False,
-    extraction_version: str = "v13.2-validate",
-    model: str = "llama3.1:8b",
+    extraction_version: str = "v22.2.2-pastlevel",
+    model: str = "qwen3:14b",
     provider: LLMProvider | None = None,
     llm_config: LLMConfig | None = None,
 ) -> dict:
@@ -1632,12 +1632,12 @@ def reextract_facts_for_civ(db_path: str, civ_id: int, use_llm: bool = True, ext
 
 def run_pipeline_for_channels(
     db_path: str,
-    use_llm: bool = False,
+    use_llm: bool = True,
     wiki_dir: str | None = None,
     gm_authors: set[str] | None = None,
     track_progress: bool = True,
-    extraction_version: str = "v13.2-validate",
-    model: str = "llama3.1:8b",
+    extraction_version: str = "v22.2.2-pastlevel",
+    model: str = "qwen3:14b",
     provider: LLMProvider | None = None,
     llm_config: LLMConfig | None = None,
 ) -> dict:
