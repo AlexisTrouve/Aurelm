@@ -195,8 +195,10 @@ class FactExtractor:
             marked_entities = self._llm_mark_entities(chunk)
 
             # LLM call 3b (optional): focused entity call (e.g. castes/institutions only).
+            # Only fires if version has a focus_prompt — otherwise returns [] immediately.
             focused_entities = self._llm_extract_focused(chunk)
-            if on_llm_call: on_llm_call("extraction")
+            if on_llm_call and self.version.get_focus_prompt(self.model):
+                on_llm_call("extraction")
 
             all_technologies = merge(all_technologies, llm_result.get("technologies", []))
             all_resources = merge(all_resources, llm_result.get("resources", []))
@@ -353,7 +355,8 @@ class FactExtractor:
             # Call 2: focused extraction (catches types entity_only misses)
             focused = self._llm_extract_focused(chunk)
             all_entities.extend(focused)
-            if on_llm_call: on_llm_call("pj_extraction")
+            if on_llm_call and self.version.get_focus_prompt(self.model):
+                on_llm_call("pj_extraction")
 
         # Pattern pass: add mentions of known DB entities found in PJ text
         pattern_facts = self._pattern_extract_facts(pj_text, entity_lookup or {})

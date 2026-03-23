@@ -621,9 +621,16 @@ def create_provider(
             api_key=api_key,
             base_url=base_url or "https://openrouter.ai/api/v1",
         )
+    elif provider_name == "claude_proxy":
+        # Claude proxy (etheryale.com) uses OpenRouter-compatible API
+        return OpenRouterProvider(
+            api_key=api_key,
+            base_url=base_url or "https://ai.etheryale.com/v1",
+        )
     else:
         raise ValueError(
-            f"Unknown LLM provider: '{provider_name}'. Use 'ollama' or 'openrouter'."
+            f"Unknown LLM provider: '{provider_name}'. "
+            "Use 'ollama', 'openrouter', or 'claude_proxy'."
         )
 
 
