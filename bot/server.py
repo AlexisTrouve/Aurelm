@@ -275,66 +275,68 @@ class BotServer:
                                 selected_indices: set[int]) -> int:
         """Fetch messages from Discord, group into turns, store only selected turn indices."""
         conn = sqlite3.connect(self.config.db_path)
-        row = conn.execute(
-            "SELECT MAX(timestamp) FROM turn_raw_messages WHERE discord_channel_id = ?",
-            (channel_id,),
-        ).fetchone()
+        try:
+            row = conn.execute(
+                "SELECT MAX(timestamp) FROM turn_raw_messages WHERE discord_channel_id = ?",
+                (channel_id,),
+            ).fetchone()
 
-        after_dt = None
-        if row and row[0]:
-            try:
-                from datetime import datetime, timezone
-                after_dt = datetime.fromisoformat(row[0]).replace(tzinfo=timezone.utc)
-            except (ValueError, TypeError):
-                pass
-
-        # Fetch all messages — filter empty BEFORE grouping (same order as _channel_pending)
-        all_msgs = []
-        async for msg in channel.history(limit=None, after=after_dt, oldest_first=True):
-            if not msg.content and not msg.attachments:
-                continue
-            all_msgs.append(msg)
-
-        # Group into turns (same logic as _channel_pending)
-        gm_names = set(self.config.gm_authors)
-        turns: list[list] = []
-        last_is_gm = None
-        for msg in all_msgs:
-            is_gm = msg.author.display_name in gm_names
-            if is_gm != last_is_gm:
-                turns.append([msg])
-                last_is_gm = is_gm
-            else:
-                turns[-1].append(msg)
-
-        # Store only messages from selected turns
-        count = 0
-        for idx in selected_indices:
-            if idx >= len(turns):
-                continue
-            for msg in turns[idx]:
+            after_dt = None
+            if row and row[0]:
                 try:
-                    conn.execute(
-                        """INSERT OR IGNORE INTO turn_raw_messages
-                           (discord_message_id, discord_channel_id, author_id, author_name,
-                            content, timestamp, attachments)
-                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                        (
-                            str(msg.id),
-                            channel_id,
-                            str(msg.author.id),
-                            msg.author.display_name,
-                            msg.content or "",
-                            msg.created_at.isoformat(),
-                            json.dumps([a.url for a in msg.attachments]) if msg.attachments else None,
-                        ),
-                    )
-                    count += 1
-                except Exception:
+                    from datetime import datetime, timezone
+                    after_dt = datetime.fromisoformat(row[0]).replace(tzinfo=timezone.utc)
+                except (ValueError, TypeError):
                     pass
-        conn.commit()
-        conn.close()
-        return count
+
+            # Fetch all messages — filter empty BEFORE grouping (same as _channel_pending)
+            all_msgs = []
+            async for msg in channel.history(limit=None, after=after_dt, oldest_first=True):
+                if not msg.content and not msg.attachments:
+                    continue
+                all_msgs.append(msg)
+
+            # Group into turns (same logic as _channel_pending)
+            gm_names = set(self.config.gm_authors)
+            turns: list[list] = []
+            last_is_gm = None
+            for msg in all_msgs:
+                is_gm = msg.author.display_name in gm_names
+                if is_gm != last_is_gm:
+                    turns.append([msg])
+                    last_is_gm = is_gm
+                else:
+                    turns[-1].append(msg)
+
+            # Store only messages from selected turns
+            count = 0
+            for idx in selected_indices:
+                if idx >= len(turns):
+                    continue
+                for msg in turns[idx]:
+                    try:
+                        conn.execute(
+                            """INSERT OR IGNORE INTO turn_raw_messages
+                               (discord_message_id, discord_channel_id, author_id, author_name,
+                                content, timestamp, attachments)
+                               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                            (
+                                str(msg.id),
+                                channel_id,
+                                str(msg.author.id),
+                                msg.author.display_name,
+                                msg.content or "",
+                                msg.created_at.isoformat(),
+                                json.dumps([a.url for a in msg.attachments]) if msg.attachments else None,
+                            ),
+                        )
+                        count += 1
+                    except Exception:
+                        pass
+            conn.commit()
+            return count
+        finally:
+            conn.close()
 
     async def _progress(self, _request: web.Request) -> web.Response:
         """Return current pipeline progress for UI polling."""

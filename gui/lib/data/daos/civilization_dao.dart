@@ -55,16 +55,34 @@ class CivilizationDao extends DatabaseAccessor<AurelmDatabase>
         .watch();
   }
 
-  /// Create or update a civilization (upsert on name). Returns its id.
+  /// Create a new civilization, or update Discord bindings if name already exists.
+  /// Preserves createdAt on update (only updatedAt + Discord fields change).
   Future<int> createCiv({
     required String name,
     String? playerName,
     String? discordChannelId,
     String? discordGuildName,
     String? discordChannelName,
-  }) {
+  }) async {
     final now = DateTime.now().toIso8601String();
-    return into(civCivilizations).insertOnConflictUpdate(
+    // Check if civ already exists
+    final existing = await (select(civCivilizations)
+          ..where((t) => t.name.equals(name)))
+        .getSingleOrNull();
+    if (existing != null) {
+      // Update only mutable fields, preserve createdAt
+      await (update(civCivilizations)..where((t) => t.id.equals(existing.id)))
+          .write(CivCivilizationsCompanion(
+        playerName: Value(playerName),
+        discordChannelId: Value(discordChannelId),
+        discordGuildName: Value(discordGuildName),
+        discordChannelName: Value(discordChannelName),
+        updatedAt: Value(now),
+      ));
+      return existing.id;
+    }
+    // New civ
+    return into(civCivilizations).insert(
       CivCivilizationsCompanion.insert(
         name: name,
         playerName: Value(playerName),

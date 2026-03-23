@@ -250,9 +250,16 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
           ],
           selected: {_llmProvider},
           onSelectionChanged: (sel) {
+            final newProvider = sel.first;
+            final newRecommended = switch (newProvider) {
+              'ollama' => 'qwen3:14b',
+              'claude_proxy' => 'claude-haiku-4-5-20251001',
+              'openrouter' => 'qwen/qwen3-14b',
+              _ => '',
+            };
             setState(() {
-              _llmProvider = sel.first;
-              _selectedModel = recommendedId;
+              _llmProvider = newProvider;
+              _selectedModel = newRecommended;
             });
           },
         ),
