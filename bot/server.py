@@ -288,7 +288,7 @@ class BotServer:
             except (ValueError, TypeError):
                 pass
 
-        # Fetch all messages
+        # Fetch all messages — filter empty BEFORE grouping (same order as _channel_pending)
         all_msgs = []
         async for msg in channel.history(limit=None, after=after_dt, oldest_first=True):
             if not msg.content and not msg.attachments:
@@ -324,7 +324,7 @@ class BotServer:
                             channel_id,
                             str(msg.author.id),
                             msg.author.display_name,
-                            msg.content,
+                            msg.content or "",
                             msg.created_at.isoformat(),
                             json.dumps([a.url for a in msg.attachments]) if msg.attachments else None,
                         ),
