@@ -234,13 +234,11 @@ class BotServer:
             if turns_param is not None:
                 # Selective import: fetch messages, group into turns, store only requested
                 if not turns_param.strip():
-                    self._sync_running = False
                     return web.json_response(
                         {"error": "turns parameter cannot be empty"}, status=400)
                 try:
                     selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
                 except ValueError:
-                    self._sync_running = False
                     return web.json_response(
                         {"error": "Invalid turn indices"}, status=400)
                 count = await self._selective_fetch(channel, channel_id, selected_indices)
@@ -256,7 +254,8 @@ class BotServer:
                     sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
                     from pipeline.pipeline.runner import run_pipeline_for_channels
                     from pipeline.pipeline.llm_provider import create_provider
-                    provider = create_provider(self.config.llm_provider)
+                    llm_key = self.config.anthropic_api_key if self.config.llm_provider == "claude_proxy" else None
+                    provider = create_provider(self.config.llm_provider, api_key=llm_key)
                     return run_pipeline_for_channels(
                         db_path=self.config.db_path,
                         use_llm=True,

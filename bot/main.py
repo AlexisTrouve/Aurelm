@@ -39,7 +39,9 @@ async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
             sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
             from pipeline.pipeline.runner import run_pipeline_for_channels
             from pipeline.pipeline.llm_provider import create_provider
-            provider = create_provider(config.llm_provider)
+            # Pass API key for cloud providers (openrouter reads env, claude_proxy uses anthropic key)
+            llm_api_key = config.anthropic_api_key if config.llm_provider == "claude_proxy" else None
+            provider = create_provider(config.llm_provider, api_key=llm_api_key)
             return run_pipeline_for_channels(
                 db_path=config.db_path,
                 use_llm=True,

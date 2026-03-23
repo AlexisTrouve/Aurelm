@@ -114,7 +114,8 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
     const perms = 68608;
     final url =
         'https://discord.com/api/oauth2/authorize?client_id=$appId&permissions=$perms&scope=bot';
-    Process.run('cmd', ['/c', 'start', url]);
+    // Empty first arg "" prevents cmd from treating URL special chars as metacharacters
+    Process.run('cmd', ['/c', 'start', '""', url]);
   }
 
   @override
