@@ -446,6 +446,7 @@ def run_pipeline(
                 fact_extractor=fact_extractor,
                 entity_lookup=entity_lookup,
                 civ_id=civ_id,
+                on_llm_call=_on_llm_call if track_progress else None,
             )
             if pj_count:
                 total_pj_ents = sum(p.get("pj_entities", 0) for p in pj_turn_logs)
@@ -673,6 +674,7 @@ def _insert_pj_segments(
     fact_extractor=None,
     entity_lookup: dict | None = None,
     civ_id: int | None = None,
+    on_llm_call=None,
 ) -> tuple[int, list[dict]]:
     """Insert player (PJ) segments into the corresponding GM turn, and optionally
     extract named entities from PJ text.
@@ -747,7 +749,8 @@ def _insert_pj_segments(
         # No validate — PJ text is trusted canon lore, genericity filter not needed.
         pj_entity_count = 0
         if fact_extractor is not None and civ_id is not None:
-            pj_entities = fact_extractor.extract_pj_entities(pj_text, entity_lookup or {})
+            pj_entities = fact_extractor.extract_pj_entities(
+                pj_text, entity_lookup or {}, on_llm_call=on_llm_call)
             for ent in pj_entities:
                 entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
                 conn.execute(

@@ -227,7 +227,12 @@ class BotServer:
         try:
             if turns_param is not None:
                 # Selective import: fetch messages, group into turns, store only requested
-                selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
+                try:
+                    selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
+                except ValueError:
+                    self._sync_running = False
+                    return web.json_response(
+                        {"error": "Invalid turn indices"}, status=400)
                 count = await self._selective_fetch(channel, channel_id, selected_indices)
             else:
                 # Full import
@@ -321,7 +326,7 @@ class BotServer:
                             msg.author.display_name,
                             msg.content,
                             msg.created_at.isoformat(),
-                            ",".join(a.url for a in msg.attachments) if msg.attachments else None,
+                            json.dumps([a.url for a in msg.attachments]) if msg.attachments else None,
                         ),
                     )
                     count += 1
