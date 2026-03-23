@@ -193,6 +193,8 @@ class FactExtractor:
 
             # LLM call 3 (optional): GPT-NER style marking
             marked_entities = self._llm_mark_entities(chunk)
+            if on_llm_call and self.version.mark_prompt:
+                on_llm_call("extraction")
 
             # LLM call 3b (optional): focused entity call (e.g. castes/institutions only).
             # Only fires if version has a focus_prompt — otherwise returns [] immediately.

@@ -718,8 +718,8 @@ def load_llm_config(path: str | Path) -> LLMConfig:
     provider = data.get("provider")
     if not provider:
         raise ValueError(f"LLM config missing 'provider' field: {path}")
-    if provider not in ("ollama", "openrouter"):
-        raise ValueError(f"Unknown provider '{provider}' in {path}. Use 'ollama' or 'openrouter'.")
+    if provider not in ("ollama", "openrouter", "claude_proxy"):
+        raise ValueError(f"Unknown provider '{provider}' in {path}. Use 'ollama', 'openrouter', or 'claude_proxy'.")
 
     default_model = data.get("default_model")
     if not default_model:

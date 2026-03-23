@@ -632,6 +632,7 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
   }
 
   Future<void> _syncChannel({List<int>? turnIndices}) async {
+    if (!mounted) return;
     setState(() { _syncing = true; _progress = null; });
     _startProgressPolling();
     try {
