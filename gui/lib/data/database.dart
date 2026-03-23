@@ -293,6 +293,11 @@ void _ensureMigrations(dynamic db) {
     // Migration 036: Discord display names on civs
     "ALTER TABLE civ_civilizations ADD COLUMN discord_guild_name TEXT",
     "ALTER TABLE civ_civilizations ADD COLUMN discord_channel_name TEXT",
+    // Migration 037: granular pipeline progress
+    "ALTER TABLE pipeline_progress ADD COLUMN stage_name TEXT",
+    "ALTER TABLE pipeline_progress ADD COLUMN llm_calls_done INTEGER DEFAULT 0",
+    "ALTER TABLE pipeline_progress ADD COLUMN llm_calls_total INTEGER DEFAULT 0",
+    "ALTER TABLE pipeline_progress ADD COLUMN turn_number INTEGER",
   ];
 
   for (final sql in statements) {

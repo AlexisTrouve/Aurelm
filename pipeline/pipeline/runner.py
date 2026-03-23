@@ -198,10 +198,29 @@ def run_pipeline(
         # or defaults to neolithique/realiste for a fresh run.
         prev_tech_era, prev_fantasy_level = _get_last_turn_context(conn, civ_id)
 
+        # LLM call counter for progress tracking.
+        # Estimate: ~4 calls per GM chunk (extraction×3 + validation).
+        # Actual count may differ (optional calls skipped), but close enough for progress bar.
+        _llm_calls_done = 0
+        _estimated_calls_per_turn = 4  # facts+entities, entities-only, focused, validate
+
+        def _on_llm_call(stage_name: str):
+            nonlocal _llm_calls_done
+            _llm_calls_done += 1
+            if track_progress:
+                update_progress(
+                    conn, run_id, "pipeline", civ_id, civ_name,
+                    i + 1, total_turns, "turn", "running",
+                    stage_name=stage_name,
+                    llm_calls_done=_llm_calls_done,
+                    llm_calls_total=total_turns * _estimated_calls_per_turn,
+                    turn_number=turn_number,
+                )
+
         for i, chunk in enumerate(chunks):
             turn_text = "\n\n".join(m.content for m in chunk.messages)
             raw_ids = json.dumps([m.id for m in chunk.messages])
-            raw_content = "\n\n".join(m.content for m in chunk.messages)  # For media extraction
+            raw_content = "\n\n".join(m.content for m in chunk.messages)
 
             # Create turn record
             cursor = conn.execute(
@@ -233,6 +252,7 @@ def run_pipeline(
                     validation_model=validation_model,
                     prev_tech_era=prev_tech_era,
                     prev_fantasy_level=prev_fantasy_level,
+                    on_llm_call=_on_llm_call if track_progress else None,
                 )
                 usage_after = llm_provider.get_usage_snapshot()
 
@@ -1734,6 +1754,23 @@ def run_pipeline_for_channels(
             turn_number = _get_next_turn_number(conn, civ_id)
             total_turns = len(chunks)
 
+            # LLM call counter for progress tracking
+            _llm_calls_done2 = 0
+            _est_calls = 4  # per turn estimate
+
+            def _on_llm_call2(stage_name: str):
+                nonlocal _llm_calls_done2
+                _llm_calls_done2 += 1
+                if track_progress:
+                    update_progress(
+                        conn, run_id, "pipeline", civ_id, civ_name,
+                        i + 1, total_turns, "turn", "running",
+                        stage_name=stage_name,
+                        llm_calls_done=_llm_calls_done2,
+                        llm_calls_total=total_turns * _est_calls,
+                        turn_number=turn_number,
+                    )
+
             for i, chunk in enumerate(chunks):
                 turn_text = "\n\n".join(m.content for m in chunk.messages)
                 raw_ids = json.dumps([m.id for m in chunk.messages])
@@ -1749,7 +1786,6 @@ def run_pipeline_for_channels(
 
                 segments = classify_segments(turn_text)
 
-                # Extract structured facts
                 structured_facts = None
                 if fact_extractor:
                     segment_dicts = [
@@ -1759,6 +1795,7 @@ def run_pipeline_for_channels(
                     structured_facts = fact_extractor.extract_facts(
                         segment_dicts, raw_content,
                         validation_model=validation_model,
+                        on_llm_call=_on_llm_call2 if track_progress else None,
                     )
 
                 for seg_order, seg in enumerate(segments):

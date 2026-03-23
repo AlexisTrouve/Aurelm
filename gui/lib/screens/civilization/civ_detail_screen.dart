@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../../providers/civilization_provider.dart';
 import '../../services/sync_service.dart';
 import '../../providers/entity_provider.dart';
@@ -565,6 +569,42 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
   bool _checking = false;
   bool _syncing = false;
 
+  // Progress polling during sync
+  Timer? _progressTimer;
+  Map<String, dynamic>? _progress; // latest /progress response
+
+  @override
+  void dispose() {
+    _progressTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startProgressPolling() {
+    _progressTimer?.cancel();
+    _progressTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _pollProgress(),
+    );
+  }
+
+  void _stopProgressPolling() {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+  }
+
+  Future<void> _pollProgress() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('http://127.0.0.1:8473/progress'))
+          .timeout(const Duration(seconds: 3));
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        setState(() =>
+            _progress = jsonDecode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _checkPending() async {
     setState(() => _checking = true);
     final service = SyncService();
@@ -574,7 +614,8 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
   }
 
   Future<void> _syncChannel({List<int>? turnIndices}) async {
-    setState(() => _syncing = true);
+    setState(() { _syncing = true; _progress = null; });
+    _startProgressPolling();
     try {
       final service = SyncService();
       await service.syncChannel(widget.civ.discordChannelId!,
@@ -585,16 +626,17 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
             : 'Tous les tours importes';
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(label)));
+        _stopProgressPolling();
         ref.invalidate(civDetailProvider(widget.civ.id));
-        // Re-check pending to update the list
-        setState(() { _pending = null; _syncing = false; });
+        setState(() { _pending = null; _syncing = false; _progress = null; });
         _checkPending();
       }
     } catch (e) {
       if (mounted) {
+        _stopProgressPolling();
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Erreur: $e')));
-        setState(() => _syncing = false);
+        setState(() { _syncing = false; _progress = null; });
       }
     }
   }
@@ -749,23 +791,24 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
                 ),
               ],
 
+              // Progress bar during sync
+              if (_syncing && _progress != null) ...[
+                const SizedBox(height: 12),
+                _buildProgressCard(theme),
+              ],
+
               // Import button
-              if (newMsgs > 0) ...[
+              if (newMsgs > 0 && !_syncing) ...[
                 const SizedBox(height: 12),
                 FilledButton.icon(
-                  onPressed: _syncing ? null : _syncChannel,
-                  icon: _syncing
-                      ? const SizedBox(
-                          width: 16, height: 16,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2))
-                      : const Icon(Icons.download),
+                  onPressed: _syncChannel,
+                  icon: const Icon(Icons.download),
                   label: Text(
                       'Importer tout ($gmTurns tours MJ)'),
                 ),
               ],
 
-              if (newMsgs == 0)
+              if (newMsgs == 0 && !_syncing)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text('Aucun nouveau message a importer.',
@@ -775,6 +818,86 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProgressCard(ThemeData theme) {
+    final phases = (_progress?['phases'] as List?) ?? [];
+    if (phases.isEmpty) {
+      return const LinearProgressIndicator();
+    }
+    // Take the most recent phase entry
+    final p = phases[0] as Map<String, dynamic>;
+    final currentTurn = p['current_unit'] as int? ?? 0;
+    final totalTurns = p['total_units'] as int? ?? 1;
+    final stageName = p['stage_name'] as String? ?? '';
+    final callsDone = p['llm_calls_done'] as int? ?? 0;
+    final callsTotal = p['llm_calls_total'] as int? ?? 1;
+    final turnNumber = p['turn_number'] as int?;
+
+    // Translate stage names
+    final stageLabel = switch (stageName) {
+      'extraction' => 'Extraction entites',
+      'validation' => 'Validation entites',
+      'summarization' => 'Resume',
+      'subjects' => 'Sujets',
+      'profiling' => 'Profiling',
+      'pj_extraction' => 'Extraction PJ',
+      _ => stageName.isNotEmpty ? stageName : 'En cours...',
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outline.withAlpha(60)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Macro: Turn X/Y
+          Row(
+            children: [
+              const Icon(Icons.autorenew, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                turnNumber != null
+                    ? 'Tour $turnNumber ($currentTurn/$totalTurns)'
+                    : 'Tour $currentTurn/$totalTurns',
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              Text(stageLabel,
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.colorScheme.primary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Macro progress bar
+          LinearProgressIndicator(
+            value: totalTurns > 0 ? currentTurn / totalTurns : null,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(3),
+          ),
+          const SizedBox(height: 8),
+          // Micro: LLM calls
+          Row(
+            children: [
+              Text('Calls LLM: $callsDone/$callsTotal',
+                  style: theme.textTheme.bodySmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          LinearProgressIndicator(
+            value: callsTotal > 0 ? callsDone / callsTotal : null,
+            minHeight: 4,
+            borderRadius: BorderRadius.circular(2),
+            color: Colors.amber,
+          ),
+        ],
       ),
     );
   }

@@ -179,6 +179,10 @@ def update_progress(
     total: int,
     unit_type: str,
     status: str = "running",
+    stage_name: str | None = None,
+    llm_calls_done: int | None = None,
+    llm_calls_total: int | None = None,
+    turn_number: int | None = None,
 ) -> None:
     """Update pipeline progress for Flutter UI polling.
 
@@ -188,18 +192,26 @@ def update_progress(
         phase: Phase name ('pipeline', 'profiler', 'wiki')
         civ_id: Civilization ID (None for wiki phase)
         civ_name: Civilization name (None for wiki phase)
-        current: Current unit number (0-indexed or 1-indexed depending on caller)
+        current: Current unit number
         total: Total units to process
         unit_type: Unit type ('turn', 'entity', 'page')
         status: Status ('running', 'completed', 'failed')
+        stage_name: Current sub-stage ('extraction', 'summarization', 'subjects', etc.)
+        llm_calls_done: LLM calls completed so far in this turn
+        llm_calls_total: Estimated total LLM calls for this turn
+        turn_number: Game turn number being processed
     """
     from datetime import datetime
 
     conn.execute(
         """INSERT OR REPLACE INTO pipeline_progress
-           (pipeline_run_id, phase, civ_id, civ_name, total_units, current_unit, unit_type, status, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (run_id, phase, civ_id, civ_name, total, current, unit_type, status, datetime.now().isoformat()),
+           (pipeline_run_id, phase, civ_id, civ_name, total_units, current_unit,
+            unit_type, status, stage_name, llm_calls_done, llm_calls_total,
+            turn_number, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (run_id, phase, civ_id, civ_name, total, current, unit_type, status,
+         stage_name, llm_calls_done, llm_calls_total, turn_number,
+         datetime.now().isoformat()),
     )
 
 

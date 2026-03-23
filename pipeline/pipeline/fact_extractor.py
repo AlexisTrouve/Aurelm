@@ -16,7 +16,7 @@ Supports versioned extraction strategies via extraction_versions module.
 import json
 import re
 import unicodedata
-from typing import Dict, List, Any, Optional
+from typing import Callable, Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -83,6 +83,7 @@ class FactExtractor:
         validation_model: Optional[str] = None,
         prev_tech_era: Optional[str] = None,
         prev_fantasy_level: Optional[str] = None,
+        on_llm_call: Optional[Callable[[str], None]] = None,
     ) -> StructuredFacts:
         """
         Extract structured facts and entities from turn segments.
@@ -184,18 +185,18 @@ class FactExtractor:
 
             # LLM call 1: facts + entities together
             llm_result = self._llm_extract_facts_and_entities(chunk, known_hints)
+            if on_llm_call: on_llm_call("extraction")
 
             # LLM call 2: dedicated entity extraction
             dedicated_entities = self._llm_extract_entities_only(chunk, known_hints)
+            if on_llm_call: on_llm_call("extraction")
 
             # LLM call 3 (optional): GPT-NER style marking
             marked_entities = self._llm_mark_entities(chunk)
 
             # LLM call 3b (optional): focused entity call (e.g. castes/institutions only).
-            # Intentionally called WITHOUT known_hints — its purpose is to discover new
-            # entities the other calls missed. Providing known_hints biases it toward
-            # confirming already-known entities and suppresses discovery of new ones.
             focused_entities = self._llm_extract_focused(chunk)
+            if on_llm_call: on_llm_call("extraction")
 
             all_technologies = merge(all_technologies, llm_result.get("technologies", []))
             all_resources = merge(all_resources, llm_result.get("resources", []))
@@ -291,6 +292,7 @@ class FactExtractor:
                 merged_entities, relevant_text[:3000],
                 model_override=self.validate_model or self.version.validate_model or validation_model,
             )
+            if on_llm_call: on_llm_call("validation")
             kept_names = {e.text.lower() for e in merged_entities}
             validate_dropped_names = [e.text for e in before_validate if e.text.lower() not in kept_names]
             if validate_dropped_names:
@@ -322,6 +324,7 @@ class FactExtractor:
         self,
         pj_text: str,
         entity_lookup: Optional[Dict[str, Dict]] = None,
+        on_llm_call: Optional[Callable[[str], None]] = None,
     ) -> List[ExtractedEntity]:
         """Extract named entities from player (PJ) response text.
 
@@ -345,11 +348,12 @@ class FactExtractor:
             # Call 1: dedicated entity-only extraction
             ents = self._llm_extract_entities_only(chunk, known_hints)
             all_entities.extend(ents)
+            if on_llm_call: on_llm_call("pj_extraction")
 
             # Call 2: focused extraction (catches types entity_only misses)
-            # No known_hints — discovery mode, same as GM focused pass.
             focused = self._llm_extract_focused(chunk)
             all_entities.extend(focused)
+            if on_llm_call: on_llm_call("pj_extraction")
 
         # Pattern pass: add mentions of known DB entities found in PJ text
         pattern_facts = self._pattern_extract_facts(pj_text, entity_lookup or {})
