@@ -10,6 +10,10 @@ class CivCivilizations extends Table {
   TextColumn get playerName => text().named('player_name').nullable()();
   TextColumn get discordChannelId =>
       text().named('discord_channel_id').nullable()();
+  TextColumn get discordGuildName =>
+      text().named('discord_guild_name').nullable()();
+  TextColumn get discordChannelName =>
+      text().named('discord_channel_name').nullable()();
   TextColumn get createdAt => text().named('created_at')();
   TextColumn get updatedAt => text().named('updated_at')();
 }

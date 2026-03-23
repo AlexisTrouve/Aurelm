@@ -37,6 +37,18 @@ class $CivCivilizationsTable extends CivCivilizations
   late final GeneratedColumn<String> discordChannelId = GeneratedColumn<String>(
       'discord_channel_id', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _discordGuildNameMeta =
+      const VerificationMeta('discordGuildName');
+  @override
+  late final GeneratedColumn<String> discordGuildName = GeneratedColumn<String>(
+      'discord_guild_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _discordChannelNameMeta =
+      const VerificationMeta('discordChannelName');
+  @override
+  late final GeneratedColumn<String> discordChannelName =
+      GeneratedColumn<String>('discord_channel_name', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -50,8 +62,16 @@ class $CivCivilizationsTable extends CivCivilizations
       'updated_at', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, playerName, discordChannelId, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        playerName,
+        discordChannelId,
+        discordGuildName,
+        discordChannelName,
+        createdAt,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -83,6 +103,18 @@ class $CivCivilizationsTable extends CivCivilizations
           discordChannelId.isAcceptableOrUnknown(
               data['discord_channel_id']!, _discordChannelIdMeta));
     }
+    if (data.containsKey('discord_guild_name')) {
+      context.handle(
+          _discordGuildNameMeta,
+          discordGuildName.isAcceptableOrUnknown(
+              data['discord_guild_name']!, _discordGuildNameMeta));
+    }
+    if (data.containsKey('discord_channel_name')) {
+      context.handle(
+          _discordChannelNameMeta,
+          discordChannelName.isAcceptableOrUnknown(
+              data['discord_channel_name']!, _discordChannelNameMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -112,6 +144,10 @@ class $CivCivilizationsTable extends CivCivilizations
           .read(DriftSqlType.string, data['${effectivePrefix}player_name']),
       discordChannelId: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}discord_channel_id']),
+      discordGuildName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}discord_guild_name']),
+      discordChannelName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}discord_channel_name']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -130,6 +166,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
   final String name;
   final String? playerName;
   final String? discordChannelId;
+  final String? discordGuildName;
+  final String? discordChannelName;
   final String createdAt;
   final String updatedAt;
   const CivRow(
@@ -137,6 +175,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
       required this.name,
       this.playerName,
       this.discordChannelId,
+      this.discordGuildName,
+      this.discordChannelName,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -149,6 +189,12 @@ class CivRow extends DataClass implements Insertable<CivRow> {
     }
     if (!nullToAbsent || discordChannelId != null) {
       map['discord_channel_id'] = Variable<String>(discordChannelId);
+    }
+    if (!nullToAbsent || discordGuildName != null) {
+      map['discord_guild_name'] = Variable<String>(discordGuildName);
+    }
+    if (!nullToAbsent || discordChannelName != null) {
+      map['discord_channel_name'] = Variable<String>(discordChannelName);
     }
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
@@ -165,6 +211,12 @@ class CivRow extends DataClass implements Insertable<CivRow> {
       discordChannelId: discordChannelId == null && nullToAbsent
           ? const Value.absent()
           : Value(discordChannelId),
+      discordGuildName: discordGuildName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(discordGuildName),
+      discordChannelName: discordChannelName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(discordChannelName),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -178,6 +230,9 @@ class CivRow extends DataClass implements Insertable<CivRow> {
       name: serializer.fromJson<String>(json['name']),
       playerName: serializer.fromJson<String?>(json['playerName']),
       discordChannelId: serializer.fromJson<String?>(json['discordChannelId']),
+      discordGuildName: serializer.fromJson<String?>(json['discordGuildName']),
+      discordChannelName:
+          serializer.fromJson<String?>(json['discordChannelName']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
@@ -190,6 +245,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
       'name': serializer.toJson<String>(name),
       'playerName': serializer.toJson<String?>(playerName),
       'discordChannelId': serializer.toJson<String?>(discordChannelId),
+      'discordGuildName': serializer.toJson<String?>(discordGuildName),
+      'discordChannelName': serializer.toJson<String?>(discordChannelName),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
     };
@@ -200,6 +257,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
           String? name,
           Value<String?> playerName = const Value.absent(),
           Value<String?> discordChannelId = const Value.absent(),
+          Value<String?> discordGuildName = const Value.absent(),
+          Value<String?> discordChannelName = const Value.absent(),
           String? createdAt,
           String? updatedAt}) =>
       CivRow(
@@ -209,6 +268,12 @@ class CivRow extends DataClass implements Insertable<CivRow> {
         discordChannelId: discordChannelId.present
             ? discordChannelId.value
             : this.discordChannelId,
+        discordGuildName: discordGuildName.present
+            ? discordGuildName.value
+            : this.discordGuildName,
+        discordChannelName: discordChannelName.present
+            ? discordChannelName.value
+            : this.discordChannelName,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -221,6 +286,12 @@ class CivRow extends DataClass implements Insertable<CivRow> {
       discordChannelId: data.discordChannelId.present
           ? data.discordChannelId.value
           : this.discordChannelId,
+      discordGuildName: data.discordGuildName.present
+          ? data.discordGuildName.value
+          : this.discordGuildName,
+      discordChannelName: data.discordChannelName.present
+          ? data.discordChannelName.value
+          : this.discordChannelName,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -233,6 +304,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
           ..write('name: $name, ')
           ..write('playerName: $playerName, ')
           ..write('discordChannelId: $discordChannelId, ')
+          ..write('discordGuildName: $discordGuildName, ')
+          ..write('discordChannelName: $discordChannelName, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -240,8 +313,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, playerName, discordChannelId, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, name, playerName, discordChannelId,
+      discordGuildName, discordChannelName, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -250,6 +323,8 @@ class CivRow extends DataClass implements Insertable<CivRow> {
           other.name == this.name &&
           other.playerName == this.playerName &&
           other.discordChannelId == this.discordChannelId &&
+          other.discordGuildName == this.discordGuildName &&
+          other.discordChannelName == this.discordChannelName &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -259,6 +334,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
   final Value<String> name;
   final Value<String?> playerName;
   final Value<String?> discordChannelId;
+  final Value<String?> discordGuildName;
+  final Value<String?> discordChannelName;
   final Value<String> createdAt;
   final Value<String> updatedAt;
   const CivCivilizationsCompanion({
@@ -266,6 +343,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
     this.name = const Value.absent(),
     this.playerName = const Value.absent(),
     this.discordChannelId = const Value.absent(),
+    this.discordGuildName = const Value.absent(),
+    this.discordChannelName = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -274,6 +353,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
     required String name,
     this.playerName = const Value.absent(),
     this.discordChannelId = const Value.absent(),
+    this.discordGuildName = const Value.absent(),
+    this.discordChannelName = const Value.absent(),
     required String createdAt,
     required String updatedAt,
   })  : name = Value(name),
@@ -284,6 +365,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
     Expression<String>? name,
     Expression<String>? playerName,
     Expression<String>? discordChannelId,
+    Expression<String>? discordGuildName,
+    Expression<String>? discordChannelName,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
   }) {
@@ -292,6 +375,9 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
       if (name != null) 'name': name,
       if (playerName != null) 'player_name': playerName,
       if (discordChannelId != null) 'discord_channel_id': discordChannelId,
+      if (discordGuildName != null) 'discord_guild_name': discordGuildName,
+      if (discordChannelName != null)
+        'discord_channel_name': discordChannelName,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -302,6 +388,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
       Value<String>? name,
       Value<String?>? playerName,
       Value<String?>? discordChannelId,
+      Value<String?>? discordGuildName,
+      Value<String?>? discordChannelName,
       Value<String>? createdAt,
       Value<String>? updatedAt}) {
     return CivCivilizationsCompanion(
@@ -309,6 +397,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
       name: name ?? this.name,
       playerName: playerName ?? this.playerName,
       discordChannelId: discordChannelId ?? this.discordChannelId,
+      discordGuildName: discordGuildName ?? this.discordGuildName,
+      discordChannelName: discordChannelName ?? this.discordChannelName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -329,6 +419,12 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
     if (discordChannelId.present) {
       map['discord_channel_id'] = Variable<String>(discordChannelId.value);
     }
+    if (discordGuildName.present) {
+      map['discord_guild_name'] = Variable<String>(discordGuildName.value);
+    }
+    if (discordChannelName.present) {
+      map['discord_channel_name'] = Variable<String>(discordChannelName.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<String>(createdAt.value);
     }
@@ -345,6 +441,8 @@ class CivCivilizationsCompanion extends UpdateCompanion<CivRow> {
           ..write('name: $name, ')
           ..write('playerName: $playerName, ')
           ..write('discordChannelId: $discordChannelId, ')
+          ..write('discordGuildName: $discordGuildName, ')
+          ..write('discordChannelName: $discordChannelName, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -9492,6 +9590,8 @@ typedef $$CivCivilizationsTableCreateCompanionBuilder
   required String name,
   Value<String?> playerName,
   Value<String?> discordChannelId,
+  Value<String?> discordGuildName,
+  Value<String?> discordChannelName,
   required String createdAt,
   required String updatedAt,
 });
@@ -9501,6 +9601,8 @@ typedef $$CivCivilizationsTableUpdateCompanionBuilder
   Value<String> name,
   Value<String?> playerName,
   Value<String?> discordChannelId,
+  Value<String?> discordGuildName,
+  Value<String?> discordChannelName,
   Value<String> createdAt,
   Value<String> updatedAt,
 });
@@ -9525,6 +9627,14 @@ class $$CivCivilizationsTableFilterComposer
 
   ColumnFilters<String> get discordChannelId => $composableBuilder(
       column: $table.discordChannelId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get discordGuildName => $composableBuilder(
+      column: $table.discordGuildName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get discordChannelName => $composableBuilder(
+      column: $table.discordChannelName,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get createdAt => $composableBuilder(
@@ -9556,6 +9666,14 @@ class $$CivCivilizationsTableOrderingComposer
       column: $table.discordChannelId,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get discordGuildName => $composableBuilder(
+      column: $table.discordGuildName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get discordChannelName => $composableBuilder(
+      column: $table.discordChannelName,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -9583,6 +9701,12 @@ class $$CivCivilizationsTableAnnotationComposer
 
   GeneratedColumn<String> get discordChannelId => $composableBuilder(
       column: $table.discordChannelId, builder: (column) => column);
+
+  GeneratedColumn<String> get discordGuildName => $composableBuilder(
+      column: $table.discordGuildName, builder: (column) => column);
+
+  GeneratedColumn<String> get discordChannelName => $composableBuilder(
+      column: $table.discordChannelName, builder: (column) => column);
 
   GeneratedColumn<String> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9619,6 +9743,8 @@ class $$CivCivilizationsTableTableManager extends RootTableManager<
             Value<String> name = const Value.absent(),
             Value<String?> playerName = const Value.absent(),
             Value<String?> discordChannelId = const Value.absent(),
+            Value<String?> discordGuildName = const Value.absent(),
+            Value<String?> discordChannelName = const Value.absent(),
             Value<String> createdAt = const Value.absent(),
             Value<String> updatedAt = const Value.absent(),
           }) =>
@@ -9627,6 +9753,8 @@ class $$CivCivilizationsTableTableManager extends RootTableManager<
             name: name,
             playerName: playerName,
             discordChannelId: discordChannelId,
+            discordGuildName: discordGuildName,
+            discordChannelName: discordChannelName,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -9635,6 +9763,8 @@ class $$CivCivilizationsTableTableManager extends RootTableManager<
             required String name,
             Value<String?> playerName = const Value.absent(),
             Value<String?> discordChannelId = const Value.absent(),
+            Value<String?> discordGuildName = const Value.absent(),
+            Value<String?> discordChannelName = const Value.absent(),
             required String createdAt,
             required String updatedAt,
           }) =>
@@ -9643,6 +9773,8 @@ class $$CivCivilizationsTableTableManager extends RootTableManager<
             name: name,
             playerName: playerName,
             discordChannelId: discordChannelId,
+            discordGuildName: discordGuildName,
+            discordChannelName: discordChannelName,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),

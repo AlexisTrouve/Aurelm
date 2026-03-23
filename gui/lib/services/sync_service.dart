@@ -46,4 +46,33 @@ class SyncService {
     }
     throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
   }
+
+  /// Check pending (unprocessed) messages for a specific Discord channel.
+  /// Returns {new_messages, gm_posts, preview[]}.
+  Future<Map<String, dynamic>?> channelPending(String channelId) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$_baseUrl/discord/channels/$channelId/pending'))
+          .timeout(const Duration(seconds: 30));
+      if (response.statusCode != 200) return null;
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Sync a single channel: fetch Discord messages + run pipeline.
+  /// If [turnIndices] is provided, only imports those specific turns.
+  Future<Map<String, dynamic>> syncChannel(String channelId,
+      {List<int>? turnIndices}) async {
+    final query = turnIndices != null
+        ? '?turns=${turnIndices.join(",")}'
+        : '';
+    final response = await http
+        .post(Uri.parse('$_baseUrl/discord/channels/$channelId/sync$query'))
+        .timeout(const Duration(minutes: 10));
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode == 200) return data;
+    throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
+  }
 }

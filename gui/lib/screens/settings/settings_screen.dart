@@ -99,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
           Text('Bot & Discord',
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 12),
-          const BotConfigSection(),
+          BotConfigSection(key: ValueKey(dbPath)),
 
           const SizedBox(height: 24),
 

@@ -55,31 +55,50 @@ class CivilizationDao extends DatabaseAccessor<AurelmDatabase>
         .watch();
   }
 
-  /// Create a new civilization and return its id.
+  /// Create or update a civilization (upsert on name). Returns its id.
   Future<int> createCiv({
     required String name,
     String? playerName,
     String? discordChannelId,
+    String? discordGuildName,
+    String? discordChannelName,
   }) {
     final now = DateTime.now().toIso8601String();
-    return into(civCivilizations).insert(CivCivilizationsCompanion.insert(
-      name: name,
-      playerName: Value(playerName),
-      discordChannelId: Value(discordChannelId),
-      createdAt: now,
-      updatedAt: now,
-    ));
+    return into(civCivilizations).insertOnConflictUpdate(
+      CivCivilizationsCompanion.insert(
+        name: name,
+        playerName: Value(playerName),
+        discordChannelId: Value(discordChannelId),
+        discordGuildName: Value(discordGuildName),
+        discordChannelName: Value(discordChannelName),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
   }
 
   /// Update the Discord channel binding for an existing civ.
-  Future<void> updateCivChannel(int civId, String? channelId) {
+  /// Stores display names so we never need to show raw IDs.
+  Future<void> updateCivChannel(
+    int civId, {
+    String? channelId,
+    String? guildName,
+    String? channelName,
+  }) {
     final now = DateTime.now().toIso8601String();
     return (update(civCivilizations)..where((t) => t.id.equals(civId))).write(
       CivCivilizationsCompanion(
         discordChannelId: Value(channelId),
+        discordGuildName: Value(guildName),
+        discordChannelName: Value(channelName),
         updatedAt: Value(now),
       ),
     );
+  }
+
+  /// Delete a civilization and all its data (CASCADE).
+  Future<void> deleteCiv(int civId) {
+    return (delete(civCivilizations)..where((t) => t.id.equals(civId))).go();
   }
 
   Stream<CivWithStats?> watchCivWithStats(int civId) {

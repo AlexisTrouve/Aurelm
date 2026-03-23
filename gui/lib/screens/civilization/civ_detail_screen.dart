@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../providers/civilization_provider.dart';
+import '../../services/sync_service.dart';
 import '../../providers/entity_provider.dart';
 import '../../providers/turn_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
@@ -17,6 +17,107 @@ import 'widgets/civ_subjects_frame.dart';
 import 'widgets/civ_sessions_frame.dart';
 import 'widgets/civ_relations_frame.dart';
 import '../../providers/civ_alias_provider.dart';
+import '../../data/database.dart';
+import '../../providers/database_provider.dart';
+import '../../services/bot_config_service.dart';
+
+Future<void> _confirmDeleteCiv(
+    BuildContext context, WidgetRef ref, String civName, int civId) async {
+  // Step 1
+  final ok1 = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Supprimer cette civilisation ?'),
+      content: Text(
+          'Toutes les donnees de "$civName" seront supprimees '
+          '(tours, entites, sujets, notes, relations).'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler')),
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Continuer'),
+        ),
+      ],
+    ),
+  );
+  if (ok1 != true || !context.mounted) return;
+
+  // Step 2
+  final ok2 = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Vraiment supprimer ?'),
+      content: Text(
+          'Cette action est irreversible. '
+          'La civilisation "$civName" et toutes ses donnees seront perdues.'),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler')),
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: Colors.red),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Oui, supprimer'),
+        ),
+      ],
+    ),
+  );
+  if (ok2 != true || !context.mounted) return;
+
+  // Step 3 — type the name
+  final typed = await showDialog<String>(
+    context: context,
+    builder: (ctx) {
+      String input = '';
+      return AlertDialog(
+        title: const Text('Derniere confirmation'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Tapez "$civName" pour confirmer la suppression.'),
+            const SizedBox(height: 12),
+            TextField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Nom de la civilisation',
+              ),
+              onChanged: (v) => input = v,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Annuler')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, input),
+            child: const Text('SUPPRIMER DEFINITIVEMENT'),
+          ),
+        ],
+      );
+    },
+  );
+  if (typed == null || typed.trim() != civName || !context.mounted) {
+    if (typed != null && typed.trim() != civName && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nom incorrect — suppression annulee')));
+    }
+    return;
+  }
+
+  // Execute
+  final db = ref.read(databaseProvider);
+  if (db == null) return;
+  await db.civilizationDao.deleteCiv(civId);
+  if (context.mounted) {
+    context.go('/');
+  }
+}
 
 class CivDetailScreen extends ConsumerWidget {
   final int civId;
@@ -55,6 +156,13 @@ class CivDetailScreen extends ConsumerWidget {
                   '/civs/relations',
                   extra: <String, dynamic>{'focusCivId': civId},
                 ),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_forever,
+                    color: Colors.red[300]),
+                tooltip: 'Supprimer cette civilisation',
+                onPressed: () =>
+                    _confirmDeleteCiv(context, ref, civ.name, civId),
               ),
             ],
           ),
@@ -110,19 +218,13 @@ class CivDetailScreen extends ConsumerWidget {
                   },
                 ),
 
-                // Header info
-                if (civ.playerName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      'Player: ${civ.playerName}',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                    ),
-                  ),
+                // Header info — player + discord channel
+                _CivInfoHeader(civ: civ),
+
+                // Discord sync — pending messages + import
+                if (civ.discordChannelId != null &&
+                    civ.discordChannelId!.isNotEmpty)
+                  _CivSyncSection(civ: civ),
 
                 // Stats row
                 Row(
@@ -329,3 +431,371 @@ class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
   }
 }
 
+/// Editable header: player name + Discord channel picker.
+class _CivInfoHeader extends ConsumerStatefulWidget {
+  final CivRow civ;
+  const _CivInfoHeader({required this.civ});
+
+  @override
+  ConsumerState<_CivInfoHeader> createState() => _CivInfoHeaderState();
+}
+
+class _CivInfoHeaderState extends ConsumerState<_CivInfoHeader> {
+  List<Map<String, dynamic>>? _discordChannels;
+  bool _fetching = false;
+
+  String _channelLabel() {
+    final civ = widget.civ;
+    if (civ.discordChannelId == null || civ.discordChannelId!.isEmpty) {
+      return 'Aucun';
+    }
+    // Use stored names (never show raw ID)
+    if (civ.discordGuildName != null && civ.discordChannelName != null) {
+      return '#${civ.discordGuildName}/${civ.discordChannelName}';
+    }
+    // Fallback: try fetched channels
+    final ch = _discordChannels
+        ?.where((c) => c['id'] == civ.discordChannelId)
+        .firstOrNull;
+    if (ch != null) return '#${ch['guild_name']}/${ch['name']}';
+    return 'Channel lie';
+  }
+
+  Future<void> _fetchChannels() async {
+    setState(() => _fetching = true);
+    _discordChannels = await BotConfigService.fetchDiscordChannels();
+    if (mounted) setState(() => _fetching = false);
+  }
+
+  Future<void> _pickChannel() async {
+    if (_discordChannels == null) await _fetchChannels();
+    if (_discordChannels == null || _discordChannels!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content:
+                Text('Bot non connecte - impossible de charger les channels')));
+      }
+      return;
+    }
+    if (!mounted) return;
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Choisir un channel Discord'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, ''),
+            child: const Text('Aucun (retirer le lien)',
+                style: TextStyle(color: Colors.grey)),
+          ),
+          ..._discordChannels!.map((ch) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, ch['id'] as String),
+                child: Text('#${ch['guild_name']}/${ch['name']}'),
+              )),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    // Find names for the picked channel
+    final pickedCh = _discordChannels
+        ?.where((c) => c['id'] == picked)
+        .firstOrNull;
+    await db.civilizationDao.updateCivChannel(
+      widget.civ.id,
+      channelId: picked.isEmpty ? null : picked,
+      guildName: picked.isEmpty ? null : pickedCh?['guild_name'] as String?,
+      channelName: picked.isEmpty ? null : pickedCh?['name'] as String?,
+    );
+    ref.invalidate(civDetailProvider(widget.civ.id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.civ.playerName != null)
+            Text('Joueur: ${widget.civ.playerName}',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              const Icon(Icons.tag, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                  'Discord: ${_channelLabel()}',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                onPressed: _fetching ? null : _pickChannel,
+                icon: _fetching
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.edit, size: 14),
+                label: const Text('Changer'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Discord sync section: check pending messages, preview, import.
+class _CivSyncSection extends ConsumerStatefulWidget {
+  final CivRow civ;
+  const _CivSyncSection({required this.civ});
+
+  @override
+  ConsumerState<_CivSyncSection> createState() => _CivSyncSectionState();
+}
+
+class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
+  Map<String, dynamic>? _pending;
+  bool _checking = false;
+  bool _syncing = false;
+
+  Future<void> _checkPending() async {
+    setState(() => _checking = true);
+    final service = SyncService();
+    final result =
+        await service.channelPending(widget.civ.discordChannelId!);
+    if (mounted) setState(() { _pending = result; _checking = false; });
+  }
+
+  Future<void> _syncChannel({List<int>? turnIndices}) async {
+    setState(() => _syncing = true);
+    try {
+      final service = SyncService();
+      await service.syncChannel(widget.civ.discordChannelId!,
+          turnIndices: turnIndices);
+      if (mounted) {
+        final label = turnIndices != null
+            ? 'Tour importe'
+            : 'Tous les tours importes';
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(label)));
+        ref.invalidate(civDetailProvider(widget.civ.id));
+        // Re-check pending to update the list
+        setState(() { _pending = null; _syncing = false; });
+        _checkPending();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Erreur: $e')));
+        setState(() => _syncing = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final newMsgs = _pending?['new_messages'] as int? ?? 0;
+    final gmTurns = _pending?['gm_turns'] as int? ?? 0;
+    final playerTurns = _pending?['player_turns'] as int? ?? 0;
+    final turns =
+        (_pending?['turns'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                const Icon(Icons.sync, size: 18),
+                const SizedBox(width: 8),
+                Text('Discord Sync',
+                    style: theme.textTheme.titleSmall),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _checking ? null : _checkPending,
+                  icon: _checking
+                      ? const SizedBox(
+                          width: 14, height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh, size: 16),
+                  label: const Text('Verifier'),
+                ),
+              ],
+            ),
+
+            // Status
+            if (_pending == null && !_checking)
+              Text('Cliquez "Verifier" pour detecter les nouveaux messages.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: Colors.grey)),
+
+            if (_pending != null) ...[
+              const SizedBox(height: 8),
+              // Summary
+              Row(
+                children: [
+                  _statChip(Icons.message, '$newMsgs messages',
+                      newMsgs > 0 ? Colors.amber : Colors.grey),
+                  const SizedBox(width: 8),
+                  _statChip(Icons.auto_stories, '$gmTurns tours MJ',
+                      gmTurns > 0 ? Colors.green : Colors.grey),
+                  const SizedBox(width: 8),
+                  _statChip(Icons.person, '$playerTurns reponses PJ',
+                      playerTurns > 0 ? Colors.blue : Colors.grey),
+                ],
+              ),
+
+              // Turn preview (grouped, not raw messages)
+              if (turns.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('Tours detectes',
+                    style: theme.textTheme.labelMedium),
+                const SizedBox(height: 4),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: turns.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1),
+                    itemBuilder: (_, i) {
+                      final turn = turns[i];
+                      final isMj = turn['type'] == 'MJ';
+                      final msgCount = turn['messages'] as int? ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 4),
+                        child: Row(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isMj
+                                    ? Colors.green.withAlpha(40)
+                                    : Colors.blue.withAlpha(40),
+                                borderRadius:
+                                    BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                isMj ? 'MJ' : 'PJ',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isMj
+                                      ? Colors.green
+                                      : Colors.blue,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${turn['author']} ($msgCount msgs)',
+                                    style: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                            fontWeight:
+                                                FontWeight.w600),
+                                  ),
+                                  Text(
+                                    turn['preview'] as String? ?? '',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Per-turn import button
+                            IconButton(
+                              icon: const Icon(Icons.download,
+                                  size: 16),
+                              tooltip: 'Importer ce tour',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: _syncing
+                                  ? null
+                                  : () => _syncChannel(
+                                      turnIndices: [i]),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              // Import button
+              if (newMsgs > 0) ...[
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: _syncing ? null : _syncChannel,
+                  icon: _syncing
+                      ? const SizedBox(
+                          width: 16, height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2))
+                      : const Icon(Icons.download),
+                  label: Text(
+                      'Importer tout ($gmTurns tours MJ)'),
+                ),
+              ],
+
+              if (newMsgs == 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('Aucun nouveau message a importer.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: Colors.green)),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: TextStyle(fontSize: 12, color: color)),
+        ],
+      ),
+    );
+  }
+}

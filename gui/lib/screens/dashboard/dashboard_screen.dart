@@ -37,6 +37,11 @@ class DashboardScreen extends ConsumerWidget {
         appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Creer une civilisation',
+            onPressed: () => _showCreateCivDialog(context, ref),
+          ),
           _AliasResolverButton(),
         ],
       ),
@@ -92,6 +97,57 @@ class DashboardScreen extends ConsumerWidget {
           );
         },
       ),
+      ),
+    );
+  }
+
+  static Future<void> _showCreateCivDialog(
+      BuildContext context, WidgetRef ref) async {
+    String name = '';
+    String player = '';
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Nouvelle civilisation'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Nom de la civilisation',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+              onChanged: (v) => name = v,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Nom du joueur (optionnel)',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => player = v,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Annuler')),
+          FilledButton(
+            onPressed: () async {
+              if (name.trim().isEmpty) return;
+              final db = ref.read(databaseProvider);
+              if (db == null) return;
+              await db.civilizationDao.createCiv(
+                name: name.trim(),
+                playerName: player.trim().isEmpty ? null : player.trim(),
+              );
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Creer'),
+          ),
+        ],
       ),
     );
   }

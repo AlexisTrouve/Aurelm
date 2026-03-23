@@ -40,10 +40,7 @@ async def fetch_and_store(
 
     inserted = 0
     async for message in channel.history(limit=None, after=after_dt, oldest_first=True):
-        # Skip bot messages
-        if message.author.bot:
-            continue
-
+        # Don't filter bots/webhooks — GM turns are often posted via bots/webhooks
         # Skip empty messages
         if not message.content and not message.attachments:
             continue

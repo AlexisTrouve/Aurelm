@@ -290,6 +290,9 @@ void _ensureMigrations(dynamic db) {
     "ALTER TABLE pipeline_runs ADD COLUMN extraction_version TEXT",
     "ALTER TABLE pipeline_runs ADD COLUMN llm_model TEXT",
     "ALTER TABLE pipeline_runs ADD COLUMN llm_provider TEXT",
+    // Migration 036: Discord display names on civs
+    "ALTER TABLE civ_civilizations ADD COLUMN discord_guild_name TEXT",
+    "ALTER TABLE civ_civilizations ADD COLUMN discord_channel_name TEXT",
   ];
 
   for (final sql in statements) {

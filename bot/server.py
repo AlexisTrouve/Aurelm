@@ -51,6 +51,9 @@ class BotServer:
         self._app.router.add_delete("/notes/{note_id}", self._delete_note)
         # Discord channel listing for Flutter config UI
         self._app.router.add_get("/discord/channels", self._discord_channels)
+        # Per-channel: preview pending messages + sync
+        self._app.router.add_get("/discord/channels/{channel_id}/pending", self._channel_pending)
+        self._app.router.add_post("/discord/channels/{channel_id}/sync", self._channel_sync)
         self._runner: web.AppRunner | None = None
 
         self._last_sync: float | None = None
@@ -126,6 +129,207 @@ class BotServer:
                     "guild_name": guild.name,
                 })
         return web.json_response({"channels": channels})
+
+    async def _channel_pending(self, request: web.Request) -> web.Response:
+        """Preview pending Discord messages for a channel — detect turns without storing."""
+        if not self._discord_client or not self._discord_connected:
+            return web.json_response({"error": "Discord not connected"}, status=503)
+
+        channel_id = request.match_info["channel_id"]
+        channel = self._discord_client.get_channel(int(channel_id))
+        if channel is None:
+            return web.json_response({"error": "Channel not found"}, status=404)
+
+        # Find last known message timestamp for this channel
+        conn = sqlite3.connect(self.config.db_path)
+        row = conn.execute(
+            "SELECT MAX(timestamp) FROM turn_raw_messages WHERE discord_channel_id = ?",
+            (channel_id,),
+        ).fetchone()
+        conn.close()
+
+        after_dt = None
+        if row and row[0]:
+            try:
+                from datetime import datetime, timezone
+                after_dt = datetime.fromisoformat(row[0]).replace(tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                pass
+
+        # Fetch new messages from Discord (without storing)
+        messages = []
+        async for msg in channel.history(limit=None, after=after_dt, oldest_first=True):
+            # Don't filter bots/webhooks — GM turns are often posted via bots
+            if not msg.content and not msg.attachments:
+                continue
+            messages.append({
+                "id": str(msg.id),
+                "author": msg.author.display_name,
+                "content": msg.content[:200] if msg.content else "",
+                "timestamp": msg.created_at.isoformat(),
+            })
+
+        # Turn detection: group consecutive messages by author type (GM vs player)
+        gm_names = set(self.config.gm_authors)
+        turns = []
+        last_is_gm = None
+        for m in messages:
+            is_gm = m["author"] in gm_names
+            if is_gm != last_is_gm:
+                turns.append({"is_gm": is_gm, "messages": [m]})
+                last_is_gm = is_gm
+            else:
+                turns[-1]["messages"].append(m)
+
+        gm_turns = [t for t in turns if t["is_gm"]]
+        player_turns = [t for t in turns if not t["is_gm"]]
+
+        # Build a readable turn summary for preview
+        turn_preview = []
+        for t in turns:
+            first_msg = t["messages"][0]
+            content_preview = first_msg["content"][:150]
+            turn_preview.append({
+                "type": "MJ" if t["is_gm"] else "PJ",
+                "author": first_msg["author"],
+                "messages": len(t["messages"]),
+                "preview": content_preview,
+            })
+
+        return web.json_response({
+            "channel_id": channel_id,
+            "new_messages": len(messages),
+            "gm_turns": len(gm_turns),
+            "player_turns": len(player_turns),
+            "turns": turn_preview,
+        })
+
+    async def _channel_sync(self, request: web.Request) -> web.Response:
+        """Fetch + pipeline for a single channel.
+        Query params:
+          turns=0,1,2  — only import specific turn indices (from /pending)
+          If omitted, imports all.
+        """
+        if self._sync_running:
+            return web.json_response({"error": "Sync already running"}, status=409)
+
+        channel_id = request.match_info["channel_id"]
+        turns_param = request.query.get("turns")  # e.g. "0,2,3"
+
+        if not self._discord_client or not self._discord_connected:
+            return web.json_response({"error": "Discord not connected"}, status=503)
+
+        channel = self._discord_client.get_channel(int(channel_id))
+        if channel is None:
+            return web.json_response({"error": "Channel not found"}, status=404)
+
+        self._sync_running = True
+        try:
+            if turns_param is not None:
+                # Selective import: fetch messages, group into turns, store only requested
+                selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
+                count = await self._selective_fetch(channel, channel_id, selected_indices)
+            else:
+                # Full import
+                from .fetcher import fetch_and_store
+                count = await fetch_and_store(channel, self.config.db_path)
+
+            # Run pipeline on whatever is now in DB
+            import sys
+            def _pipeline() -> dict:
+                try:
+                    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+                    from pipeline.pipeline.runner import run_pipeline_for_channels
+                    from pipeline.pipeline.llm_provider import create_provider
+                    provider = create_provider(self.config.llm_provider)
+                    return run_pipeline_for_channels(
+                        db_path=self.config.db_path,
+                        use_llm=True,
+                        wiki_dir=self.config.wiki_dir,
+                        gm_authors=set(self.config.gm_authors),
+                        track_progress=True,
+                        model=self.config.ollama_model,
+                        provider=provider,
+                        extraction_version=self.config.extraction_version,
+                    )
+                except ImportError:
+                    return {"error": "pipeline not available"}
+
+            pipeline_result = await asyncio.to_thread(_pipeline)
+            self._last_sync = time.time()
+            result = {
+                "messages_fetched": count,
+                "pipeline": pipeline_result,
+            }
+            self._last_sync_result = result
+            return web.json_response(result)
+        finally:
+            self._sync_running = False
+
+    async def _selective_fetch(self, channel, channel_id: str,
+                                selected_indices: set[int]) -> int:
+        """Fetch messages from Discord, group into turns, store only selected turn indices."""
+        conn = sqlite3.connect(self.config.db_path)
+        row = conn.execute(
+            "SELECT MAX(timestamp) FROM turn_raw_messages WHERE discord_channel_id = ?",
+            (channel_id,),
+        ).fetchone()
+
+        after_dt = None
+        if row and row[0]:
+            try:
+                from datetime import datetime, timezone
+                after_dt = datetime.fromisoformat(row[0]).replace(tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                pass
+
+        # Fetch all messages
+        all_msgs = []
+        async for msg in channel.history(limit=None, after=after_dt, oldest_first=True):
+            if not msg.content and not msg.attachments:
+                continue
+            all_msgs.append(msg)
+
+        # Group into turns (same logic as _channel_pending)
+        gm_names = set(self.config.gm_authors)
+        turns: list[list] = []
+        last_is_gm = None
+        for msg in all_msgs:
+            is_gm = msg.author.display_name in gm_names
+            if is_gm != last_is_gm:
+                turns.append([msg])
+                last_is_gm = is_gm
+            else:
+                turns[-1].append(msg)
+
+        # Store only messages from selected turns
+        count = 0
+        for idx in selected_indices:
+            if idx >= len(turns):
+                continue
+            for msg in turns[idx]:
+                try:
+                    conn.execute(
+                        """INSERT OR IGNORE INTO turn_raw_messages
+                           (discord_message_id, discord_channel_id, author_id, author_name,
+                            content, timestamp, attachments)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            str(msg.id),
+                            channel_id,
+                            str(msg.author.id),
+                            msg.author.display_name,
+                            msg.content,
+                            msg.created_at.isoformat(),
+                            ",".join(a.url for a in msg.attachments) if msg.attachments else None,
+                        ),
+                    )
+                    count += 1
+                except Exception:
+                    pass
+        conn.commit()
+        conn.close()
+        return count
 
     async def _progress(self, _request: web.Request) -> web.Response:
         """Return current pipeline progress for UI polling."""
