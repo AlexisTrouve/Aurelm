@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/map_provider.dart';
-import '../map_drag_types.dart';
+
 
 // ---------------------------------------------------------------------------
 // Slot layout — offsets as fractions of cellSize from cell center.
@@ -166,91 +166,4 @@ class CellAssetsOverlay extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// DragTarget overlay — invisible targets on every cell for asset drops
-// ---------------------------------------------------------------------------
-
-/// Transparent overlay that covers each cell with a [DragTarget<int>].
-/// When an asset is dropped, calls [onDrop] with (assetId, q, r).
-class CellDragTargetOverlay extends StatelessWidget {
-  final String gridType;
-  final int gridCols;
-  final int gridRows;
-  final double cellSize;
-  final double canvasW;
-  final double canvasH;
-  final void Function(int assetId, int q, int r) onDrop;
-
-  const CellDragTargetOverlay({
-    super.key,
-    required this.gridType,
-    required this.gridCols,
-    required this.gridRows,
-    required this.cellSize,
-    required this.canvasW,
-    required this.canvasH,
-    required this.onDrop,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: canvasW,
-      height: canvasH,
-      child: Stack(
-        children: [
-          for (int r = 0; r < gridRows; r++)
-            for (int q = 0; q < gridCols; q++)
-              _buildTarget(q, r),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTarget(int q, int r) {
-    final Offset center;
-    if (gridType == 'hex') {
-      center = Offset(
-        cellSize * sqrt(3) * (q + (r % 2) * 0.5),
-        cellSize * 1.5 * r,
-      );
-    } else {
-      center = Offset(
-        q * cellSize + cellSize / 2,
-        r * cellSize + cellSize / 2,
-      );
-    }
-
-    // Hit area = cell inscribed circle
-    final hitR = cellSize * 0.85;
-
-    return Positioned(
-      left: center.dx - hitR,
-      top: center.dy - hitR,
-      width: hitR * 2,
-      height: hitR * 2,
-      child: DragTarget<Object>(
-        onWillAccept: (data) => data is MapAssetDrag,
-        onAcceptWithDetails: (details) {
-          if (details.data is MapAssetDrag) {
-            onDrop((details.data as MapAssetDrag).assetId, q, r);
-          }
-        },
-        builder: (ctx, candidateData, _) {
-          // Subtle highlight when an asset is hovering over this cell
-          final isHovered = candidateData.isNotEmpty;
-          return Container(
-            decoration: isHovered
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                        color: Colors.white.withOpacity(0.8), width: 2),
-                    color: Colors.white.withOpacity(0.15),
-                  )
-                : null,
-          );
-        },
-      ),
-    );
-  }
-}
+// CellDragTargetOverlay removed — asset + pawn drops handled by CellDropOverlay.

@@ -421,11 +421,11 @@ class _MapCanvasState extends ConsumerState<_MapCanvas> {
   }
 
   /// Global key handler — fires even when no widget has explicit focus.
+  /// Guard: only handle keys when this widget is still mounted and on screen.
   bool _handleHardwareKey(KeyEvent event) {
+    if (!mounted) return false;
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return false;
     if (_textFieldFocused) return false;
-    // Only act when this canvas is mounted and visible
-    if (!mounted) return false;
     return _applyKeyNavigation(event.logicalKey);
   }
 
