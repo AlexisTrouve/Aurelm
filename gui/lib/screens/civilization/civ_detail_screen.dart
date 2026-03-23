@@ -579,8 +579,11 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
     super.dispose();
   }
 
+  int _pollFailures = 0;
+
   void _startProgressPolling() {
     _progressTimer?.cancel();
+    _pollFailures = 0;
     _progressTimer = Timer.periodic(
       const Duration(seconds: 2),
       (_) => _pollProgress(),
@@ -593,16 +596,31 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
   }
 
   Future<void> _pollProgress() async {
+    // Stop polling after ~5 min of failures (150 × 2s)
+    if (_pollFailures >= 150) {
+      _stopProgressPolling();
+      if (mounted) {
+        setState(() => _syncing = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Bot injoignable - sync timeout')));
+      }
+      return;
+    }
     try {
       final resp = await http
           .get(Uri.parse('http://127.0.0.1:8473/progress'))
           .timeout(const Duration(seconds: 3));
       if (!mounted) return;
       if (resp.statusCode == 200) {
+        _pollFailures = 0;
         setState(() =>
             _progress = jsonDecode(resp.body) as Map<String, dynamic>);
+      } else {
+        _pollFailures++;
       }
-    } catch (_) {}
+    } catch (_) {
+      _pollFailures++;
+    }
   }
 
   Future<void> _checkPending() async {
@@ -827,7 +845,10 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
     if (phases.isEmpty) {
       return const LinearProgressIndicator();
     }
-    // Take the most recent phase entry
+    // Take the most recent phase entry (guard against malformed response)
+    if (phases[0] is! Map<String, dynamic>) {
+      return const LinearProgressIndicator();
+    }
     final p = phases[0] as Map<String, dynamic>;
     final currentTurn = p['current_unit'] as int? ?? 0;
     final totalTurns = p['total_units'] as int? ?? 1;

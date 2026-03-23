@@ -170,11 +170,17 @@ class BotServer:
             })
 
         # Turn detection: group consecutive messages by author type (GM vs player)
-        gm_names = set(self.config.gm_authors)
+        # Use prefix match (case-insensitive) to stay consistent with pipeline's
+        # _find_gm_author_id which uses name.startswith(gm.lower())
+        gm_names_lower = [g.lower() for g in self.config.gm_authors]
+        def _is_gm_author(name: str) -> bool:
+            nl = name.lower()
+            return any(nl.startswith(g) for g in gm_names_lower)
+
         turns = []
         last_is_gm = None
         for m in messages:
-            is_gm = m["author"] in gm_names
+            is_gm = _is_gm_author(m["author"])
             if is_gm != last_is_gm:
                 turns.append({"is_gm": is_gm, "messages": [m]})
                 last_is_gm = is_gm
@@ -227,6 +233,10 @@ class BotServer:
         try:
             if turns_param is not None:
                 # Selective import: fetch messages, group into turns, store only requested
+                if not turns_param.strip():
+                    self._sync_running = False
+                    return web.json_response(
+                        {"error": "turns parameter cannot be empty"}, status=400)
                 try:
                     selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
                 except ValueError:
@@ -297,11 +307,12 @@ class BotServer:
                 all_msgs.append(msg)
 
             # Group into turns (same logic as _channel_pending)
-            gm_names = set(self.config.gm_authors)
+            gm_names_lower = [g.lower() for g in self.config.gm_authors]
             turns: list[list] = []
             last_is_gm = None
             for msg in all_msgs:
-                is_gm = msg.author.display_name in gm_names
+                nl = msg.author.display_name.lower()
+                is_gm = any(nl.startswith(g) for g in gm_names_lower)
                 if is_gm != last_is_gm:
                     turns.append([msg])
                     last_is_gm = is_gm
