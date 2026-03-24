@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/bot_provider.dart';
 import '../../../providers/pipeline_provider.dart';
+import '../../../services/sync_service.dart';
+import '../../../widgets/sync_progress_dialog.dart';
 
 class PipelineStatusCard extends ConsumerWidget {
   const PipelineStatusCard({super.key});
@@ -147,7 +149,14 @@ class _SyncButton extends StatelessWidget {
     return FilledButton.tonalIcon(
       onPressed: isSyncing
           ? null
-          : () => ref.read(syncStateProvider.notifier).triggerSync(),
+          : () {
+              final service = SyncService();
+              showSyncProgressDialog(
+                context,
+                title: 'Sync globale (toutes les civs)',
+                syncAction: () => service.triggerSync(),
+              );
+            },
       icon: isSyncing
           ? const SizedBox(
               width: 16,
