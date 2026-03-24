@@ -216,18 +216,25 @@ def run_pipeline(
         # Estimate: ~4 calls per GM chunk (extraction×3 + validation).
         # Actual count may differ (optional calls skipped), but close enough for progress bar.
         _llm_calls_done = 0
-        _estimated_calls_per_turn = 4  # facts+entities, entities-only, focused, validate
+        # ~6 LLM calls per GM turn: facts+entities, entities-only, focused, validate, mark, summarize
+        # Plus ~2 for PJ extraction per turn. Use 7 as a reasonable average.
+        _estimated_calls_per_turn = 7
 
         def _on_llm_call(stage_name: str):
-            nonlocal _llm_calls_done
+            nonlocal _llm_calls_done, _estimated_calls_per_turn
             _llm_calls_done += 1
+            # Auto-adjust estimate if we exceed it (never show > 100%)
+            estimated_total = total_turns * _estimated_calls_per_turn
+            if _llm_calls_done > estimated_total:
+                _estimated_calls_per_turn = (_llm_calls_done // total_turns) + 2
+                estimated_total = total_turns * _estimated_calls_per_turn
             if track_progress:
                 update_progress(
                     conn, run_id, "pipeline", civ_id, civ_name,
                     i + 1, total_turns, "turn", "running",
                     stage_name=stage_name,
                     llm_calls_done=_llm_calls_done,
-                    llm_calls_total=total_turns * _estimated_calls_per_turn,
+                    llm_calls_total=estimated_total,
                     turn_number=turn_number,
                 )
 
@@ -490,6 +497,11 @@ def run_pipeline(
         conn.close()
 
     # Step 6.5: Turn preanalysis (novelty detection + player strategy)
+    if track_progress:
+        conn2 = get_connection(db_path)
+        update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                        0, 1, "stage", "running", stage_name="preanalysis")
+        conn2.commit(); conn2.close()
     print("[6.5/10] Turn preanalysis (novelty + player strategy)...")
     from .turn_preanalysis import run_preanalysis
     preanalysis_stats = run_preanalysis(
@@ -507,6 +519,11 @@ def run_pipeline(
 
     # Step 7: Subject extraction (MJ choices + PJ initiatives)
     if use_llm:
+        if track_progress:
+            conn2 = get_connection(db_path)
+            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                            0, 1, "stage", "running", stage_name="subjects")
+            conn2.commit(); conn2.close()
         print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
         _run_subject_extraction(
             db_path, civ_id, all_chunks, gm_author_id,
@@ -515,6 +532,11 @@ def run_pipeline(
 
     # Step 8: Entity profiling (LLM-based)
     if use_llm:
+        if track_progress:
+            conn2 = get_connection(db_path)
+            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                            0, 1, "stage", "running", stage_name="profiling")
+            conn2.commit(); conn2.close()
         print("[8/10] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
             db_path,
@@ -528,6 +550,11 @@ def run_pipeline(
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
         # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from civ_mentions
+        if track_progress:
+            conn2 = get_connection(db_path)
+            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                            0, 1, "stage", "running", stage_name="civ_relations")
+            conn2.commit(); conn2.close()
         print("[8.5/10] Profiling inter-civ relations...")
         from .civ_relation_profiler import build_civ_relations
         rel_stats = build_civ_relations(
@@ -554,6 +581,11 @@ def run_pipeline(
         aliases_score_threshold = (
             llm_config.get_score_threshold("aliases") if llm_config else 0.7
         )
+        if track_progress:
+            conn2 = get_connection(db_path)
+            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                            0, 1, "stage", "running", stage_name="aliases")
+            conn2.commit(); conn2.close()
         print("[9/10] Resolving entity aliases...")
         alias_stats = resolve_aliases(
             db_path, profiles, model=aliases_model, use_llm=True,

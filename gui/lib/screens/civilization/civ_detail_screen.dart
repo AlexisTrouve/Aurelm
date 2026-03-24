@@ -1057,17 +1057,60 @@ class _SyncProgressDialogState extends State<_SyncProgressDialog> {
       'extraction' => 'Extraction entites',
       'validation' => 'Validation entites',
       'summarization' => 'Resume',
-      'subjects' => 'Sujets',
-      'profiling' => 'Profiling',
+      'subjects' => 'Sujets MJ/PJ',
+      'profiling' => 'Profiling entites',
       'pj_extraction' => 'Extraction PJ',
+      'preanalysis' => 'Pre-analyse',
+      'civ_relations' => 'Relations inter-civs',
+      'aliases' => 'Resolution aliases',
       _ => stageName.isNotEmpty ? stageName : 'En cours...',
     };
+
+    // Determine the current pipeline step (for the top-level progress bar)
+    // Steps: extraction (6) -> preanalysis (6.5) -> subjects (7) -> profiling (8)
+    //        -> civ_relations (8.5) -> aliases (9) -> wiki (10)
+    const pipelineSteps = [
+      'extraction', 'validation', 'summarization', 'pj_extraction',
+      'preanalysis', 'subjects', 'profiling', 'civ_relations', 'aliases',
+    ];
+    const pipelineStepLabels = [
+      '6. Extraction', '6. Validation', '6. Resume', '6. PJ',
+      '6.5 Pre-analyse', '7. Sujets', '8. Profiling', '8.5 Relations', '9. Aliases',
+    ];
+    // Find current step index (defaults to 0 if unknown)
+    int stepIdx = pipelineSteps.indexOf(stageName);
+    if (stepIdx < 0) stepIdx = 0;
+    final stepLabel = pipelineStepLabels[stepIdx];
+    final stepProgress = (stepIdx + 1) / pipelineSteps.length;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Macro: Turn X/Y
+        // Pipeline stage (top-level)
+        Row(
+          children: [
+            const Icon(Icons.list_alt, size: 16),
+            const SizedBox(width: 6),
+            Text('Etape: $stepLabel',
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+            const Spacer(),
+            Text('${stepIdx + 1}/${pipelineSteps.length}',
+                style: theme.textTheme.bodySmall),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: stepProgress,
+            minHeight: 6,
+            color: Colors.deepPurple,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Macro: Turn X/Y (only meaningful during extraction stages)
         Row(
           children: [
             const Icon(Icons.autorenew, size: 16),
