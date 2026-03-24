@@ -48,9 +48,9 @@ CHANNEL_ID = "file-import"
 
 
 def run_pipeline(
-    data_dir: str,
-    db_path: str,
-    civ_name: str,
+    data_dir: str | None = None,
+    db_path: str = "aurelm.db",
+    civ_name: str = "",
     player_name: str | None = None,
     use_llm: bool = True,
     wiki_dir: str | None = None,
@@ -59,12 +59,16 @@ def run_pipeline(
     model: str = "qwen3:14b",
     provider: LLMProvider | None = None,
     llm_config: LLMConfig | None = None,
+    # Bot mode: pass pre-fetched messages + civ_id to skip steps 1-4
+    messages: list | None = None,
+    civ_id: int | None = None,
+    channel_id: str | None = None,
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
 
-    Args:
-        llm_config: Optional per-stage model config. If provided, overrides
-                    model/provider args (each stage gets its own model).
+    Two modes:
+    - CLI mode: pass data_dir + civ_name. Steps 1-4 load files and register civ.
+    - Bot mode: pass messages + civ_id + channel_id. Steps 1-4 are skipped.
 
     Returns a stats dict with counts of processed items.
     """
@@ -99,25 +103,35 @@ def run_pipeline(
         "segments_created": 0,
     }
 
-    # Step 1: Init DB
-    print("[1/10] Initializing database...")
-    init_db(db_path)
-    run_migrations(db_path)
+    bot_mode = messages is not None
+    _channel_id = channel_id or CHANNEL_ID
 
-    # Step 2: Register civilization
-    print(f"[2/10] Registering civilization: {civ_name}")
-    civ_id = register_civilization(db_path, civ_name, player_name=player_name)
+    if not bot_mode:
+        # CLI mode: steps 1-4 load from files
+        # Step 1: Init DB
+        print("[1/10] Initializing database...")
+        init_db(db_path)
+        run_migrations(db_path)
 
-    # Step 3: Load markdown files
-    print(f"[3/10] Loading markdown files from {data_dir}...")
-    msg_count = load_directory(data_dir, db_path, channel_id=CHANNEL_ID)
-    stats["messages_loaded"] = msg_count
-    print(f"       -> {msg_count} messages in database")
+        # Step 2: Register civilization
+        print(f"[2/10] Registering civilization: {civ_name}")
+        civ_id = register_civilization(db_path, civ_name, player_name=player_name)
 
-    # Step 4: Fetch unprocessed messages
-    print("[4/10] Fetching unprocessed messages...")
-    messages = fetch_unprocessed_messages(db_path, CHANNEL_ID)
-    print(f"       ->{len(messages)} unprocessed messages")
+        # Step 3: Load markdown files
+        assert data_dir is not None, "data_dir required in CLI mode"
+        print(f"[3/10] Loading markdown files from {data_dir}...")
+        msg_count = load_directory(data_dir, db_path, channel_id=_channel_id)
+        stats["messages_loaded"] = msg_count
+        print(f"       -> {msg_count} messages in database")
+
+        # Step 4: Fetch unprocessed messages
+        print("[4/10] Fetching unprocessed messages...")
+        messages = fetch_unprocessed_messages(db_path, _channel_id)
+        print(f"       ->{len(messages)} unprocessed messages")
+    else:
+        # Bot mode: messages + civ_id already provided
+        print(f"[1-4/10] Bot mode: {len(messages)} messages, civ_id={civ_id}")
+        stats["messages_loaded"] = len(messages)
 
     if not messages:
         print("       No new messages to process.")
@@ -1666,28 +1680,14 @@ def run_pipeline_for_channels(
 ) -> dict:
     """Run pipeline for all civs with a discord_channel_id set in DB.
 
-    Called by the bot's /sync endpoint. Processes unprocessed messages
-    per channel/civ, then optionally rebuilds wiki.
-
-    Args:
-        llm_config: Optional per-stage model config. Overrides model/provider.
+    Thin wrapper: fetches unprocessed messages per civ, then delegates to
+    run_pipeline() in bot mode so the SAME pipeline code runs for CLI and bot.
 
     Returns aggregated stats across all civs.
     """
     if gm_authors:
         global GM_AUTHORS
         GM_AUTHORS = gm_authors
-
-    # If llm_config provided, it drives model selection
-    if llm_config:
-        model = llm_config.default_model
-        provider = provider or create_provider(llm_config.provider_name)
-
-    # Create provider if not passed explicitly
-    llm_provider = provider or OllamaProvider()
-
-    if use_llm and llm_provider.name == "ollama":
-        _register_unload_atexit()
 
     init_db(db_path)
     run_migrations(db_path)
@@ -1709,27 +1709,6 @@ def run_pipeline_for_channels(
         "per_civ": {},
     }
 
-    global _active_model
-    _active_model = model
-
-    # Per-stage model resolution
-    extraction_model    = llm_config.get_model("extraction")    if llm_config else model
-    focus_model         = llm_config.get_model("focus")         if llm_config else None
-    validation_model    = llm_config.get_model("validation")    if llm_config else None
-    summarization_model = llm_config.get_model("summarization") if llm_config else model
-    subjects_model      = llm_config.get_model("subjects")      if llm_config else model
-
-    version = get_version(extraction_version)
-    print(f"[*] Extraction version: {version.name} -- {version.description}")
-    if llm_config and llm_config.stage_models:
-        print(f"[*] LLM config: {llm_config.summary()}")
-    else:
-        print(f"[*] Model: {model} (provider: {llm_provider.name})")
-    fact_extractor = FactExtractor(
-        model=extraction_model, version=version, provider=llm_provider,
-        focus_model=focus_model, validate_model=validation_model,
-    ) if use_llm else None
-
     for civ_id, civ_name, player_name, channel_id in civs:
         print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
 
@@ -1739,180 +1718,30 @@ def run_pipeline_for_channels(
             aggregated["per_civ"][civ_name] = {"turns_created": 0, "entities_extracted": 0}
             continue
 
-        gm_author_id = _find_gm_author_id(messages)
-        all_chunks = detect_turn_boundaries(messages, gm_author_id)
-        chunks = [c for c in all_chunks if c.is_gm_post]
-        print(f"  {len(messages)} messages -> {len(chunks)} turns")
-
-        civ_stats = {"turns_created": 0, "entities_extracted": 0, "segments_created": 0}
-        conn = get_connection(db_path)
-        run_id = _start_pipeline_run(
-            conn,
+        # Delegate to run_pipeline in bot mode — same code path as CLI
+        civ_stats = run_pipeline(
+            db_path=db_path,
+            civ_name=civ_name,
+            player_name=player_name,
+            use_llm=use_llm,
+            wiki_dir=None,  # wiki generated once after all civs
+            track_progress=track_progress,
             extraction_version=extraction_version,
-            llm_model=model,
-            llm_provider=llm_provider.name if hasattr(llm_provider, 'name') else None,
+            model=model,
+            provider=provider,
+            llm_config=llm_config,
+            # Bot mode params — skip steps 1-4
+            messages=messages,
+            civ_id=civ_id,
+            channel_id=channel_id,
         )
 
-        try:
-            turn_number = _get_next_turn_number(conn, civ_id)
-            total_turns = len(chunks)
-
-            # LLM call counter for progress tracking
-            _llm_calls_done2 = 0
-            _est_calls = 4  # per turn estimate
-
-            def _on_llm_call2(stage_name: str):
-                nonlocal _llm_calls_done2
-                _llm_calls_done2 += 1
-                if track_progress:
-                    update_progress(
-                        conn, run_id, "pipeline", civ_id, civ_name,
-                        i + 1, total_turns, "turn", "running",
-                        stage_name=stage_name,
-                        llm_calls_done=_llm_calls_done2,
-                        llm_calls_total=total_turns * _est_calls,
-                        turn_number=turn_number,
-                    )
-
-            for i, chunk in enumerate(chunks):
-                turn_text = "\n\n".join(m.content for m in chunk.messages)
-                raw_ids = json.dumps([m.id for m in chunk.messages])
-                raw_content = "\n\n".join(m.content for m in chunk.messages)
-
-                cursor = conn.execute(
-                    """INSERT INTO turn_turns (civ_id, turn_number, raw_message_ids, turn_type)
-                       VALUES (?, ?, ?, ?)""",
-                    (civ_id, turn_number, raw_ids, chunk.turn_type),
-                )
-                turn_id = cursor.lastrowid
-                civ_stats["turns_created"] += 1
-
-                segments = classify_segments(turn_text)
-
-                structured_facts = None
-                if fact_extractor:
-                    segment_dicts = [
-                        {"segment_type": seg.segment_type.value, "content": seg.text}
-                        for seg in segments
-                    ]
-                    structured_facts = fact_extractor.extract_facts(
-                        segment_dicts, raw_content,
-                        validation_model=validation_model,
-                        on_llm_call=_on_llm_call2 if track_progress else None,
-                    )
-
-                for seg_order, seg in enumerate(segments):
-                    conn.execute(
-                        """INSERT INTO turn_segments (turn_id, segment_order, segment_type, content)
-                           VALUES (?, ?, ?, ?)""",
-                        (turn_id, seg_order, seg.segment_type.value, seg.text),
-                    )
-                    civ_stats["segments_created"] += 1
-
-                # Extract entities from LLM results — tagged as GM source
-                if structured_facts and structured_facts.entities:
-                    for ent in structured_facts.entities:
-                        entity_id = _upsert_entity(conn, ent.text, ent.label, civ_id, turn_id)
-                        conn.execute(
-                            """INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context, source)
-                               VALUES (?, ?, ?, ?, 'gm')""",
-                            (entity_id, turn_id, ent.text, ent.context),
-                        )
-                        civ_stats["entities_extracted"] += 1
-
-                author_contents = _split_by_author(chunk.messages, gm_author_id)
-                summary = summarize_turn(
-                    turn_text, model=summarization_model, use_llm=use_llm,
-                    civ_name=civ_name, player_name=player_name,
-                    author_contents=author_contents if use_llm else None,
-                    provider=llm_provider,
-                )
-
-                # Persist summary + structured facts
-                update_fields = {
-                    "summary": summary.short_summary,
-                    "detailed_summary": summary.detailed_summary,
-                    "key_events": json.dumps(summary.key_events, ensure_ascii=False) if summary.key_events else None,
-                    "choices_made": json.dumps(summary.choices_made, ensure_ascii=False) if summary.choices_made else None,
-                    "processed_at": datetime.now().isoformat(),
-                }
-
-                if structured_facts:
-                    update_fields["media_links"] = json.dumps(structured_facts.media_links, ensure_ascii=False)
-                    update_fields["technologies"] = json.dumps(structured_facts.technologies, ensure_ascii=False)
-                    update_fields["resources"] = json.dumps(structured_facts.resources, ensure_ascii=False)
-                    update_fields["beliefs"] = json.dumps(structured_facts.beliefs, ensure_ascii=False)
-                    update_fields["geography"] = json.dumps(structured_facts.geography, ensure_ascii=False)
-                    update_fields["choices_proposed"] = json.dumps(structured_facts.choices_proposed, ensure_ascii=False)
-
-                conn.execute(
-                    """UPDATE turn_turns
-                       SET summary = ?, detailed_summary = ?,
-                           key_events = ?, choices_made = ?, processed_at = ?,
-                           media_links = ?, technologies = ?, resources = ?,
-                           beliefs = ?, geography = ?, choices_proposed = ?
-                       WHERE id = ?""",
-                    (
-                        update_fields["summary"],
-                        update_fields["detailed_summary"],
-                        update_fields["key_events"],
-                        update_fields["choices_made"],
-                        update_fields["processed_at"],
-                        update_fields.get("media_links"),
-                        update_fields.get("technologies"),
-                        update_fields.get("resources"),
-                        update_fields.get("beliefs"),
-                        update_fields.get("geography"),
-                        update_fields.get("choices_proposed"),
-                        turn_id,
-                    ),
-                )
-
-                # Mark turn as processed
-                mark_turn_processed(conn, turn_id, run_id)
-
-                # Update progress tracking
-                if track_progress:
-                    update_progress(
-                        conn, run_id, "pipeline", civ_id, civ_name,
-                        i + 1, total_turns, "turn", "running"
-                    )
-
-                turn_number += 1
-
-            # Mark pipeline phase as completed for this civ
-            if track_progress and total_turns > 0:
-                update_progress(
-                    conn, run_id, "pipeline", civ_id, civ_name,
-                    total_turns, total_turns, "turn", "completed"
-                )
-
-            conn.commit()
-            _complete_pipeline_run(conn, run_id, {
-                "messages_loaded": len(messages),
-                "turns_created": civ_stats["turns_created"],
-                "entities_extracted": civ_stats["entities_extracted"],
-            })
-        except Exception as e:
-            conn.rollback()
-            _fail_pipeline_run(conn, run_id, str(e))
-            raise
-        finally:
-            conn.close()
-
-        # Subject extraction for this civ (after turns are committed)
-        if use_llm:
-            _run_subject_extraction(
-                db_path, civ_id, all_chunks, gm_author_id,
-                subjects_model, llm_provider,
-            )
-
         aggregated["civs_processed"] += 1
-        aggregated["total_turns_created"] += civ_stats["turns_created"]
-        aggregated["total_entities_extracted"] += civ_stats["entities_extracted"]
+        aggregated["total_turns_created"] += civ_stats.get("turns_created", 0)
+        aggregated["total_entities_extracted"] += civ_stats.get("entities_extracted", 0)
         aggregated["per_civ"][civ_name] = civ_stats
 
-    # Wiki generation
+    # Wiki generation (once after all civs)
     if wiki_dir and aggregated["total_turns_created"] > 0:
         print("\n--- Generating wiki ---")
         try:
@@ -1923,14 +1752,6 @@ def run_pipeline_for_channels(
         except Exception as exc:
             print(f"  Wiki generation failed: {exc}")
             aggregated["wiki_error"] = str(exc)
-
-    # Unload models to free VRAM (no-op for cloud providers)
-    used_models = {extraction_model, summarization_model, subjects_model}
-    if validation_model:
-        used_models.add(validation_model)
-    used_models.add(model)  # default model as fallback
-    for m in used_models:
-        llm_provider.unload(m)
 
     return aggregated
 

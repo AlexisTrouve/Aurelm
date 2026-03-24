@@ -569,58 +569,11 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
   bool _checking = false;
   bool _syncing = false;
 
-  // Progress polling during sync
-  Timer? _progressTimer;
-  Map<String, dynamic>? _progress; // latest /progress response
+  // Progress polling is now handled by the modal _SyncProgressDialog
 
   @override
   void dispose() {
-    _progressTimer?.cancel();
     super.dispose();
-  }
-
-  int _pollFailures = 0;
-
-  void _startProgressPolling() {
-    _progressTimer?.cancel();
-    _pollFailures = 0;
-    _progressTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _pollProgress(),
-    );
-  }
-
-  void _stopProgressPolling() {
-    _progressTimer?.cancel();
-    _progressTimer = null;
-  }
-
-  Future<void> _pollProgress() async {
-    // Stop polling after ~5 min of failures (150 × 2s)
-    if (_pollFailures >= 150) {
-      _stopProgressPolling();
-      if (mounted) {
-        setState(() => _syncing = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Bot injoignable - sync timeout')));
-      }
-      return;
-    }
-    try {
-      final resp = await http
-          .get(Uri.parse('http://127.0.0.1:8473/progress'))
-          .timeout(const Duration(seconds: 3));
-      if (!mounted) return;
-      if (resp.statusCode == 200) {
-        _pollFailures = 0;
-        setState(() =>
-            _progress = jsonDecode(resp.body) as Map<String, dynamic>);
-      } else {
-        _pollFailures++;
-      }
-    } catch (_) {
-      _pollFailures++;
-    }
   }
 
   Future<void> _checkPending() async {
@@ -631,33 +584,124 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
     if (mounted) setState(() { _pending = result; _checking = false; });
   }
 
+  /// Warning card when no GM author is detected — lets user pick one from the
+  /// list of unique authors returned by the pending endpoint.
+  Widget _buildNoGmWarning(BuildContext context) {
+    final authors =
+        (_pending?['authors'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Card(
+        color: Colors.orange.withAlpha(30),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Aucun auteur MJ detecte',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Colors.orange, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text('Selectionnez le compte Discord du MJ :'),
+              const SizedBox(height: 4),
+              ...authors.map((a) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      a['is_gm'] == true ? Icons.shield : Icons.person,
+                      size: 18,
+                      color: a['is_gm'] == true ? Colors.green : null,
+                    ),
+                    title: Text(a['name'] as String? ?? '?'),
+                    subtitle: Text('ID: ${a['id']}',
+                        style: Theme.of(context).textTheme.bodySmall),
+                    trailing: a['is_gm'] == true
+                        ? const Chip(label: Text('MJ'))
+                        : TextButton(
+                            onPressed: () => _assignGmAuthor(
+                                a['id'] as String, a['name'] as String),
+                            child: const Text('Definir comme MJ'),
+                          ),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Save the selected Discord user ID as a GM author in the config,
+  /// then re-check pending to refresh turn detection.
+  Future<void> _assignGmAuthor(String discordId, String displayName) async {
+    final dbPath = ref.read(dbPathProvider);
+    if (dbPath == null) return;
+
+    final config = await BotConfigService.load(dbPath);
+
+    // Add both the Discord ID and the display name (for pipeline fallback)
+    final updatedIds = [...config.gmDiscordIds];
+    if (!updatedIds.contains(discordId)) updatedIds.add(discordId);
+
+    final updatedNames = [...config.gmAuthors];
+    if (!updatedNames.any((n) =>
+        displayName.toLowerCase().startsWith(n.toLowerCase()))) {
+      updatedNames.add(displayName);
+    }
+
+    await BotConfigService.save(dbPath, config.copyWith(
+      gmAuthors: updatedNames,
+      gmDiscordIds: updatedIds,
+    ));
+
+    // Tell the bot to reload its config
+    try {
+      await http.post(Uri.parse('http://127.0.0.1:${config.botPort}/reload-config'));
+    } catch (_) {
+      // Bot may not support this endpoint yet — config saved, restart will pick it up
+    }
+
+    // Re-check pending with updated detection
+    if (mounted) _checkPending();
+  }
+
   Future<void> _syncChannel({List<int>? turnIndices}) async {
     if (!mounted) return;
-    setState(() { _syncing = true; _progress = null; });
-    _startProgressPolling();
-    try {
-      final service = SyncService();
-      await service.syncChannel(widget.civ.discordChannelId!,
-          turnIndices: turnIndices);
-      if (mounted) {
-        final label = turnIndices != null
-            ? 'Tour importe'
-            : 'Tous les tours importes';
+    setState(() => _syncing = true);
+
+    // Show blocking modal dialog with progress
+    final channelId = widget.civ.discordChannelId!;
+    final label = turnIndices != null
+        ? 'Import de ${turnIndices.length} tour(s)'
+        : 'Import de tous les tours';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _SyncProgressDialog(
+        channelId: channelId,
+        turnIndices: turnIndices,
+        title: label,
+      ),
+    ).then((result) {
+      if (!mounted) return;
+      setState(() { _syncing = false; _pending = null; });
+
+      if (result == true) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(label)));
-        _stopProgressPolling();
+            .showSnackBar(SnackBar(content: Text('$label - termine')));
         ref.invalidate(civDetailProvider(widget.civ.id));
-        setState(() { _pending = null; _syncing = false; _progress = null; });
         _checkPending();
-      }
-    } catch (e) {
-      if (mounted) {
-        _stopProgressPolling();
+      } else if (result is String) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Erreur: $e')));
-        setState(() { _syncing = false; _progress = null; });
+            .showSnackBar(SnackBar(content: Text('Erreur: $result')));
       }
-    }
+    });
   }
 
   @override
@@ -717,6 +761,10 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
                       playerTurns > 0 ? Colors.blue : Colors.grey),
                 ],
               ),
+
+              // Warn if no GM detected — offer to assign one
+              if (_pending != null && gmTurns == 0 && newMsgs > 0)
+                _buildNoGmWarning(context),
 
               // Turn preview (grouped, not raw messages)
               if (turns.isNotEmpty) ...[
@@ -810,11 +858,7 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
                 ),
               ],
 
-              // Progress bar during sync
-              if (_syncing && _progress != null) ...[
-                const SizedBox(height: 12),
-                _buildProgressCard(theme),
-              ],
+              // Progress is now shown in the modal dialog
 
               // Import button
               if (newMsgs > 0 && !_syncing) ...[
@@ -841,88 +885,8 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
     );
   }
 
-  Widget _buildProgressCard(ThemeData theme) {
-    final phases = (_progress?['phases'] as List?) ?? [];
-    if (phases.isEmpty) {
-      return const LinearProgressIndicator();
-    }
-    // Take the most recent phase entry (guard against malformed response)
-    if (phases[0] is! Map<String, dynamic>) {
-      return const LinearProgressIndicator();
-    }
-    final p = phases[0] as Map<String, dynamic>;
-    final currentTurn = p['current_unit'] as int? ?? 0;
-    final totalTurns = p['total_units'] as int? ?? 1;
-    final stageName = p['stage_name'] as String? ?? '';
-    final callsDone = p['llm_calls_done'] as int? ?? 0;
-    final callsTotal = p['llm_calls_total'] as int? ?? 1;
-    final turnNumber = p['turn_number'] as int?;
-
-    // Translate stage names
-    final stageLabel = switch (stageName) {
-      'extraction' => 'Extraction entites',
-      'validation' => 'Validation entites',
-      'summarization' => 'Resume',
-      'subjects' => 'Sujets',
-      'profiling' => 'Profiling',
-      'pj_extraction' => 'Extraction PJ',
-      _ => stageName.isNotEmpty ? stageName : 'En cours...',
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outline.withAlpha(60)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Macro: Turn X/Y
-          Row(
-            children: [
-              const Icon(Icons.autorenew, size: 16),
-              const SizedBox(width: 6),
-              Text(
-                turnNumber != null
-                    ? 'Tour $turnNumber ($currentTurn/$totalTurns)'
-                    : 'Tour $currentTurn/$totalTurns',
-                style: theme.textTheme.labelMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Text(stageLabel,
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: theme.colorScheme.primary)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Macro progress bar
-          LinearProgressIndicator(
-            value: totalTurns > 0 ? currentTurn / totalTurns : null,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          const SizedBox(height: 8),
-          // Micro: LLM calls
-          Row(
-            children: [
-              Text('Calls LLM: $callsDone/$callsTotal',
-                  style: theme.textTheme.bodySmall),
-            ],
-          ),
-          const SizedBox(height: 4),
-          LinearProgressIndicator(
-            value: callsTotal > 0 ? callsDone / callsTotal : null,
-            minHeight: 4,
-            borderRadius: BorderRadius.circular(2),
-            color: Colors.amber,
-          ),
-        ],
-      ),
-    );
-  }
+  // Progress is now shown in the blocking _SyncProgressDialog
+  // (progress is shown in the modal _SyncProgressDialog)
 
   Widget _statChip(IconData icon, String label, Color color) {
     return Container(
@@ -941,6 +905,225 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
               style: TextStyle(fontSize: 12, color: color)),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Blocking modal dialog that shows sync progress with polling
+// ---------------------------------------------------------------------------
+
+class _SyncProgressDialog extends StatefulWidget {
+  final String channelId;
+  final List<int>? turnIndices;
+  final String title;
+
+  const _SyncProgressDialog({
+    required this.channelId,
+    required this.turnIndices,
+    required this.title,
+  });
+
+  @override
+  State<_SyncProgressDialog> createState() => _SyncProgressDialogState();
+}
+
+class _SyncProgressDialogState extends State<_SyncProgressDialog> {
+  Timer? _timer;
+  Map<String, dynamic>? _progress;
+  bool _done = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start sync request + progress polling
+    _startSync();
+    _timer = Timer.periodic(
+        const Duration(seconds: 2), (_) => _pollProgress());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startSync() async {
+    try {
+      final service = SyncService();
+      await service.syncChannel(widget.channelId,
+          turnIndices: widget.turnIndices);
+      if (mounted) {
+        setState(() => _done = true);
+        // Auto-close after brief delay so user sees "done"
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) Navigator.of(context).pop(true);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() { _done = true; _error = e.toString(); });
+        // Don't auto-close on error — let user read
+      }
+    }
+  }
+
+  Future<void> _pollProgress() async {
+    if (_done) return;
+    try {
+      final resp = await http
+          .get(Uri.parse('http://127.0.0.1:8473/progress'))
+          .timeout(const Duration(seconds: 3));
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        setState(() =>
+            _progress = jsonDecode(resp.body) as Map<String, dynamic>);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          if (!_done)
+            const SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2.5))
+          else if (_error != null)
+            const Icon(Icons.error, color: Colors.red, size: 20)
+          else
+            const Icon(Icons.check_circle, color: Colors.green, size: 20),
+          const SizedBox(width: 12),
+          Expanded(child: Text(widget.title,
+              style: theme.textTheme.titleSmall)),
+        ],
+      ),
+      content: SizedBox(
+        width: 400,
+        child: _done
+            ? _buildDoneContent(theme)
+            : _buildProgressContent(theme),
+      ),
+      actions: _done && _error != null
+          ? [
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(_error),
+                child: const Text('Fermer'),
+              ),
+            ]
+          : null,
+    );
+  }
+
+  Widget _buildDoneContent(ThemeData theme) {
+    if (_error != null) {
+      return Text('Erreur: $_error',
+          style: TextStyle(color: theme.colorScheme.error));
+    }
+    return const Text('Import termine !');
+  }
+
+  Widget _buildProgressContent(ThemeData theme) {
+    final phases = (_progress?['phases'] as List?) ?? [];
+    if (phases.isEmpty) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Demarrage du pipeline...'),
+          const SizedBox(height: 16),
+          const LinearProgressIndicator(),
+        ],
+      );
+    }
+
+    if (phases[0] is! Map<String, dynamic>) {
+      return const LinearProgressIndicator();
+    }
+
+    final p = phases[0] as Map<String, dynamic>;
+    final currentTurn = p['current_unit'] as int? ?? 0;
+    final totalTurns = p['total_units'] as int? ?? 1;
+    final stageName = p['stage_name'] as String? ?? '';
+    final callsDone = p['llm_calls_done'] as int? ?? 0;
+    final callsTotal = p['llm_calls_total'] as int? ?? 1;
+    final turnNumber = p['turn_number'] as int?;
+
+    final stageLabel = switch (stageName) {
+      'extraction' => 'Extraction entites',
+      'validation' => 'Validation entites',
+      'summarization' => 'Resume',
+      'subjects' => 'Sujets',
+      'profiling' => 'Profiling',
+      'pj_extraction' => 'Extraction PJ',
+      _ => stageName.isNotEmpty ? stageName : 'En cours...',
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Macro: Turn X/Y
+        Row(
+          children: [
+            const Icon(Icons.autorenew, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              turnNumber != null
+                  ? 'Tour $turnNumber ($currentTurn/$totalTurns)'
+                  : 'Tour $currentTurn/$totalTurns',
+              style: theme.textTheme.labelMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(stageLabel,
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.colorScheme.primary)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Macro progress bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: totalTurns > 0 ? currentTurn / totalTurns : null,
+            minHeight: 8,
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Micro: LLM calls
+        Row(
+          children: [
+            Text('Calls LLM: $callsDone / $callsTotal',
+                style: theme.textTheme.bodySmall),
+            const Spacer(),
+            if (callsTotal > 0)
+              Text('${(callsDone / callsTotal * 100).toStringAsFixed(0)}%',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w600)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: callsTotal > 0 ? callsDone / callsTotal : null,
+            minHeight: 6,
+            color: Colors.amber,
+          ),
+        ),
+      ],
     );
   }
 }

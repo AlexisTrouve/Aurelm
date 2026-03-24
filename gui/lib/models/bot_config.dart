@@ -30,6 +30,7 @@ class BotConfig {
   final String? proxy;
   final String? wikiDir;
   final List<String> gmAuthors;
+  final List<String> gmDiscordIds; // Discord user IDs of GM accounts (immutable)
   final String llmProvider; // 'ollama' | 'claude_proxy' | 'openrouter'
   final String ollamaModel; // actually the selected model name regardless of provider
   final String? anthropicBaseUrl;
@@ -42,6 +43,7 @@ class BotConfig {
     this.proxy,
     this.wikiDir,
     this.gmAuthors = const ['Arthur Ignatus'],
+    this.gmDiscordIds = const [],
     this.llmProvider = 'ollama',
     this.ollamaModel = 'qwen3:14b',
     this.anthropicBaseUrl,
@@ -58,6 +60,8 @@ class BotConfig {
       wikiDir: json['wiki_dir'] as String?,
       gmAuthors:
           List<String>.from(json['gm_authors'] as List? ?? ['Arthur Ignatus']),
+      gmDiscordIds:
+          List<String>.from(json['gm_discord_ids'] as List? ?? []),
       llmProvider: json['llm_provider'] as String? ?? 'ollama',
       ollamaModel: json['ollama_model'] as String? ?? 'qwen3:14b',
       anthropicBaseUrl: json['anthropic_base_url'] as String?,
@@ -80,6 +84,7 @@ class BotConfig {
       if (proxy != null) 'proxy': proxy,
       if (wikiDir != null) 'wiki_dir': wikiDir,
       'gm_authors': gmAuthors,
+      if (gmDiscordIds.isNotEmpty) 'gm_discord_ids': gmDiscordIds,
       'llm_provider': llmProvider,
       'ollama_model': ollamaModel,
       if (anthropicBaseUrl != null) 'anthropic_base_url': anthropicBaseUrl,
@@ -93,6 +98,7 @@ class BotConfig {
     int? botPort,
     String? Function()? proxy,
     List<String>? gmAuthors,
+    List<String>? gmDiscordIds,
     String? llmProvider,
     String? ollamaModel,
     String? Function()? anthropicBaseUrl,
@@ -105,6 +111,7 @@ class BotConfig {
       proxy: proxy != null ? proxy() : this.proxy,
       wikiDir: wikiDir,
       gmAuthors: gmAuthors ?? this.gmAuthors,
+      gmDiscordIds: gmDiscordIds ?? this.gmDiscordIds,
       llmProvider: llmProvider ?? this.llmProvider,
       ollamaModel: ollamaModel ?? this.ollamaModel,
       anthropicBaseUrl:

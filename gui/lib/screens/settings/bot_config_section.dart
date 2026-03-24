@@ -55,6 +55,11 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
     super.dispose();
   }
 
+  // GM Discord IDs — mutable list synced from config
+  List<String> _gmDiscordIds = [];
+  // GM author display names (for pipeline fallback)
+  List<String> _gmAuthors = [];
+
   void _syncFromConfig(BotConfig cfg) {
     if (_initialized) return;
     _initialized = true;
@@ -63,6 +68,8 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
     _llmProvider = cfg.llmProvider;
     _selectedModel = cfg.ollamaModel;
     _botPortCtrl.text = cfg.botPort.toString();
+    _gmDiscordIds = List.of(cfg.gmDiscordIds);
+    _gmAuthors = List.of(cfg.gmAuthors);
   }
 
   BotConfig _buildConfig(BotConfig base) {
@@ -72,6 +79,8 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
       anthropicApiKey: _anthropicKeyCtrl.text.trim(),
       llmProvider: _llmProvider,
       ollamaModel: _selectedModel,
+      gmDiscordIds: _gmDiscordIds,
+      gmAuthors: _gmAuthors,
     );
   }
 
@@ -360,10 +369,134 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
                 style: Theme.of(context).textTheme.labelMedium),
             const SizedBox(height: 8),
             _buildLlmSelector(context),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            _buildGmAuthorsSection(context),
           ],
         ),
       ),
     );
+  }
+
+  /// Section for managing GM Discord IDs — chips with delete + add button.
+  Widget _buildGmAuthorsSection(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Comptes MJ (Discord)', style: theme.textTheme.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          'IDs Discord des comptes du Maitre du Jeu. '
+          'Utilises pour distinguer les tours MJ des tours joueur.',
+          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+        ),
+        const SizedBox(height: 8),
+        // Existing IDs as deletable chips
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            for (int i = 0; i < _gmDiscordIds.length; i++)
+              InputChip(
+                label: Text(_gmDiscordIds[i],
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                deleteIcon: const Icon(Icons.close, size: 14),
+                onDeleted: () => setState(() => _gmDiscordIds.removeAt(i)),
+                avatar: const Icon(Icons.shield, size: 14),
+              ),
+            // Add button
+            ActionChip(
+              label: const Text('Ajouter un ID'),
+              avatar: const Icon(Icons.add, size: 14),
+              onPressed: () => _showAddGmIdDialog(context),
+            ),
+          ],
+        ),
+        if (_gmAuthors.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('Noms MJ (fallback)', style: theme.textTheme.labelSmall),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (int i = 0; i < _gmAuthors.length; i++)
+                InputChip(
+                  label: Text(_gmAuthors[i],
+                      style: const TextStyle(fontSize: 12)),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  onDeleted: () => setState(() => _gmAuthors.removeAt(i)),
+                ),
+              ActionChip(
+                label: const Text('Ajouter un nom'),
+                avatar: const Icon(Icons.add, size: 14),
+                onPressed: () => _showAddGmNameDialog(context),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showAddGmIdDialog(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajouter un ID Discord MJ'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Discord User ID',
+            hintText: 'Ex: 1234567890123456789',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Ajouter')),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty && !_gmDiscordIds.contains(result)) {
+      setState(() => _gmDiscordIds.add(result));
+    }
+  }
+
+  Future<void> _showAddGmNameDialog(BuildContext context) async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajouter un nom MJ'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Nom Discord du MJ',
+            hintText: 'Ex: Arthur Ignatus',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('Ajouter')),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty && !_gmAuthors.contains(result)) {
+      setState(() => _gmAuthors.add(result));
+    }
   }
 }
 

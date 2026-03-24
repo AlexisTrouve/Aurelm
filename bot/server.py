@@ -44,6 +44,8 @@ class BotServer:
         self._app.router.add_get("/chat/sessions/{session_id}/context_size", self._get_context_size)
         # Hot-reload DB path at runtime (Fix 3)
         self._app.router.add_post("/bot/reload-db", self._reload_db)
+        # Reload config from disk (e.g. after Flutter saves gm_discord_ids)
+        self._app.router.add_post("/reload-config", self._reload_config)
         # Notes CRUD
         self._app.router.add_get("/notes", self._list_notes)
         self._app.router.add_post("/notes", self._create_note)
@@ -165,22 +167,30 @@ class BotServer:
             messages.append({
                 "id": str(msg.id),
                 "author": msg.author.display_name,
+                "author_id": str(msg.author.id),
                 "content": msg.content[:200] if msg.content else "",
                 "timestamp": msg.created_at.isoformat(),
             })
 
         # Turn detection: group consecutive messages by author type (GM vs player)
-        # Use prefix match (case-insensitive) to stay consistent with pipeline's
-        # _find_gm_author_id which uses name.startswith(gm.lower())
+        # Check by Discord user ID first (immutable), then fallback to name prefix
+        gm_ids = set(self.config.gm_discord_ids)
         gm_names_lower = [g.lower() for g in self.config.gm_authors]
-        def _is_gm_author(name: str) -> bool:
+        def _is_gm(author_id: str, name: str) -> bool:
+            if author_id in gm_ids:
+                return True
             nl = name.lower()
             return any(nl.startswith(g) for g in gm_names_lower)
+
+        # Debug: log unique authors and their GM status
+        unique_authors = {(m["author_id"], m["author"]) for m in messages}
+        for aid, aname in sorted(unique_authors):
+            log.info("Author: %r (id=%s) -> is_gm=%s", aname, aid, _is_gm(aid, aname))
 
         turns = []
         last_is_gm = None
         for m in messages:
-            is_gm = _is_gm_author(m["author"])
+            is_gm = _is_gm(m["author_id"], m["author"])
             if is_gm != last_is_gm:
                 turns.append({"is_gm": is_gm, "messages": [m]})
                 last_is_gm = is_gm
@@ -202,12 +212,26 @@ class BotServer:
                 "preview": content_preview,
             })
 
+        # Include unique authors with IDs so Flutter can offer "set as GM" action
+        unique_authors = []
+        seen = set()
+        for m in messages:
+            key = m["author_id"]
+            if key not in seen:
+                seen.add(key)
+                unique_authors.append({
+                    "id": m["author_id"],
+                    "name": m["author"],
+                    "is_gm": _is_gm(m["author_id"], m["author"]),
+                })
+
         return web.json_response({
             "channel_id": channel_id,
             "new_messages": len(messages),
             "gm_turns": len(gm_turns),
             "player_turns": len(player_turns),
             "turns": turn_preview,
+            "authors": unique_authors,
         })
 
     async def _channel_sync(self, request: web.Request) -> web.Response:
@@ -306,12 +330,14 @@ class BotServer:
                 all_msgs.append(msg)
 
             # Group into turns (same logic as _channel_pending)
+            gm_ids = set(self.config.gm_discord_ids)
             gm_names_lower = [g.lower() for g in self.config.gm_authors]
             turns: list[list] = []
             last_is_gm = None
             for msg in all_msgs:
+                aid = str(msg.author.id)
                 nl = msg.author.display_name.lower()
-                is_gm = any(nl.startswith(g) for g in gm_names_lower)
+                is_gm = aid in gm_ids or any(nl.startswith(g) for g in gm_names_lower)
                 if is_gm != last_is_gm:
                     turns.append([msg])
                     last_is_gm = is_gm
@@ -850,13 +876,40 @@ class BotServer:
             )
 
         old_path = self.config.db_path
-        # Swap the active DB path — agent tool calls read config.db_path at query time
-        self.config.db_path = db_path
+        # Reload full config from aurelm_config.json next to new DB
+        # (gm_authors, channels, llm settings may differ per DB)
+        from .config import load_config
+        new_config = load_config(db_path, port_override=self.config.bot_port)
+        # Preserve secrets that came from env vars (not in per-DB config)
+        if not new_config.discord_token and self.config.discord_token:
+            new_config.discord_token = self.config.discord_token
+        if not new_config.anthropic_api_key and self.config.anthropic_api_key:
+            new_config.anthropic_api_key = self.config.anthropic_api_key
+        self.config = new_config
         # Reinitialise SessionManager so it points to the new DB file
         self._session_manager = SessionManager(db_path)
 
         log.info("Hot-reloaded database: %s -> %s", old_path, db_path)
         return web.json_response({"ok": True, "db_path": db_path})
+
+    async def _reload_config(self, request: web.Request) -> web.Response:
+        """POST /reload-config — Reload aurelm_config.json from disk.
+
+        Used after Flutter saves new gm_discord_ids or other config changes
+        so the bot picks them up without a restart.
+        """
+        from .config import load_config
+        new_config = load_config(self.config.db_path,
+                                 port_override=self.config.bot_port)
+        # Preserve secrets from env vars
+        if not new_config.discord_token and self.config.discord_token:
+            new_config.discord_token = self.config.discord_token
+        if not new_config.anthropic_api_key and self.config.anthropic_api_key:
+            new_config.anthropic_api_key = self.config.anthropic_api_key
+        self.config = new_config
+        log.info("Reloaded config: gm_authors=%s, gm_discord_ids=%s",
+                 new_config.gm_authors, new_config.gm_discord_ids)
+        return web.json_response({"ok": True})
 
     # ---------------------------------------------------------------------- #
     # Session compression

@@ -25,6 +25,8 @@ class BotConfig:
     proxy: str | None = None
     wiki_dir: str | None = None
     gm_authors: list[str] = field(default_factory=lambda: ["Arthur Ignatus"])
+    # Discord user IDs of GM accounts (immutable, preferred over display names)
+    gm_discord_ids: list[str] = field(default_factory=list)
     channels: list[ChannelConfig] = field(default_factory=list)
     llm_provider: str = "ollama"  # 'ollama' | 'openrouter'
     ollama_model: str = "qwen3:14b"
@@ -63,6 +65,7 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
         cfg.ollama_model = data.get("ollama_model", cfg.ollama_model)
         cfg.extraction_version = data.get("extraction_version", cfg.extraction_version)
         cfg.anthropic_base_url = data.get("anthropic_base_url")
+        cfg.gm_discord_ids = data.get("gm_discord_ids", cfg.gm_discord_ids)
 
         for ch_id, ch_data in data.get("channels", {}).items():
             cfg.channels.append(ChannelConfig(
