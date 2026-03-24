@@ -293,7 +293,15 @@ class BotServer:
                 except ImportError:
                     return {"error": "pipeline not available"}
 
-            pipeline_result = await asyncio.to_thread(_pipeline)
+            try:
+                pipeline_result = await asyncio.to_thread(_pipeline)
+            except Exception as exc:
+                log.exception("Pipeline failed")
+                return web.json_response({"error": str(exc)}, status=500)
+            finally:
+                # Always reset sync flag, even if pipeline crashes or client disconnects
+                self._sync_running = False
+
             self._last_sync = time.time()
             result = {
                 "messages_fetched": count,
@@ -301,8 +309,10 @@ class BotServer:
             }
             self._last_sync_result = result
             return web.json_response(result)
-        finally:
+        except Exception as exc:
             self._sync_running = False
+            log.exception("Sync handler failed")
+            return web.json_response({"error": str(exc)}, status=500)
 
     async def _selective_fetch(self, channel, channel_id: str,
                                 selected_indices: set[int]) -> int:
