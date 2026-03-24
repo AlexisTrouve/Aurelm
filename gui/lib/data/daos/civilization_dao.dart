@@ -114,9 +114,24 @@ class CivilizationDao extends DatabaseAccessor<AurelmDatabase>
     );
   }
 
-  /// Delete a civilization and all its data (CASCADE).
-  Future<void> deleteCiv(int civId) {
-    return (delete(civCivilizations)..where((t) => t.id.equals(civId))).go();
+  /// Delete a civilization and all its data (CASCADE + raw messages cleanup).
+  Future<void> deleteCiv(int civId) async {
+    // Get the channel ID before deleting — needed to clean up raw messages
+    final civ = await (select(civCivilizations)
+          ..where((t) => t.id.equals(civId)))
+        .getSingleOrNull();
+    final channelId = civ?.discordChannelId;
+
+    // CASCADE delete (turns, entities, segments, mentions, etc.)
+    await (delete(civCivilizations)..where((t) => t.id.equals(civId))).go();
+
+    // Clean up raw messages for this channel (no FK, linked by channel ID)
+    if (channelId != null && channelId.isNotEmpty) {
+      await customStatement(
+        'DELETE FROM turn_raw_messages WHERE discord_channel_id = ?',
+        [channelId],
+      );
+    }
   }
 
   Stream<CivWithStats?> watchCivWithStats(int civId) {
