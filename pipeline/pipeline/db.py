@@ -183,34 +183,31 @@ def update_progress(
     llm_calls_done: int | None = None,
     llm_calls_total: int | None = None,
     turn_number: int | None = None,
+    civ_index: int | None = None,
+    civ_total: int | None = None,
 ) -> None:
-    """Update pipeline progress for Flutter UI polling.
-
-    Args:
-        conn: Database connection
-        run_id: Pipeline run ID
-        phase: Phase name ('pipeline', 'profiler', 'wiki')
-        civ_id: Civilization ID (None for wiki phase)
-        civ_name: Civilization name (None for wiki phase)
-        current: Current unit number
-        total: Total units to process
-        unit_type: Unit type ('turn', 'entity', 'page')
-        status: Status ('running', 'completed', 'failed')
-        stage_name: Current sub-stage ('extraction', 'summarization', 'subjects', etc.)
-        llm_calls_done: LLM calls completed so far in this turn
-        llm_calls_total: Estimated total LLM calls for this turn
-        turn_number: Game turn number being processed
-    """
+    """Update pipeline progress for Flutter UI polling."""
     from datetime import datetime
+
+    # Ensure civ_index/civ_total columns exist (added post-migration 037)
+    try:
+        conn.execute("SELECT civ_index FROM pipeline_progress LIMIT 0")
+    except Exception:
+        try:
+            conn.execute("ALTER TABLE pipeline_progress ADD COLUMN civ_index INTEGER")
+            conn.execute("ALTER TABLE pipeline_progress ADD COLUMN civ_total INTEGER")
+        except Exception:
+            pass  # already exists
 
     conn.execute(
         """INSERT OR REPLACE INTO pipeline_progress
            (pipeline_run_id, phase, civ_id, civ_name, total_units, current_unit,
             unit_type, status, stage_name, llm_calls_done, llm_calls_total,
-            turn_number, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            turn_number, civ_index, civ_total, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (run_id, phase, civ_id, civ_name, total, current, unit_type, status,
          stage_name, llm_calls_done, llm_calls_total, turn_number,
+         civ_index, civ_total,
          datetime.now().isoformat()),
     )
 

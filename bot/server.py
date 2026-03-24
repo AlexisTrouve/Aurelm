@@ -1056,7 +1056,8 @@ class BotServer:
             # Get progress entries for this run
             progress_rows = conn.execute(
                 """SELECT phase, civ_id, civ_name, total_units, current_unit, unit_type, status,
-                          stage_name, llm_calls_done, llm_calls_total, turn_number, updated_at
+                          stage_name, llm_calls_done, llm_calls_total, turn_number, updated_at,
+                          civ_index, civ_total
                    FROM pipeline_progress
                    WHERE pipeline_run_id = ?
                    ORDER BY updated_at DESC""",
@@ -1078,6 +1079,8 @@ class BotServer:
                     "llm_calls_total": row["llm_calls_total"],
                     "turn_number": row["turn_number"],
                     "updated_at": row["updated_at"],
+                    "civ_index": row["civ_index"] if "civ_index" in row.keys() else None,
+                    "civ_total": row["civ_total"] if "civ_total" in row.keys() else None,
                 })
 
             return {

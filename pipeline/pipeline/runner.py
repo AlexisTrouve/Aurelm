@@ -63,6 +63,9 @@ def run_pipeline(
     messages: list | None = None,
     civ_id: int | None = None,
     channel_id: str | None = None,
+    # Multi-civ tracking: which civ in the batch (1-indexed)
+    civ_index: int = 1,
+    civ_total: int = 1,
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
 
@@ -236,6 +239,7 @@ def run_pipeline(
                     llm_calls_done=_llm_calls_done,
                     llm_calls_total=estimated_total,
                     turn_number=turn_number,
+                    civ_index=civ_index, civ_total=civ_total,
                 )
 
         for i, chunk in enumerate(chunks):
@@ -456,7 +460,8 @@ def run_pipeline(
         if track_progress and total_turns > 0:
             update_progress(
                 conn, run_id, "pipeline", civ_id, civ_name,
-                total_turns, total_turns, "turn", "completed"
+                total_turns, total_turns, "turn", "completed",
+                civ_index=civ_index, civ_total=civ_total,
             )
 
         # Insert PJ (player) segments + collect PJ text stats for logging
@@ -501,7 +506,8 @@ def run_pipeline(
     if track_progress:
         conn2 = get_connection(db_path)
         update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                        0, 1, "stage", "running", stage_name="preanalysis")
+                        0, 1, "stage", "running", stage_name="preanalysis",
+                        civ_index=civ_index, civ_total=civ_total)
         conn2.commit(); conn2.close()
     print("[6.5/10] Turn preanalysis (novelty + player strategy)...")
     from .turn_preanalysis import run_preanalysis
@@ -523,7 +529,8 @@ def run_pipeline(
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="subjects")
+                            0, 1, "stage", "running", stage_name="subjects",
+                            civ_index=civ_index, civ_total=civ_total)
             conn2.commit(); conn2.close()
         print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
         _run_subject_extraction(
@@ -536,7 +543,8 @@ def run_pipeline(
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="profiling")
+                            0, 1, "stage", "running", stage_name="profiling",
+                            civ_index=civ_index, civ_total=civ_total)
             conn2.commit(); conn2.close()
         print("[8/10] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
@@ -554,7 +562,8 @@ def run_pipeline(
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="civ_relations")
+                            0, 1, "stage", "running", stage_name="civ_relations",
+                            civ_index=civ_index, civ_total=civ_total)
             conn2.commit(); conn2.close()
         print("[8.5/10] Profiling inter-civ relations...")
         from .civ_relation_profiler import build_civ_relations
@@ -585,7 +594,8 @@ def run_pipeline(
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="aliases")
+                            0, 1, "stage", "running", stage_name="aliases",
+                            civ_index=civ_index, civ_total=civ_total)
             conn2.commit(); conn2.close()
         print("[9/10] Resolving entity aliases...")
         alias_stats = resolve_aliases(
@@ -1749,8 +1759,9 @@ def run_pipeline_for_channels(
         "per_civ": {},
     }
 
-    for civ_id, civ_name, player_name, channel_id in civs:
-        print(f"\n--- Processing {civ_name} (channel {channel_id}) ---")
+    total_civs = len(civs)
+    for ci, (civ_id, civ_name, player_name, channel_id) in enumerate(civs):
+        print(f"\n--- Processing {civ_name} [{ci+1}/{total_civs}] (channel {channel_id}) ---")
 
         messages = fetch_unprocessed_messages(db_path, channel_id)
         if not messages:
@@ -1774,6 +1785,8 @@ def run_pipeline_for_channels(
             messages=messages,
             civ_id=civ_id,
             channel_id=channel_id,
+            civ_index=ci + 1,
+            civ_total=total_civs,
         )
 
         aggregated["civs_processed"] += 1

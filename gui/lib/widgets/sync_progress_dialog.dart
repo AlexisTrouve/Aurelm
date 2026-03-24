@@ -170,6 +170,8 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
     final callsTotal = p['llm_calls_total'] as int? ?? 1;
     final turnNumber = p['turn_number'] as int?;
     final civName = p['civ_name'] as String?;
+    final civIndex = p['civ_index'] as int?;
+    final civTotal = p['civ_total'] as int?;
 
     // Human-readable stage label
     final stageLabel = switch (stageName) {
@@ -203,8 +205,32 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Civ name (useful for global sync with multiple civs)
-        if (civName != null && civName.isNotEmpty) ...[
+        // Civ progress bar (1/4) — useful for multi-civ global sync
+        if (civTotal != null && civTotal > 0) ...[
+          Row(
+            children: [
+              const Icon(Icons.public, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                civName != null && civName.isNotEmpty
+                    ? '$civName (${civIndex ?? 1}/$civTotal)'
+                    : 'Civilisation ${civIndex ?? 1}/$civTotal',
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: civTotal > 0 ? (civIndex ?? 1) / civTotal : null,
+              minHeight: 6,
+              color: Colors.teal,
+            ),
+          ),
+          const SizedBox(height: 12),
+        ] else if (civName != null && civName.isNotEmpty) ...[
           Text(civName,
               style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary)),
