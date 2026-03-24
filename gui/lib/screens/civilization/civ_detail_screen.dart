@@ -700,8 +700,12 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
             .showSnackBar(SnackBar(content: Text('Erreur: $result')));
       }
 
-      // Always refresh civ data + re-check pending after sync (success or failure)
+      // Always refresh civ data + re-check pending after sync (success or failure).
+      // Invalidate all civ-related providers — Drift streams don't detect external
+      // writes (Python pipeline writes via a separate SQLite connection).
       ref.invalidate(civDetailProvider(widget.civ.id));
+      ref.invalidate(civListProvider);
+      ref.invalidate(civBriefProvider(widget.civ.id));
       _checkPending();
     });
   }
