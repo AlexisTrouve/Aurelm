@@ -940,9 +940,13 @@ class _SyncProgressDialogState extends State<_SyncProgressDialog> {
   bool _done = false;
   String? _error;
 
+  // ETA tracking: measure elapsed time vs calls done to estimate remaining
+  DateTime? _startTime;
+
   @override
   void initState() {
     super.initState();
+    _startTime = DateTime.now();
     // Start sync request + progress polling
     _startSync();
     _timer = Timer.periodic(
@@ -1172,6 +1176,50 @@ class _SyncProgressDialogState extends State<_SyncProgressDialog> {
             color: Colors.amber,
           ),
         ),
+        // ETA estimate based on elapsed time and calls done
+        if (callsDone > 2 && _startTime != null) ...[
+          const SizedBox(height: 8),
+          _buildEta(callsDone, callsTotal, stepIdx, pipelineSteps.length, theme),
+        ],
+      ],
+    );
+  }
+
+  /// Estimate remaining time from elapsed time and progress ratio.
+  Widget _buildEta(int callsDone, int callsTotal,
+      int stepIdx, int totalSteps, ThemeData theme) {
+    final elapsed = DateTime.now().difference(_startTime!);
+    if (elapsed.inSeconds < 5) return const SizedBox.shrink();
+
+    // Combine LLM call progress with stage progress for a blended estimate.
+    // LLM calls track the extraction phase well, stage index tracks post-turn phases.
+    final callRatio = callsTotal > 0 ? callsDone / callsTotal : 0.0;
+    final stageRatio = totalSteps > 0 ? (stepIdx + callRatio) / totalSteps : 0.0;
+    // Use the more optimistic of the two (avoids stuck-looking estimates)
+    final progress = stageRatio.clamp(0.01, 0.99);
+
+    final estimatedTotal = elapsed.inSeconds / progress;
+    final remaining = (estimatedTotal - elapsed.inSeconds).round();
+
+    if (remaining <= 0) return const SizedBox.shrink();
+
+    final etaStr = remaining >= 60
+        ? '~${remaining ~/ 60}m ${remaining % 60}s restant'
+        : '~${remaining}s restant';
+
+    return Row(
+      children: [
+        Icon(Icons.timer_outlined, size: 14,
+            color: theme.colorScheme.onSurface.withAlpha(120)),
+        const SizedBox(width: 4),
+        Text(etaStr,
+            style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withAlpha(120),
+                fontStyle: FontStyle.italic)),
+        const Spacer(),
+        Text('${elapsed.inSeconds}s ecoules',
+            style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withAlpha(80))),
       ],
     );
   }
