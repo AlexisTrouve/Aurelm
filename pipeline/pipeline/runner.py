@@ -487,7 +487,8 @@ def run_pipeline(
             _print_extraction_summary(_mj_turn_logs, pj_turn_logs)
 
         conn.commit()
-        _complete_pipeline_run(conn, run_id, stats)
+        # Don't complete the run yet — post-turn stages still need to run
+        # (preanalysis, subjects, profiling, aliases)
 
     except Exception as e:
         conn.rollback()
@@ -705,6 +706,13 @@ def run_pipeline(
             conn2.commit()
         finally:
             conn2.close()
+
+    # Mark pipeline run as completed (after ALL stages, not just turn processing)
+    conn_final = get_connection(db_path)
+    try:
+        _complete_pipeline_run(conn_final, run_id, stats)
+    finally:
+        conn_final.close()
 
     # Final summary
     print("[DONE] Pipeline complete!")
