@@ -235,10 +235,11 @@ class BotServer:
         })
 
     async def _channel_sync(self, request: web.Request) -> web.Response:
-        """Fetch + pipeline for a single channel.
+        """Fetch + pipeline for a single channel — returns 202 immediately, runs in background.
         Query params:
           turns=0,1,2  — only import specific turn indices (from /pending)
           If omitted, imports all.
+        Flutter polls /progress to track completion.
         """
         if self._sync_running:
             return web.json_response({"error": "Sync already running"}, status=409)
@@ -253,66 +254,66 @@ class BotServer:
         if channel is None:
             return web.json_response({"error": "Channel not found"}, status=404)
 
-        self._sync_running = True
-        try:
-            if turns_param is not None:
-                # Selective import: fetch messages, group into turns, store only requested
-                if not turns_param.strip():
-                    return web.json_response(
-                        {"error": "turns parameter cannot be empty"}, status=400)
-                try:
-                    selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
-                except ValueError:
-                    return web.json_response(
-                        {"error": "Invalid turn indices"}, status=400)
-                count = await self._selective_fetch(channel, channel_id, selected_indices)
-            else:
-                # Full import
-                from .fetcher import fetch_and_store
-                count = await fetch_and_store(channel, self.config.db_path)
-
-            # Run pipeline on whatever is now in DB
-            import sys
-            def _pipeline() -> dict:
-                try:
-                    sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
-                    from pipeline.pipeline.runner import run_pipeline_for_channels
-                    from pipeline.pipeline.llm_provider import create_provider
-                    llm_key = self.config.anthropic_api_key if self.config.llm_provider == "claude_proxy" else None
-                    provider = create_provider(self.config.llm_provider, api_key=llm_key)
-                    return run_pipeline_for_channels(
-                        db_path=self.config.db_path,
-                        use_llm=True,
-                        wiki_dir=self.config.wiki_dir,
-                        gm_authors=set(self.config.gm_authors),
-                        track_progress=True,
-                        model=self.config.ollama_model,
-                        provider=provider,
-                        extraction_version=self.config.extraction_version,
-                    )
-                except ImportError:
-                    return {"error": "pipeline not available"}
-
+        # Validate turn indices before launching background task
+        selected_indices: set[int] | None = None
+        if turns_param is not None:
+            if not turns_param.strip():
+                return web.json_response({"error": "turns parameter cannot be empty"}, status=400)
             try:
-                pipeline_result = await asyncio.to_thread(_pipeline)
+                selected_indices = set(int(x) for x in turns_param.split(",") if x.strip())
+            except ValueError:
+                return web.json_response({"error": "Invalid turn indices"}, status=400)
+
+        self._sync_running = True
+
+        async def _run_bg():
+            try:
+                if selected_indices is not None:
+                    count = await self._selective_fetch(channel, channel_id, selected_indices)
+                else:
+                    from .fetcher import fetch_and_store
+                    count = await fetch_and_store(channel, self.config.db_path)
+
+                import sys
+                def _pipeline() -> dict:
+                    try:
+                        sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
+                        from pipeline.pipeline.runner import run_pipeline_for_channels
+                        from pipeline.pipeline.llm_provider import create_provider
+                        llm_key = self.config.anthropic_api_key if self.config.llm_provider == "claude_proxy" else None
+                        provider = create_provider(self.config.llm_provider, api_key=llm_key)
+                        return run_pipeline_for_channels(
+                            db_path=self.config.db_path,
+                            use_llm=True,
+                            wiki_dir=self.config.wiki_dir,
+                            gm_authors=set(self.config.gm_authors),
+                            track_progress=True,
+                            model=self.config.ollama_model,
+                            provider=provider,
+                            extraction_version=self.config.extraction_version,
+                        )
+                    except ImportError:
+                        return {"error": "pipeline not available"}
+
+                try:
+                    pipeline_result = await asyncio.to_thread(_pipeline)
+                except Exception as exc:
+                    log.exception("Pipeline failed")
+                    self._last_sync_result = {"error": str(exc)}
+                    return
+
+                self._last_sync = time.time()
+                self._last_sync_result = {"messages_fetched": count, "pipeline": pipeline_result}
+                log.info("Channel sync completed: %d messages fetched", count)
             except Exception as exc:
-                log.exception("Pipeline failed")
-                return web.json_response({"error": str(exc)}, status=500)
+                log.exception("Background channel sync failed")
+                self._last_sync_result = {"error": str(exc)}
             finally:
-                # Always reset sync flag, even if pipeline crashes or client disconnects
+                # Always reset sync flag — no matter what happens
                 self._sync_running = False
 
-            self._last_sync = time.time()
-            result = {
-                "messages_fetched": count,
-                "pipeline": pipeline_result,
-            }
-            self._last_sync_result = result
-            return web.json_response(result)
-        except Exception as exc:
-            self._sync_running = False
-            log.exception("Sync handler failed")
-            return web.json_response({"error": str(exc)}, status=500)
+        asyncio.ensure_future(_run_bg())
+        return web.json_response({"status": "started"}, status=202)
 
     async def _selective_fetch(self, channel, channel_id: str,
                                 selected_indices: set[int]) -> int:
@@ -385,33 +386,39 @@ class BotServer:
             conn.close()
 
     async def _progress(self, _request: web.Request) -> web.Response:
-        """Return current pipeline progress for UI polling."""
+        """Return current pipeline progress for UI polling.
+        Always includes sync_running so Flutter can detect completion.
+        """
         progress_info = self._get_current_progress()
+        progress_info["sync_running"] = self._sync_running
         return web.json_response(progress_info)
 
     async def _sync(self, _request: web.Request) -> web.Response:
+        """Global sync — returns 202 immediately, runs in background.
+        Flutter polls /progress to track completion.
+        """
         if self._sync_running:
-            return web.json_response(
-                {"error": "Sync already in progress"}, status=409
-            )
+            return web.json_response({"error": "Sync already in progress"}, status=409)
+
+        if not self.on_sync:
+            return web.json_response({"error": "No sync handler configured"}, status=503)
 
         self._sync_running = True
-        try:
-            if self.on_sync:
-                result = await self.on_sync()
-            else:
-                result = {"error": "No sync handler configured"}
 
-            self._last_sync = time.time()
-            self._last_sync_result = result
-            return web.json_response(result)
-        except Exception as exc:
-            log.exception("Sync failed")
-            err = {"error": str(exc)}
-            self._last_sync_result = err
-            return web.json_response(err, status=500)
-        finally:
-            self._sync_running = False
+        async def _run_bg():
+            try:
+                result = await self.on_sync()
+                self._last_sync = time.time()
+                self._last_sync_result = result
+                log.info("Global sync completed")
+            except Exception as exc:
+                log.exception("Global sync failed")
+                self._last_sync_result = {"error": str(exc)}
+            finally:
+                self._sync_running = False
+
+        asyncio.ensure_future(_run_bg())
+        return web.json_response({"status": "started"}, status=202)
 
     async def _chat(self, request: web.Request) -> web.StreamResponse:
         """POST /chat — NDJSON stream of agent events during a turn.

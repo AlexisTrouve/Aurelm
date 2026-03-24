@@ -36,14 +36,13 @@ class SyncService {
     throw Exception('Status request failed: ${response.statusCode}');
   }
 
-  Future<Map<String, dynamic>> triggerSync() async {
+  /// Trigger a global sync. Returns immediately (202) — caller polls /progress.
+  Future<void> triggerSync() async {
     final response = await http
         .post(Uri.parse('$_baseUrl${AppConstants.botSyncEndpoint}'))
-        .timeout(const Duration(minutes: 10));
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode == 202) return; // started in background
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 200) {
-      return data;
-    }
     throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
   }
 
@@ -62,17 +61,17 @@ class SyncService {
   }
 
   /// Sync a single channel: fetch Discord messages + run pipeline.
+  /// Returns immediately (202) — caller polls /progress for completion.
   /// If [turnIndices] is provided, only imports those specific turns.
-  Future<Map<String, dynamic>> syncChannel(String channelId,
-      {List<int>? turnIndices}) async {
+  Future<void> syncChannel(String channelId, {List<int>? turnIndices}) async {
     final query = turnIndices != null
         ? '?turns=${turnIndices.join(",")}'
         : '';
     final response = await http
         .post(Uri.parse('$_baseUrl/discord/channels/$channelId/sync$query'))
-        .timeout(const Duration(minutes: 10));
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode == 202) return; // started in background
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    if (response.statusCode == 200) return data;
     throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
   }
 }

@@ -53,6 +53,8 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
   bool _done = false;
   String? _error;
   DateTime? _startTime;
+  // Track whether the server confirmed sync started (202 received)
+  bool _syncStarted = false;
 
   @override
   void initState() {
@@ -71,15 +73,11 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
 
   Future<void> _startSync() async {
     try {
+      // syncAction() returns quickly (202) — completion is detected via polling
       await widget.syncAction();
-      if (mounted) {
-        setState(() => _done = true);
-        // Auto-close after brief delay so user sees "done"
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted) Navigator.of(context).pop(true);
-        });
-      }
+      if (mounted) setState(() => _syncStarted = true);
     } catch (e) {
+      // Can't even start the sync (bot not running, network error, etc.)
       if (mounted) {
         setState(() { _done = true; _error = e.toString(); });
       }
@@ -94,8 +92,17 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
           .timeout(const Duration(seconds: 3));
       if (!mounted) return;
       if (resp.statusCode == 200) {
-        setState(() =>
-            _progress = jsonDecode(resp.body) as Map<String, dynamic>);
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final syncRunning = data['sync_running'] as bool? ?? true;
+        setState(() => _progress = data);
+        // Completed when we know sync started AND server reports it's no longer running
+        if (_syncStarted && !syncRunning && !_done) {
+          setState(() => _done = true);
+          // Auto-close after brief delay so user sees "done"
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) Navigator.of(context).pop(true);
+          });
+        }
       }
     } catch (_) {}
   }

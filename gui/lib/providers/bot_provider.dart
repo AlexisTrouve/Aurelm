@@ -88,8 +88,8 @@ class SyncStateNotifier extends StateNotifier<SyncState> {
     if (state.status == SyncStatus.syncing) return;
     state = state.copyWith(status: SyncStatus.syncing, error: null);
     try {
-      final result = await _syncService.triggerSync();
-      state = state.copyWith(status: SyncStatus.success, result: result);
+      await _syncService.triggerSync(); // returns 202 immediately
+      state = state.copyWith(status: SyncStatus.success, result: {});
     } catch (e) {
       state = state.copyWith(status: SyncStatus.error, error: e.toString());
     }
