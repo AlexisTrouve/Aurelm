@@ -695,12 +695,14 @@ class _CivSyncSectionState extends ConsumerState<_CivSyncSection> {
       if (result == true) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('$label - termine')));
-        ref.invalidate(civDetailProvider(widget.civ.id));
-        _checkPending();
       } else if (result is String) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Erreur: $result')));
       }
+
+      // Always refresh civ data + re-check pending after sync (success or failure)
+      ref.invalidate(civDetailProvider(widget.civ.id));
+      _checkPending();
     });
   }
 
