@@ -172,6 +172,7 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
     final civName = p['civ_name'] as String?;
     final civIndex = p['civ_index'] as int?;
     final civTotal = p['civ_total'] as int?;
+    final llmModel = p['llm_model'] as String?;
 
     // Human-readable stage label
     final stageLabel = switch (stageName) {
@@ -274,15 +275,20 @@ class _SyncProgressDialogState extends State<SyncProgressDialog> {
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withAlpha(30),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(stageLabel,
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  llmModel != null ? '$stageLabel ($llmModel)' : stageLabel,
                   style: theme.textTheme.labelSmall
-                      ?.copyWith(color: theme.colorScheme.primary)),
+                      ?.copyWith(color: theme.colorScheme.primary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ),
           ],
         ),

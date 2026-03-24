@@ -1091,6 +1091,7 @@ class BotServer:
                     "updated_at": row["updated_at"],
                     "civ_index": row["civ_index"] if "civ_index" in row.keys() else None,
                     "civ_total": row["civ_total"] if "civ_total" in row.keys() else None,
+                    "llm_model": row["llm_model"] if "llm_model" in row.keys() else None,
                 })
 
             return {

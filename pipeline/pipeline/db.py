@@ -185,29 +185,31 @@ def update_progress(
     turn_number: int | None = None,
     civ_index: int | None = None,
     civ_total: int | None = None,
+    llm_model: str | None = None,
 ) -> None:
     """Update pipeline progress for Flutter UI polling."""
     from datetime import datetime
 
-    # Ensure civ_index/civ_total columns exist (added post-migration 037)
-    try:
-        conn.execute("SELECT civ_index FROM pipeline_progress LIMIT 0")
-    except Exception:
+    # Ensure extra columns exist (added post-migration 037)
+    for col in ("civ_index", "civ_total", "llm_model"):
         try:
-            conn.execute("ALTER TABLE pipeline_progress ADD COLUMN civ_index INTEGER")
-            conn.execute("ALTER TABLE pipeline_progress ADD COLUMN civ_total INTEGER")
+            conn.execute(f"SELECT {col} FROM pipeline_progress LIMIT 0")
         except Exception:
-            pass  # already exists
+            try:
+                col_type = "TEXT" if col == "llm_model" else "INTEGER"
+                conn.execute(f"ALTER TABLE pipeline_progress ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass
 
     conn.execute(
         """INSERT OR REPLACE INTO pipeline_progress
            (pipeline_run_id, phase, civ_id, civ_name, total_units, current_unit,
             unit_type, status, stage_name, llm_calls_done, llm_calls_total,
-            turn_number, civ_index, civ_total, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            turn_number, civ_index, civ_total, llm_model, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (run_id, phase, civ_id, civ_name, total, current, unit_type, status,
          stage_name, llm_calls_done, llm_calls_total, turn_number,
-         civ_index, civ_total,
+         civ_index, civ_total, llm_model,
          datetime.now().isoformat()),
     )
 

@@ -223,6 +223,16 @@ def run_pipeline(
         # Plus ~2 for PJ extraction per turn. Use 7 as a reasonable average.
         _estimated_calls_per_turn = 7
 
+        # Map stage names to their model for progress display
+        _stage_model_map = {
+            "extraction": extraction_model,
+            "focused_extraction": focus_model or extraction_model,
+            "entity_validation": validation_model or extraction_model,
+            "mark_entities": extraction_model,
+            "summarization": summarization_model,
+            "pj_extraction": extraction_model,
+        }
+
         def _on_llm_call(stage_name: str):
             nonlocal _llm_calls_done, _estimated_calls_per_turn
             _llm_calls_done += 1
@@ -232,6 +242,7 @@ def run_pipeline(
                 _estimated_calls_per_turn = (_llm_calls_done // total_turns) + 2
                 estimated_total = total_turns * _estimated_calls_per_turn
             if track_progress:
+                current_model = _stage_model_map.get(stage_name, model)
                 update_progress(
                     conn, run_id, "pipeline", civ_id, civ_name,
                     i + 1, total_turns, "turn", "running",
@@ -240,6 +251,7 @@ def run_pipeline(
                     llm_calls_total=estimated_total,
                     turn_number=turn_number,
                     civ_index=civ_index, civ_total=civ_total,
+                    llm_model=current_model,
                 )
 
         for i, chunk in enumerate(chunks):
@@ -507,7 +519,7 @@ def run_pipeline(
         conn2 = get_connection(db_path)
         update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
                         0, 1, "stage", "running", stage_name="preanalysis",
-                        civ_index=civ_index, civ_total=civ_total)
+                        civ_index=civ_index, civ_total=civ_total, llm_model=model)
         conn2.commit(); conn2.close()
     print("[6.5/10] Turn preanalysis (novelty + player strategy)...")
     from .turn_preanalysis import run_preanalysis
@@ -530,7 +542,7 @@ def run_pipeline(
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
                             0, 1, "stage", "running", stage_name="subjects",
-                            civ_index=civ_index, civ_total=civ_total)
+                            civ_index=civ_index, civ_total=civ_total, llm_model=subjects_model)
             conn2.commit(); conn2.close()
         print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
         _run_subject_extraction(
@@ -544,7 +556,7 @@ def run_pipeline(
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
                             0, 1, "stage", "running", stage_name="profiling",
-                            civ_index=civ_index, civ_total=civ_total)
+                            civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
             conn2.commit(); conn2.close()
         print("[8/10] Building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
@@ -563,7 +575,7 @@ def run_pipeline(
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
                             0, 1, "stage", "running", stage_name="civ_relations",
-                            civ_index=civ_index, civ_total=civ_total)
+                            civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
             conn2.commit(); conn2.close()
         print("[8.5/10] Profiling inter-civ relations...")
         from .civ_relation_profiler import build_civ_relations
@@ -595,7 +607,7 @@ def run_pipeline(
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
                             0, 1, "stage", "running", stage_name="aliases",
-                            civ_index=civ_index, civ_total=civ_total)
+                            civ_index=civ_index, civ_total=civ_total, llm_model=aliases_model)
             conn2.commit(); conn2.close()
         print("[9/10] Resolving entity aliases...")
         alias_stats = resolve_aliases(
