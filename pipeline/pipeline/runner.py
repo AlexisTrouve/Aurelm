@@ -167,7 +167,7 @@ def run_pipeline(
         conn,
         extraction_version=extraction_version,
         llm_model=model,
-        llm_provider=llm_provider,
+        llm_provider=llm_provider.name if hasattr(llm_provider, 'name') else str(llm_provider),
     )
 
     # Build entity lookup from DB before the loop — starts empty for a fresh run,
