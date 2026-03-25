@@ -278,19 +278,47 @@ class BotServer:
                 def _pipeline() -> dict:
                     try:
                         sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
-                        from pipeline.pipeline.runner import run_pipeline_for_channels
+                        from pipeline.pipeline.runner import run_pipeline
                         from pipeline.pipeline.llm_provider import create_provider
+                        from pipeline.pipeline.ingestion import fetch_unprocessed_messages
+                        from pipeline.pipeline.db import get_connection
+                        import pipeline.pipeline.runner as _runner
+                        if self.config.gm_authors:
+                            _runner.GM_AUTHORS = set(self.config.gm_authors)
+
+                        # Look up the civ associated with this channel — isolate to this civ only
+                        _conn = get_connection(self.config.db_path)
+                        row = _conn.execute(
+                            "SELECT id, name, player_name FROM civ_civilizations WHERE discord_channel_id = ?",
+                            (channel_id,)
+                        ).fetchone()
+                        _conn.close()
+                        if row is None:
+                            return {"error": f"No civ associated with channel {channel_id}"}
+
+                        civ_id, civ_name, player_name = row["id"], row["name"], row["player_name"]
+                        messages = fetch_unprocessed_messages(self.config.db_path, channel_id)
+                        if not messages:
+                            return {"turns_created": 0, "entities_extracted": 0, "skipped": "no_new_messages"}
+
                         llm_key = self.config.anthropic_api_key if self.config.llm_provider == "claude_proxy" else None
                         provider = create_provider(self.config.llm_provider, api_key=llm_key)
-                        return run_pipeline_for_channels(
+                        return run_pipeline(
                             db_path=self.config.db_path,
+                            civ_name=civ_name,
+                            player_name=player_name,
                             use_llm=True,
                             wiki_dir=self.config.wiki_dir,
-                            gm_authors=set(self.config.gm_authors),
                             track_progress=True,
                             model=self.config.ollama_model,
                             provider=provider,
                             extraction_version=self.config.extraction_version,
+                            # Bot mode — skip steps 1-4
+                            messages=messages,
+                            civ_id=civ_id,
+                            channel_id=channel_id,
+                            civ_index=1,
+                            civ_total=1,
                         )
                     except ImportError:
                         return {"error": "pipeline not available"}
@@ -1070,12 +1098,10 @@ class BotServer:
             run_id = run_row["id"]
             started_at = run_row["started_at"]
 
-            # Get progress entries for this run
+            # Get progress entries for this run — SELECT * to survive optional columns
+            # (civ_index, civ_total, llm_model added later via ALTER TABLE)
             progress_rows = conn.execute(
-                """SELECT phase, civ_id, civ_name, total_units, current_unit, unit_type, status,
-                          stage_name, llm_calls_done, llm_calls_total, turn_number, updated_at,
-                          civ_index, civ_total
-                   FROM pipeline_progress
+                """SELECT * FROM pipeline_progress
                    WHERE pipeline_run_id = ?
                    ORDER BY updated_at DESC""",
                 (run_id,),

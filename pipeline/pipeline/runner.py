@@ -514,6 +514,17 @@ def run_pipeline(
     finally:
         conn.close()
 
+    # Early exit: if no new turns were created, skip all post-extraction stages
+    # (preanalysis, subjects, profiling, aliases, wiki) — nothing new to process.
+    if stats["turns_created"] == 0:
+        print(f"  No new turns for {civ_name} — skipping post-extraction stages")
+        conn_final = get_connection(db_path)
+        try:
+            _complete_pipeline_run(conn_final, run_id, stats)
+        finally:
+            conn_final.close()
+        return stats
+
     # Step 6.5: Turn preanalysis (novelty detection + player strategy)
     if track_progress:
         conn2 = get_connection(db_path)
