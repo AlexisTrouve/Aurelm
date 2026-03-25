@@ -227,12 +227,13 @@ class EntityFilterBar extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                   data: (civList) => _CivChip(
-                    selectedCivId: filters.civId,
+                    // Global civ filter — shared across all list screens
+                    selectedCivId: ref.watch(selectedCivProvider),
                     civs: civList
                         .map((c) => (id: c.civ.id, name: c.civ.name))
                         .toList(),
                     onChanged: (id) =>
-                        ref.read(entityFilterProvider.notifier).setCivId(id),
+                        ref.read(selectedCivProvider.notifier).state = id,
                   ),
                 ),
               ],

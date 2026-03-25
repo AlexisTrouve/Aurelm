@@ -6,6 +6,7 @@ import '../data/database.dart';
 import '../data/daos/turn_dao.dart';
 import '../models/filter_state.dart';
 import '../models/turn_with_entities.dart';
+import 'civilization_provider.dart';
 import 'database_provider.dart';
 import 'favorites_provider.dart';
 
@@ -51,11 +52,13 @@ final timelineProvider = StreamProvider<List<TurnWithEntities>>((ref) {
   if (db == null) return const Stream.empty();
   final filters = ref.watch(timelineFilterProvider);
   final favorites = ref.watch(favoritesProvider);
+  // Global civ filter overrides per-screen filter
+  final globalCivId = ref.watch(selectedCivProvider);
 
   // Pass both filters — turnType was previously ignored in the DAO
   return db.turnDao
       .watchTimeline(
-        civId: filters.civId,
+        civId: globalCivId,
         turnType: filters.turnType,
         selectedTag: filters.selectedTag,
         fromTurn: filters.fromTurn,

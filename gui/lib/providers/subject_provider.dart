@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/filter_state.dart';
 import '../models/subject_with_details.dart';
+import 'civilization_provider.dart';
 import 'database_provider.dart';
 import 'favorites_provider.dart';
 
@@ -51,8 +52,11 @@ final subjectListProvider = StreamProvider<List<SubjectWithDetails>>((ref) {
   if (db == null) return const Stream.empty();
   final filters = ref.watch(subjectFilterProvider);
   final favorites = ref.watch(favoritesProvider);
+  // Global civ filter overrides per-screen filter
+  final globalCivId = ref.watch(selectedCivProvider);
+  final effectiveFilters = filters.copyWith(civId: () => globalCivId);
 
-  return db.subjectDao.watchSubjects(filters).map((list) {
+  return db.subjectDao.watchSubjects(effectiveFilters).map((list) {
     // Apply favorites filter in-stream — avoids a DB-level join
     if (!filters.favoritesOnly) return list;
     return list.where((s) => favorites.contains('subject_${s.subject.id}')).toList();

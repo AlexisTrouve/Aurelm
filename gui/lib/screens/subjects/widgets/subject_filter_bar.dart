@@ -137,7 +137,8 @@ class SubjectFilterBar extends ConsumerWidget {
                   Text('Civ:', style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(width: 8),
                   DropdownButton<int?>(
-                    value: filters.civId,
+                    // Global civ filter — shared across all list screens
+                    value: ref.watch(selectedCivProvider),
                     hint: const Text('Toutes'),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('Toutes')),
@@ -147,7 +148,7 @@ class SubjectFilterBar extends ConsumerWidget {
                           )),
                     ],
                     onChanged: (v) =>
-                        ref.read(subjectFilterProvider.notifier).setCivId(v),
+                        ref.read(selectedCivProvider.notifier).state = v,
                   ),
                 ],
               ),

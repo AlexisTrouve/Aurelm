@@ -84,7 +84,8 @@ class _TimelineFilterBarState extends ConsumerState<TimelineFilterBar> {
               error: (_, __) => const SizedBox.shrink(),
               data: (civList) => DropdownButton<int?>(
                 hint: const Text('All civilizations'),
-                value: filters.civId,
+                // Global civ filter — shared across all list screens
+                value: ref.watch(selectedCivProvider),
                 items: [
                   const DropdownMenuItem(
                       value: null, child: Text('All civilizations')),
@@ -93,7 +94,8 @@ class _TimelineFilterBarState extends ConsumerState<TimelineFilterBar> {
                         child: Text(c.civ.name),
                       )),
                 ],
-                onChanged: (id) => notifier.setCivId(id),
+                onChanged: (id) =>
+                    ref.read(selectedCivProvider.notifier).state = id,
               ),
             ),
             const SizedBox(width: 16),

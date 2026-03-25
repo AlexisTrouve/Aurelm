@@ -5,6 +5,10 @@ import '../data/repositories/civ_relations_repository.dart';
 import '../models/civ_with_stats.dart';
 import 'database_provider.dart';
 
+/// Global civilization filter — shared across Entities, Timeline, Subjects screens.
+/// null = show all civilizations. Writing to this from any screen updates all.
+final selectedCivProvider = StateProvider<int?>((_) => null);
+
 final civListProvider = StreamProvider<List<CivWithStats>>((ref) {
   final db = ref.watch(databaseProvider);
   if (db == null) return const Stream.empty();
