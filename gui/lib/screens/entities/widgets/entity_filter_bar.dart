@@ -94,8 +94,10 @@ class _CivChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = selectedCivId != null;
+    // orElse: civ may have been deleted while selectedCivProvider still holds its ID
     final label = selected
-        ? civs.firstWhere((c) => c.id == selectedCivId).name
+        ? civs.firstWhere((c) => c.id == selectedCivId,
+              orElse: () => (id: selectedCivId!, name: '?')).name
         : 'All civs';
     final color = Theme.of(context).colorScheme.outline;
     final bg = selected ? color.withValues(alpha: 0.85) : color.withValues(alpha: 0.10);

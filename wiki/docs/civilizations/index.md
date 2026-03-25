@@ -2,4 +2,5 @@
 
 | Civilisation | Joueur | Tours | Entites |
 |---|---|---|---|
-| [Civilisation de la Confluence](civilisation-de-la-confluence/index.md) | Rubanc | 19 | 104 |
+| [Empire Kael](empire-kael/index.md) | - | 6 | 109 |
+| [La Confluence](la-confluence/index.md) | - | 5 | 110 |

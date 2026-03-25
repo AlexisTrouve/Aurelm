@@ -82,21 +82,27 @@ class _TimelineFilterBarState extends ConsumerState<TimelineFilterBar> {
             civs.when(
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
-              data: (civList) => DropdownButton<int?>(
-                hint: const Text('All civilizations'),
-                // Global civ filter — shared across all list screens
-                value: ref.watch(selectedCivProvider),
-                items: [
-                  const DropdownMenuItem(
-                      value: null, child: Text('All civilizations')),
-                  ...civList.map((c) => DropdownMenuItem(
-                        value: c.civ.id,
-                        child: Text(c.civ.name),
-                      )),
-                ],
-                onChanged: (id) =>
-                    ref.read(selectedCivProvider.notifier).state = id,
-              ),
+              data: (civList) {
+                final rawId = ref.watch(selectedCivProvider);
+                // Guard: if stored ID no longer exists (civ deleted), treat as null
+                final validId = rawId != null && civList.any((c) => c.civ.id == rawId)
+                    ? rawId
+                    : null;
+                return DropdownButton<int?>(
+                  hint: const Text('All civilizations'),
+                  value: validId,
+                  items: [
+                    const DropdownMenuItem(
+                        value: null, child: Text('All civilizations')),
+                    ...civList.map((c) => DropdownMenuItem(
+                          value: c.civ.id,
+                          child: Text(c.civ.name),
+                        )),
+                  ],
+                  onChanged: (id) =>
+                      ref.read(selectedCivProvider.notifier).state = id,
+                );
+              },
             ),
             const SizedBox(width: 16),
             // Turn number range: De / À

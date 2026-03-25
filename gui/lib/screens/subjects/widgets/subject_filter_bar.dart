@@ -137,8 +137,11 @@ class SubjectFilterBar extends ConsumerWidget {
                   Text('Civ:', style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(width: 8),
                   DropdownButton<int?>(
-                    // Global civ filter — shared across all list screens
-                    value: ref.watch(selectedCivProvider),
+                    // Guard: if stored ID no longer exists (civ deleted), treat as null
+                    value: () {
+                      final rawId = ref.watch(selectedCivProvider);
+                      return rawId != null && civList.any((c) => c.civ.id == rawId) ? rawId : null;
+                    }(),
                     hint: const Text('Toutes'),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('Toutes')),
