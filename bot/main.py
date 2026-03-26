@@ -42,10 +42,13 @@ async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
     if bot and bot.is_ready():
         for row in civ_rows:
             channel_id = row["discord_channel_id"]
-            channel = bot.get_channel(int(channel_id))
-            if channel is None:
-                log.warning("Channel %s (civ %s) not found on Discord, skipping fetch",
-                            channel_id, row["name"])
+            # fetch_channel() makes a REST call — works even if not in cache.
+            # get_channel() only hits the local cache and returns None after fresh start.
+            try:
+                channel = await bot.fetch_channel(int(channel_id))
+            except Exception as exc:
+                log.warning("Could not fetch channel %s (civ %s): %s",
+                            channel_id, row["name"], exc)
                 continue
             count = await fetch_and_store(channel, config.db_path)
             stats["messages_fetched"] += count
