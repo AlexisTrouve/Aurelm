@@ -36,8 +36,12 @@ mcp-server/*.js.map
 *.sqlite
 *.sqlite3
 
-# MkDocs
+# MkDocs — generated content, not tracked
 wiki/site/
+wiki/docs/civilizations/
+wiki/docs/global/
+wiki/docs/meta/
+wiki/docs/index.md
 docs/civilizations/
 docs/global/
 docs/meta/
