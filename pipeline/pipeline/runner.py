@@ -133,24 +133,25 @@ def run_pipeline(
         print(f"       ->{len(messages)} unprocessed messages")
     else:
         # Bot mode: messages + civ_id already provided
-        print(f"[1-4/10] Bot mode: {len(messages)} messages, civ_id={civ_id}")
+        civ_tag = f"[{civ_index}/{civ_total}] {civ_name}" if civ_total > 1 else civ_name
+        print(f"[1-4/10] Bot mode — {civ_tag} | {len(messages)} messages | civ_id={civ_id}")
         stats["messages_loaded"] = len(messages)
 
     if not messages:
-        print("       No new messages to process.")
+        print(f"       {civ_name}: no new messages to process.")
         return stats
 
     # Step 5: Detect turn boundaries
-    print("[5/10] Detecting turn boundaries...")
+    print(f"[5/10] {civ_name} — detecting turn boundaries...")
     gm_author_id = _find_gm_author_id(messages)
     all_chunks = detect_turn_boundaries(messages, gm_author_id)
     # Only process GM turns — player-only chunks (PJ responses, synthetic placeholders)
     # are not lore sources and must not become turn records.
     chunks = [c for c in all_chunks if c.is_gm_post]
-    print(f"       ->{len(chunks)} turns detected")
+    print(f"       -> {len(chunks)} GM turns, {len(all_chunks) - len(chunks)} PJ chunks")
 
     # Step 6: Process each turn
-    print("[6/10] Processing turns (classify -> extract facts -> summarize)...")
+    print(f"[6/10] {civ_name} — processing {len(chunks)} turns (extract -> summarize)...")
     # Per-stage models: each LLM call can use a different model.
     # Config priority: llm_config stage override > CLI --model fallback.
     extraction_model  = llm_config.get_model("extraction")  if llm_config else model
@@ -532,7 +533,7 @@ def run_pipeline(
                         0, 1, "stage", "running", stage_name="preanalysis",
                         civ_index=civ_index, civ_total=civ_total, llm_model=model)
         conn2.commit(); conn2.close()
-    print("[6.5/10] Turn preanalysis (novelty + player strategy)...")
+    print(f"[6.5/10] {civ_name} — turn preanalysis (novelty + player strategy)...")
     from .turn_preanalysis import run_preanalysis
     preanalysis_stats = run_preanalysis(
         db_path,
@@ -555,7 +556,7 @@ def run_pipeline(
                             0, 1, "stage", "running", stage_name="subjects",
                             civ_index=civ_index, civ_total=civ_total, llm_model=subjects_model)
             conn2.commit(); conn2.close()
-        print("[7/10] Extracting subjects (MJ choices + PJ initiatives)...")
+        print(f"[7/10] {civ_name} — extracting subjects (MJ choices + PJ initiatives)...")
         _run_subject_extraction(
             db_path, civ_id, all_chunks, gm_author_id,
             subjects_model, llm_provider,
@@ -569,7 +570,7 @@ def run_pipeline(
                             0, 1, "stage", "running", stage_name="profiling",
                             civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
             conn2.commit(); conn2.close()
-        print("[8/10] Building entity profiles (1 LLM call per entity)...")
+        print(f"[8/10] {civ_name} — building entity profiles (1 LLM call per entity)...")
         profiles = build_entity_profiles(
             db_path,
             model=profiling_model,
@@ -588,7 +589,7 @@ def run_pipeline(
                             0, 1, "stage", "running", stage_name="civ_relations",
                             civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
             conn2.commit(); conn2.close()
-        print("[8.5/10] Profiling inter-civ relations...")
+        print(f"[8.5/10] {civ_name} — profiling inter-civ relations...")
         from .civ_relation_profiler import build_civ_relations
         rel_stats = build_civ_relations(
             db_path,
@@ -620,7 +621,7 @@ def run_pipeline(
                             0, 1, "stage", "running", stage_name="aliases",
                             civ_index=civ_index, civ_total=civ_total, llm_model=aliases_model)
             conn2.commit(); conn2.close()
-        print("[9/10] Resolving entity aliases...")
+        print(f"[9/10] {civ_name} — resolving entity aliases...")
         alias_stats = resolve_aliases(
             db_path, profiles, model=aliases_model, use_llm=True,
             provider=llm_provider,
@@ -748,7 +749,8 @@ def run_pipeline(
         conn_final.close()
 
     # Final summary
-    print("[DONE] Pipeline complete!")
+    civ_tag = f"[{civ_index}/{civ_total}] {civ_name}" if civ_total > 1 else civ_name
+    print(f"[DONE] {civ_tag} — pipeline complete!")
     _print_stats(stats)
     return stats
 
