@@ -3,6 +3,17 @@
 
 PRAGMA foreign_keys = OFF;
 
+-- Drop any leftover _new tables from a previous partial run (idempotency)
+DROP TABLE IF EXISTS turn_turns_new;
+DROP TABLE IF EXISTS turn_segments_new;
+DROP TABLE IF EXISTS entity_entities_new;
+DROP TABLE IF EXISTS entity_mentions_new;
+DROP TABLE IF EXISTS entity_relations_new;
+DROP TABLE IF EXISTS entity_aliases_new;
+DROP TABLE IF EXISTS pipeline_progress_new;
+DROP TABLE IF EXISTS subject_resolutions_new;
+DROP TABLE IF EXISTS civ_relations_new;
+
 -- 1. turn_turns: civ_id -> CASCADE
 CREATE TABLE turn_turns_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,6 +131,7 @@ DROP TABLE entity_aliases;
 ALTER TABLE entity_aliases_new RENAME TO entity_aliases;
 
 -- 7. pipeline_progress: civ_id -> CASCADE
+-- Includes all columns (4 from 037 + 3 added dynamically by db.py update_progress)
 CREATE TABLE pipeline_progress_new (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     pipeline_run_id INTEGER NOT NULL REFERENCES pipeline_runs(id) ON DELETE CASCADE,
@@ -136,6 +148,9 @@ CREATE TABLE pipeline_progress_new (
     llm_calls_done INTEGER DEFAULT 0,
     llm_calls_total INTEGER DEFAULT 0,
     turn_number INTEGER,
+    civ_index INTEGER,
+    civ_total INTEGER,
+    llm_model TEXT,
     UNIQUE(pipeline_run_id, phase, civ_id)
 );
 INSERT INTO pipeline_progress_new SELECT * FROM pipeline_progress;
