@@ -153,7 +153,20 @@ CREATE TABLE pipeline_progress_new (
     llm_model TEXT,
     UNIQUE(pipeline_run_id, phase, civ_id)
 );
-INSERT INTO pipeline_progress_new SELECT * FROM pipeline_progress;
+-- Explicit column list because civ_index/civ_total/llm_model may have been added
+-- dynamically by db.py (not via a migration) — SELECT * would fail on column count mismatch.
+INSERT INTO pipeline_progress_new (
+    id, pipeline_run_id, phase, civ_id, civ_name,
+    total_units, current_unit, unit_type, status,
+    started_at, updated_at,
+    stage_name, llm_calls_done, llm_calls_total, turn_number
+)
+SELECT
+    id, pipeline_run_id, phase, civ_id, civ_name,
+    total_units, current_unit, unit_type, status,
+    started_at, updated_at,
+    stage_name, llm_calls_done, llm_calls_total, turn_number
+FROM pipeline_progress;
 DROP TABLE pipeline_progress;
 ALTER TABLE pipeline_progress_new RENAME TO pipeline_progress;
 

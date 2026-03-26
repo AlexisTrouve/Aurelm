@@ -807,7 +807,22 @@ def _insert_pj_segments(
             (turn_id,),
         ).fetchone()[0]
         if existing > 0:
-            # Already processed — skip segments AND entity extraction (idempotent)
+            # Already processed — skip segments AND entity extraction (idempotent).
+            # Still ensure PJ message IDs are recorded in raw_message_ids (handles
+            # DBs created before this fix where IDs may be missing).
+            pj_msg_ids_check = [m.id for m in chunk.messages if m.id is not None]
+            if pj_msg_ids_check:
+                existing_ids_row = conn.execute(
+                    "SELECT raw_message_ids FROM turn_turns WHERE id = ?", (turn_id,)
+                ).fetchone()
+                if existing_ids_row and existing_ids_row[0]:
+                    current_ids = json.loads(existing_ids_row[0])
+                    if not all(mid in current_ids for mid in pj_msg_ids_check):
+                        merged = list(dict.fromkeys(current_ids + pj_msg_ids_check))
+                        conn.execute(
+                            "UPDATE turn_turns SET raw_message_ids = ? WHERE id = ?",
+                            (json.dumps(merged), turn_id),
+                        )
             turn_logs.append({
                 "turn_number": gm_seq,
                 "text_chars": len(pj_text),
@@ -832,6 +847,23 @@ def _insert_pj_segments(
                 (turn_id, base_order + seg_idx, seg.segment_type.value, seg.text),
             )
             total_inserted += 1
+
+        # Mark PJ message IDs as processed by appending them to the GM turn's
+        # raw_message_ids JSON array. fetch_unprocessed_messages checks this field
+        # to know which messages are already handled — without this, PJ messages
+        # would forever appear as "unprocessed" and trigger spurious re-runs.
+        pj_msg_ids = [m.id for m in chunk.messages if m.id is not None]
+        if pj_msg_ids:
+            existing_ids_row = conn.execute(
+                "SELECT raw_message_ids FROM turn_turns WHERE id = ?", (turn_id,)
+            ).fetchone()
+            if existing_ids_row and existing_ids_row[0]:
+                current_ids = json.loads(existing_ids_row[0])
+                merged = list(dict.fromkeys(current_ids + pj_msg_ids))  # dedup, preserve order
+                conn.execute(
+                    "UPDATE turn_turns SET raw_message_ids = ? WHERE id = ?",
+                    (json.dumps(merged), turn_id),
+                )
 
         # PJ entity extraction: capture named entities introduced by the player.
         # Examples: Morsure-des-Ancêtres (T06 PJ), Paniers immergés (T05 PJ).
