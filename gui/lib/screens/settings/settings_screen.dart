@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../providers/bot_provider.dart';
 import '../../providers/database_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/chat_sessions_service.dart';
 import 'bot_config_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -153,14 +153,9 @@ class SettingsScreen extends ConsumerWidget {
       // Persist the new path in app settings
       ref.read(dbPathProvider.notifier).setPath(newPath);
 
-      // Notify the bot server to hot-swap its active DB so session lists
-      // and tool queries immediately reflect the newly selected database.
-      // Silently ignore if the bot is not running.
-      try {
-        await ChatSessionsService(port: AppConstants.botDefaultPort).reloadDb(newPath);
-      } catch (_) {
-        // Bot may not be running — that's OK, it will pick up config.db_path on next start
-      }
+      // Stop the bot — the agent caches db_path at init time so hot-swap is
+      // unreliable. The user restarts it from the chat screen with the new DB.
+      ref.read(botServiceProvider).stop();
     }
   }
 }

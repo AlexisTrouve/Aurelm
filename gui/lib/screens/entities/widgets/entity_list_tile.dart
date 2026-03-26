@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../models/entity_with_details.dart';
+import '../../../providers/civilization_provider.dart';
 import '../../../providers/database_provider.dart';
 import '../../../providers/favorites_provider.dart';
 import '../../../widgets/common/entity_type_icon.dart';
@@ -90,7 +91,30 @@ class EntityListTile extends ConsumerWidget {
                   entityType: entity.entity.entityType,
                   compact: true,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                // Civ name — lookup by civId from the global civ list
+                Builder(builder: (ctx) {
+                  final civs = ref.watch(civListProvider).valueOrNull ?? [];
+                  final civName = civs
+                      .where((c) => c.civ.id == entity.entity.civId)
+                      .map((c) => c.civ.name)
+                      .firstOrNull ?? '?';
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      civName,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                            fontSize: 9,
+                          ),
+                    ),
+                  );
+                }),
+                const SizedBox(width: 6),
                 Text(
                   '${entity.mentionCount} mentions',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(

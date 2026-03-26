@@ -80,6 +80,12 @@ class SubjectListTile extends ConsumerWidget {
                           color: Colors.grey,
                         ),
                         const SizedBox(width: 4),
+                        // Civ name — essentiel pour distinguer les sujets inter-civs
+                        _MetaChip(
+                          label: subject.civName,
+                          color: Colors.teal,
+                        ),
+                        const SizedBox(width: 4),
                         _MetaChip(
                           label: _categoryLabel(s.category),
                           color: _categoryColor(s.category),
