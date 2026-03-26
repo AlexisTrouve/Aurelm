@@ -60,6 +60,22 @@ class SyncService {
     }
   }
 
+  /// Per-civ count of unprocessed messages already stored in DB (no Discord fetch).
+  /// Returns list of {civ_id, name, channel_id, pending_messages}.
+  Future<List<Map<String, dynamic>>> fetchSyncPreview() async {
+    try {
+      final response = await http
+          .get(Uri.parse('$_baseUrl/sync/preview'))
+          .timeout(const Duration(seconds: 5));
+      if (response.statusCode != 200) return [];
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final civs = data['civs'] as List? ?? [];
+      return civs.cast<Map<String, dynamic>>();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Sync a single channel: fetch Discord messages + run pipeline.
   /// Returns immediately (202) — caller polls /progress for completion.
   /// If [turnIndices] is provided, only imports those specific turns.

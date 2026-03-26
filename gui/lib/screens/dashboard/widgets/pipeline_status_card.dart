@@ -136,28 +136,60 @@ class PipelineStatusCard extends ConsumerWidget {
   }
 }
 
-class _SyncButton extends StatelessWidget {
+class _SyncButton extends StatefulWidget {
   final SyncState syncState;
   final WidgetRef ref;
 
   const _SyncButton({required this.syncState, required this.ref});
 
   @override
+  State<_SyncButton> createState() => _SyncButtonState();
+}
+
+class _SyncButtonState extends State<_SyncButton> {
+  bool _loadingPreview = false;
+
+  Future<void> _onPressed() async {
+    setState(() => _loadingPreview = true);
+    final service = SyncService();
+
+    // Fetch per-civ pending message counts from DB (fast, no Discord)
+    final preview = await service.fetchSyncPreview();
+    if (!mounted) return;
+    setState(() => _loadingPreview = false);
+
+    // Build dialog title with per-civ counts
+    String title;
+    if (preview.isEmpty) {
+      title = 'Sync globale (toutes les civs)';
+    } else {
+      final parts = preview
+          .where((c) => (c['pending_messages'] as int? ?? 0) > 0)
+          .map((c) => '${c['name']}: ${c['pending_messages']} msgs')
+          .toList();
+      if (parts.isEmpty) {
+        title = 'Sync globale — aucun nouveau message';
+      } else {
+        title = parts.join('  •  ');
+      }
+    }
+
+    if (!mounted) return;
+    showSyncProgressDialog(
+      context,
+      title: title,
+      syncAction: () => service.triggerSync(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isSyncing = syncState.status == SyncStatus.syncing;
+    final isSyncing = widget.syncState.status == SyncStatus.syncing;
+    final busy = isSyncing || _loadingPreview;
 
     return FilledButton.tonalIcon(
-      onPressed: isSyncing
-          ? null
-          : () {
-              final service = SyncService();
-              showSyncProgressDialog(
-                context,
-                title: 'Sync globale (toutes les civs)',
-                syncAction: () => service.triggerSync(),
-              );
-            },
-      icon: isSyncing
+      onPressed: busy ? null : _onPressed,
+      icon: busy
           ? const SizedBox(
               width: 16,
               height: 16,

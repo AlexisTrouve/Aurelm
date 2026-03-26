@@ -28,6 +28,7 @@ class BotServer:
         self._app.router.add_get("/status", self._status)
         self._app.router.add_get("/progress", self._progress)
         self._app.router.add_post("/sync", self._sync)
+        self._app.router.add_get("/sync/preview", self._sync_preview)
         self._app.router.add_post("/chat", self._chat)
         self._app.router.add_get("/chat/sessions", self._list_sessions)
         self._app.router.add_post("/chat/sessions", self._create_session)
@@ -420,6 +421,42 @@ class BotServer:
         progress_info = self._get_current_progress()
         progress_info["sync_running"] = self._sync_running
         return web.json_response(progress_info)
+
+    async def _sync_preview(self, _request: web.Request) -> web.Response:
+        """GET /sync/preview — per-civ count of unprocessed messages already in DB.
+        Does NOT fetch from Discord. Fast, synchronous.
+        Returns: {"civs": [{"name": "Confluence", "channel_id": "...", "pending_messages": 42}]}
+        """
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            civs = conn.execute(
+                "SELECT id, name, discord_channel_id FROM civ_civilizations "
+                "WHERE discord_channel_id IS NOT NULL AND discord_channel_id != ''"
+            ).fetchall()
+
+            result = []
+            for civ in civs:
+                # Count messages for this channel not yet assigned to any turn.
+                # Mirrors fetch_unprocessed_messages() in pipeline/ingestion.py.
+                count = conn.execute(
+                    """SELECT COUNT(*) FROM turn_raw_messages
+                       WHERE discord_channel_id = ?
+                         AND id NOT IN (
+                           SELECT value FROM turn_turns, json_each(turn_turns.raw_message_ids)
+                         )""",
+                    (civ["discord_channel_id"],),
+                ).fetchone()[0]
+                result.append({
+                    "civ_id": civ["id"],
+                    "name": civ["name"],
+                    "channel_id": civ["discord_channel_id"],
+                    "pending_messages": count,
+                })
+        finally:
+            conn.close()
+
+        return web.json_response({"civs": result})
 
     async def _sync(self, _request: web.Request) -> web.Response:
         """Global sync — returns 202 immediately, runs in background.

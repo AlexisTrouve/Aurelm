@@ -18,45 +18,104 @@ log = logging.getLogger(__name__)
 
 
 async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
-    """Run a full sync: fetch Discord messages + run pipeline + build wiki."""
-    stats: dict = {"messages_fetched": 0, "pipeline": None}
+    """Run a full sync: fetch Discord messages for every civ + run pipeline per civ."""
+    import sqlite3 as _sqlite3
 
-    # Phase 1: Fetch from Discord (if bot is connected)
+    stats: dict = {"messages_fetched": 0, "civs": [], "pipeline": {}}
+
+    # --- Look up all civs with a Discord channel from the DB ---
+    conn = _sqlite3.connect(config.db_path)
+    conn.row_factory = _sqlite3.Row
+    civ_rows = conn.execute(
+        "SELECT id, name, player_name, discord_channel_id "
+        "FROM civ_civilizations WHERE discord_channel_id IS NOT NULL AND discord_channel_id != ''"
+    ).fetchall()
+    conn.close()
+
+    if not civ_rows:
+        log.info("No civs with discord_channel_id configured — nothing to sync")
+        return stats
+
+    log.info("Global sync: found %d civ(s) with Discord channels", len(civ_rows))
+
+    # --- Phase 1: Fetch Discord messages for each civ channel ---
     if bot and bot.is_ready():
-        for ch_cfg in config.channels:
-            channel = bot.get_channel(int(ch_cfg.channel_id))
+        for row in civ_rows:
+            channel_id = row["discord_channel_id"]
+            channel = bot.get_channel(int(channel_id))
             if channel is None:
-                log.warning("Channel %s not found, skipping", ch_cfg.channel_id)
+                log.warning("Channel %s (civ %s) not found on Discord, skipping fetch",
+                            channel_id, row["name"])
                 continue
             count = await fetch_and_store(channel, config.db_path)
             stats["messages_fetched"] += count
+            log.info("Fetched %d messages for %s", count, row["name"])
     else:
-        log.info("Discord not connected, skipping fetch")
+        log.info("Discord not connected, skipping fetch phase")
 
-    # Phase 2: Run pipeline in thread pool (blocking call)
-    def _pipeline() -> dict:
+    # --- Phase 2: Run pipeline per civ in thread pool ---
+    def _pipeline_all() -> dict:
         try:
-            sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
-            from pipeline.pipeline.runner import run_pipeline_for_channels
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+            from pipeline.pipeline.runner import run_pipeline
             from pipeline.pipeline.llm_provider import create_provider
-            # Pass API key for cloud providers (openrouter reads env, claude_proxy uses anthropic key)
+            from pipeline.pipeline.ingestion import fetch_unprocessed_messages
+            from pipeline.pipeline.db import get_connection
+            import pipeline.pipeline.runner as _runner
+
+            if config.gm_authors:
+                _runner.GM_AUTHORS = set(config.gm_authors)
+
             llm_api_key = config.anthropic_api_key if config.llm_provider == "claude_proxy" else None
             provider = create_provider(config.llm_provider, api_key=llm_api_key)
-            return run_pipeline_for_channels(
-                db_path=config.db_path,
-                use_llm=True,
-                wiki_dir=config.wiki_dir,
-                gm_authors=set(config.gm_authors),
-                track_progress=True,
-                model=config.ollama_model,
-                provider=provider,
-                extraction_version=config.extraction_version,
-            )
+
+            results = {}
+            # Reload civ rows inside thread (DB connection must be in same thread)
+            _conn = get_connection(config.db_path)
+            rows = _conn.execute(
+                "SELECT id, name, player_name, discord_channel_id "
+                "FROM civ_civilizations WHERE discord_channel_id IS NOT NULL AND discord_channel_id != ''"
+            ).fetchall()
+            _conn.close()
+
+            civ_total = len(rows)
+            for civ_index, row in enumerate(rows, start=1):
+                civ_id = row["id"]
+                civ_name = row["name"]
+                player_name = row["player_name"]
+                channel_id = row["discord_channel_id"]
+
+                messages = fetch_unprocessed_messages(config.db_path, channel_id)
+                if not messages:
+                    log.info("No new messages for %s — skipping pipeline", civ_name)
+                    results[civ_name] = {"skipped": "no_new_messages"}
+                    continue
+
+                log.info("Running pipeline for %s (%d/%d)", civ_name, civ_index, civ_total)
+                result = run_pipeline(
+                    db_path=config.db_path,
+                    civ_name=civ_name,
+                    player_name=player_name,
+                    use_llm=True,
+                    wiki_dir=config.wiki_dir,
+                    track_progress=True,
+                    model=config.ollama_model,
+                    provider=provider,
+                    extraction_version=config.extraction_version,
+                    messages=messages,
+                    civ_id=civ_id,
+                    channel_id=channel_id,
+                    civ_index=civ_index,
+                    civ_total=civ_total,
+                )
+                results[civ_name] = result
+
+            return results
         except ImportError:
             log.warning("Pipeline module not available, skipping")
             return {"error": "pipeline not available"}
 
-    pipeline_result = await asyncio.to_thread(_pipeline)
+    pipeline_result = await asyncio.to_thread(_pipeline_all)
     stats["pipeline"] = pipeline_result
     return stats
 
