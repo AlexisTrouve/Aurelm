@@ -16,6 +16,37 @@ from .server import BotServer
 
 log = logging.getLogger(__name__)
 
+_pipeline_log = logging.getLogger("pipeline")
+
+
+class _StdoutToLogger:
+    """Redirect print() output to the Python logger.
+
+    The pipeline uses print() for progress (e.g. "[6/10] Processing turns...").
+    When running inside the bot process, those prints would go to stdout and
+    get lost. This wrapper captures them and routes to bot.log instead.
+    """
+
+    def __init__(self) -> None:
+        self._buf = ""
+
+    def write(self, msg: str) -> None:
+        self._buf += msg
+        while "\n" in self._buf:
+            line, self._buf = self._buf.split("\n", 1)
+            stripped = line.rstrip()
+            if stripped:
+                _pipeline_log.info("%s", stripped)
+
+    def flush(self) -> None:
+        if self._buf.strip():
+            _pipeline_log.info("%s", self._buf.strip())
+            self._buf = ""
+
+    # Make it a valid stream (needed by some stdlib internals)
+    def isatty(self) -> bool:
+        return False
+
 
 async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
     """Run a full sync: fetch Discord messages for every civ + run pipeline per civ."""
@@ -135,6 +166,9 @@ async def run(config: BotConfig) -> None:
         ],
     )
     log.info("Logging to %s", log_file)
+
+    # Redirect stdout so pipeline print() calls land in bot.log
+    sys.stdout = _StdoutToLogger()
 
     # Auto-apply database migrations
     log.info("Applying database migrations...")
