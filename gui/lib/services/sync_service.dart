@@ -37,11 +37,12 @@ class SyncService {
   }
 
   /// Trigger a global sync. Returns immediately (202) — caller polls /progress.
+  /// Also accepts 200 for backwards compatibility with older bot versions.
   Future<void> triggerSync() async {
     final response = await http
         .post(Uri.parse('$_baseUrl${AppConstants.botSyncEndpoint}'))
         .timeout(const Duration(seconds: 10));
-    if (response.statusCode == 202) return; // started in background
+    if (response.statusCode == 202 || response.statusCode == 200) return;
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
   }
@@ -86,7 +87,7 @@ class SyncService {
     final response = await http
         .post(Uri.parse('$_baseUrl/discord/channels/$channelId/sync$query'))
         .timeout(const Duration(seconds: 10));
-    if (response.statusCode == 202) return; // started in background
+    if (response.statusCode == 202 || response.statusCode == 200) return;
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     throw Exception(data['error'] ?? 'Sync failed: ${response.statusCode}');
   }
