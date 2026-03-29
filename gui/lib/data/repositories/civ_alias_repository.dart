@@ -39,11 +39,13 @@ class CivAliasEntry {
   final int id;
   final int civId;
   final String aliasName;
+  final bool gmLock;
 
   const CivAliasEntry({
     required this.id,
     required this.civId,
     required this.aliasName,
+    this.gmLock = false,
   });
 }
 
@@ -160,7 +162,7 @@ class CivAliasRepository {
   /// All aliases for a given civ — shown in CivDetailScreen.
   Future<List<CivAliasEntry>> loadAliasesForCiv(int civId) async {
     final rows = await _db.customSelect(
-      'SELECT id, civ_id, alias_name FROM civ_aliases WHERE civ_id = ? ORDER BY alias_name',
+      'SELECT id, civ_id, alias_name, gm_lock FROM civ_aliases WHERE civ_id = ? ORDER BY alias_name',
       variables: [Variable.withInt(civId)],
     ).get();
 
@@ -169,8 +171,17 @@ class CivAliasRepository {
               id: r.read<int>('id'),
               civId: r.read<int>('civ_id'),
               aliasName: r.read<String>('alias_name'),
+              gmLock: (r.read<int?>('gm_lock') ?? 0) == 1,
             ))
         .toList();
+  }
+
+  /// Toggle gm_lock on a civ alias.
+  Future<void> setGmLock(int aliasId, {required bool locked}) async {
+    await _db.customStatement(
+      'UPDATE civ_aliases SET gm_lock = ? WHERE id = ?',
+      [locked ? 1 : 0, aliasId],
+    );
   }
 
   // ---------------------------------------------------------------------------

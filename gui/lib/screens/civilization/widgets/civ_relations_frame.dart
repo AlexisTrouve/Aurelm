@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/repositories/civ_relations_repository.dart';
 import '../../../providers/civilization_provider.dart';
+import '../../../providers/database_provider.dart';
 import '../../../widgets/common/section_header.dart';
+import '../../../widgets/common/gm_lock_toggle.dart';
 
 /// Displays inter-civ relation profiles for a given civilization.
 ///
@@ -14,6 +16,13 @@ class CivRelationsFrame extends ConsumerWidget {
   final int civId;
 
   const CivRelationsFrame({super.key, required this.civId});
+
+  Future<void> _toggleGmLock(WidgetRef ref, CivRelation r) async {
+    final db = ref.read(databaseProvider);
+    if (db == null) return;
+    await CivRelationsRepository(db).setGmLock(r.id, locked: !r.gmLock);
+    ref.invalidate(civRelationsProvider(civId));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +61,7 @@ class CivRelationsFrame extends ConsumerWidget {
                     relation: r,
                     perspective: _Perspective.outgoing,
                     currentCivId: civId,
+                    onToggleLock: () => _toggleGmLock(ref, r),
                   )),
             ],
 
@@ -69,6 +79,7 @@ class CivRelationsFrame extends ConsumerWidget {
                     relation: r,
                     perspective: _Perspective.incoming,
                     currentCivId: civId,
+                    onToggleLock: () => _toggleGmLock(ref, r),
                   )),
             ],
           ],
@@ -84,11 +95,13 @@ class _RelationCard extends StatelessWidget {
   final CivRelation relation;
   final _Perspective perspective;
   final int currentCivId;
+  final VoidCallback onToggleLock;
 
   const _RelationCard({
     required this.relation,
     required this.perspective,
     required this.currentCivId,
+    required this.onToggleLock,
   });
 
   // Opinion → display label + color
@@ -133,7 +146,7 @@ class _RelationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: civ name + opinion chip
+          // Header: civ name + lock toggle + opinion chip
           Row(
             children: [
               Expanded(
@@ -144,6 +157,13 @@ class _RelationCard extends StatelessWidget {
                       ),
                 ),
               ),
+              GmLockToggle(
+                locked: relation.gmLock,
+                fieldLabel: 'Relation $otherName',
+                onLock: onToggleLock,
+                onUnlock: onToggleLock,
+              ),
+              const SizedBox(width: 4),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(

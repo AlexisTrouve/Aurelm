@@ -20,6 +20,7 @@ import 'widgets/civ_subjects_frame.dart';
 import 'widgets/civ_sessions_frame.dart';
 import 'widgets/civ_relations_frame.dart';
 import '../../providers/civ_alias_provider.dart';
+import '../../widgets/common/gm_lock_toggle.dart';
 import '../../data/database.dart';
 import '../../providers/database_provider.dart';
 import '../../services/bot_config_service.dart';
@@ -354,6 +355,13 @@ class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
     ref.invalidate(civAliasesProvider(widget.civId));
   }
 
+  Future<void> _setGmLock(int aliasId, bool locked) async {
+    final repo = ref.read(civAliasRepositoryProvider);
+    if (repo == null) return;
+    await repo.setGmLock(aliasId, locked: locked);
+    ref.invalidate(civAliasesProvider(widget.civId));
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -420,12 +428,23 @@ class _CivAliasesSectionState extends ConsumerState<_CivAliasesSection> {
           Wrap(
             spacing: 6,
             runSpacing: 4,
-            children: aliases.map((a) => Chip(
-                  label: Text(a.aliasName, style: theme.textTheme.labelSmall),
-                  deleteIcon: const Icon(Icons.close, size: 14),
-                  onDeleted: () => _delete(a.id),
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+            children: aliases.map((a) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GmLockToggle(
+                      locked: a.gmLock,
+                      fieldLabel: a.aliasName,
+                      onLock: () => _setGmLock(a.id, true),
+                      onUnlock: () => _setGmLock(a.id, false),
+                    ),
+                    Chip(
+                      label: Text(a.aliasName, style: theme.textTheme.labelSmall),
+                      deleteIcon: const Icon(Icons.close, size: 14),
+                      onDeleted: () => _delete(a.id),
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                    ),
+                  ],
                 )).toList(),
           ),
         ],

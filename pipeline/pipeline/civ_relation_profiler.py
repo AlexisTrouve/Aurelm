@@ -134,9 +134,23 @@ def build_civ_relations(
 
         stats["pairs_found"] = len(pairs)
 
+        # Load gm_locked relation pairs so we skip them below
+        locked_pairs = set()
+        try:
+            locked_rows = conn.execute(
+                "SELECT source_civ_id, target_civ_id FROM civ_relations WHERE gm_lock = 1"
+            ).fetchall()
+            locked_pairs = {(r["source_civ_id"], r["target_civ_id"]) for r in locked_rows}
+        except Exception:
+            pass  # gm_lock column may not exist on old DBs
+
         for pair in pairs:
             target_civ_id = pair["target_civ_id"]
             target_name = pair["target_name"]
+
+            # Skip GM-locked relations — the GM has validated/edited this relation
+            if (source_civ_id, target_civ_id) in locked_pairs:
+                continue
 
             # Collect all mention contexts sorted chronologically
             mentions = conn.execute(
