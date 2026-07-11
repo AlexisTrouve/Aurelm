@@ -1,5 +1,12 @@
 import 'dart:io';
 
+// TODO REFACTOR — 2114 lignes pour un seul écran, à découper :
+//   - ChatInputBar       : champ texte + attachments + bouton envoi
+//   - ChatMessageList    : scroll + affichage des messages
+//   - ChatSessionDrawer  : sidebar sessions
+//   - ChatQuotePreview   : bloc de citation
+//   Cible : ~400 lignes par widget, logique dans les providers Riverpod.
+
 import 'package:drift/drift.dart' show Variable;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

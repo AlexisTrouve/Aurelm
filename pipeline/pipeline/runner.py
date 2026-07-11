@@ -3,6 +3,19 @@
 Usage:
     python -m pipeline.runner --data-dir ../civjdr/Background --civ "Civilisation de la Confluence" --db aurelm.db
     python -m pipeline.runner --data-dir ../civjdr/Background --civ "Civilisation de la Confluence" --db aurelm.db --no-llm
+
+TODO REFACTOR:
+    - run_pipeline() fait 707 lignes — à éclater en étapes distinctes :
+        _stage_load()        : chargement des données
+        _stage_classify()    : classification des segments
+        _stage_summarize()   : résumé des turns
+        _stage_extract()     : extraction d'entités et facts
+        _stage_resolve()     : résolution d'alias
+      Chaque étape = fonction indépendante testable séparément.
+    - _run_subject_extraction() (177 lignes) et _insert_pj_segments() (149 lignes)
+      méritent aussi d'être découpées.
+    - run_pipeline_for_channels() peut appeler run_pipeline() par channel
+      au lieu de dupliquer la logique.
 """
 
 from __future__ import annotations

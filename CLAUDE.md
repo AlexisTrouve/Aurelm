@@ -15,7 +15,7 @@ This is a tool for **Arthur ("Mug")**, Game Master of a multiplayer civilization
 
 **The problem**: Arthur drowns in lore. Hundreds of turns across multiple civilizations, named entities, technologies, political systems, alliances — he can't keep track of it all. He needs automated consistency checking and instant recall.
 
-**The solution**: Aurelm ingests game turns from Discord, structures them with ML, builds a wiki, and gives Arthur an intelligent agent (OpenClaw) he can ask things like "Est-ce que les Confluents ont déjà du bronze ?" or "Compare les forces militaires de toutes les civs".
+**The solution**: Aurelm ingests game turns from Discord, structures them with ML, builds a wiki, and gives Arthur an intelligent Claude agent he can ask things like "Est-ce que les Confluents ont déjà du bronze ?" or "Compare les forces militaires de toutes les civs".
 
 ### Related Repo — civjdr
 
@@ -30,7 +30,7 @@ This is a tool for **Arthur ("Mug")**, Game Master of a multiplayer civilization
 
 ## Project Overview
 
-Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop RPGs. It ingests Discord game turns, processes them through a local ML pipeline, generates a wiki, and exposes an MCP-based agent (OpenClaw) for GM queries.
+Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop RPGs. It ingests Discord game turns, processes them through a local ML pipeline, generates a wiki, and exposes a Claude agent for GM queries.
 
 **Primary user**: "Mug" (Arthur), GM running a 3+ civilization game. Has an RTX 5070 Ti (16GB VRAM). Wants zero maintenance and useful answers on complex cross-civilization contexts.
 
@@ -43,7 +43,7 @@ Flutter Desktop GUI (Dashboard)
         ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
         ├── SQLite Database
-        └── OpenClaw Agent (Claude API primary, local LLM fallback)
+        └── Claude Agent (Claude API primary, claude -p CLI fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -54,8 +54,7 @@ Flutter Desktop GUI (Dashboard)
 - **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline (+ stage 6.5 preanalysis). `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **pipeline/scripts/**: Standalone benchmark/scoring/profiling utilities. See `pipeline/scripts/README.md` for usage. Not part of the pipeline itself — run manually for evaluation and tuning.
 - **wiki/**: MkDocs Material — auto-generated game wiki
-- **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
-- **openclaw-config/**: OpenClaw skill definitions and config templates
+- **mcp-server/**: TypeScript MCP server — exposes tools to Claude agent. `npm install` done, dependencies ready.
 - **database/**: SQLite schema and migrations
 - **docs/**: Developer documentation (see `architecture.md` for full data flow)
 
@@ -69,7 +68,7 @@ Flutter Desktop GUI (Dashboard)
 
 - [x] **Step 4**: MCP Server — 9 tools (listCivs, getCivState, searchLore, sanityCheck, timeline, compareCivs, getEntityDetail, getTurnDetail, searchTurnContent). Read-only SQLite via AURELM_DB_PATH, fuzzy civ name matching, structured Markdown output for LLM consumption, sanityCheck with keyword extraction + entity inventory. 24 integration tests passing.
 
-- [x] **Step 5**: OpenClaw specialization — SOUL.md persona, domain-knowledge.md pre-seeded context, SKILL.md with all 9 tools documented (decision trees, error recovery, 9 examples), openclaw.json.template with correct model routing (llama3.1:8b fallback, tool-based routing), SETUP.md deployment checklist.
+- [x] **Step 5**: Agent persona — SOUL.md persona + domain-knowledge.md pre-seeded context (now in `bot/prompts/`).
 
 - [x] **Step 6**: Flutter GUI — 65 Dart source files across 6 layers (data/models/providers/screens/widgets/core). Drift ORM mapping all DB tables, 5 DAOs with reactive streams, Riverpod providers, GoRouter with NavigationRail shell. Screens: dashboard (civ cards, pipeline status, quick search), civ detail (entity breakdown chart, top entities, recent turns), entity browser (search/filter/list + detail with aliases/relations/mentions), timeline (chronological turns with filters), graph (force-directed with graphview, per-civ filter, legend). Settings: DB path picker, theme toggle. 6 unit/widget tests, 2 GitHub Actions workflows (Windows EXE build + test). CI adapted from Haomirai pattern.
 

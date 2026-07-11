@@ -2,7 +2,7 @@
 
 **Game Master toolkit for multiplayer civilization-building tabletop RPGs.**
 
-Aurelm ingests game turns from Discord, structures them through a local ML pipeline, generates a self-maintaining wiki, and exposes an intelligent agent (OpenClaw) that the GM can query in natural language for sanity checks, recaps, and cross-civilization analysis.
+Aurelm ingests game turns from Discord, structures them through a local ML pipeline, generates a self-maintaining wiki, and exposes an intelligent Claude agent that the GM can query in natural language for sanity checks, recaps, and cross-civilization analysis.
 
 ## Architecture
 
@@ -39,8 +39,7 @@ Aurelm/
 ├── pipeline/               # ML pipeline — ingestion, extraction, profiling, subjects
 ├── bot/                    # Python Discord bot + HTTP API + Claude agent
 ├── wiki/                   # Auto-generated MkDocs wiki
-├── mcp-server/             # MCP server for OpenClaw (TypeScript)
-├── openclaw-config/        # OpenClaw skill + config templates
+├── mcp-server/             # MCP server (TypeScript)
 ├── database/               # SQLite schema + migrations
 └── docs/                   # Developer documentation
 ```
@@ -104,9 +103,8 @@ Start-Process gui\build\windows\x64\runner\Debug\aurelm_gui.exe
 
 ### Configuration
 
-1. Copy `openclaw-config/openclaw.json.template` to your OpenClaw config directory
-2. Set `DISCORD_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables
-3. Create `aurelm_config.json` next to your DB with channel IDs
+1. Set `DISCORD_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables
+2. Create `aurelm_config.json` next to your DB with channel IDs
 
 ## Design Principles
 
