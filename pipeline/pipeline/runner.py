@@ -42,6 +42,7 @@ from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
 from .summarizer import summarize_turn, AuthorContent, TECH_ERAS, FANTASY_LEVELS
 from .entity_profiler import build_entity_profiles
+from .domain_profile import get_profile
 from .alias_resolver import resolve_aliases
 from .fact_extractor import FactExtractor
 from .extraction_versions import get_version, list_versions, ExtractionVersion
@@ -592,6 +593,7 @@ def run_pipeline(
             run_id=run_id,
             track_progress=track_progress,
             provider=llm_provider,
+            profile=get_profile(version.profile),
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 

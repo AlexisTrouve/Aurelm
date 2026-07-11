@@ -21,8 +21,9 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 from . import llm_stats
-from .entity_filter import ExtractedEntity, is_noise_entity, VALID_ENTITY_TYPES
+from .entity_filter import ExtractedEntity, is_noise_entity
 from .extraction_versions import ExtractionVersion, get_version, V1_BASELINE
+from .domain_profile import CIV_PROFILE, get_profile
 from .llm_provider import LLMProvider, OllamaProvider
 
 
@@ -65,6 +66,10 @@ class FactExtractor:
         """
         self.model = model
         self.version = version or V1_BASELINE
+        # Ontology gate for THIS version's domain profile (default civ). The
+        # entity-type gate below consults this set instead of a global constant,
+        # so a novel-profile version accepts novel types without civ changing.
+        self.allowed_entity_types = get_profile(self.version.profile).entity_types
         # Use provided provider, or fall back to OllamaProvider for backwards compat
         self.provider = provider or OllamaProvider(base_url=ollama_base_url)
         # Per-stage model overrides from external config (higher priority than version defaults)
@@ -494,7 +499,7 @@ class FactExtractor:
             )
             data = self._robust_json_parse(response_text)
             if data:
-                return self._coerce_entity_list(data.get("entities", []))
+                return self._coerce_entity_list(data.get("entities", []), self.allowed_entity_types)
             return []
         except Exception as e:
             print(f"Error during masked entity extraction: {e}")
@@ -635,8 +640,13 @@ class FactExtractor:
         return []
 
     @staticmethod
-    def _coerce_entity_list(val: Any) -> List[ExtractedEntity]:
+    def _coerce_entity_list(val: Any, allowed_entity_types: Optional[frozenset] = None) -> List[ExtractedEntity]:
         """Coerce LLM entity output to List[ExtractedEntity].
+
+        ``allowed_entity_types`` is the ontology gate for the active domain
+        profile. It is a parameter (not read from self) because this is a
+        @staticmethod also called at class level in tests; None defaults to the
+        civ ontology, preserving historical behaviour.
 
         Expected format: [{"name": "...", "type": "...", "context": "..."}]
         Filters noise and validates types.
@@ -644,6 +654,8 @@ class FactExtractor:
         if not isinstance(val, list):
             return []
 
+        # Ontology gate for the active profile (civ default when unset).
+        allowed = allowed_entity_types if allowed_entity_types is not None else CIV_PROFILE.entity_types
         entities: List[ExtractedEntity] = []
         seen: set = set()
 
@@ -674,8 +686,8 @@ class FactExtractor:
             if not name:
                 continue
 
-            # Validate entity type
-            if etype not in VALID_ENTITY_TYPES:
+            # Validate entity type against the active profile's ontology
+            if etype not in allowed:
                 continue
 
             # Filter noise
@@ -743,7 +755,7 @@ class FactExtractor:
                     "resources": self._coerce_list(facts.get("resources")),
                     "beliefs": self._coerce_list(facts.get("beliefs")),
                     "geography": self._coerce_list(facts.get("geography")),
-                    "entities": self._coerce_entity_list(facts.get("entities")),
+                    "entities": self._coerce_entity_list(facts.get("entities"), self.allowed_entity_types),
                 }
             else:
                 print(f"Warning: LLM response not valid JSON: {response_text[:200]}")
@@ -784,7 +796,7 @@ class FactExtractor:
 
             data = self._robust_json_parse(response_text)
             if data:
-                return self._coerce_entity_list(data.get("entities"))
+                return self._coerce_entity_list(data.get("entities"), self.allowed_entity_types)
             else:
                 return []
 
@@ -892,7 +904,7 @@ class FactExtractor:
             if not data:
                 return []
 
-            return self._coerce_entity_list(data.get("entities", []))
+            return self._coerce_entity_list(data.get("entities", []), self.allowed_entity_types)
 
         except Exception as e:
             print(f"Error during focused entity extraction: {e}")
@@ -982,7 +994,7 @@ class FactExtractor:
                             reason = drops_reasons.get(self._normalize_for_fuzzy(e.text), "?")
                             print(f"    DROP: {e.text} [{e.label}] -- {reason}")
                 else:
-                    validated = self._coerce_entity_list(data.get("entities"))
+                    validated = self._coerce_entity_list(data.get("entities"), self.allowed_entity_types)
                 print(f"  Validation: {len(entities)} -> {len(validated)} entities")
                 return validated
             else:

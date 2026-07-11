@@ -16,6 +16,11 @@ class ExtractionVersion:
     name: str
     description: str
 
+    # Domain profile name (domain_profile.PROFILES) selecting the ontology gate
+    # (valid entity/relation types) for this version. Default "civ" keeps every
+    # existing version on the historical ontology, byte-for-byte unchanged.
+    profile: str = "civ"
+
     # LLM parameters
     temperature: float = 0.1
     num_predict: int = 4000

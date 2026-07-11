@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 from . import llm_stats
 from .db import get_connection, update_progress
+from .domain_profile import CIV_PROFILE, DomainProfile
 from .llm_provider import LLMProvider, OllamaProvider
 
 
@@ -75,6 +76,42 @@ Règles :
 
 Réponds UNIQUEMENT en JSON :
 {{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}], "tags": ["..."]}}"""
+
+
+# Novel-domain profiling prompt (customer #1). Same JSON shape as the civ prompt
+# (so the parser is unchanged) but framed for a narrative and using the novel
+# relation vocabulary — filiation / mentorat / héritier-du-geste are the heart of
+# the story, so we ask for them explicitly. Refined against real chapters in a
+# later LLM pass; this is the structural starting point.
+NOVEL_PROFILE_PROMPT = """Tu es un archiviste expert pour un roman.
+
+Voici les passages complets mentionnant l'entité "{name}" (type: {entity_type}) dans le récit :
+
+{mentions}
+
+Produis :
+1. **description** : Description factuelle de cette entité (3-6 phrases). Qui/quoi est-ce ? Quel rôle joue-t-elle dans le récit ? Quelles sont ses caractéristiques notables ?
+2. **turn_summaries** : Pour CHAQUE chapitre où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité. Format : {{"Tour X": "résumé..."}}
+3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
+4. **relations** : Les relations avec d'autres entités NOMMÉES dans les extraits. Types possibles : parent-de, enfant-de, marié-à, mentor-de, héritier-du-geste, même-peuple, observe, ami-de, ennemi-de. Format : [{{"target": "Nom exact de l'autre entité", "type": "type_relation", "description": "brève explication"}}]
+5. **tags** : Parmi ces tags uniquement : {tag_vocab} — choisis ceux qui s'appliquent à cette entité (0 à 4 max). Format : ["tag1", "tag2"]
+
+Règles :
+- Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
+- Sois précis et factuel, cite les détails importants (noms, lieux, événements)
+- Pour les relations intimes (parent-de, marié-à, mentor-de) : ne les affirme QUE si le texte l'établit explicitement — ne devine jamais un lien de parenté
+- "héritier-du-geste" désigne une filiation THÉMATIQUE (un savoir, un rôle, un geste transmis), pas forcément génétique
+- Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
+
+Réponds UNIQUEMENT en JSON :
+{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}], "tags": ["..."]}}"""
+
+
+# Profiling prompt per domain profile name — selected by build_entity_profiles.
+_PROFILE_PROMPTS: dict[str, str] = {
+    "civ": PROFILE_PROMPT,
+    "novel": NOVEL_PROFILE_PROMPT,
+}
 
 
 def _find_rich_context_for_mention(
@@ -145,6 +182,7 @@ def build_entity_profiles(
     run_id: int | None = None,
     track_progress: bool = False,
     provider: LLMProvider | None = None,
+    profile: DomainProfile = CIV_PROFILE,
 ) -> list[EntityProfile]:
     """Build rich profiles for all active entities in the database.
 
@@ -158,6 +196,8 @@ def build_entity_profiles(
         incremental: If True, only process entities with new mentions in recently processed turns
         run_id: Pipeline run ID for progress tracking
         track_progress: Whether to track progress in pipeline_progress table
+        profile: Domain profile — selects the profiling prompt and the relation
+            ontology gate. Defaults to civ (historical behaviour unchanged).
     """
     conn = get_connection(db_path)
 
@@ -274,7 +314,8 @@ def build_entity_profiles(
                 if len(mentions_text) > 6000:
                     mentions_text = mentions_text[:6000] + "\n[...tronqué...]"
 
-                prompt = PROFILE_PROMPT.format(
+                # Pick the profiling prompt for the active domain (civ default).
+                prompt = _PROFILE_PROMPTS.get(profile.name, PROFILE_PROMPT).format(
                     name=name,
                     entity_type=entity_type,
                     mentions=mentions_text,
@@ -427,7 +468,10 @@ def build_entity_profiles(
 
     # Resolve and insert relations
     if use_llm:
-        relations_count = _resolve_and_insert_relations(conn, profiles, incremental=incremental)
+        relations_count = _resolve_and_insert_relations(
+            conn, profiles, incremental=incremental,
+            relation_types=profile.relation_types,
+        )
         print(f"       -> {relations_count} relations inserted")
 
     conn.close()
@@ -438,14 +482,23 @@ def build_entity_profiles(
     return profiles
 
 
-VALID_RELATION_TYPES = {
-    "located_in", "member_of", "created_by", "allied_with", "controls",
-    "part_of", "produces", "worships", "enemy_of", "trades_with",
-}
+# Valid relation types — sourced from the civ domain profile (single source of
+# truth). Kept as a module name for backward compatibility. The profile-aware
+# gate in _resolve_and_insert_relations uses the ACTIVE profile's set; this alias
+# is the civ default.
+VALID_RELATION_TYPES = CIV_PROFILE.relation_types
 
 
-def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], incremental: bool = False) -> int:
+def _resolve_and_insert_relations(
+    conn,
+    profiles: list[EntityProfile],
+    incremental: bool = False,
+    relation_types: frozenset[str] | None = None,
+) -> int:
     """Resolve raw LLM relations to entity IDs and insert into entity_relations.
+
+    ``relation_types`` is the ontology gate for the active domain profile; None
+    falls back to the civ set (VALID_RELATION_TYPES) for backward compatibility.
 
     Uses fuzzy matching: exact match on canonical_name first, then case-insensitive
     LIKE match, then alias lookup. Deduplicates (source, target, type) pairs.
@@ -454,6 +507,7 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
     batch (preserving relations from prior runs for unaffected entities).
     In full mode, clears all relations before reinserting.
     """
+    allowed_relation_types = relation_types or VALID_RELATION_TYPES
     # Build entity name -> id lookup (canonical + aliases)
     all_entities = conn.execute(
         "SELECT id, canonical_name, civ_id FROM entity_entities WHERE is_active = 1"
@@ -491,8 +545,8 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
             rel_type = rel["type"].strip().lower()
             description = rel.get("description", "")
 
-            # Validate relation type
-            if rel_type not in VALID_RELATION_TYPES:
+            # Validate relation type against the active profile's ontology
+            if rel_type not in allowed_relation_types:
                 continue
 
             # Resolve target entity
