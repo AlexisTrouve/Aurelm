@@ -91,13 +91,23 @@ py -3.12 -m pipeline.runner --data-dir <ONE_CHAPTER_DIR> --civ "Roman" \
 
 ## Gotchas
 
-- `../civjdr_roman` is a **live repo** (restructured mid-work: `chapitres/` → `book/`). Re-check the current chapter dir before running.
+- `../civjdr_roman` is a **live repo** (restructured mid-work). As of 2026-07-12 `chapitres/` holds only `CHAP_T01.md`; the relation-rich T05 content used by the feedback now lives at `reference/T05-gold-ouverture.md` (~950-word opening). For a reproducible relation test, copy it into a temp dir as `CHAP_T05.md` (the loader parses `T05`→chapter 5). Re-check the current chapter dir before running.
 - Chaining 2+ LLM runs in one background task hits the env kill limit — run **one chapter per task** (matches the architecture).
 - Every real bug this project was found by **real runs**, never by the (green) tests — incl. a self-introduced one (over-tight profiling scope killed relations, caught only by measuring the side effect). **Validate the WHOLE output, not just the intended effect.** "No real run = unverified."
 
 ## Still open (from the feedback / tuning) — don't build without asking
 
-- **Relation richness**: relations are clean + correctly typed but sparse (~1/chapter — the tight-context trade-off). They accumulate incrementally. To get more: bump `TIGHT_CONTEXT_MIN` (320→~550), relying on the prompt anti-bleed guard — measure on one T05 run.
+- **Relation richness — window-size lever DISPROVEN (measured, don't re-try)**:
+  relations are clean + correctly typed but sparse (~2 on the T05 gold chapter).
+  Bumping `TIGHT_CONTEXT_MIN` 320→550 was measured before/after on that chapter:
+  **identical 2 relations, the central romance (Pluie-Menue ⟷ Front-Levé) missed
+  at both**. Root cause is NOT window size — literary prose refers to characters
+  by pronouns ("il/elle/la"), so their NAMES never co-occur in a forward window;
+  the profiler sees the bond (Front-Levé's description literally says "cette autre
+  personne") but can't name the target. Reverted to 320. The real lever is a
+  chapter-level, coreference-aware relation pass (extract relations from the whole
+  chapter text with named endpoints, not from per-mention windows) — a design
+  change, not a tweak. Propose separately; don't build without asking.
 - **P5-bis — Cendre typed `person`**: it's a crane, but `noms.md`'s enforced-persons table lists it there → the seed types it person. Seed-data fix in the customer's `noms.md` (its repo) — not a code fix on our side.
 - Per-chapter relation *viewing* (relations lack `turn_id`). Decided unnecessary.
 - Chinese *extraction* prompts (seed carries cross-language; French prompts are weak on ZH).

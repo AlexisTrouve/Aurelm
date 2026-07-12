@@ -142,6 +142,15 @@ _SENT_BOUNDARY = re.compile(r"[.!?…»]\s|\n")
 # extend FORWARD by whole sentences up to this many chars — enough co-occurrence
 # for relations, still far below the ±400 window's cross-character bleed, and
 # backward expansion is avoided so a preceding neighbour's trait doesn't leak in.
+#
+# DO NOT bump this to "get more relations": measured 320 vs 550 on the T05 gold
+# chapter (feedback P-relations) — identical 2 relations, the central romance
+# (Pluie-Menue ⟷ Front-Levé) missed at BOTH. Root cause is not window size: in
+# literary prose the two characters refer to each other by PRONOUNS ("il/elle/la"),
+# so their NAMES never co-occur in any forward window — the profiler sees the bond
+# (Front-Levé's description says "cette autre personne") but can't name the target.
+# The real lever is a chapter-level, coreference-aware relation pass, not this
+# floor. Kept at 320 (the proven, tighter, bleed-safe setting).
 TIGHT_CONTEXT_MIN = 320
 
 
