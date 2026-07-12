@@ -7,8 +7,9 @@
 
 Aurelm was extended into a **generic entity-relation engine + headless
 exporters**, reusable on any corpus (not just the civ JDR). First non-civ
-customer: the novel in `../civjdr_roman`. All work is on branch
-`feat/generic-engine` (pushed to GitHub + Gitea, ~19 commits, not merged to main).
+customer: the novel in `../civjdr_roman`. The work was on branch
+`feat/generic-engine` and is now **merged to main** (PR #1, merge commit
+`5a2867d`, 2026-07-12; pushed to GitHub + Gitea).
 Two phases are done: (1) the engine itself (exporters, profiles, ingestion, seed,
 chapter-by-chapter incremental) and (2) a quality-tuning cycle answering the
 customer feedback. **Both are considered done — do not re-open anything without

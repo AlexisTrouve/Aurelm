@@ -117,7 +117,7 @@ Flutter Desktop GUI (Dashboard)
 ### In Progress
 - [ ] **Step 8o**: Civ Alias Resolver — UI-driven mapping of unresolved civ entity names to known civs. Migration 028 (`civ_aliases` + `civ_alias_dismissed`), pipeline `_detect_civ_mentions` uses aliases, `CivAliasResolverScreen` (done), `CivAliasRepository` (done), CivDetailScreen aliases section, backfill test, `gm_lock` buttons in relations/alias screens.
 
-### Generic Engine — branch `feat/generic-engine` (done, pushed; not yet merged to main)
+### Generic Engine — merged to main (PR #1, `5a2867d`; was branch `feat/generic-engine`)
 
 Turns Aurelm into a **generic entity-relation engine + headless exporters**, reusable on any corpus (first non-civ customer: the novel `../civjdr_roman`). **Civ path stays byte-identical / green throughout.** Full doc: `docs/generic-engine.md`. Handoff: `HANDOFF_GENERIC_ENGINE.md`. Spec: `AURELM_GENERIC_ENGINE_WISHLIST.md`.
 
@@ -126,12 +126,13 @@ Turns Aurelm into a **generic entity-relation engine + headless exporters**, reu
 - [x] **P3 — Generic ingestion**: `--corpus-type documents` (`document_loader.py`), 1 chapter = 1 turn, **zero schema change**, chapter-number-keyed synthetic ids.
 - [x] **Deterministic cast seed**: `--seed etat/noms.md` (`novel_seed.py`) — anchors canonical persons + FR/EN/ZH aliases; kills fake persons, resolves cross-language names (神谕者→Oracle).
 - [x] **Incremental accumulation**: processes **chapter-by-chapter** (never full); per-chapter history + relations accumulate. Fixed a dedup crash (shared alias) that had broken this.
+- [x] **Quality tuning** (after `FEEDBACK_NOVEL_V1_ROMAN_T05.md`): antonymy-aware alias judge (novel — opposite peoples don't merge); sentence-scoped profiling context (novel — no cross-character description bleed); relation romance/direction typing + inverse normalization; `novel-v2` (validate pass); **alias-survivor fix** — a seeded canonical name beats a frequent epithet (this is the *feedback* "P3", distinct from "P3 — Generic ingestion" above); relation-richness window lever **measured & disproven** (real lever = a chapter-level coreference-aware relation pass, not shipped).
 - **Rule**: one chapter per LLM run (~$0.003); never the full corpus at once.
 
 ### Next Steps
+- [x] **Merged `feat/generic-engine` to main** — PR #1, merge commit `5a2867d` (2026-07-12).
 - [ ] **Step 9**: Graph redesign — in-app Flutter force-directed graph still unusable (the headless `exporters graph` ego-graph is a separate, usable render, not a GUI fix).
 - [ ] **Step 10**: Deployment — packaging, Arthur's machine setup, Discord bot invite
-- [ ] **Merge `feat/generic-engine` to main** once reviewed.
 
 ## Environment Notes (Dev Machine)
 

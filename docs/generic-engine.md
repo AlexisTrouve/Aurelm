@@ -2,7 +2,8 @@
 
 > Turns Aurelm from a civ-JDR GM toolkit into a **generic entity-relation engine**
 > with **headless exporters**, reusable on any corpus. First non-civ customer: a
-> novel (`../civjdr_roman`). All of this lives on branch `feat/generic-engine`.
+> novel (`../civjdr_roman`). Merged to main via PR #1 (merge commit `5a2867d`;
+> was branch `feat/generic-engine`).
 
 ## 0. One-line model
 
