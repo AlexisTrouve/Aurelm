@@ -26,6 +26,12 @@ from .extraction_versions import ExtractionVersion, get_version, V1_BASELINE
 from .domain_profile import CIV_PROFILE, get_profile
 from .llm_provider import LLMProvider, OllamaProvider
 
+# CJK ideographs (Unified + Extension A). Used to lower the fuzzy-match length
+# floor for CJK names: Chinese is information-dense, so a 2-character name is a
+# full word — the latin-oriented floor of 4 would skip it and break cross-language
+# alias matching (e.g. a seeded ZH alias 煤灰 -> Grain-de-Suie).
+_CJK_RE = re.compile("[㐀-鿿]")
+
 
 @dataclass
 class StructuredFacts:
@@ -1050,7 +1056,9 @@ class FactExtractor:
                 continue  # already matched via another alias
 
             norm_name = self._normalize_for_fuzzy(name_lower)
-            if len(norm_name) < 4:
+            # CJK names of 2 chars are full words; latin needs >= 4 to avoid noise.
+            min_len = 2 if _CJK_RE.search(norm_name) else 4
+            if len(norm_name) < min_len:
                 continue  # too short, high false-positive risk
 
             # Check normalized exact substring
