@@ -26,7 +26,7 @@ Alexi's instruction; the "Still open" list below is on-request only.**
    same DB. History + relations accumulate across chapters. Never process a whole
    corpus in one pass.
 2. **Civ pipeline stays green.** After any change: `cd pipeline && py -3.12 -m pytest`
-   → expect ~261 passed / 5 skipped; the only failures are 2 `_real`
+   → expect ~265 passed / 5 skipped; the only failures are 2 `_real`
    LLM-integration tests needing a live Ollama (ignore them).
 2b. **Every novel-affecting change must stay CIV-safe AND generic.** The rule Alexi
    set: it must work for ANY content, not overfit to the roman's seed. Novel-only
@@ -70,6 +70,14 @@ content-agnostic. Fixes (all civ-safe, threaded via `DomainProfile`):
   inverse types to canonical direction (enfant-de→parent-de, apprenti-de→mentor-de)
   so the graph is consistently oriented. The central romance now types as `aime`,
   not `ami-de`.
+- **Alias merge survivor** (P3, `b6b3dd8`): a confirmed merge kept the entity with
+  the most mentions as the survivor, so a frequent epithet ("Sage") displaced the
+  seeded real name ("Front-Levé"). `alias_resolver._choose_survivor` now keeps a
+  seeded canonical name over a non-seeded one (mention count only breaks ties);
+  `seed_names` is threaded runner→resolve_aliases→confirm_aliases. `store_aliases`
+  also merges each alias atomically (commit-per-alias + rollback) so a failed pair
+  leaves no half-merged state instead of being silently committed. Civ is
+  byte-identical (never seeds → empty set → mention-count rule as before).
 
 ## Process a chapter (from `pipeline/`)
 
@@ -90,8 +98,7 @@ py -3.12 -m pipeline.runner --data-dir <ONE_CHAPTER_DIR> --civ "Roman" \
 ## Still open (from the feedback / tuning) — don't build without asking
 
 - **Relation richness**: relations are clean + correctly typed but sparse (~1/chapter — the tight-context trade-off). They accumulate incrementally. To get more: bump `TIGHT_CONTEXT_MIN` (320→~550), relying on the prompt anti-bleed guard — measure on one T05 run.
-- **P3 — alias applied to the wrong survivor**: a confirmed merge keeps the entity with the most mentions, so an epithet ("Sage") can beat the real name ("Front-Levé"); the merge is also swallowed by a broad try/except in `alias_resolver.store_aliases`. Deterministic fix: prefer the seeded canonical as survivor + don't swallow the merge.
-- **P5-bis — Cendre typed `person`**: it's a crane, but `noms.md`'s enforced-persons table lists it there → the seed types it person. Seed-data / ontology fix.
+- **P5-bis — Cendre typed `person`**: it's a crane, but `noms.md`'s enforced-persons table lists it there → the seed types it person. Seed-data fix in the customer's `noms.md` (its repo) — not a code fix on our side.
 - Per-chapter relation *viewing* (relations lack `turn_id`). Decided unnecessary.
 - Chinese *extraction* prompts (seed carries cross-language; French prompts are weak on ZH).
 - `--include-translations` CLI flag.
