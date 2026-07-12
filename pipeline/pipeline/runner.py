@@ -660,8 +660,11 @@ def run_pipeline(
         # Step 9: Alias resolution
         # Prompt version + score threshold can be set per-stage in llm_config:
         # "aliases": {"prompt_version": "v5-score-pct", "score_threshold": 0.7}
+        # The domain profile can force its own judge (novel → antonymy-aware),
+        # taking priority over the config so civ keeps its tuned v12.
         aliases_confirm_version = (
-            llm_config.get_prompt_version("aliases") if llm_config else None
+            get_profile(version.profile).alias_prompt_version
+            or (llm_config.get_prompt_version("aliases") if llm_config else None)
         )
         aliases_score_threshold = (
             llm_config.get_score_threshold("aliases") if llm_config else 0.7

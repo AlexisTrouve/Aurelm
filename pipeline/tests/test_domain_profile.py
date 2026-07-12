@@ -246,3 +246,19 @@ def test_build_entity_profiles_novel_profile_end_to_end(tmp_path):
         "SELECT relation_type FROM entity_relations WHERE relation_type='mentor-de'"
     ).fetchone()
     assert rel is not None
+
+
+# --- alias judge version per profile (P1: don't merge opposites) -------------
+
+def test_novel_uses_antonymy_alias_judge():
+    from pipeline.alias_resolver import _CONFIRM_VERSIONS
+    assert CIV_PROFILE.alias_prompt_version is None            # civ keeps config default (v12)
+    assert NOVEL_PROFILE.alias_prompt_version == "v14-antonymy-generic"
+    v = _CONFIRM_VERSIONS["v14-antonymy-generic"]              # registered
+    assert v.score_scale == 100
+    # prompt formats with the expected placeholders + has the opposition gate
+    text = v.prompt.format(
+        name_a="Peuple du ciel-clair", type_a="group", desc_a="d",
+        name_b="Peuple des nuages", type_b="group", desc_b="d", reason="fuzzy",
+    )
+    assert "OPPOSITION" in text and "DISTINCTES" in text

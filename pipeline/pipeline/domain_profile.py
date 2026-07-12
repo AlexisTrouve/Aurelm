@@ -48,6 +48,10 @@ class DomainProfile:
     # between characters in dense narrative (a neighbour's trait landing on the
     # wrong person). Off for civ (the wider window is the proven behaviour there).
     tight_profiling_context: bool = False
+    # Alias-confirmation prompt version for this profile (None = use the llm_config
+    # value, i.e. civ's tuned default). The novel profile overrides it with an
+    # antonymy-aware judge so opposite entities (rival peoples) are not merged.
+    alias_prompt_version: str | None = None
 
 
 # --- civ profile: the historical ontology, unchanged --------------------------
@@ -111,6 +115,8 @@ NOVEL_PROFILE = DomainProfile(
     # Novels are character-dense — scope profiling context tightly to avoid
     # one character's traits bleeding into another's description.
     tight_profiling_context=True,
+    # Antonymy-aware alias judge: don't merge two opposite/rival entities.
+    alias_prompt_version="v14-antonymy-generic",
 )
 
 

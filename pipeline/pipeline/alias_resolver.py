@@ -744,6 +744,62 @@ SCORE : [0 à 100.
 JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
 
 
+# Generic alias judge with an ANTONYMY gate. Content-agnostic (no game/genre
+# framing). Fixes the failure where two OPPOSITE members of one category
+# ("Peuple du ciel-clair" vs "Peuple des nuages") were merged at 75% because the
+# judge only scored similarity and rewarded shared theme. Used by the novel
+# profile; the civ path keeps v12 untouched.
+_V14_ANTONYMY_GENERIC_PROMPT = """\
+Tu détermines si deux entités extraites d'un même corpus sont la MÊME entité
+(des alias l'une de l'autre) ou DEUX entités distinctes.
+
+Une même entité peut apparaître sous des noms différents (surnom, forme longue,
+variante). Mais un simple LIEN THÉMATIQUE (même univers, même domaine, même
+catégorie) NE suffit PAS : il faut la même entité réelle — le même individu, le
+même lieu précis, le même groupe/faction.
+
+ENTITÉ A : "{name_a}" (type: {type_a})
+{desc_a}
+
+ENTITÉ B : "{name_b}" (type: {type_b})
+{desc_b}
+
+SIGNAL : {reason}
+
+ÉTAPE 1 — OPPOSITION (le plus important) :
+Les deux noms ou descriptions désignent-ils deux membres CONTRASTÉS, RIVAUX ou
+OPPOSÉS d'une même catégorie ? (ex : clair vs couvert/nuageux, feu vs eau, jour
+vs nuit, haut vs bas, un peuple vs son peuple rival, un camp vs le camp adverse)
+Si OUI → ce sont deux entités DISTINCTES. Partager une catégorie n'est PAS être
+la même entité. → SCORE <= 25, termine ici.
+
+ÉTAPE 2 — DESCRIPTIONS :
+Sinon, les descriptions décrivent-elles la même entité réelle — même individu,
+même rôle précis, même lieu nommé, même groupe ? Deux descriptions qui parlent
+d'aspects différents comptent comme "même" UNIQUEMENT si elles pointent sans
+ambiguïté vers la même entité (pas juste le même thème).
+-> OUI / INCERTAIN / NON.
+
+ÉTAPE 3 — NOMS (si ÉTAPE 2 != NON) :
+Incompatibilité structurelle ?
+• "Chef/Dirigeant de X", "Enfants/Fils de X", "Gardiens de X" vs X (partie != tout)
+• Lieu physique vs institution/groupe qui s'y trouve
+• "[Terme] de [A]" vs "[Terme] de [B]" avec A != B — SAUF si A et B sont des
+  variantes du MÊME mot (orthographe, singulier/pluriel : ciel = cieux). Deux
+  qualificatifs réellement différents (a fortiori opposés) -> incompatibilité.
+-> Si oui : INCOMPATIBILITE=OUI.
+
+SCORE : [0 à 100.
+  OPPOSITION=OUI -> 0-25.
+  INCOMPATIBILITE=OUI -> 0-35.
+  DESCRIPTIONS=OUI + pas d'incompatibilité -> 80-100.
+  DESCRIPTIONS=INCERTAIN -> 40-65.
+  DESCRIPTIONS=NON -> 0-40.
+  70+ = confirmation (même entité), <70 = rejet (distinctes).]
+
+JSON : {{"score": X, "confidence": "high/medium/low", "reasoning": "une phrase"}}"""
+
+
 # Registry of confirmation prompt versions.
 # Key = version name, used in llm_config.json "aliases": {"prompt_version": "..."}
 _CONFIRM_VERSIONS: dict[str, AliasConfirmVersion] = {
@@ -847,6 +903,18 @@ _CONFIRM_VERSIONS: dict[str, AliasConfirmVersion] = {
             "Best version for Qwen3 targeting F1>80%."
         ),
         prompt=_V12_DESC_FIRST_TUNED_PROMPT,
+        json_mode=False,
+        score_scale=100,
+    ),
+    "v14-antonymy-generic": AliasConfirmVersion(
+        name="v14-antonymy-generic",
+        description=(
+            "Generic (content-agnostic) alias judge with an ANTONYMY gate: two "
+            "contrasted/opposite members of one category are DISTINCT, and mere "
+            "thematic linkage no longer counts as 'same'. Used by the novel "
+            "profile; keeps the civ path on v12. Fixes merging opposite peoples."
+        ),
+        prompt=_V14_ANTONYMY_GENERIC_PROMPT,
         json_mode=False,
         score_scale=100,
     ),
