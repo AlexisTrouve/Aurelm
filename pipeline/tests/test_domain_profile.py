@@ -262,3 +262,40 @@ def test_novel_uses_antonymy_alias_judge():
         name_b="Peuple des nuages", type_b="group", desc_b="d", reason="fuzzy",
     )
     assert "OPPOSITION" in text and "DISTINCTES" in text
+
+
+# --- inverse-relation direction normalization (P2) --------------------------
+
+def test_inverse_relation_flipped_to_canonical():
+    # "Oracle apprenti-de Front-Levé" must be stored as "Front-Levé mentor-de Oracle".
+    conn = _relations_db()
+    prof = EntityProfile(
+        entity_id=1, canonical_name="Oracle", entity_type="person", civ_id=7,
+        raw_relations=[{"target": "Front-Levé", "type": "apprenti-de", "description": "élève"}],
+    )
+    inserted = _resolve_and_insert_relations(
+        conn, [prof], incremental=False,
+        relation_types=NOVEL_PROFILE.relation_types,
+        endpoint_types=NOVEL_PROFILE.relation_endpoint_types,
+        inverse_relations=dict(NOVEL_PROFILE.inverse_relations),
+    )
+    assert inserted == 1
+    r = conn.execute(
+        "SELECT source_entity_id s, target_entity_id t, relation_type rt FROM entity_relations"
+    ).fetchone()
+    assert (r["s"], r["t"], r["rt"]) == (2, 1, "mentor-de")   # Front-Levé -> Oracle
+
+
+def test_non_inverse_relation_keeps_direction():
+    conn = _relations_db()
+    prof = EntityProfile(
+        entity_id=1, canonical_name="Oracle", entity_type="person", civ_id=7,
+        raw_relations=[{"target": "Front-Levé", "type": "mentor-de", "description": "guide"}],
+    )
+    _resolve_and_insert_relations(
+        conn, [prof], incremental=False,
+        relation_types=NOVEL_PROFILE.relation_types,
+        inverse_relations=dict(NOVEL_PROFILE.inverse_relations),
+    )
+    r = conn.execute("SELECT source_entity_id s, target_entity_id t FROM entity_relations").fetchone()
+    assert (r["s"], r["t"]) == (1, 2)                          # Oracle -> Front-Levé (unchanged)

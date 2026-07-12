@@ -52,6 +52,11 @@ class DomainProfile:
     # value, i.e. civ's tuned default). The novel profile overrides it with an
     # antonymy-aware judge so opposite entities (rival peoples) are not merged.
     alias_prompt_version: str | None = None
+    # Inverse relation pairs (inverse_type, canonical_type). On insertion, an
+    # inverse-typed relation is flipped (source/target swapped) and stored under
+    # the canonical type, giving one consistent, correctly-oriented direction.
+    # Tuple (not dict) so the frozen dataclass stays hashable-safe.
+    inverse_relations: tuple[tuple[str, str], ...] = ()
 
 
 # --- civ profile: the historical ontology, unchanged --------------------------
@@ -94,15 +99,25 @@ _NOVEL_ENTITY_TYPES = frozenset({
 })
 _NOVEL_RELATION_TYPES = frozenset({
     "parent-de",           # filiation (genetic)
-    "enfant-de",           # inverse of parent-de (LLM may phrase either way)
+    "enfant-de",           # inverse of parent-de (normalized -> parent-de)
     "marié-à",             # marriage
-    "mentor-de",           # e.g. Shaman <-> apprentice
+    "amant-de",            # lover / romance (the novel's central bond)
+    "aime",                # one-way love / desire (may be unrequited)
+    "mentor-de",           # master -> apprentice
+    "apprenti-de",         # inverse of mentor-de (normalized -> mentor-de)
     "héritier-du-geste",   # thematic (non-genetic) lineage — core of the novel
     "même-peuple",         # shared people/origin
     "observe",             # the immortal Oracle vs the mortals
     "ami-de",
     "ennemi-de",
 })
+# Inverse relations: when the LLM phrases a link from the "child/apprentice" side,
+# flip source/target to the canonical direction so the graph is consistent and
+# correctly oriented regardless of which entity was profiled (feedback P2).
+_NOVEL_INVERSE_RELATIONS = (
+    ("enfant-de", "parent-de"),
+    ("apprenti-de", "mentor-de"),
+)
 
 NOVEL_PROFILE = DomainProfile(
     name="novel",
@@ -117,6 +132,8 @@ NOVEL_PROFILE = DomainProfile(
     tight_profiling_context=True,
     # Antonymy-aware alias judge: don't merge two opposite/rival entities.
     alias_prompt_version="v14-antonymy-generic",
+    # Normalize child/apprentice-side links to their canonical direction.
+    inverse_relations=_NOVEL_INVERSE_RELATIONS,
 )
 
 

@@ -101,7 +101,10 @@ Produis :
    - **parent-de** : "{name}" est le parent de la cible (la cible est son enfant)
    - **enfant-de** : "{name}" est l'enfant de la cible
    - **marié-à** : "{name}" est marié(e)/uni(e) à la cible
+   - **amant-de** : "{name}" et la cible sont amants/en couple (amour réciproque)
+   - **aime** : "{name}" aime/désire la cible (amour éventuellement non partagé, secret)
    - **mentor-de** : "{name}" enseigne/guide la cible (la cible est l'apprenti·e)
+   - **apprenti-de** : "{name}" est l'apprenti·e/l'élève de la cible (la cible est le maître)
    - **héritier-du-geste** : "{name}" reçoit d'une AUTRE PERSONNE un geste, un savoir ou un rôle transmis. RARE : à n'utiliser QUE si le texte décrit explicitement une transmission d'une personne à une autre. Jamais vers un objet.
    - **même-peuple** : "{name}" et la cible appartiennent au même peuple/lignée
    - **observe** : "{name}" observe/surveille la cible (typiquement l'immortel qui regarde les mortels)
@@ -110,9 +113,10 @@ Produis :
 
 Règles :
 - Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
-- Sois précis et factuel, cite les détails importants (noms, lieux, événements)
+- Les extraits peuvent mentionner d'AUTRES personnages (contexte). Décris UNIQUEMENT "{name}" : n'attribue JAMAIS à "{name}" un trait physique, une action, un rôle ou un nom qui appartient à un autre personnage nommé
+- Extrais TOUTES les relations EXPLICITES entre "{name}" et d'autres personnages (ne te limite pas à une seule) — mais uniquement celles que le texte établit
 - Relations : uniquement PERSONNE↔PERSONNE (voir la règle absolue ci-dessus). Si "{name}" n'est pas un personnage, laisse "relations" vide.
-- Ne devine JAMAIS un lien de parenté, de mariage ou d'amour : ne l'affirme que si le texte l'établit explicitement
+- Ne devine JAMAIS un lien de parenté, de mariage ou d'amour : ne l'affirme que si le texte l'établit explicitement. Une romance secrète ou un amour non partagé = "aime" (pas "amant-de")
 - "héritier-du-geste" est RARE et thématique (transmission d'un geste/savoir entre deux personnes) — dans le doute, ne l'utilise pas
 - Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
 
@@ -132,12 +136,22 @@ _PROFILE_PROMPTS: dict[str, str] = {
 _SENT_BOUNDARY = re.compile(r"[.!?…»]\s|\n")
 
 
-def _sentence_around(text: str, pos: int, mention_len: int) -> str:
-    """Return the sentence containing the mention at ``pos`` in ``text``.
+# Tight-mode context floor. The sentence containing the mention alone was too
+# narrow: it prevented DESCRIPTION bleed but also killed RELATION extraction (a
+# link needs two characters co-occurring). We keep the mention's sentence and
+# extend FORWARD by whole sentences up to this many chars — enough co-occurrence
+# for relations, still far below the ±400 window's cross-character bleed, and
+# backward expansion is avoided so a preceding neighbour's trait doesn't leak in.
+TIGHT_CONTEXT_MIN = 320
 
-    Walks back to the previous sentence terminator and forward to the next, so
-    the excerpt is ABOUT this entity — not the ±400-char neighbourhood, which
-    pulls in adjacent characters' sentences and bleeds their traits.
+
+def _sentence_around(text: str, pos: int, mention_len: int, min_chars: int = 0) -> str:
+    """Return the sentence containing the mention, optionally extended forward.
+
+    Walks back to the previous sentence terminator and forward to the next so the
+    excerpt starts on the entity's own sentence (no backward bleed). If
+    ``min_chars`` is set, whole following sentences are appended until the excerpt
+    reaches that length — restoring the local co-occurrence context relations need.
     """
     start = 0
     for m in _SENT_BOUNDARY.finditer(text[:pos]):
@@ -145,6 +159,13 @@ def _sentence_around(text: str, pos: int, mention_len: int) -> str:
     mention_end = pos + mention_len
     m = _SENT_BOUNDARY.search(text, mention_end)
     end = m.end() if m else len(text)
+    # Extend forward by whole sentences until the min length is reached.
+    while end - start < min_chars and end < len(text):
+        nxt = _SENT_BOUNDARY.search(text, end)
+        if not nxt or nxt.end() <= end:
+            end = len(text)
+            break
+        end = nxt.end()
     return text[start:end].strip()
 
 
@@ -177,7 +198,8 @@ def _find_rich_context_for_mention(
         pos = seg_content.lower().find(mention_lower)
         if pos != -1:
             if sentence_scope:
-                return _sentence_around(seg_content, pos, len(mention_text))
+                return _sentence_around(seg_content, pos, len(mention_text),
+                                        min_chars=TIGHT_CONTEXT_MIN)
             half = RICH_CONTEXT_WINDOW // 2
             start = max(0, pos - half)
             end = min(len(seg_content), pos + len(mention_text) + half)
@@ -517,6 +539,7 @@ def build_entity_profiles(
             conn, profiles, incremental=incremental,
             relation_types=domain_profile.relation_types,
             endpoint_types=domain_profile.relation_endpoint_types,
+            inverse_relations=dict(domain_profile.inverse_relations),
         )
         print(f"       -> {relations_count} relations inserted")
 
@@ -541,6 +564,7 @@ def _resolve_and_insert_relations(
     incremental: bool = False,
     relation_types: frozenset[str] | None = None,
     endpoint_types: frozenset[str] | None = None,
+    inverse_relations: dict[str, str] | None = None,
 ) -> int:
     """Resolve raw LLM relations to entity IDs and insert into entity_relations.
 
@@ -548,6 +572,9 @@ def _resolve_and_insert_relations(
     falls back to the civ set (VALID_RELATION_TYPES) for backward compatibility.
     ``endpoint_types`` (if set) restricts BOTH ends of a relation to those entity
     types — a hard deterministic gate (e.g. person↔person for a novel). None = any.
+    ``inverse_relations`` (if set) maps an inverse relation type to its canonical
+    one; such a relation is flipped (source/target swapped) and stored canonically
+    so the graph is consistently oriented regardless of which entity was profiled.
 
     Uses fuzzy matching: exact match on canonical_name first, then case-insensitive
     LIKE match, then alias lookup. Deduplicates (source, target, type) pairs.
@@ -596,6 +623,13 @@ def _resolve_and_insert_relations(
             rel_type = rel["type"].strip().lower()
             description = rel.get("description", "")
 
+            # Normalize an inverse-direction relation to its canonical type; the
+            # source/target are swapped at insertion (flip) so e.g. an apprentice's
+            # "apprenti-de X" becomes "X mentor-de apprentice".
+            flip = bool(inverse_relations and rel_type in inverse_relations)
+            if flip:
+                rel_type = inverse_relations[rel_type]
+
             # Validate relation type against the active profile's ontology
             if rel_type not in allowed_relation_types:
                 continue
@@ -622,8 +656,11 @@ def _resolve_and_insert_relations(
                         or id_to_type.get(target_id) not in endpoint_types):
                     continue
 
+            # Apply the inverse flip (swap ends) for canonical orientation.
+            src_id, tgt_id = (target_id, source_id) if flip else (source_id, target_id)
+
             # Deduplicate
-            key = (source_id, target_id, rel_type)
+            key = (src_id, tgt_id, rel_type)
             if key in seen:
                 continue
             seen.add(key)
@@ -631,7 +668,7 @@ def _resolve_and_insert_relations(
             conn.execute(
                 """INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type, description)
                    VALUES (?, ?, ?, ?)""",
-                (source_id, target_id, rel_type, description),
+                (src_id, tgt_id, rel_type, description),
             )
             inserted += 1
 

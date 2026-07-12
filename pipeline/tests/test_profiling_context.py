@@ -33,3 +33,19 @@ def test_sentence_scope_handles_final_sentence_without_terminator():
     pos = text.find("Oracle")
     s = _sentence_around(text, pos, len("Oracle"))
     assert s == text                 # runs to end of text, no crash
+
+
+def test_min_chars_extends_forward_for_relation_context():
+    text = "X apparaît. Puis il agit longuement avec Y dans la scène qui suit, en détail."
+    pos = text.find("X")
+    s = _sentence_around(text, pos, 1, min_chars=40)
+    assert "Y" in s              # extended forward past the short first sentence
+
+
+def test_min_chars_never_extends_backward():
+    # A preceding neighbour's trait must NOT leak in even when extending.
+    text = "Voisin a le menton fier. X taille la pierre."
+    pos = text.find("X")
+    s = _sentence_around(text, pos, 1, min_chars=200)
+    assert "menton" not in s     # backward neighbour excluded
+    assert "taille la pierre" in s
