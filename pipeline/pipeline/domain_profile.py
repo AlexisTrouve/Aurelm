@@ -38,6 +38,11 @@ class DomainProfile:
     name: str
     entity_types: frozenset[str]
     relation_types: frozenset[str]
+    # Entity types allowed at BOTH ends of a relation. None = any (civ default).
+    # A hard, deterministic gate that enforces what the profiling prompt can only
+    # ask for softly — e.g. a person-centred novel keeps person↔person edges only,
+    # dropping relations the LLM drew from a place/group despite the instruction.
+    relation_endpoint_types: frozenset[str] | None = None
 
 
 # --- civ profile: the historical ontology, unchanged --------------------------
@@ -94,6 +99,10 @@ NOVEL_PROFILE = DomainProfile(
     name="novel",
     entity_types=_NOVEL_ENTITY_TYPES,
     relation_types=_NOVEL_RELATION_TYPES,
+    # The mindmap is person-centred ("les persos, pas le reste"): keep only
+    # relations between two named characters. Deterministically drops the
+    # place/group edges the LLM emits despite the prompt asking for person↔person.
+    relation_endpoint_types=frozenset({"person"}),
 )
 
 

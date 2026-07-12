@@ -93,14 +93,27 @@ Produis :
 1. **description** : Description factuelle de cette entité (3-6 phrases). Qui/quoi est-ce ? Quel rôle joue-t-elle dans le récit ? Quelles sont ses caractéristiques notables ?
 2. **turn_summaries** : Pour CHAQUE chapitre où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité. Format : {{"Tour X": "résumé..."}}
 3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
-4. **relations** : Les relations avec d'autres entités NOMMÉES dans les extraits. Types possibles : parent-de, enfant-de, marié-à, mentor-de, héritier-du-geste, même-peuple, observe, ami-de, ennemi-de. Format : [{{"target": "Nom exact de l'autre entité", "type": "type_relation", "description": "brève explication"}}]
+4. **relations** : Les liens entre "{name}" et d'AUTRES PERSONNAGES NOMMÉS (des personnes). Format : [{{"target": "Nom exact de l'autre personnage", "type": "type_relation", "description": "brève explication citant le texte"}}]
+
+   RÈGLE ABSOLUE : une relation ne relie QUE deux personnages (des personnes nommées). N'établis JAMAIS de relation vers un objet, un lieu, un outil, une plante, une chose ou un concept. Seule exception : "même-peuple" peut relier deux peuples/lignées.
+
+   La source de la relation est TOUJOURS "{name}". Choisis le type selon cette direction exacte :
+   - **parent-de** : "{name}" est le parent de la cible (la cible est son enfant)
+   - **enfant-de** : "{name}" est l'enfant de la cible
+   - **marié-à** : "{name}" est marié(e)/uni(e) à la cible
+   - **mentor-de** : "{name}" enseigne/guide la cible (la cible est l'apprenti·e)
+   - **héritier-du-geste** : "{name}" reçoit d'une AUTRE PERSONNE un geste, un savoir ou un rôle transmis. RARE : à n'utiliser QUE si le texte décrit explicitement une transmission d'une personne à une autre. Jamais vers un objet.
+   - **même-peuple** : "{name}" et la cible appartiennent au même peuple/lignée
+   - **observe** : "{name}" observe/surveille la cible (typiquement l'immortel qui regarde les mortels)
+   - **ami-de** / **ennemi-de** : "{name}" est ami(e) / ennemi(e) de la cible
 5. **tags** : Parmi ces tags uniquement : {tag_vocab} — choisis ceux qui s'appliquent à cette entité (0 à 4 max). Format : ["tag1", "tag2"]
 
 Règles :
 - Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
 - Sois précis et factuel, cite les détails importants (noms, lieux, événements)
-- Pour les relations intimes (parent-de, marié-à, mentor-de) : ne les affirme QUE si le texte l'établit explicitement — ne devine jamais un lien de parenté
-- "héritier-du-geste" désigne une filiation THÉMATIQUE (un savoir, un rôle, un geste transmis), pas forcément génétique
+- Relations : uniquement PERSONNE↔PERSONNE (voir la règle absolue ci-dessus). Si "{name}" n'est pas un personnage, laisse "relations" vide.
+- Ne devine JAMAIS un lien de parenté, de mariage ou d'amour : ne l'affirme que si le texte l'établit explicitement
+- "héritier-du-geste" est RARE et thématique (transmission d'un geste/savoir entre deux personnes) — dans le doute, ne l'utilise pas
 - Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
 
 Réponds UNIQUEMENT en JSON :
@@ -473,6 +486,7 @@ def build_entity_profiles(
         relations_count = _resolve_and_insert_relations(
             conn, profiles, incremental=incremental,
             relation_types=domain_profile.relation_types,
+            endpoint_types=domain_profile.relation_endpoint_types,
         )
         print(f"       -> {relations_count} relations inserted")
 
@@ -496,11 +510,14 @@ def _resolve_and_insert_relations(
     profiles: list[EntityProfile],
     incremental: bool = False,
     relation_types: frozenset[str] | None = None,
+    endpoint_types: frozenset[str] | None = None,
 ) -> int:
     """Resolve raw LLM relations to entity IDs and insert into entity_relations.
 
     ``relation_types`` is the ontology gate for the active domain profile; None
     falls back to the civ set (VALID_RELATION_TYPES) for backward compatibility.
+    ``endpoint_types`` (if set) restricts BOTH ends of a relation to those entity
+    types — a hard deterministic gate (e.g. person↔person for a novel). None = any.
 
     Uses fuzzy matching: exact match on canonical_name first, then case-insensitive
     LIKE match, then alias lookup. Deduplicates (source, target, type) pairs.
@@ -510,13 +527,15 @@ def _resolve_and_insert_relations(
     In full mode, clears all relations before reinserting.
     """
     allowed_relation_types = relation_types or VALID_RELATION_TYPES
-    # Build entity name -> id lookup (canonical + aliases)
+    # Build entity name -> id lookup (canonical + aliases) and id -> type map.
     all_entities = conn.execute(
-        "SELECT id, canonical_name, civ_id FROM entity_entities WHERE is_active = 1"
+        "SELECT id, canonical_name, entity_type, civ_id FROM entity_entities WHERE is_active = 1"
     ).fetchall()
     name_to_id: dict[str, int] = {}
+    id_to_type: dict[int, str] = {}
     for e in all_entities:
         name_to_id[e["canonical_name"].lower()] = e["id"]
+        id_to_type[e["id"]] = e["entity_type"]
 
     all_aliases = conn.execute(
         "SELECT entity_id, alias FROM entity_aliases"
@@ -564,6 +583,14 @@ def _resolve_and_insert_relations(
 
             if target_id is None or target_id == source_id:
                 continue
+
+            # Endpoint-type gate: keep only relations whose BOTH ends are of an
+            # allowed type (e.g. person↔person for a novel). Deterministic — drops
+            # what the profiling prompt asked for but the LLM ignored.
+            if endpoint_types is not None:
+                if (id_to_type.get(source_id) not in endpoint_types
+                        or id_to_type.get(target_id) not in endpoint_types):
+                    continue
 
             # Deduplicate
             key = (source_id, target_id, rel_type)

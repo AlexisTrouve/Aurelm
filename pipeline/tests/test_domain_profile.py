@@ -88,14 +88,15 @@ def _relations_db() -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.executescript("""
         CREATE TABLE entity_entities (id INTEGER PRIMARY KEY, canonical_name TEXT,
-            civ_id INTEGER, is_active INTEGER DEFAULT 1);
+            entity_type TEXT, civ_id INTEGER, is_active INTEGER DEFAULT 1);
         CREATE TABLE entity_aliases (id INTEGER PRIMARY KEY, entity_id INTEGER, alias TEXT);
         CREATE TABLE entity_relations (id INTEGER PRIMARY KEY, source_entity_id INTEGER,
             target_entity_id INTEGER, relation_type TEXT, description TEXT);
     """)
     conn.executemany(
-        "INSERT INTO entity_entities (id, canonical_name, civ_id, is_active) VALUES (?,?,?,1)",
-        [(1, "Oracle", 7), (2, "Front-Levé", 7)],
+        "INSERT INTO entity_entities (id, canonical_name, entity_type, civ_id, is_active) VALUES (?,?,?,?,1)",
+        [(1, "Oracle", "person", 7), (2, "Front-Levé", "person", 7),
+         (3, "Langue de galets", "place", 7)],
     )
     conn.commit()
     return conn
@@ -138,6 +139,39 @@ def test_relation_gate_defaults_to_civ_when_unset():
         raw_relations=[{"target": "Front-Levé", "type": "allied_with", "description": "x"}],
     )
     inserted = _resolve_and_insert_relations(conn, [civ_profile], incremental=False)
+    assert inserted == 1
+
+
+def test_endpoint_gate_drops_non_person_relations():
+    # A place target must be dropped when endpoints are restricted to persons,
+    # while a person->person relation of the same type survives.
+    conn = _relations_db()
+    prof = EntityProfile(
+        entity_id=1, canonical_name="Oracle", entity_type="person", civ_id=7,
+        raw_relations=[
+            {"target": "Front-Levé", "type": "ami-de", "description": "person->person"},
+            {"target": "Langue de galets", "type": "ami-de", "description": "person->place"},
+        ],
+    )
+    inserted = _resolve_and_insert_relations(
+        conn, [prof], incremental=False,
+        relation_types=NOVEL_PROFILE.relation_types,
+        endpoint_types=NOVEL_PROFILE.relation_endpoint_types,   # {"person"}
+    )
+    assert inserted == 1
+    rows = conn.execute(
+        "SELECT target_entity_id FROM entity_relations").fetchall()
+    assert [r["target_entity_id"] for r in rows] == [2]        # Front-Levé, not the place
+
+
+def test_endpoint_gate_off_keeps_all_when_unset():
+    # endpoint_types=None (civ default) -> place target is NOT dropped.
+    conn = _relations_db()
+    prof = EntityProfile(
+        entity_id=1, canonical_name="Oracle", entity_type="person", civ_id=7,
+        raw_relations=[{"target": "Langue de galets", "type": "allied_with", "description": "x"}],
+    )
+    inserted = _resolve_and_insert_relations(conn, [prof], incremental=False)
     assert inserted == 1
 
 
