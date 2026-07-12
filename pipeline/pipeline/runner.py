@@ -37,6 +37,7 @@ from .db import (
     update_run_usage,
 )
 from .loader import load_directory
+from .document_loader import load_documents
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
@@ -67,6 +68,9 @@ def run_pipeline(
     civ_name: str = "",
     player_name: str | None = None,
     use_llm: bool = True,
+    # Ingestion format: "discord" (default, MJ/PJ markdown) or "documents"
+    # (generic chapters/novels via document_loader). Only affects the load step.
+    corpus_type: str = "discord",
     wiki_dir: str | None = None,
     track_progress: bool = False,
     extraction_version: str = "v22.2.2-pastlevel",
@@ -121,7 +125,10 @@ def run_pipeline(
     }
 
     bot_mode = messages is not None
-    _channel_id = channel_id or CHANNEL_ID
+    # Documents corpora get their own default channel scope so they don't mix
+    # with Discord "file-import" data if both live in the same DB.
+    _default_channel = "documents" if corpus_type == "documents" else CHANNEL_ID
+    _channel_id = channel_id or _default_channel
 
     if not bot_mode:
         # CLI mode: steps 1-4 load from files
@@ -134,10 +141,17 @@ def run_pipeline(
         print(f"[2/10] Registering civilization: {civ_name}")
         civ_id = register_civilization(db_path, civ_name, player_name=player_name)
 
-        # Step 3: Load markdown files
+        # Step 3: Load source files.
+        # Discord corpus -> load_directory (MJ/PJ markdown); document corpus
+        # (novels/chapters) -> load_documents. Both only fill turn_raw_messages;
+        # everything downstream is corpus-agnostic.
         assert data_dir is not None, "data_dir required in CLI mode"
-        print(f"[3/10] Loading markdown files from {data_dir}...")
-        msg_count = load_directory(data_dir, db_path, channel_id=_channel_id)
+        if corpus_type == "documents":
+            print(f"[3/10] Loading documents from {data_dir}...")
+            msg_count = load_documents(data_dir, db_path, channel_id=_channel_id)
+        else:
+            print(f"[3/10] Loading markdown files from {data_dir}...")
+            msg_count = load_directory(data_dir, db_path, channel_id=_channel_id)
         stats["messages_loaded"] = msg_count
         print(f"       -> {msg_count} messages in database")
 
@@ -562,8 +576,10 @@ def run_pipeline(
     if preanalysis_stats["strategies_analyzed"]:
         print(f"       -> {preanalysis_stats['strategies_analyzed']} player strategies analyzed")
 
-    # Step 7: Subject extraction (MJ choices + PJ initiatives)
-    if use_llm:
+    # Step 7: Subject extraction (MJ choices + PJ initiatives).
+    # MJ/PJ-specific — skipped for document corpora (no player, no choices; it
+    # would also hit the subject_subjects.direction CHECK).
+    if use_llm and corpus_type != "documents":
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
@@ -575,6 +591,8 @@ def run_pipeline(
             db_path, civ_id, all_chunks, gm_author_id,
             subjects_model, llm_provider,
         )
+    elif use_llm:
+        print(f"[7/10] {civ_name} — skipping subjects (documents corpus, no MJ/PJ)")
 
     # Step 8: Entity profiling (LLM-based)
     if use_llm:
@@ -597,29 +615,32 @@ def run_pipeline(
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
-        # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from civ_mentions
-        if track_progress:
-            conn2 = get_connection(db_path)
-            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="civ_relations",
-                            civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
-            conn2.commit(); conn2.close()
-        print(f"[8.5/10] {civ_name} — profiling inter-civ relations...")
-        from .civ_relation_profiler import build_civ_relations
-        rel_stats = build_civ_relations(
-            db_path,
-            source_civ_id=civ_id,
-            model=profiling_model,
-            provider=llm_provider,
-            use_llm=use_llm,
-        )
-        if rel_stats["pairs_found"]:
-            print(
-                f"       -> {rel_stats['relations_built']} relations profiled"
-                f" ({rel_stats['pairs_found']} pairs found)"
+        # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from
+        # civ_mentions. Inter-civ specific — skipped for document corpora (a
+        # single-narrator novel has no foreign civilizations).
+        if corpus_type != "documents":
+            if track_progress:
+                conn2 = get_connection(db_path)
+                update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                                0, 1, "stage", "running", stage_name="civ_relations",
+                                civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
+                conn2.commit(); conn2.close()
+            print(f"[8.5/10] {civ_name} — profiling inter-civ relations...")
+            from .civ_relation_profiler import build_civ_relations
+            rel_stats = build_civ_relations(
+                db_path,
+                source_civ_id=civ_id,
+                model=profiling_model,
+                provider=llm_provider,
+                use_llm=use_llm,
             )
-        else:
-            print("       -> No foreign-civ mentions detected")
+            if rel_stats["pairs_found"]:
+                print(
+                    f"       -> {rel_stats['relations_built']} relations profiled"
+                    f" ({rel_stats['pairs_found']} pairs found)"
+                )
+            else:
+                print("       -> No foreign-civ mentions detected")
 
         # Step 9: Alias resolution
         # Prompt version + score threshold can be set per-stage in llm_config:
@@ -649,9 +670,11 @@ def run_pipeline(
         print("[7/10] Skipping subject extraction (--no-llm)")
         print("[8/10] Skipping entity profiling (--no-llm)")
         # Still register pairs with unknown opinion so the GUI shows known contacts
-        print("[8.5/10] Registering civ contacts (--no-llm, opinion=unknown)...")
-        from .civ_relation_profiler import build_civ_relations
-        build_civ_relations(db_path, source_civ_id=civ_id, use_llm=False)
+        # (Discord corpora only — a document corpus has no inter-civ contacts).
+        if corpus_type != "documents":
+            print("[8.5/10] Registering civ contacts (--no-llm, opinion=unknown)...")
+            from .civ_relation_profiler import build_civ_relations
+            build_civ_relations(db_path, source_civ_id=civ_id, use_llm=False)
         print("[9/10] Skipping alias resolution (--no-llm)")
 
     # Step 10: Wiki generation (optional)
@@ -1887,6 +1910,11 @@ def main() -> None:
     parser.add_argument("--civ", help="Civilization name")
     parser.add_argument("--db", default="aurelm.db", help="Database file path")
     parser.add_argument("--player", default=None, help="Player name")
+    parser.add_argument(
+        "--corpus-type", choices=["discord", "documents"], default="discord",
+        help="Ingestion format: 'discord' (MJ/PJ markdown, default) or "
+             "'documents' (generic chapters/novels). 'documents' skips MJ/PJ stages.",
+    )
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
@@ -1957,6 +1985,7 @@ def main() -> None:
         db_path=args.db,
         civ_name=args.civ,
         player_name=args.player,
+        corpus_type=args.corpus_type,
         use_llm=not args.no_llm,
         wiki_dir=args.wiki_dir,
         track_progress=args.track_progress,
