@@ -109,11 +109,15 @@ def load_documents(
                 continue  # skip empty files rather than create an empty turn
             chapter = _chapter_number(filepath.stem, i + 1)
 
-            # Monotonic timestamps: placeholder strictly before its chapter, and
-            # chapters in order — so fetch_unprocessed_messages (ORDER BY ts) reads
-            # them chapter by chapter.
-            placeholder_ts = (_BASE_TS + timedelta(minutes=2 * i)).isoformat()
-            chapter_ts = (_BASE_TS + timedelta(minutes=2 * i + 1)).isoformat()
+            # All synthetic values are keyed on the CHAPTER NUMBER, not the file's
+            # position in this batch — so the loader is idempotent and composes
+            # chapter-by-chapter: loading [T05] then [T06] separately yields the
+            # same stable ids/timestamps as loading them together (no collisions,
+            # correct order). Timestamps are monotonic by chapter (placeholder
+            # strictly before its chapter) so fetch_unprocessed_messages reads in
+            # chapter order.
+            placeholder_ts = (_BASE_TS + timedelta(minutes=2 * chapter)).isoformat()
+            chapter_ts = (_BASE_TS + timedelta(minutes=2 * chapter + 1)).isoformat()
 
             # 1. Synthetic __player__ placeholder — triggers a chunker boundary so
             # each chapter is its own turn (same mechanism as the Discord loader).
@@ -122,7 +126,7 @@ def load_documents(
                    (discord_message_id, discord_channel_id, author_id, author_name,
                     content, timestamp)
                    VALUES (?, ?, ?, ?, ?, ?)""",
-                (f"synth-player-doc-{i:04d}", channel_id, _SYNTHETIC_PLAYER_ID,
+                (f"synth-player-doc-T{chapter:04d}", channel_id, _SYNTHETIC_PLAYER_ID,
                  _SYNTHETIC_PLAYER_NAME, f"[Tour {chapter}]", placeholder_ts),
             )
 

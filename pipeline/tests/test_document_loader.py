@@ -119,3 +119,39 @@ def test_empty_file_skipped(tmp_path):
 def test_missing_dir_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         load_documents(str(tmp_path / "nope"), str(tmp_path / "x.db"))
+
+
+# --- incremental, chapter-by-chapter (never full) ---------------------------
+
+def _one_chapter_dir(tmp_path, name: str, num: str, body: str):
+    d = tmp_path / name
+    d.mkdir()
+    (d / f"CHAP_T{num}.md").write_text(f"# Chap {num}\n{body}", encoding="utf-8")
+    return str(d)
+
+
+def test_incremental_chapters_compose_without_collision(tmp_path):
+    # Load T05 alone, then T10 alone, into the SAME db (one chapter at a time).
+    db = str(tmp_path / "novel.db"); init_db(db)
+    dA = _one_chapter_dir(tmp_path, "a", "05", "Contenu cinq.")
+    dB = _one_chapter_dir(tmp_path, "b", "10", "Contenu dix.")
+
+    assert load_documents(dA, db) == 1
+    assert load_documents(dB, db) == 1     # no id/timestamp collision with T05
+
+    conn = get_connection(db)
+    # two distinct placeholders keyed on chapter number (T0005, T0010)
+    ph = sorted(r["discord_message_id"] for r in conn.execute(
+        "SELECT discord_message_id FROM turn_raw_messages WHERE author_name='__player__'"))
+    assert ph == ["synth-player-doc-T0005", "synth-player-doc-T0010"]
+    # narrators in chapter order by timestamp (T05 before T10)
+    narr = [r["content"][:8] for r in conn.execute(
+        "SELECT content FROM turn_raw_messages WHERE author_name='Narrator' ORDER BY timestamp")]
+    assert narr == ["# Chap 0", "# Chap 1"]   # "# Chap 05" then "# Chap 10"
+
+
+def test_reloading_same_chapter_is_idempotent(tmp_path):
+    db = str(tmp_path / "novel.db"); init_db(db)
+    dA = _one_chapter_dir(tmp_path, "a", "05", "Contenu cinq.")
+    assert load_documents(dA, db) == 1
+    assert load_documents(dA, db) == 0     # same chapter again -> nothing new
