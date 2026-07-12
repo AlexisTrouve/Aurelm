@@ -38,6 +38,7 @@ from .db import (
 )
 from .loader import load_directory
 from .document_loader import load_documents
+from .novel_seed import parse_noms, apply_seed
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
@@ -71,6 +72,9 @@ def run_pipeline(
     # Ingestion format: "discord" (default, MJ/PJ markdown) or "documents"
     # (generic chapters/novels via document_loader). Only affects the load step.
     corpus_type: str = "discord",
+    # Optional path to a canonical name registry (e.g. the roman's etat/noms.md).
+    # When set (documents corpora), the known cast is seeded before extraction.
+    seed_path: str | None = None,
     wiki_dir: str | None = None,
     track_progress: bool = False,
     extraction_version: str = "v22.2.2-pastlevel",
@@ -140,6 +144,17 @@ def run_pipeline(
         # Step 2: Register civilization
         print(f"[2/10] Registering civilization: {civ_name}")
         civ_id = register_civilization(db_path, civ_name, player_name=player_name)
+
+        # Step 2.5: Deterministic cast seed (documents corpora, optional).
+        # Anchors the KNOWN persons + cross-language aliases from the corpus's own
+        # registry (e.g. etat/noms.md) BEFORE extraction, so _build_civ_entity_lookup
+        # feeds them to the pattern pass — mentions canonicalize to real characters
+        # instead of spawning generic-noun persons (addresses the §6 low-trust rule).
+        if seed_path and corpus_type == "documents":
+            cast = parse_noms(seed_path)
+            seed_stats = apply_seed(db_path, civ_id, cast)
+            print(f"[2.5/10] Seeded cast from {seed_path}: "
+                  f"{seed_stats['entities_added']} persons, {seed_stats['aliases_added']} aliases")
 
         # Step 3: Load source files.
         # Discord corpus -> load_directory (MJ/PJ markdown); document corpus
@@ -1915,6 +1930,12 @@ def main() -> None:
         help="Ingestion format: 'discord' (MJ/PJ markdown, default) or "
              "'documents' (generic chapters/novels). 'documents' skips MJ/PJ stages.",
     )
+    parser.add_argument(
+        "--seed", default=None,
+        help="Path to a canonical name registry (e.g. etat/noms.md) to seed the "
+             "known cast (persons + cross-language aliases) before extraction. "
+             "Documents corpora only.",
+    )
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
@@ -1986,6 +2007,7 @@ def main() -> None:
         civ_name=args.civ,
         player_name=args.player,
         corpus_type=args.corpus_type,
+        seed_path=args.seed,
         use_llm=not args.no_llm,
         wiki_dir=args.wiki_dir,
         track_progress=args.track_progress,
