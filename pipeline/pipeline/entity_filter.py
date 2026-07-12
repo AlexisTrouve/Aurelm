@@ -88,6 +88,12 @@ _GENERIC_FRENCH_NOUNS = {
     # Role/status generics — bare words that small LLMs tag as entities
     "anciens", "ancienne", "anciens", "aînes", "marginaux", "marginal",
     "dirigeant", "dirigeants", "chef",
+    # Person generics — age/gender/kinship common nouns that name no one specific.
+    # Narrative corpora surface these ("Fille", "Vieux", "Jeune homme"); still
+    # language-level, and compound names (hyphen/apostrophe/3+ words) are exempt.
+    "fille", "filles", "garcon", "garcons", "femme", "femmes", "homme", "hommes",
+    "vieux", "vieille", "vieilles", "enfant", "enfants", "jeune", "jeunes",
+    "etranger", "etrangers", "etrangere", "dame", "dames", "gens", "personne",
     # Creature generics
     "creature", "creatures", "animal", "animaux", "bete", "betes",
     # Object generics (NOTE: "lance/lances", "codex", "palanquin/s", "fresque/s" intentionally
