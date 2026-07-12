@@ -23,6 +23,7 @@ LLM for now.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,6 +31,40 @@ from .db import get_connection
 
 # A "(tbd)" cell means the name in that language is not fixed yet — not an alias.
 _TBD = "(tbd)"
+
+# Advisory-table typing heuristic (peoples/places/things have no explicit type
+# column). Keyword scan on the FR cell; default = place (settlements, spots).
+_ADVISORY_GROUP_KW = ("peuple", "gens", "clan", "tribu", "famille", "lignee", "lignée")
+_ADVISORY_OBJECT_KW = ("(plat)", "(racine)", "(plante)", "(outil)", "(objet)", "(arme)")
+
+
+def _advisory_type(fr_cell: str) -> str:
+    """Best-effort entity type for an advisory-table entry from its FR text."""
+    low = fr_cell.lower()
+    if any(k in low for k in _ADVISORY_OBJECT_KW):
+        return "object"
+    if any(k in low for k in _ADVISORY_GROUP_KW):
+        return "group"
+    return "place"
+
+
+def _clean_fr_forms(fr_cell: str) -> list[str]:
+    """Split an FR cell into name forms: strip parentheticals, split on '/',
+    drop leading articles. First form = canonical, rest = aliases."""
+    no_paren = re.sub(r"\s*\([^)]*\)", "", fr_cell).strip()
+    forms = []
+    for part in no_paren.split("/"):
+        cleaned = re.sub(r"^(les|la|le|l')\s+", "", part.strip(), flags=re.IGNORECASE).strip()
+        if cleaned:
+            forms.append(cleaned)
+    return forms
+
+
+def _zh_aliases(zh_cell: str) -> list[str]:
+    """Split a ZH cell into individual aliases (e.g. '高脚屋 / 水寨')."""
+    if not zh_cell or zh_cell == _TBD:
+        return []
+    return [z.strip() for z in zh_cell.split("/") if z.strip() and z.strip() != _TBD]
 
 
 @dataclass
@@ -44,9 +79,11 @@ class SeedEntity:
 class Cast:
     """The parsed cast of a corpus."""
     persons: list[SeedEntity] = field(default_factory=list)
+    # Advisory entries (peoples/places/things) — typed group/place/object.
+    others: list[SeedEntity] = field(default_factory=list)
 
     def all(self) -> list[SeedEntity]:
-        return list(self.persons)
+        return list(self.persons) + list(self.others)
 
 
 def _split_row(line: str) -> list[str] | None:
@@ -60,35 +97,42 @@ def _split_row(line: str) -> list[str] | None:
 
 
 def parse_noms(path: str) -> Cast:
-    """Parse a noms.md registry into a Cast (persons only, from the enforced table).
+    """Parse a noms.md registry into a Cast.
 
-    The enforced person table has a header row "| slug | FR | EN | ZH |" followed
-    by a "|---|---|" separator and one row per character. FR is the canonical
-    name; EN/ZH (when not "(tbd)") become aliases.
+    Two tables, each "| key | FR | EN | ZH |" with a header + separator row:
+    - "## Personnages (enforced …)" → persons (FR canonical, EN/ZH aliases).
+    - "## Peuples, lieux, choses …"  → advisory entries, typed group/place/object
+      by keyword (default place); FR may carry variant forms ("a / b") and a
+      parenthetical hint; ZH may list several forms.
     """
     text = Path(path).read_text(encoding="utf-8")
     lines = text.splitlines()
 
     persons: list[SeedEntity] = []
-    in_enforced = False       # inside the "Personnages (enforced ...)" section
-    header_seen = False       # have we passed the "| slug | FR | EN | ZH |" header
+    others: list[SeedEntity] = []
+    section: str | None = None    # "persons" | "advisory" | None
+    header_seen = False           # passed the "| key | FR | EN | ZH |" header
 
     for line in lines:
         stripped = line.strip()
-        # Section boundaries: enforced persons section starts at its heading and
-        # ends at the next "## " heading (the advisory table).
         if stripped.startswith("## "):
-            in_enforced = stripped.lower().startswith("## personnages")
+            low = stripped.lower()
+            if low.startswith("## personnages"):
+                section = "persons"
+            elif low.startswith("## peuples"):
+                section = "advisory"
+            else:
+                section = None
             header_seen = False
             continue
-        if not in_enforced:
+        if section is None:
             continue
 
         cells = _split_row(line)
         if not cells or len(cells) < 2:
             continue
         # Skip the header row and the |---|---| separator row.
-        if cells[0].lower() == "slug":
+        if cells[0].lower() in ("slug", "clé", "cle"):
             header_seen = True
             continue
         if set("".join(cells)) <= set("-: "):
@@ -96,17 +140,29 @@ def parse_noms(path: str) -> Cast:
         if not header_seen:
             continue
 
-        # cells = [slug, FR, EN, ZH]
+        # cells = [key, FR, EN, ZH]
         fr = cells[1] if len(cells) > 1 else ""
+        en = cells[2] if len(cells) > 2 else ""
+        zh = cells[3] if len(cells) > 3 else ""
         if not fr or fr == _TBD:
             continue
-        aliases = []
-        for extra in cells[2:4]:  # EN, ZH
-            if extra and extra != _TBD and extra != fr:
-                aliases.append(extra)
-        persons.append(SeedEntity(canonical_name=fr, entity_type="person", aliases=aliases))
 
-    return Cast(persons=persons)
+        if section == "persons":
+            aliases = [x for x in (en, zh) if x and x != _TBD and x != fr]
+            persons.append(SeedEntity(canonical_name=fr, entity_type="person", aliases=aliases))
+        else:  # advisory
+            forms = _clean_fr_forms(fr)
+            if not forms:
+                continue
+            canonical = forms[0]
+            aliases = forms[1:] + ([en] if en and en != _TBD else []) + _zh_aliases(zh)
+            others.append(SeedEntity(
+                canonical_name=canonical,
+                entity_type=_advisory_type(fr),
+                aliases=[a for a in aliases if a and a != canonical],
+            ))
+
+    return Cast(persons=persons, others=others)
 
 
 def apply_seed(db_path: str, civ_id: int, cast: Cast) -> dict[str, int]:
