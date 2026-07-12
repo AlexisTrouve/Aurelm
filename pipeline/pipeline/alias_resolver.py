@@ -1163,12 +1163,50 @@ def find_alias_candidates(profiles: list[EntityProfile]) -> list[AliasCandidate]
     return candidates
 
 
+def _choose_survivor(
+    a: EntityProfile,
+    b: EntityProfile,
+    seed_names: set[str] | None,
+) -> tuple[EntityProfile, EntityProfile]:
+    """Pick the merge survivor (primary) and the entity to fold into it.
+
+    WHAT: returns (primary, alias_ent) for a confirmed alias pair.
+
+    WHY: the historical rule "most mentions wins" is wrong when a corpus has a
+    KNOWN canonical cast (a seed). An epithet used more often than the real name
+    ("Sage" mentioned more than the seeded "Front-Levé") would otherwise become
+    the surviving canonical name, corrupting the character's display name in the
+    glossary and mindmap (feedback P3). A seeded canonical name is ground truth
+    and must win over any non-seeded name.
+
+    COMMENT:
+    1. If exactly one side's canonical_name is in the seed set, it is the primary
+       (ground truth beats an extracted epithet, regardless of mention counts).
+    2. Otherwise (both seeded, or neither — the civ case, where seed_names is
+       empty/None) fall back to the historical "more mentions = more canonical".
+    Civ path is byte-identical: it never passes a seed, so seed_names is empty and
+    step 2 always runs, exactly as before.
+    """
+    if seed_names:
+        a_seeded = a.canonical_name in seed_names
+        b_seeded = b.canonical_name in seed_names
+        if a_seeded and not b_seeded:
+            return a, b
+        if b_seeded and not a_seeded:
+            return b, a
+    # Tie (both or neither seeded) → most mentions is the more canonical form.
+    if a.mention_count >= b.mention_count:
+        return a, b
+    return b, a
+
+
 def confirm_aliases(
     candidates: list[AliasCandidate],
     model: str = DEFAULT_MODEL,
     provider: LLMProvider | None = None,
     confirm_version: str = DEFAULT_CONFIRM_VERSION,
     score_threshold: float = 0.7,
+    seed_names: set[str] | None = None,
 ) -> list[ConfirmedAlias]:
     """Stage 2: Confirm alias candidates with targeted LLM calls.
 
@@ -1180,6 +1218,10 @@ def confirm_aliases(
             "v4-score-10", or "v5-score-pct".
         score_threshold: For score-based versions (v4/v5), the minimum normalized score
             (0-1) to confirm. Default 0.7 = 7/10 or 70%. Ignored for binary versions.
+        seed_names: Canonical names known to be ground truth (from a corpus seed).
+            When a confirmed pair has one seeded and one non-seeded name, the seeded
+            one is kept as survivor so an epithet can't displace the real name.
+            Empty/None (the civ default) → survivor picked by mention count as before.
     """
     version = get_confirm_version(confirm_version)
     confirmed: list[ConfirmedAlias] = []
@@ -1218,11 +1260,9 @@ def confirm_aliases(
             norm_score = None
 
         if confirmed_pair:
-            # Primary entity = the one with more mentions (more canonical)
-            if a.mention_count >= b.mention_count:
-                primary, alias_ent = a, b
-            else:
-                primary, alias_ent = b, a
+            # Primary entity = seeded ground truth if one side is seeded, else the
+            # one with more mentions (more canonical). See _choose_survivor.
+            primary, alias_ent = _choose_survivor(a, b, seed_names)
 
             confirmed.append(ConfirmedAlias(
                 primary_entity_id=primary.entity_id,
@@ -1386,8 +1426,17 @@ def store_aliases(db_path: str, aliases: list[ConfirmedAlias]) -> int:
                 (sid,),
             )
 
+            # Commit this merge atomically. WHY: without a per-alias commit, a
+            # failure below would leave THIS alias's partial writes (redirected
+            # mentions/relations) pending, and the final commit() would persist
+            # that corrupt half-merge. Committing here + rolling back in the
+            # except means a failed pair leaves NO partial state — the run
+            # continues (one bad pair must not kill a chapter) but never silently
+            # corrupts the DB (doctrine: fail clean, don't mask).
+            conn.commit()
             stored += 1
         except Exception as e:
+            conn.rollback()  # discard this alias's partial writes — no half-merge
             print(f"  Warning: failed to merge alias {alias.alias_name} -> id={pid}: {e}")
 
     conn.commit()
@@ -1487,6 +1536,7 @@ def resolve_aliases(
     provider: LLMProvider | None = None,
     confirm_version: str = DEFAULT_CONFIRM_VERSION,
     score_threshold: float = 0.7,
+    seed_names: set[str] | None = None,
 ) -> dict:
     """Full alias resolution: find candidates -> confirm -> store.
 
@@ -1496,6 +1546,9 @@ def resolve_aliases(
             Scoring: "v4-score-10" (1-10 scale), "v5-score-pct" (0-100% scale).
         score_threshold: For score-based versions, minimum normalized score (0-1)
             to confirm a pair. Default 0.7 = 7/10 or 70%.
+        seed_names: Canonical names known to be ground truth (from a corpus seed);
+            such a name is kept as the merge survivor over a non-seeded epithet.
+            Empty/None (civ default) preserves the historical mention-count rule.
 
     Returns stats dict with counts.
     """
@@ -1528,6 +1581,7 @@ def resolve_aliases(
     confirmed = confirm_aliases(
         candidates, model, provider=provider,
         confirm_version=confirm_version, score_threshold=score_threshold,
+        seed_names=seed_names,
     )
     stats["aliases_confirmed"] = len(confirmed)
 

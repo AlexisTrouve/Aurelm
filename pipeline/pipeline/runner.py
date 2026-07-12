@@ -134,6 +134,12 @@ def run_pipeline(
     _default_channel = "documents" if corpus_type == "documents" else CHANNEL_ID
     _channel_id = channel_id or _default_channel
 
+    # Canonical names anchored by the seed (documents corpora). Empty for civ.
+    # Passed to alias resolution so a seeded real name always wins the merge over
+    # a more-frequent epithet (feedback P3). Function-scoped so it survives from
+    # the seed step (2.5) down to the alias stage (9).
+    seed_names: set[str] = set()
+
     if not bot_mode:
         # CLI mode: steps 1-4 load from files
         # Step 1: Init DB
@@ -153,6 +159,9 @@ def run_pipeline(
         if seed_path and corpus_type == "documents":
             cast = parse_noms(seed_path)
             seed_stats = apply_seed(db_path, civ_id, cast)
+            # Remember the seeded canonical names as ground truth for the alias
+            # survivor choice at stage 9 (real name must beat an epithet).
+            seed_names = {e.canonical_name for e in cast.all()}
             print(f"[2.5/10] Seeded cast from {seed_path}: "
                   f"{seed_stats['entities_added']} persons, {seed_stats['aliases_added']} aliases")
 
@@ -681,6 +690,7 @@ def run_pipeline(
             provider=llm_provider,
             confirm_version=aliases_confirm_version or "v2-qwen3",
             score_threshold=aliases_score_threshold,
+            seed_names=seed_names,
         )
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
