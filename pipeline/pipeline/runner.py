@@ -1648,8 +1648,13 @@ def _periodic_entity_dedup(conn, civ_id: int) -> int:
                 "UPDATE entity_relations SET target_entity_id = ? WHERE target_entity_id = ?",
                 (primary_id, eid),
             )
+            # UPDATE OR IGNORE: if the primary already has an alias that the
+            # secondary also has, the (entity_id, alias) UNIQUE constraint would
+            # fire — skip that row instead of crashing. The duplicate alias stays
+            # on the now-deactivated secondary, which is harmless. (Latent dedup
+            # bug, surfaced by the novel seed adding shared cross-language aliases.)
             conn.execute(
-                "UPDATE entity_aliases SET entity_id = ? WHERE entity_id = ?",
+                "UPDATE OR IGNORE entity_aliases SET entity_id = ? WHERE entity_id = ?",
                 (primary_id, eid),
             )
             # Deactivate secondary (soft delete to preserve history)
