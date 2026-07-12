@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 from . import llm_stats
 from .db import get_connection, update_progress
+from .domain_profile import CIV_PROFILE, DomainProfile
 from .llm_provider import LLMProvider, OllamaProvider
 
 
@@ -77,14 +78,120 @@ Réponds UNIQUEMENT en JSON :
 {{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}], "tags": ["..."]}}"""
 
 
+# Novel-domain profiling prompt (customer #1). Same JSON shape as the civ prompt
+# (so the parser is unchanged) but framed for a narrative and using the novel
+# relation vocabulary — filiation / mentorat / héritier-du-geste are the heart of
+# the story, so we ask for them explicitly. Refined against real chapters in a
+# later LLM pass; this is the structural starting point.
+NOVEL_PROFILE_PROMPT = """Tu es un archiviste expert pour un roman.
+
+Voici les passages complets mentionnant l'entité "{name}" (type: {entity_type}) dans le récit :
+
+{mentions}
+
+Produis :
+1. **description** : Description factuelle de cette entité (3-6 phrases). Qui/quoi est-ce ? Quel rôle joue-t-elle dans le récit ? Quelles sont ses caractéristiques notables ?
+2. **turn_summaries** : Pour CHAQUE chapitre où l'entité apparaît, un résumé de 2-4 phrases expliquant ce qui se passe avec/autour de cette entité. Format : {{"Tour X": "résumé..."}}
+3. **aliases** : Les autres noms/appellations utilisés pour cette MÊME entité dans les extraits
+4. **relations** : Les liens entre "{name}" et d'AUTRES PERSONNAGES NOMMÉS (des personnes). Format : [{{"target": "Nom exact de l'autre personnage", "type": "type_relation", "description": "brève explication citant le texte"}}]
+
+   RÈGLE ABSOLUE : une relation ne relie QUE deux personnages (des personnes nommées). N'établis JAMAIS de relation vers un objet, un lieu, un outil, une plante, une chose ou un concept. Seule exception : "même-peuple" peut relier deux peuples/lignées.
+
+   La source de la relation est TOUJOURS "{name}". Choisis le type selon cette direction exacte :
+   - **parent-de** : "{name}" est le parent de la cible (la cible est son enfant)
+   - **enfant-de** : "{name}" est l'enfant de la cible
+   - **marié-à** : "{name}" est marié(e)/uni(e) à la cible
+   - **amant-de** : "{name}" et la cible sont amants/en couple (amour réciproque)
+   - **aime** : "{name}" aime/désire la cible (amour éventuellement non partagé, secret)
+   - **mentor-de** : "{name}" enseigne/guide la cible (la cible est l'apprenti·e)
+   - **apprenti-de** : "{name}" est l'apprenti·e/l'élève de la cible (la cible est le maître)
+   - **héritier-du-geste** : "{name}" reçoit d'une AUTRE PERSONNE un geste, un savoir ou un rôle transmis. RARE : à n'utiliser QUE si le texte décrit explicitement une transmission d'une personne à une autre. Jamais vers un objet.
+   - **même-peuple** : "{name}" et la cible appartiennent au même peuple/lignée
+   - **observe** : "{name}" observe/surveille la cible (typiquement l'immortel qui regarde les mortels)
+   - **ami-de** / **ennemi-de** : "{name}" est ami(e) / ennemi(e) de la cible
+5. **tags** : Parmi ces tags uniquement : {tag_vocab} — choisis ceux qui s'appliquent à cette entité (0 à 4 max). Format : ["tag1", "tag2"]
+
+Règles :
+- Base-toi UNIQUEMENT sur les extraits fournis, n'invente rien
+- Les extraits peuvent mentionner d'AUTRES personnages (contexte). Décris UNIQUEMENT "{name}" : n'attribue JAMAIS à "{name}" un trait physique, une action, un rôle ou un nom qui appartient à un autre personnage nommé
+- Extrais TOUTES les relations EXPLICITES entre "{name}" et d'autres personnages (ne te limite pas à une seule) — mais uniquement celles que le texte établit
+- Relations : uniquement PERSONNE↔PERSONNE (voir la règle absolue ci-dessus). Si "{name}" n'est pas un personnage, laisse "relations" vide.
+- Ne devine JAMAIS un lien de parenté, de mariage ou d'amour : ne l'affirme que si le texte l'établit explicitement. Une romance secrète ou un amour non partagé = "aime" (pas "amant-de")
+- "héritier-du-geste" est RARE et thématique (transmission d'un geste/savoir entre deux personnes) — dans le doute, ne l'utilise pas
+- Pour les alias : ne liste que ceux EXPLICITEMENT présents dans les extraits
+
+Réponds UNIQUEMENT en JSON :
+{{"description": "...", "turn_summaries": {{"Tour 1": "...", "Tour 5": "..."}}, "aliases": ["..."], "relations": [{{"target": "...", "type": "...", "description": "..."}}], "tags": ["..."]}}"""
+
+
+# Profiling prompt per domain profile name — selected by build_entity_profiles.
+_PROFILE_PROMPTS: dict[str, str] = {
+    "civ": PROFILE_PROMPT,
+    "novel": NOVEL_PROFILE_PROMPT,
+}
+
+
+# Sentence terminator (incl. French guillemets/ellipsis) followed by space, or a
+# line break — used to scope a mention's context to its own sentence.
+_SENT_BOUNDARY = re.compile(r"[.!?…»]\s|\n")
+
+
+# Tight-mode context floor. The sentence containing the mention alone was too
+# narrow: it prevented DESCRIPTION bleed but also killed RELATION extraction (a
+# link needs two characters co-occurring). We keep the mention's sentence and
+# extend FORWARD by whole sentences up to this many chars — enough co-occurrence
+# for relations, still far below the ±400 window's cross-character bleed, and
+# backward expansion is avoided so a preceding neighbour's trait doesn't leak in.
+#
+# DO NOT bump this to "get more relations": measured 320 vs 550 on the T05 gold
+# chapter (feedback P-relations) — identical 2 relations, the central romance
+# (Pluie-Menue ⟷ Front-Levé) missed at BOTH. Root cause is not window size: in
+# literary prose the two characters refer to each other by PRONOUNS ("il/elle/la"),
+# so their NAMES never co-occur in any forward window — the profiler sees the bond
+# (Front-Levé's description says "cette autre personne") but can't name the target.
+# The real lever is a chapter-level, coreference-aware relation pass, not this
+# floor. Kept at 320 (the proven, tighter, bleed-safe setting).
+TIGHT_CONTEXT_MIN = 320
+
+
+def _sentence_around(text: str, pos: int, mention_len: int, min_chars: int = 0) -> str:
+    """Return the sentence containing the mention, optionally extended forward.
+
+    Walks back to the previous sentence terminator and forward to the next so the
+    excerpt starts on the entity's own sentence (no backward bleed). If
+    ``min_chars`` is set, whole following sentences are appended until the excerpt
+    reaches that length — restoring the local co-occurrence context relations need.
+    """
+    start = 0
+    for m in _SENT_BOUNDARY.finditer(text[:pos]):
+        start = m.end()
+    mention_end = pos + mention_len
+    m = _SENT_BOUNDARY.search(text, mention_end)
+    end = m.end() if m else len(text)
+    # Extend forward by whole sentences until the min length is reached.
+    while end - start < min_chars and end < len(text):
+        nxt = _SENT_BOUNDARY.search(text, end)
+        if not nxt or nxt.end() <= end:
+            end = len(text)
+            break
+        end = nxt.end()
+    return text[start:end].strip()
+
+
 def _find_rich_context_for_mention(
     conn,
     mention_text: str,
     turn_number: int,
     fallback_context: str | None,
     segment_cache: dict[int, list[str]],
+    sentence_scope: bool = False,
 ) -> str:
-    """Find a rich context excerpt for a mention by searching turn segments."""
+    """Find a rich context excerpt for a mention by searching turn segments.
+
+    ``sentence_scope=True`` (novel profiles) narrows the excerpt to the sentence
+    containing the mention instead of a fixed ±RICH_CONTEXT_WINDOW/2 window,
+    preventing cross-character bleed. Civ keeps the proven wider window.
+    """
     if turn_number not in segment_cache:
         segments = conn.execute(
             """SELECT s.content FROM turn_segments s
@@ -99,6 +206,9 @@ def _find_rich_context_for_mention(
     for seg_content in segment_cache[turn_number]:
         pos = seg_content.lower().find(mention_lower)
         if pos != -1:
+            if sentence_scope:
+                return _sentence_around(seg_content, pos, len(mention_text),
+                                        min_chars=TIGHT_CONTEXT_MIN)
             half = RICH_CONTEXT_WINDOW // 2
             start = max(0, pos - half)
             end = min(len(seg_content), pos + len(mention_text) + half)
@@ -145,6 +255,7 @@ def build_entity_profiles(
     run_id: int | None = None,
     track_progress: bool = False,
     provider: LLMProvider | None = None,
+    domain_profile: DomainProfile = CIV_PROFILE,
 ) -> list[EntityProfile]:
     """Build rich profiles for all active entities in the database.
 
@@ -158,6 +269,10 @@ def build_entity_profiles(
         incremental: If True, only process entities with new mentions in recently processed turns
         run_id: Pipeline run ID for progress tracking
         track_progress: Whether to track progress in pipeline_progress table
+        domain_profile: Domain profile — selects the profiling prompt and the
+            relation ontology gate. Defaults to civ (historical behaviour
+            unchanged). Named domain_profile (not profile) to avoid shadowing the
+            per-entity ``profile`` loop variable (an EntityProfile) below.
     """
     conn = get_connection(db_path)
 
@@ -251,6 +366,7 @@ def build_entity_profiles(
                 rich_ctx = _find_rich_context_for_mention(
                     conn, m["mention_text"], turn_num,
                     m["context"], segment_cache,
+                    sentence_scope=domain_profile.tight_profiling_context,
                 )
                 if not rich_ctx:
                     continue
@@ -274,7 +390,8 @@ def build_entity_profiles(
                 if len(mentions_text) > 6000:
                     mentions_text = mentions_text[:6000] + "\n[...tronqué...]"
 
-                prompt = PROFILE_PROMPT.format(
+                # Pick the profiling prompt for the active domain (civ default).
+                prompt = _PROFILE_PROMPTS.get(domain_profile.name, PROFILE_PROMPT).format(
                     name=name,
                     entity_type=entity_type,
                     mentions=mentions_text,
@@ -427,7 +544,12 @@ def build_entity_profiles(
 
     # Resolve and insert relations
     if use_llm:
-        relations_count = _resolve_and_insert_relations(conn, profiles, incremental=incremental)
+        relations_count = _resolve_and_insert_relations(
+            conn, profiles, incremental=incremental,
+            relation_types=domain_profile.relation_types,
+            endpoint_types=domain_profile.relation_endpoint_types,
+            inverse_relations=dict(domain_profile.inverse_relations),
+        )
         print(f"       -> {relations_count} relations inserted")
 
     conn.close()
@@ -438,14 +560,30 @@ def build_entity_profiles(
     return profiles
 
 
-VALID_RELATION_TYPES = {
-    "located_in", "member_of", "created_by", "allied_with", "controls",
-    "part_of", "produces", "worships", "enemy_of", "trades_with",
-}
+# Valid relation types — sourced from the civ domain profile (single source of
+# truth). Kept as a module name for backward compatibility. The profile-aware
+# gate in _resolve_and_insert_relations uses the ACTIVE profile's set; this alias
+# is the civ default.
+VALID_RELATION_TYPES = CIV_PROFILE.relation_types
 
 
-def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], incremental: bool = False) -> int:
+def _resolve_and_insert_relations(
+    conn,
+    profiles: list[EntityProfile],
+    incremental: bool = False,
+    relation_types: frozenset[str] | None = None,
+    endpoint_types: frozenset[str] | None = None,
+    inverse_relations: dict[str, str] | None = None,
+) -> int:
     """Resolve raw LLM relations to entity IDs and insert into entity_relations.
+
+    ``relation_types`` is the ontology gate for the active domain profile; None
+    falls back to the civ set (VALID_RELATION_TYPES) for backward compatibility.
+    ``endpoint_types`` (if set) restricts BOTH ends of a relation to those entity
+    types — a hard deterministic gate (e.g. person↔person for a novel). None = any.
+    ``inverse_relations`` (if set) maps an inverse relation type to its canonical
+    one; such a relation is flipped (source/target swapped) and stored canonically
+    so the graph is consistently oriented regardless of which entity was profiled.
 
     Uses fuzzy matching: exact match on canonical_name first, then case-insensitive
     LIKE match, then alias lookup. Deduplicates (source, target, type) pairs.
@@ -454,13 +592,16 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
     batch (preserving relations from prior runs for unaffected entities).
     In full mode, clears all relations before reinserting.
     """
-    # Build entity name -> id lookup (canonical + aliases)
+    allowed_relation_types = relation_types or VALID_RELATION_TYPES
+    # Build entity name -> id lookup (canonical + aliases) and id -> type map.
     all_entities = conn.execute(
-        "SELECT id, canonical_name, civ_id FROM entity_entities WHERE is_active = 1"
+        "SELECT id, canonical_name, entity_type, civ_id FROM entity_entities WHERE is_active = 1"
     ).fetchall()
     name_to_id: dict[str, int] = {}
+    id_to_type: dict[int, str] = {}
     for e in all_entities:
         name_to_id[e["canonical_name"].lower()] = e["id"]
+        id_to_type[e["id"]] = e["entity_type"]
 
     all_aliases = conn.execute(
         "SELECT entity_id, alias FROM entity_aliases"
@@ -491,8 +632,15 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
             rel_type = rel["type"].strip().lower()
             description = rel.get("description", "")
 
-            # Validate relation type
-            if rel_type not in VALID_RELATION_TYPES:
+            # Normalize an inverse-direction relation to its canonical type; the
+            # source/target are swapped at insertion (flip) so e.g. an apprentice's
+            # "apprenti-de X" becomes "X mentor-de apprentice".
+            flip = bool(inverse_relations and rel_type in inverse_relations)
+            if flip:
+                rel_type = inverse_relations[rel_type]
+
+            # Validate relation type against the active profile's ontology
+            if rel_type not in allowed_relation_types:
                 continue
 
             # Resolve target entity
@@ -509,8 +657,19 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
             if target_id is None or target_id == source_id:
                 continue
 
+            # Endpoint-type gate: keep only relations whose BOTH ends are of an
+            # allowed type (e.g. person↔person for a novel). Deterministic — drops
+            # what the profiling prompt asked for but the LLM ignored.
+            if endpoint_types is not None:
+                if (id_to_type.get(source_id) not in endpoint_types
+                        or id_to_type.get(target_id) not in endpoint_types):
+                    continue
+
+            # Apply the inverse flip (swap ends) for canonical orientation.
+            src_id, tgt_id = (target_id, source_id) if flip else (source_id, target_id)
+
             # Deduplicate
-            key = (source_id, target_id, rel_type)
+            key = (src_id, tgt_id, rel_type)
             if key in seen:
                 continue
             seen.add(key)
@@ -518,7 +677,7 @@ def _resolve_and_insert_relations(conn, profiles: list[EntityProfile], increment
             conn.execute(
                 """INSERT INTO entity_relations (source_entity_id, target_entity_id, relation_type, description)
                    VALUES (?, ?, ?, ?)""",
-                (source_id, target_id, rel_type, description),
+                (src_id, tgt_id, rel_type, description),
             )
             inserted += 1
 

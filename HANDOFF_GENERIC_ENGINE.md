@@ -1,0 +1,114 @@
+# Handoff — Generic Engine (branch `feat/generic-engine`)
+
+> Paste-ready briefing for the next worker picking up the generic-engine work.
+> Full developer doc: `docs/generic-engine.md`. Spec: `AURELM_GENERIC_ENGINE_WISHLIST.md`.
+
+## What this is
+
+Aurelm was extended into a **generic entity-relation engine + headless
+exporters**, reusable on any corpus (not just the civ JDR). First non-civ
+customer: the novel in `../civjdr_roman`. All work is on branch
+`feat/generic-engine` (pushed to GitHub + Gitea, ~19 commits, not merged to main).
+Two phases are done: (1) the engine itself (exporters, profiles, ingestion, seed,
+chapter-by-chapter incremental) and (2) a quality-tuning cycle answering the
+customer feedback. **Both are considered done — do not re-open anything without
+Alexi's instruction; the "Still open" list below is on-request only.**
+
+## Read first
+
+- `docs/generic-engine.md` — architecture, commands, all details.
+- Memory `project-generic-engine-verified-seam-map` — code-level map + full log.
+- Memory `project-jdr-priority-over-generic-engine` — the guard-rail.
+
+## Hard rules
+
+1. **Chapter by chapter, never full.** One run = one chapter, incremental, on the
+   same DB. History + relations accumulate across chapters. Never process a whole
+   corpus in one pass.
+2. **Civ pipeline stays green.** After any change: `cd pipeline && py -3.12 -m pytest`
+   → expect ~265 passed / 5 skipped; the only failures are 2 `_real`
+   LLM-integration tests needing a live Ollama (ignore them).
+2b. **Every novel-affecting change must stay CIV-safe AND generic.** The rule Alexi
+   set: it must work for ANY content, not overfit to the roman's seed. Novel-only
+   behaviour is threaded through `DomainProfile` fields (civ defaults = unchanged),
+   never by editing civ prompts/logic.
+3. **Always ask Alexi before any LLM run.** One chapter per run (~$0.003,
+   OpenRouter/qwen3:14b, key already in `pipeline/.env`).
+
+## What's delivered (all validated)
+
+- **Exporters** (`exporters/`, read-only, CJK-capable):
+  - `python -m exporters graph --db X --center "Nom" --depth 2 --filter entity_type=person` → radial mindmap PNG+SVG
+  - `python -m exporters characters --db X --out DIR` → **glossaire persos + historique PAR CHAPITRE**
+  - `python -m exporters glossary --db X --out DIR`, `python -m exporters history --db X --out DIR`
+- **Domain profiles** (`pipeline/pipeline/domain_profile.py`): `civ` (unchanged) + `novel` (person-centred, person↔person relation gate).
+- **Generic ingestion**: `--corpus-type documents` (`document_loader.py`, 1 chapter = 1 turn, zero schema change).
+- **Cast seed**: `--seed ../civjdr_roman/etat/noms.md` (`novel_seed.py`) — anchors canonical persons + FR/EN/ZH aliases; fixes fake persons and cross-language resolution (神谕者→Oracle).
+- Text safeguards: CJK fuzzy matching, generic person-noun filtering.
+- **Extraction versions**: `novel-v1` (baseline) and `novel-v2` (= v1 + a generic
+  validate/false-positive pass; marginal on a seeded corpus, valuable unseeded).
+
+## Quality tuning cycle (done, after `FEEDBACK_NOVEL_V1_ROMAN_T05.md`)
+
+The roman's Claude ran the engine on a real chapter and filed 5 findings. Audits
+showed the mature CIV pipeline is multi-pass (facts+entity+focus+masked+validate)
+while novel-v1 was facts+entity only — and the quality techniques are mostly
+content-agnostic. Fixes (all civ-safe, threaded via `DomainProfile`):
+
+- **Alias judge antonymy** (P1, `da65d72`): new `v14-antonymy-generic` prompt in
+  `alias_resolver.py`; `DomainProfile.alias_prompt_version` (novel→v14, civ→config
+  v12). Two opposite peoples ("ciel-clair" vs "nuages") no longer merge (20% vs old
+  75%). Trade-off: a near-identical typo variant may not merge (precision>recall).
+- **Profiling context scope** (P4/P5, `4994011` + `f2b9a46`): novel scopes each
+  entity's context to its own sentence(s) via `tight_profiling_context` — stops
+  one character's trait bleeding into another's description. Extends FORWARD only
+  (up to `TIGHT_CONTEXT_MIN=320`) so relations still see co-occurrence but a
+  preceding neighbour's trait can't leak. (First cut was sentence-only and killed
+  relations 4→0 — a self-introduced regression, since fixed.)
+- **Relation quality** (P2 + romance, `f2b9a46`): novel ontology gains
+  amant-de/aime (romance) + apprenti-de; `DomainProfile.inverse_relations` flips
+  inverse types to canonical direction (enfant-de→parent-de, apprenti-de→mentor-de)
+  so the graph is consistently oriented. The central romance now types as `aime`,
+  not `ami-de`.
+- **Alias merge survivor** (P3, `b6b3dd8`): a confirmed merge kept the entity with
+  the most mentions as the survivor, so a frequent epithet ("Sage") displaced the
+  seeded real name ("Front-Levé"). `alias_resolver._choose_survivor` now keeps a
+  seeded canonical name over a non-seeded one (mention count only breaks ties);
+  `seed_names` is threaded runner→resolve_aliases→confirm_aliases. `store_aliases`
+  also merges each alias atomically (commit-per-alias + rollback) so a failed pair
+  leaves no half-merged state instead of being silently committed. Civ is
+  byte-identical (never seeds → empty set → mention-count rule as before).
+
+## Process a chapter (from `pipeline/`)
+
+```bash
+py -3.12 -m pipeline.runner --data-dir <ONE_CHAPTER_DIR> --civ "Roman" \
+  --corpus-type documents --seed ../civjdr_roman/etat/noms.md \
+  --extraction-version novel-v1 --db aurelm_roman.db \
+  --llm-provider openrouter --llm-config pipeline_llm_config.json
+# repeat for the next chapter on the SAME db, then export.
+```
+
+## Gotchas
+
+- `../civjdr_roman` is a **live repo** (restructured mid-work). As of 2026-07-12 `chapitres/` holds only `CHAP_T01.md`; the relation-rich T05 content used by the feedback now lives at `reference/T05-gold-ouverture.md` (~950-word opening). For a reproducible relation test, copy it into a temp dir as `CHAP_T05.md` (the loader parses `T05`→chapter 5). Re-check the current chapter dir before running.
+- Chaining 2+ LLM runs in one background task hits the env kill limit — run **one chapter per task** (matches the architecture).
+- Every real bug this project was found by **real runs**, never by the (green) tests — incl. a self-introduced one (over-tight profiling scope killed relations, caught only by measuring the side effect). **Validate the WHOLE output, not just the intended effect.** "No real run = unverified."
+
+## Still open (from the feedback / tuning) — don't build without asking
+
+- **Relation richness — window-size lever DISPROVEN (measured, don't re-try)**:
+  relations are clean + correctly typed but sparse (~2 on the T05 gold chapter).
+  Bumping `TIGHT_CONTEXT_MIN` 320→550 was measured before/after on that chapter:
+  **identical 2 relations, the central romance (Pluie-Menue ⟷ Front-Levé) missed
+  at both**. Root cause is NOT window size — literary prose refers to characters
+  by pronouns ("il/elle/la"), so their NAMES never co-occur in a forward window;
+  the profiler sees the bond (Front-Levé's description literally says "cette autre
+  personne") but can't name the target. Reverted to 320. The real lever is a
+  chapter-level, coreference-aware relation pass (extract relations from the whole
+  chapter text with named endpoints, not from per-mention windows) — a design
+  change, not a tweak. Propose separately; don't build without asking.
+- **P5-bis — Cendre typed `person`**: it's a crane, but `noms.md`'s enforced-persons table lists it there → the seed types it person. Seed-data fix in the customer's `noms.md` (its repo) — not a code fix on our side.
+- Per-chapter relation *viewing* (relations lack `turn_id`). Decided unnecessary.
+- Chinese *extraction* prompts (seed carries cross-language; French prompts are weak on ZH).
+- `--include-translations` CLI flag.

@@ -33,6 +33,7 @@ from .v19 import _VERSIONS_V19
 from .v20 import _VERSIONS_V20
 from .v21 import _VERSIONS_V21
 from .v22 import _VERSIONS_V22
+from .novel import _VERSIONS_NOVEL
 
 # Merge all families into base._VERSIONS (used by get_version / list_versions)
 base._VERSIONS.update(_VERSIONS_V1)
@@ -56,5 +57,6 @@ base._VERSIONS.update(_VERSIONS_V19)
 base._VERSIONS.update(_VERSIONS_V20)
 base._VERSIONS.update(_VERSIONS_V21)
 base._VERSIONS.update(_VERSIONS_V22)
+base._VERSIONS.update(_VERSIONS_NOVEL)
 
 __all__ = ["ExtractionVersion", "get_version", "list_versions", "VALIDATE_VERSIONS", "V1_BASELINE"]

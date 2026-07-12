@@ -109,3 +109,18 @@ class TestValidEntityTypes:
         expected = {"person", "place", "technology", "institution", "resource",
                     "creature", "event", "civilization", "caste", "belief"}
         assert VALID_ENTITY_TYPES == expected
+
+
+class TestPersonGenericNouns:
+    """Generic person common-nouns (narrative corpora) are filtered as noise,
+    but compound / proper character names are kept."""
+
+    def test_generic_person_nouns_are_noise(self):
+        for name in ["Fille", "Vieux", "Femme", "Homme", "Jeune homme",
+                     "Garçon", "Enfant", "Étranger", "Gens"]:
+            assert is_noise_entity(name), f"{name!r} should be noise"
+
+    def test_compound_character_names_kept(self):
+        for name in ["Fille des Nuages", "Vieux-Chêne", "Pluie-Menue",
+                     "Grain-de-Suie", "Mère-des-Braises"]:
+            assert not is_noise_entity(name), f"{name!r} should be kept"

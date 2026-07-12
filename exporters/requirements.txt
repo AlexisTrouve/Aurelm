@@ -1,0 +1,5 @@
+# Headless exporters — self-contained image/text rendering from any Aurelm DB.
+# Kept separate from pipeline/requirements.txt: the exporters are a standalone,
+# read-only package (like wiki/) that must run without the ML stack (spacy/ollama).
+networkx>=3.0      # ego-graph traversal (BFS by depth from a center entity)
+matplotlib>=3.8    # self-contained PNG/SVG rendering, embeds a CJK-capable font

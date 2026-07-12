@@ -11,6 +11,8 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
+from .domain_profile import CIV_PROFILE
+
 
 @dataclass
 class ExtractedEntity:
@@ -21,11 +23,12 @@ class ExtractedEntity:
     certainty: int = 0  # LLM self-assessed confidence (0=not set, scale defined by version)
 
 
-# Valid entity types for validation
-VALID_ENTITY_TYPES = {
-    "person", "place", "technology", "institution", "resource",
-    "creature", "event", "civilization", "caste", "belief",
-}
+# Valid entity types for validation.
+# Now sourced from the civ domain profile (single source of truth). Kept as a
+# module-level name for backward compatibility — every importer/test still sees
+# the same set of values. The profile-aware gate reads the ACTIVE profile's
+# types (see FactExtractor); this alias remains the civ default.
+VALID_ENTITY_TYPES = CIV_PROFILE.entity_types
 
 
 # Regex for structural noise patterns
@@ -85,6 +88,12 @@ _GENERIC_FRENCH_NOUNS = {
     # Role/status generics — bare words that small LLMs tag as entities
     "anciens", "ancienne", "anciens", "aînes", "marginaux", "marginal",
     "dirigeant", "dirigeants", "chef",
+    # Person generics — age/gender/kinship common nouns that name no one specific.
+    # Narrative corpora surface these ("Fille", "Vieux", "Jeune homme"); still
+    # language-level, and compound names (hyphen/apostrophe/3+ words) are exempt.
+    "fille", "filles", "garcon", "garcons", "femme", "femmes", "homme", "hommes",
+    "vieux", "vieille", "vieilles", "enfant", "enfants", "jeune", "jeunes",
+    "etranger", "etrangers", "etrangere", "dame", "dames", "gens", "personne",
     # Creature generics
     "creature", "creatures", "animal", "animaux", "bete", "betes",
     # Object generics (NOTE: "lance/lances", "codex", "palanquin/s", "fresque/s" intentionally

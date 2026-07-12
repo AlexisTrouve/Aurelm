@@ -1,0 +1,685 @@
+[
+  {
+    "id": 10,
+    "canonical_name": "Aube-Grise",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 7,
+    "canonical_name": "Bec-Calme",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 31,
+    "canonical_name": "Bénis",
+    "entity_type": "group",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Dans ce passage, une des 'bénis' est mariée à un garçon, probablement en raison d'un événement impliquant des tambours et l'absence de punition. Ce mariage est accompagné de trois jours de fête, et la fille des nuages continue son quotidien, suggérant que les 'bénis' ont un rôle social ou rituel dans la communauté."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Bénis",
+        "context": "les tentes des bénis"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "canonical_name": "Cendre",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Elle observe l'eau qui descend librement, sans demander la permission de personne. Cette image suggère une réflexion sur la liberté ou la nature indépendante de certains phénomènes."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Cendre",
+        "context": ""
+      }
+    ]
+  },
+  {
+    "id": 29,
+    "canonical_name": "Cercle",
+    "entity_type": "group",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Front-Levé, né un midi de plein été, siège dès son adolescence au Cercle des Sages. Il est séparé de quelqu'un d'autre par un banc de galets et une heure de brume, ce qui suggère une distance ou une barrière entre eux."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Cercle des Sages",
+        "context": "À peine homme, il siégeait déjà au Cercle des Sages"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Cercle",
+        "context": "Le Cercle a réfléchi. À vous. Aux gens comme vous."
+      }
+    ]
+  },
+  {
+    "id": 22,
+    "canonical_name": "Cercle des Sages",
+    "entity_type": "group",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": false,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Front-Levé, né un midi de plein été, siège dès son adolescence au Cercle des Sages. Il n'y a qu'un banc de galets et une heure de brume entre lui et un autre personnage, ce qui suggère une proximité ou une distance symbolique."
+      }
+    ],
+    "mentions": []
+  },
+  {
+    "id": 4,
+    "canonical_name": "Doigts-de-Craie",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue travaille à l'atelier de Doigts-de-Craie le jour, après que la brume se soit levée. Cela suggère que Doigts-de-Craie est un artisan ou un maître de métier, et que Pluie-Menue est sous sa direction ou en apprentissage."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Doigts-de-Craie",
+        "context": "Doigts-de-Craie était un homme"
+      }
+    ]
+  },
+  {
+    "id": 35,
+    "canonical_name": "EAU",
+    "entity_type": "place",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "EAU est mentionnée dans le chapitre « L'heure de brume », où elle semble être un lieu ou un élément naturel enveloppé de brume, créant une atmosphère mystérieuse et dense."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "EAU",
+        "context": "au bord de l'eau"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "canonical_name": "Front-Levé",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": false,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Front-Levé arrive par l'autre berge en marchant vite, le menton haut. Il ralentit à la vue de Pluie-Menue, et son visage s'ouvre de manière unique pour elle, montrant une connexion particulière entre les deux personnages."
+      }
+    ],
+    "mentions": []
+  },
+  {
+    "id": 25,
+    "canonical_name": "Galet",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue arrive en premier à la langue de galets, endroit où les deux rivières se joignent. Elle attend là, près du courant qui étouffe les voix, jusqu'à l'arrivée de Front-Levé, qui vient de l'autre berge et ralentit en la voyant, son visage s'ouvrant pour elle de manière unique."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Galet",
+        "context": "un galet percé d'un trou par l'eau"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "canonical_name": "Gens des nuages",
+    "entity_type": "group",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Les enfants nés sous le ciel clair marchaient devant, ce qui pourrait être lié aux Gens des nuages, suggérant une association entre ces enfants et cette entité."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Gents des nuages",
+        "context": "Les enfants nés sous le ciel clair marchaient devant. Ceux nés sous les nuages marchaient derrière"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Gens des nuages",
+        "context": "les enfants nés sous le ciel clair marchaient devant"
+      }
+    ]
+  },
+  {
+    "id": 21,
+    "canonical_name": "Gents des nuages",
+    "entity_type": "group",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": false,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Les enfants nés sous le ciel clair marchent devant, tandis que les Gents des nuages, nés sous les nuages, marchent derrière eux. Cela suggère une organisation ou une séparation basée sur les conditions de naissance."
+      }
+    ],
+    "mentions": []
+  },
+  {
+    "id": 5,
+    "canonical_name": "Grain-de-Suie",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 24,
+    "canonical_name": "Héron",
+    "entity_type": "creature",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Dans le Tour 1, une plume de héron est donnée à Pluie-Menue par quelqu'un, ce qui est rare car les autres cadeaux qu'elle reçoit sont soit utiles, soit hostiles. Cette plume est un exemple d'objet inutile, ce qui la rend précieuse à ses yeux."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Héron",
+        "context": "une plume de héron"
+      }
+    ]
+  },
+  {
+    "id": 33,
+    "canonical_name": "Lame",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Dans l'atelier de Doigts-de-Craie, la 'Lame' est un outil utilisé par les habitants du campement. Elle est nécessaire pour la fabrication de pointes et de grattoirs, ce qui attire les autres vers l'atelier. L'homme immobile, Doigts-de-Craie, est le centre de cette activité, bien que personne ne le remercie."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Lame",
+        "context": "Il prit une lame finie"
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "canonical_name": "Langue de galets",
+    "entity_type": "place",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue arrive en premier à la Langue de galets, où elle attend Front-Levé. Ce dernier arrive par l'autre berge, marche rapidement, puis ralentit en la voyant. Son visage s'ouvre pour elle, ce qui n'arrive avec aucun autre personnage."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Langue de galets",
+        "context": "elle descendait jusqu'à la langue de galets"
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "canonical_name": "Larmes du Ciel",
+    "entity_type": "object",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 11,
+    "canonical_name": "Main-de-Pierre",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Main-de-Pierre est mentionné à travers une caractéristique physique : son menton, qui lui a valu son nom."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Main-de-Pierre",
+        "context": "ce menton qui lui avait valu son nom"
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "canonical_name": "Morsure-des-Ancêtres",
+    "entity_type": "object",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 8,
+    "canonical_name": "Mère-des-Braises",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 1,
+    "canonical_name": "Oracle",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Les personnages décident de consulter l'Oracle, ce qui suggère qu'elle est perçue comme une source d'autorité ou de sagesse."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Oracle",
+        "context": "L'Oracle"
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "canonical_name": "Panier",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue ramasse les éclats de viande dans un panier pendant que Doigts-de-Craie taillait la viande. Elle ressent une colère ancienne mais s'efforce de ne pas la montrer."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Panier",
+        "context": "un panier ordinaire, tressé serré"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "canonical_name": "Peuple de l'eau",
+    "entity_type": "group",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Le 'Peuple de l'eau' est mentionné dans le contexte de constructions réalisées sur l'eau, ce qui indique leur implication dans des activités architecturales ou urbaines liées aux milieux aquatiques."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Peuple de l'eau",
+        "context": "qu'ils bâtissent sur l'eau"
+      }
+    ]
+  },
+  {
+    "id": 34,
+    "canonical_name": "Peuple des nuages",
+    "entity_type": "group",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": false,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Le terme 'les enfants des nuages' est utilisé, ce qui semble désigner un groupe ou une lignée spécifique. Cela pourrait indiquer une relation de parenté ou d'appartenance à une communauté particulière."
+      }
+    ],
+    "mentions": []
+  },
+  {
+    "id": 13,
+    "canonical_name": "Peuple du ciel-clair",
+    "entity_type": "group",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Le ciel clair est décrit comme ayant 'sa part', ce qui pourrait indiquer une influence ou une contribution spécifique de ce peuple dans un contexte plus large, bien que le contexte exact reste flou."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Peuple du ciel-clair",
+        "context": "un homme du ciel clair"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Peuple du ciel clair",
+        "context": "le ciel clair avait sa part"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Peuple des nuages",
+        "context": "les enfants des nuages"
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "canonical_name": "Pilotis",
+    "entity_type": "place",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Dans ce passage, le narrateur évoque des villages sur pilotis, des passerelles et des enfants nés là, qui ignorent qu'ils sont considérés comme nés du 'mauvais côté du ciel'. Ces structures flottantes sont associées à une séparation, à une division, et à une histoire de faute non réparée, sur laquelle on a bâti."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Pilotis",
+        "context": "villages sur pilotis"
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "canonical_name": "Piquet",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Des radeaux mal amarrés sont attachés à des piquets, flottant au bord du cours d'eau. Le premier piquet est décrit comme penché, seul et absurde, planté dans le courant. Il marque le début du royaume que les personnages ont reçu, à l'aube, avec un vieux qui n'a pas dormi."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Piquet",
+        "context": "il commença à tailler. Un pieu. Le premier."
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "canonical_name": "Pluie-Menue",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue arrive toujours la première à la langue de galets où les deux rivières se joignent. Elle attend, et Front-Levé vient par l'autre berge, marchant vite et ralentissant à son approche."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Pluie-Menue",
+        "context": "Elle descendait jusqu'à la langue de galets"
+      }
+    ]
+  },
+  {
+    "id": 20,
+    "canonical_name": "Pêche-Droite",
+    "entity_type": "place",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 36,
+    "canonical_name": "Radeaux",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Les radeaux sont mentionnés comme la première étape de la construction d'un royaume fluvial pour ceux des nuages. On leur donne le droit de bâtir sur l'eau, commençant par des radeaux amarrés, puis des maisons sur des pieux."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Radeaux",
+        "context": "Des radeaux mal amarrés flottaient déjà au bord"
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "canonical_name": "Sac de peau",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "La protagoniste range des objets dans un petit sac de peau qu'elle porte contre son cœur. Elle y touche le soir dans la tente commune, ce qui lui procure une sensation de richesse intérieure inatteignable par les autres."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Sac de peau",
+        "context": "dans un petit sac de peau qu'elle portait contre elle"
+      }
+    ]
+  },
+  {
+    "id": 30,
+    "canonical_name": "Sage",
+    "entity_type": "person",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Pluie-Menue attend Front-Levé à la langue de galets, un lieu où les deux rivières se joignent. Lorsqu'il arrive, il ralentit et son visage s'ouvre de manière unique pour elle."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Front-Levé",
+        "context": "Front-Levé venait par l'autre berge"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Sage",
+        "context": "C'était un des sages, un jeune"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Sages",
+        "context": "la file des sages"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "canonical_name": "Suie-d'Aval",
+    "entity_type": "person",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 28,
+    "canonical_name": "Tente commune",
+    "entity_type": "place",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": false,
+    "events": [
+      {
+        "turn": 1,
+        "text": "Dans la tente commune, une personnages touche des objets personnels (une plume, un galet) le soir, quand les autres dorment. Ces gestes lui apportent une sensation de richesse intérieure, qu'elle garde secrète."
+      }
+    ],
+    "mentions": []
+  },
+  {
+    "id": 19,
+    "canonical_name": "Trois-Roseaux",
+    "entity_type": "place",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [],
+    "mentions": []
+  },
+  {
+    "id": 18,
+    "canonical_name": "Trois-Tentes",
+    "entity_type": "place",
+    "first_seen_turn": null,
+    "last_seen_turn": null,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "On plantait les tentes autour de Trois-Tentes, ce qui suggère qu'il s'agit d'un lieu de campement ou de rassemblement."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Tente commune",
+        "context": "dans le noir de la tente commune"
+      },
+      {
+        "turn_number": 1,
+        "mention_text": "Trois-Tentes",
+        "context": "on plantait les tentes autour"
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "canonical_name": "Tunique",
+    "entity_type": "object",
+    "first_seen_turn": 1,
+    "last_seen_turn": 1,
+    "is_active": true,
+    "events": [
+      {
+        "turn": 1,
+        "text": "La tunique est utilisée comme un contenant discret pour des objets personnels, tels qu'une plume et un galet, que la personnage touche le soir dans le noir, trouvant une richesse intérieure dans ces objets."
+      }
+    ],
+    "mentions": [
+      {
+        "turn_number": 1,
+        "mention_text": "Tunique",
+        "context": "sous sa tunique"
+      }
+    ]
+  }
+]

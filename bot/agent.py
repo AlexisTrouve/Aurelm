@@ -203,14 +203,14 @@ Pour toute question sur le jeu, appelle d'abord un outil, puis reponds avec les 
 
 def _load_system_prompt(db_path: str | None = None) -> str:
     """Load SOUL.md + domain-knowledge.md + agent notes from DB as system prompt."""
-    base = Path(__file__).resolve().parent.parent / "openclaw-config"
+    base = Path(__file__).resolve().parent / "prompts"
     parts = []
 
     soul = base / "SOUL.md"
     if soul.exists():
         parts.append(soul.read_text(encoding="utf-8"))
 
-    dk = base / "skills" / "aurelm-gm" / "domain-knowledge.md"
+    dk = base / "domain-knowledge.md"
     if dk.exists():
         parts.append(dk.read_text(encoding="utf-8"))
 

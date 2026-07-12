@@ -15,7 +15,7 @@ This is a tool for **Arthur ("Mug")**, Game Master of a multiplayer civilization
 
 **The problem**: Arthur drowns in lore. Hundreds of turns across multiple civilizations, named entities, technologies, political systems, alliances — he can't keep track of it all. He needs automated consistency checking and instant recall.
 
-**The solution**: Aurelm ingests game turns from Discord, structures them with ML, builds a wiki, and gives Arthur an intelligent agent (OpenClaw) he can ask things like "Est-ce que les Confluents ont déjà du bronze ?" or "Compare les forces militaires de toutes les civs".
+**The solution**: Aurelm ingests game turns from Discord, structures them with ML, builds a wiki, and gives Arthur an intelligent Claude agent he can ask things like "Est-ce que les Confluents ont déjà du bronze ?" or "Compare les forces militaires de toutes les civs".
 
 ### Related Repo — civjdr
 
@@ -30,7 +30,7 @@ This is a tool for **Arthur ("Mug")**, Game Master of a multiplayer civilization
 
 ## Project Overview
 
-Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop RPGs. It ingests Discord game turns, processes them through a local ML pipeline, generates a wiki, and exposes an MCP-based agent (OpenClaw) for GM queries.
+Aurelm is a Game Master toolkit for multiplayer civilization-building tabletop RPGs. It ingests Discord game turns, processes them through a local ML pipeline, generates a wiki, and exposes a Claude agent for GM queries.
 
 **Primary user**: "Mug" (Arthur), GM running a 3+ civilization game. Has an RTX 5070 Ti (16GB VRAM). Wants zero maintenance and useful answers on complex cross-civilization contexts.
 
@@ -43,7 +43,7 @@ Flutter Desktop GUI (Dashboard)
         ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
         ├── SQLite Database
-        └── OpenClaw Agent (Claude API primary, local LLM fallback)
+        └── Claude Agent (Claude API primary, claude -p CLI fallback)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -54,10 +54,10 @@ Flutter Desktop GUI (Dashboard)
 - **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline (+ stage 6.5 preanalysis). `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **pipeline/scripts/**: Standalone benchmark/scoring/profiling utilities. See `pipeline/scripts/README.md` for usage. Not part of the pipeline itself — run manually for evaluation and tuning.
 - **wiki/**: MkDocs Material — auto-generated game wiki
-- **mcp-server/**: TypeScript MCP server — exposes tools to OpenClaw. `npm install` done, dependencies ready.
-- **openclaw-config/**: OpenClaw skill definitions and config templates
+- **exporters/**: Standalone **read-only** headless exporters (`python -m exporters <graph|glossary|characters|history> --db X`). Turn any Aurelm DB into a mindmap (PNG/SVG), a glossary, a character glossary with per-chapter history. networkx + matplotlib, CJK-capable. Part of the generic-engine work — see `docs/generic-engine.md`.
+- **mcp-server/**: TypeScript MCP server — exposes tools to Claude agent. `npm install` done, dependencies ready.
 - **database/**: SQLite schema and migrations
-- **docs/**: Developer documentation (see `architecture.md` for full data flow)
+- **docs/**: Developer documentation (see `architecture.md` for full data flow; `generic-engine.md` for the generic entity-relation engine)
 
 ## Roadmap
 
@@ -69,7 +69,7 @@ Flutter Desktop GUI (Dashboard)
 
 - [x] **Step 4**: MCP Server — 9 tools (listCivs, getCivState, searchLore, sanityCheck, timeline, compareCivs, getEntityDetail, getTurnDetail, searchTurnContent). Read-only SQLite via AURELM_DB_PATH, fuzzy civ name matching, structured Markdown output for LLM consumption, sanityCheck with keyword extraction + entity inventory. 24 integration tests passing.
 
-- [x] **Step 5**: OpenClaw specialization — SOUL.md persona, domain-knowledge.md pre-seeded context, SKILL.md with all 9 tools documented (decision trees, error recovery, 9 examples), openclaw.json.template with correct model routing (llama3.1:8b fallback, tool-based routing), SETUP.md deployment checklist.
+- [x] **Step 5**: Agent persona — SOUL.md persona + domain-knowledge.md pre-seeded context (now in `bot/prompts/`).
 
 - [x] **Step 6**: Flutter GUI — 65 Dart source files across 6 layers (data/models/providers/screens/widgets/core). Drift ORM mapping all DB tables, 5 DAOs with reactive streams, Riverpod providers, GoRouter with NavigationRail shell. Screens: dashboard (civ cards, pipeline status, quick search), civ detail (entity breakdown chart, top entities, recent turns), entity browser (search/filter/list + detail with aliases/relations/mentions), timeline (chronological turns with filters), graph (force-directed with graphview, per-civ filter, legend). Settings: DB path picker, theme toggle. 6 unit/widget tests, 2 GitHub Actions workflows (Windows EXE build + test). CI adapted from Haomirai pattern.
 
@@ -117,9 +117,21 @@ Flutter Desktop GUI (Dashboard)
 ### In Progress
 - [ ] **Step 8o**: Civ Alias Resolver — UI-driven mapping of unresolved civ entity names to known civs. Migration 028 (`civ_aliases` + `civ_alias_dismissed`), pipeline `_detect_civ_mentions` uses aliases, `CivAliasResolverScreen` (done), `CivAliasRepository` (done), CivDetailScreen aliases section, backfill test, `gm_lock` buttons in relations/alias screens.
 
+### Generic Engine — branch `feat/generic-engine` (done, pushed; not yet merged to main)
+
+Turns Aurelm into a **generic entity-relation engine + headless exporters**, reusable on any corpus (first non-civ customer: the novel `../civjdr_roman`). **Civ path stays byte-identical / green throughout.** Full doc: `docs/generic-engine.md`. Handoff: `HANDOFF_GENERIC_ENGINE.md`. Spec: `AURELM_GENERIC_ENGINE_WISHLIST.md`.
+
+- [x] **P1 — Exporters**: standalone read-only `exporters/` package. `graph` (radial ego-graph mindmap PNG/SVG), `glossary`, `characters` (persons + per-chapter history), `history`. CJK-capable, no hardcoded FR. Also serves existing civ DBs.
+- [x] **P2 — Configurable ontology**: `domain_profile.py` (`civ`/`novel`); the 2 ontology gates + prompts are profile-aware; `novel-v1` extraction version; person↔person relation endpoint gate.
+- [x] **P3 — Generic ingestion**: `--corpus-type documents` (`document_loader.py`), 1 chapter = 1 turn, **zero schema change**, chapter-number-keyed synthetic ids.
+- [x] **Deterministic cast seed**: `--seed etat/noms.md` (`novel_seed.py`) — anchors canonical persons + FR/EN/ZH aliases; kills fake persons, resolves cross-language names (神谕者→Oracle).
+- [x] **Incremental accumulation**: processes **chapter-by-chapter** (never full); per-chapter history + relations accumulate. Fixed a dedup crash (shared alias) that had broken this.
+- **Rule**: one chapter per LLM run (~$0.003); never the full corpus at once.
+
 ### Next Steps
-- [ ] **Step 9**: Graph redesign — current force-directed graph unusable, needs rethink
+- [ ] **Step 9**: Graph redesign — in-app Flutter force-directed graph still unusable (the headless `exporters graph` ego-graph is a separate, usable render, not a GUI fix).
 - [ ] **Step 10**: Deployment — packaging, Arthur's machine setup, Discord bot invite
+- [ ] **Merge `feat/generic-engine` to main** once reviewed.
 
 ## Environment Notes (Dev Machine)
 
@@ -193,7 +205,8 @@ Flutter Desktop GUI (Dashboard)
 ## Testing
 
 - `cd mcp-server && npm test` — MCP server tests (48 tests via vitest)
-- `cd pipeline && pytest` — Pipeline tests (202 tests: test_chunker, test_classifier, test_loader, test_entity_filter, test_fact_extractor, test_runner, test_incremental_tracking, test_subject_extractor, test_alias_resolver, test_benchmark, test_summarizer)
+- `cd pipeline && pytest` — Pipeline tests (~253 passed / 5 skipped on `feat/generic-engine`: adds test_domain_profile, test_document_loader, test_novel_seed, test_fuzzy_cjk, test_dedup_alias to the civ suite). The only 2 failures are `_real` LLM-integration tests needing a live Ollama — ignore them.
+- `cd Aurelm && py -3.12 -m pytest exporters/tests` — Exporters tests (~23: graph render incl. CJK, glossary, characters, history, ego-graph layout, read-only DB).
 - `python -m pytest bot/tests/` — Bot tests (94 tests: tools, config, dispatch, notes, deep_explore)
 - `cd gui && flutter test` — GUI tests (7 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing

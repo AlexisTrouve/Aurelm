@@ -3,6 +3,19 @@
 Usage:
     python -m pipeline.runner --data-dir ../civjdr/Background --civ "Civilisation de la Confluence" --db aurelm.db
     python -m pipeline.runner --data-dir ../civjdr/Background --civ "Civilisation de la Confluence" --db aurelm.db --no-llm
+
+TODO REFACTOR:
+    - run_pipeline() fait 707 lignes — à éclater en étapes distinctes :
+        _stage_load()        : chargement des données
+        _stage_classify()    : classification des segments
+        _stage_summarize()   : résumé des turns
+        _stage_extract()     : extraction d'entités et facts
+        _stage_resolve()     : résolution d'alias
+      Chaque étape = fonction indépendante testable séparément.
+    - _run_subject_extraction() (177 lignes) et _insert_pj_segments() (149 lignes)
+      méritent aussi d'être découpées.
+    - run_pipeline_for_channels() peut appeler run_pipeline() par channel
+      au lieu de dupliquer la logique.
 """
 
 from __future__ import annotations
@@ -24,11 +37,14 @@ from .db import (
     update_run_usage,
 )
 from .loader import load_directory
+from .document_loader import load_documents
+from .novel_seed import parse_noms, apply_seed
 from .ingestion import fetch_unprocessed_messages
 from .chunker import detect_turn_boundaries
 from .classifier import classify_segments
 from .summarizer import summarize_turn, AuthorContent, TECH_ERAS, FANTASY_LEVELS
 from .entity_profiler import build_entity_profiles
+from .domain_profile import get_profile
 from .alias_resolver import resolve_aliases
 from .fact_extractor import FactExtractor
 from .extraction_versions import get_version, list_versions, ExtractionVersion
@@ -53,6 +69,12 @@ def run_pipeline(
     civ_name: str = "",
     player_name: str | None = None,
     use_llm: bool = True,
+    # Ingestion format: "discord" (default, MJ/PJ markdown) or "documents"
+    # (generic chapters/novels via document_loader). Only affects the load step.
+    corpus_type: str = "discord",
+    # Optional path to a canonical name registry (e.g. the roman's etat/noms.md).
+    # When set (documents corpora), the known cast is seeded before extraction.
+    seed_path: str | None = None,
     wiki_dir: str | None = None,
     track_progress: bool = False,
     extraction_version: str = "v22.2.2-pastlevel",
@@ -107,7 +129,16 @@ def run_pipeline(
     }
 
     bot_mode = messages is not None
-    _channel_id = channel_id or CHANNEL_ID
+    # Documents corpora get their own default channel scope so they don't mix
+    # with Discord "file-import" data if both live in the same DB.
+    _default_channel = "documents" if corpus_type == "documents" else CHANNEL_ID
+    _channel_id = channel_id or _default_channel
+
+    # Canonical names anchored by the seed (documents corpora). Empty for civ.
+    # Passed to alias resolution so a seeded real name always wins the merge over
+    # a more-frequent epithet (feedback P3). Function-scoped so it survives from
+    # the seed step (2.5) down to the alias stage (9).
+    seed_names: set[str] = set()
 
     if not bot_mode:
         # CLI mode: steps 1-4 load from files
@@ -120,10 +151,31 @@ def run_pipeline(
         print(f"[2/10] Registering civilization: {civ_name}")
         civ_id = register_civilization(db_path, civ_name, player_name=player_name)
 
-        # Step 3: Load markdown files
+        # Step 2.5: Deterministic cast seed (documents corpora, optional).
+        # Anchors the KNOWN persons + cross-language aliases from the corpus's own
+        # registry (e.g. etat/noms.md) BEFORE extraction, so _build_civ_entity_lookup
+        # feeds them to the pattern pass — mentions canonicalize to real characters
+        # instead of spawning generic-noun persons (addresses the §6 low-trust rule).
+        if seed_path and corpus_type == "documents":
+            cast = parse_noms(seed_path)
+            seed_stats = apply_seed(db_path, civ_id, cast)
+            # Remember the seeded canonical names as ground truth for the alias
+            # survivor choice at stage 9 (real name must beat an epithet).
+            seed_names = {e.canonical_name for e in cast.all()}
+            print(f"[2.5/10] Seeded cast from {seed_path}: "
+                  f"{seed_stats['entities_added']} persons, {seed_stats['aliases_added']} aliases")
+
+        # Step 3: Load source files.
+        # Discord corpus -> load_directory (MJ/PJ markdown); document corpus
+        # (novels/chapters) -> load_documents. Both only fill turn_raw_messages;
+        # everything downstream is corpus-agnostic.
         assert data_dir is not None, "data_dir required in CLI mode"
-        print(f"[3/10] Loading markdown files from {data_dir}...")
-        msg_count = load_directory(data_dir, db_path, channel_id=_channel_id)
+        if corpus_type == "documents":
+            print(f"[3/10] Loading documents from {data_dir}...")
+            msg_count = load_documents(data_dir, db_path, channel_id=_channel_id)
+        else:
+            print(f"[3/10] Loading markdown files from {data_dir}...")
+            msg_count = load_directory(data_dir, db_path, channel_id=_channel_id)
         stats["messages_loaded"] = msg_count
         print(f"       -> {msg_count} messages in database")
 
@@ -548,8 +600,10 @@ def run_pipeline(
     if preanalysis_stats["strategies_analyzed"]:
         print(f"       -> {preanalysis_stats['strategies_analyzed']} player strategies analyzed")
 
-    # Step 7: Subject extraction (MJ choices + PJ initiatives)
-    if use_llm:
+    # Step 7: Subject extraction (MJ choices + PJ initiatives).
+    # MJ/PJ-specific — skipped for document corpora (no player, no choices; it
+    # would also hit the subject_subjects.direction CHECK).
+    if use_llm and corpus_type != "documents":
         if track_progress:
             conn2 = get_connection(db_path)
             update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
@@ -561,6 +615,8 @@ def run_pipeline(
             db_path, civ_id, all_chunks, gm_author_id,
             subjects_model, llm_provider,
         )
+    elif use_llm:
+        print(f"[7/10] {civ_name} — skipping subjects (documents corpus, no MJ/PJ)")
 
     # Step 8: Entity profiling (LLM-based)
     if use_llm:
@@ -579,38 +635,45 @@ def run_pipeline(
             run_id=run_id,
             track_progress=track_progress,
             provider=llm_provider,
+            domain_profile=get_profile(version.profile),
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
-        # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from civ_mentions
-        if track_progress:
-            conn2 = get_connection(db_path)
-            update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
-                            0, 1, "stage", "running", stage_name="civ_relations",
-                            civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
-            conn2.commit(); conn2.close()
-        print(f"[8.5/10] {civ_name} — profiling inter-civ relations...")
-        from .civ_relation_profiler import build_civ_relations
-        rel_stats = build_civ_relations(
-            db_path,
-            source_civ_id=civ_id,
-            model=profiling_model,
-            provider=llm_provider,
-            use_llm=use_llm,
-        )
-        if rel_stats["pairs_found"]:
-            print(
-                f"       -> {rel_stats['relations_built']} relations profiled"
-                f" ({rel_stats['pairs_found']} pairs found)"
+        # Step 8.5: Civ relation profiling — synthesize inter-civ opinions from
+        # civ_mentions. Inter-civ specific — skipped for document corpora (a
+        # single-narrator novel has no foreign civilizations).
+        if corpus_type != "documents":
+            if track_progress:
+                conn2 = get_connection(db_path)
+                update_progress(conn2, run_id, "pipeline", civ_id, civ_name,
+                                0, 1, "stage", "running", stage_name="civ_relations",
+                                civ_index=civ_index, civ_total=civ_total, llm_model=profiling_model)
+                conn2.commit(); conn2.close()
+            print(f"[8.5/10] {civ_name} — profiling inter-civ relations...")
+            from .civ_relation_profiler import build_civ_relations
+            rel_stats = build_civ_relations(
+                db_path,
+                source_civ_id=civ_id,
+                model=profiling_model,
+                provider=llm_provider,
+                use_llm=use_llm,
             )
-        else:
-            print("       -> No foreign-civ mentions detected")
+            if rel_stats["pairs_found"]:
+                print(
+                    f"       -> {rel_stats['relations_built']} relations profiled"
+                    f" ({rel_stats['pairs_found']} pairs found)"
+                )
+            else:
+                print("       -> No foreign-civ mentions detected")
 
         # Step 9: Alias resolution
         # Prompt version + score threshold can be set per-stage in llm_config:
         # "aliases": {"prompt_version": "v5-score-pct", "score_threshold": 0.7}
+        # The domain profile can force its own judge (novel → antonymy-aware),
+        # taking priority over the config so civ keeps its tuned v12.
         aliases_confirm_version = (
-            llm_config.get_prompt_version("aliases") if llm_config else None
+            get_profile(version.profile).alias_prompt_version
+            or (llm_config.get_prompt_version("aliases") if llm_config else None)
         )
         aliases_score_threshold = (
             llm_config.get_score_threshold("aliases") if llm_config else 0.7
@@ -627,6 +690,7 @@ def run_pipeline(
             provider=llm_provider,
             confirm_version=aliases_confirm_version or "v2-qwen3",
             score_threshold=aliases_score_threshold,
+            seed_names=seed_names,
         )
         stats["alias_candidates"] = alias_stats.get("candidates_found", 0)
         stats["aliases_confirmed"] = alias_stats.get("aliases_confirmed", 0)
@@ -634,9 +698,11 @@ def run_pipeline(
         print("[7/10] Skipping subject extraction (--no-llm)")
         print("[8/10] Skipping entity profiling (--no-llm)")
         # Still register pairs with unknown opinion so the GUI shows known contacts
-        print("[8.5/10] Registering civ contacts (--no-llm, opinion=unknown)...")
-        from .civ_relation_profiler import build_civ_relations
-        build_civ_relations(db_path, source_civ_id=civ_id, use_llm=False)
+        # (Discord corpora only — a document corpus has no inter-civ contacts).
+        if corpus_type != "documents":
+            print("[8.5/10] Registering civ contacts (--no-llm, opinion=unknown)...")
+            from .civ_relation_profiler import build_civ_relations
+            build_civ_relations(db_path, source_civ_id=civ_id, use_llm=False)
         print("[9/10] Skipping alias resolution (--no-llm)")
 
     # Step 10: Wiki generation (optional)
@@ -1595,8 +1661,13 @@ def _periodic_entity_dedup(conn, civ_id: int) -> int:
                 "UPDATE entity_relations SET target_entity_id = ? WHERE target_entity_id = ?",
                 (primary_id, eid),
             )
+            # UPDATE OR IGNORE: if the primary already has an alias that the
+            # secondary also has, the (entity_id, alias) UNIQUE constraint would
+            # fire — skip that row instead of crashing. The duplicate alias stays
+            # on the now-deactivated secondary, which is harmless. (Latent dedup
+            # bug, surfaced by the novel seed adding shared cross-language aliases.)
             conn.execute(
-                "UPDATE entity_aliases SET entity_id = ? WHERE entity_id = ?",
+                "UPDATE OR IGNORE entity_aliases SET entity_id = ? WHERE entity_id = ?",
                 (primary_id, eid),
             )
             # Deactivate secondary (soft delete to preserve history)
@@ -1872,6 +1943,17 @@ def main() -> None:
     parser.add_argument("--civ", help="Civilization name")
     parser.add_argument("--db", default="aurelm.db", help="Database file path")
     parser.add_argument("--player", default=None, help="Player name")
+    parser.add_argument(
+        "--corpus-type", choices=["discord", "documents"], default="discord",
+        help="Ingestion format: 'discord' (MJ/PJ markdown, default) or "
+             "'documents' (generic chapters/novels). 'documents' skips MJ/PJ stages.",
+    )
+    parser.add_argument(
+        "--seed", default=None,
+        help="Path to a canonical name registry (e.g. etat/noms.md) to seed the "
+             "known cast (persons + cross-language aliases) before extraction. "
+             "Documents corpora only.",
+    )
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
@@ -1942,6 +2024,8 @@ def main() -> None:
         db_path=args.db,
         civ_name=args.civ,
         player_name=args.player,
+        corpus_type=args.corpus_type,
+        seed_path=args.seed,
         use_llm=not args.no_llm,
         wiki_dir=args.wiki_dir,
         track_progress=args.track_progress,
