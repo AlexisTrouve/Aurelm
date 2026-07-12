@@ -74,6 +74,14 @@ def _cmd_history(args: argparse.Namespace) -> dict:
     )
 
 
+def _cmd_characters(args: argparse.Namespace) -> dict:
+    from .character_glossary import export_character_glossary
+    return export_character_glossary(
+        db_path=args.db, out_dir=args.out, civ_id=args.civ_id,
+        active_only=args.active_only, title=args.title, style=_build_style(args),
+    )
+
+
 def _add_style_flags(p: argparse.ArgumentParser) -> None:
     """Attach the styling flags shared by every subcommand."""
     p.add_argument("--font", help="Path to a TTF/TTC font (default: auto CJK-capable)")
@@ -118,6 +126,16 @@ def build_parser() -> argparse.ArgumentParser:
     h.add_argument("--title", default="History")
     _add_style_flags(h)
     h.set_defaults(func=_cmd_history)
+
+    # characters — persons with per-chapter history
+    ch = sub.add_parser("characters", help="Character glossary (persons + per-chapter history) -> md + json")
+    ch.add_argument("--db", required=True)
+    ch.add_argument("--civ-id", type=int, help="Filter by civ scope id")
+    ch.add_argument("--active-only", action="store_true")
+    ch.add_argument("--out", default="characters_out", help="Output directory")
+    ch.add_argument("--title", default="Personnages")
+    _add_style_flags(ch)
+    ch.set_defaults(func=_cmd_characters)
 
     return parser
 
