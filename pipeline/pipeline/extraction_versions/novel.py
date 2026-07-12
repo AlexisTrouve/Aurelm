@@ -49,6 +49,40 @@ OUI : toute personne nommée ou désignée par un nom propre ; lieux, créatures
 NON : mots génériques seuls, pronoms, descriptions.
 Si rien, retourne {{"entities": []}}."""
 
+# Validate pass (false-positive filter) — the highest-ROI civ technique, ported
+# generically. Keep-list intersection: only entities the LLM lists in "keep"
+# survive. Positive framing (GARDE par défaut) + protect NAMED characters so real
+# minor persons are never dropped, while generic person-nouns / metaphors /
+# name-fragments are removed. Same JSON shape the extractor's validate parser
+# expects: {"keep":[...], "drops":"name: reason | ..."}.
+_NOVEL_VALIDATE_PROMPT = """Tu filtres une liste d'entités nommées extraites d'un roman.
+Réponds UNIQUEMENT avec du JSON valide.
+
+RÈGLE : GARDE tout par défaut.
+
+NE SUPPRIME JAMAIS :
+- Un PERSONNAGE NOMMÉ (nom propre), même mineur, même mentionné une seule fois
+- Une créature nommée, un lieu nommé, un peuple/groupe nommé, un objet nommé
+
+SUPPRIME seulement si c'est clairement l'un de ces cas :
+- Un nom COMMUN générique désignant une personne, PAS un nom propre (ex : fille, garçon, homme, femme, vieux, jeune homme, enfant, étranger, dame, gens)
+- Une métaphore ou image poétique sans référent concret
+- Un seul mot générique commun (pas un nom propre, pas un lieu nommé, pas un groupe nommé)
+- Un doublon exact ou un fragment d'une entité plus complète de la même liste (ex : "Grain" quand "Grain-de-Suie" est aussi présent)
+
+Texte de référence :
+{text}
+
+Entités à valider :
+{entities}
+
+Réponds avec ce format JSON :
+- "keep" : noms exacts des entités gardées (copiés depuis la liste ci-dessus)
+- "drops" : pour chaque entité supprimée, "nom exact: raison courte" séparés par " | "
+
+{{"keep": ["Nom1", "Nom2"], "drops": "Nom supprimé: raison"}}"""
+
+
 NOVEL_V1 = ExtractionVersion(
     name="novel-v1",
     description=(
@@ -65,6 +99,29 @@ NOVEL_V1 = ExtractionVersion(
     max_chunk_words=800,
 )
 
+# novel-v2 = novel-v1 + a validate pass (generic false-positive filter). Ports the
+# single highest-ROI civ technique. Next steps (later versions): masked-recall
+# pass for overshadowed minor characters, a focus call for the under-extracted
+# type. Kept as a separate version so novel-v1 stays a clean baseline.
+NOVEL_V2 = ExtractionVersion(
+    name="novel-v2",
+    description=(
+        "novel-v1 + validate pass (FP filter): drops generic person-nouns, "
+        "metaphors and name-fragments while protecting every NAMED entity. First "
+        "step of bringing the mature civ multi-pass quality to the novel path."
+    ),
+    profile="novel",
+    system_prompt=_NOVEL_SYSTEM,
+    facts_prompt=_NOVEL_FACTS_PROMPT,
+    entity_prompt=_NOVEL_ENTITY_PROMPT,
+    validate_prompt=_NOVEL_VALIDATE_PROMPT,
+    validate_model="qwen3:14b",
+    validate_num_predict=512,
+    chunk_by_paragraph=True,
+    max_chunk_words=800,
+)
+
 _VERSIONS_NOVEL: dict[str, ExtractionVersion] = {
     "novel-v1": NOVEL_V1,
+    "novel-v2": NOVEL_V2,
 }
