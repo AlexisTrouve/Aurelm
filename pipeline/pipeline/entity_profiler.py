@@ -127,14 +127,41 @@ _PROFILE_PROMPTS: dict[str, str] = {
 }
 
 
+# Sentence terminator (incl. French guillemets/ellipsis) followed by space, or a
+# line break — used to scope a mention's context to its own sentence.
+_SENT_BOUNDARY = re.compile(r"[.!?…»]\s|\n")
+
+
+def _sentence_around(text: str, pos: int, mention_len: int) -> str:
+    """Return the sentence containing the mention at ``pos`` in ``text``.
+
+    Walks back to the previous sentence terminator and forward to the next, so
+    the excerpt is ABOUT this entity — not the ±400-char neighbourhood, which
+    pulls in adjacent characters' sentences and bleeds their traits.
+    """
+    start = 0
+    for m in _SENT_BOUNDARY.finditer(text[:pos]):
+        start = m.end()
+    mention_end = pos + mention_len
+    m = _SENT_BOUNDARY.search(text, mention_end)
+    end = m.end() if m else len(text)
+    return text[start:end].strip()
+
+
 def _find_rich_context_for_mention(
     conn,
     mention_text: str,
     turn_number: int,
     fallback_context: str | None,
     segment_cache: dict[int, list[str]],
+    sentence_scope: bool = False,
 ) -> str:
-    """Find a rich context excerpt for a mention by searching turn segments."""
+    """Find a rich context excerpt for a mention by searching turn segments.
+
+    ``sentence_scope=True`` (novel profiles) narrows the excerpt to the sentence
+    containing the mention instead of a fixed ±RICH_CONTEXT_WINDOW/2 window,
+    preventing cross-character bleed. Civ keeps the proven wider window.
+    """
     if turn_number not in segment_cache:
         segments = conn.execute(
             """SELECT s.content FROM turn_segments s
@@ -149,6 +176,8 @@ def _find_rich_context_for_mention(
     for seg_content in segment_cache[turn_number]:
         pos = seg_content.lower().find(mention_lower)
         if pos != -1:
+            if sentence_scope:
+                return _sentence_around(seg_content, pos, len(mention_text))
             half = RICH_CONTEXT_WINDOW // 2
             start = max(0, pos - half)
             end = min(len(seg_content), pos + len(mention_text) + half)
@@ -306,6 +335,7 @@ def build_entity_profiles(
                 rich_ctx = _find_rich_context_for_mention(
                     conn, m["mention_text"], turn_num,
                     m["context"], segment_cache,
+                    sentence_scope=domain_profile.tight_profiling_context,
                 )
                 if not rich_ctx:
                     continue

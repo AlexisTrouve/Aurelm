@@ -43,6 +43,11 @@ class DomainProfile:
     # ask for softly — e.g. a person-centred novel keeps person↔person edges only,
     # dropping relations the LLM drew from a place/group despite the instruction.
     relation_endpoint_types: frozenset[str] | None = None
+    # When True, the profiler scopes each entity's context to the SENTENCE(S)
+    # mentioning it, not a fixed ±400-char window. Prevents descriptions bleeding
+    # between characters in dense narrative (a neighbour's trait landing on the
+    # wrong person). Off for civ (the wider window is the proven behaviour there).
+    tight_profiling_context: bool = False
 
 
 # --- civ profile: the historical ontology, unchanged --------------------------
@@ -103,6 +108,9 @@ NOVEL_PROFILE = DomainProfile(
     # relations between two named characters. Deterministically drops the
     # place/group edges the LLM emits despite the prompt asking for person↔person.
     relation_endpoint_types=frozenset({"person"}),
+    # Novels are character-dense — scope profiling context tightly to avoid
+    # one character's traits bleeding into another's description.
+    tight_profiling_context=True,
 )
 
 
