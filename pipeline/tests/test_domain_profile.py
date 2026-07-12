@@ -139,3 +139,76 @@ def test_relation_gate_defaults_to_civ_when_unset():
     )
     inserted = _resolve_and_insert_relations(conn, [civ_profile], incremental=False)
     assert inserted == 1
+
+
+# --- profiling loop end-to-end (regression: no param/loop-var shadowing) -----
+# This exercises build_entity_profiles' per-entity loop with a fake LLM. It is
+# the test that was MISSING in P2a: renaming the loop var 'profile' collided
+# with the DomainProfile param, so domain_profile.name / .relation_types blew up
+# with AttributeError on any real profiling run — but no unit test drove the loop
+# (integration tests need Ollama). This locks the fix without an LLM.
+
+class _FakeProvider:
+    """Returns a fixed JSON string for every profiling call (mimics provider.chat)."""
+
+    def __init__(self, response: str):
+        self._response = response
+
+    def chat(self, **kwargs) -> str:
+        return self._response
+
+
+def _profiling_db(tmp_path) -> str:
+    from pipeline.db import init_db, run_migrations, get_connection
+    db = str(tmp_path / "prof.db")
+    init_db(db)
+    run_migrations(db)  # gm_fields, tags, etc. are added by migrations
+    conn = get_connection(db)
+    conn.execute("INSERT INTO civ_civilizations (id, name) VALUES (1, 'Roman')")
+    conn.execute("INSERT INTO turn_turns (id, civ_id, turn_number, raw_message_ids) "
+                 "VALUES (1, 1, 1, '[]')")
+    conn.executemany(
+        "INSERT INTO entity_entities (id, canonical_name, entity_type, civ_id, is_active) "
+        "VALUES (?,?,?,1,1)",
+        [(1, "Oracle", "person"), (2, "Front-Levé", "person")],
+    )
+    conn.executemany(
+        "INSERT INTO entity_mentions (entity_id, turn_id, mention_text, context) VALUES (?,1,?,?)",
+        [(1, "Oracle", "Oracle observe."), (2, "Front-Levé", "Front-Levé écoute.")],
+    )
+    conn.commit(); conn.close()
+    return db
+
+
+def test_build_entity_profiles_novel_profile_end_to_end(tmp_path):
+    import json as _json
+    from pipeline.entity_profiler import build_entity_profiles
+
+    db = _profiling_db(tmp_path)
+    # Fake LLM: a description + one NOVEL relation (mentor-de -> Front-Levé).
+    canned = _json.dumps({
+        "description": "L'immortel qui observe.",
+        "turn_summaries": {"Tour 1": "Oracle observe le camp."},
+        "aliases": [],
+        "relations": [{"target": "Front-Levé", "type": "mentor-de", "description": "guide"}],
+        "tags": [],
+    }, ensure_ascii=False)
+
+    profiles = build_entity_profiles(
+        db, model="fake", use_llm=True, incremental=False,
+        provider=_FakeProvider(canned), domain_profile=NOVEL_PROFILE,
+    )
+
+    # Loop ran without AttributeError and wrote descriptions.
+    assert any(p.description for p in profiles)
+    from pipeline.db import get_connection
+    conn = get_connection(db)
+    described = conn.execute(
+        "SELECT COUNT(*) c FROM entity_entities WHERE description IS NOT NULL AND description != ''"
+    ).fetchone()["c"]
+    assert described >= 1
+    # The novel relation type survived the (novel) gate and was inserted.
+    rel = conn.execute(
+        "SELECT relation_type FROM entity_relations WHERE relation_type='mentor-de'"
+    ).fetchone()
+    assert rel is not None

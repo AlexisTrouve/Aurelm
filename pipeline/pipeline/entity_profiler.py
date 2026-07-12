@@ -182,7 +182,7 @@ def build_entity_profiles(
     run_id: int | None = None,
     track_progress: bool = False,
     provider: LLMProvider | None = None,
-    profile: DomainProfile = CIV_PROFILE,
+    domain_profile: DomainProfile = CIV_PROFILE,
 ) -> list[EntityProfile]:
     """Build rich profiles for all active entities in the database.
 
@@ -196,8 +196,10 @@ def build_entity_profiles(
         incremental: If True, only process entities with new mentions in recently processed turns
         run_id: Pipeline run ID for progress tracking
         track_progress: Whether to track progress in pipeline_progress table
-        profile: Domain profile — selects the profiling prompt and the relation
-            ontology gate. Defaults to civ (historical behaviour unchanged).
+        domain_profile: Domain profile — selects the profiling prompt and the
+            relation ontology gate. Defaults to civ (historical behaviour
+            unchanged). Named domain_profile (not profile) to avoid shadowing the
+            per-entity ``profile`` loop variable (an EntityProfile) below.
     """
     conn = get_connection(db_path)
 
@@ -315,7 +317,7 @@ def build_entity_profiles(
                     mentions_text = mentions_text[:6000] + "\n[...tronqué...]"
 
                 # Pick the profiling prompt for the active domain (civ default).
-                prompt = _PROFILE_PROMPTS.get(profile.name, PROFILE_PROMPT).format(
+                prompt = _PROFILE_PROMPTS.get(domain_profile.name, PROFILE_PROMPT).format(
                     name=name,
                     entity_type=entity_type,
                     mentions=mentions_text,
@@ -470,7 +472,7 @@ def build_entity_profiles(
     if use_llm:
         relations_count = _resolve_and_insert_relations(
             conn, profiles, incremental=incremental,
-            relation_types=profile.relation_types,
+            relation_types=domain_profile.relation_types,
         )
         print(f"       -> {relations_count} relations inserted")
 

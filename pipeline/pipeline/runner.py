@@ -611,7 +611,7 @@ def run_pipeline(
             run_id=run_id,
             track_progress=track_progress,
             provider=llm_provider,
-            profile=get_profile(version.profile),
+            domain_profile=get_profile(version.profile),
         )
         stats["entities_profiled"] = len([p for p in profiles if p.description])
 
