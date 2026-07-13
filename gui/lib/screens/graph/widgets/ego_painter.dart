@@ -136,50 +136,145 @@ class EgoPainter extends CustomPainter {
 
     final labelStyle = TextStyle(
       fontSize: 9,
-      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+      color: colors.onSurfaceVariant.withValues(alpha: 0.9),
       fontWeight: FontWeight.w400,
     );
 
-    for (final edge in data.edges) {
-      final from = layout.positions[edge.sourceId];
-      final to = layout.positions[edge.targetId];
-      if (from == null || to == null) continue;
+    // Obstacles for label placement. Node circles + node labels are FIXED and
+    // take priority, so edge labels flow around them; each placed edge label is
+    // then added so later labels avoid it too. Prevents the pile-up of relation
+    // labels in the convergence zone near the ego center.
+    final placed = <Rect>[];
+    for (final n in data.nodes) {
+      final p = layout.positions[n.id];
+      if (p == null) continue;
+      placed.add(Rect.fromCircle(center: p, radius: EgoGraphLayout.radiusForDepth(n.depth)));
+      placed.add(_nodeLabelRect(n, p));
+    }
 
-      // Color edge by relation category
-      paint.color = _edgeColor(edge.relationType).withValues(alpha: 0.5);
+    // Deterministic order so placement is stable frame-to-frame (no flicker on
+    // hover — hover doesn't move nodes, so labels must not jump).
+    final edges = [...data.edges]
+      ..sort((a, b) {
+        final c = a.sourceId.compareTo(b.sourceId);
+        return c != 0 ? c : a.targetId.compareTo(b.targetId);
+      });
 
-      // Draw line with a slight arrow indication (shift endpoints to node borders)
-      final srcR = EgoGraphLayout.radiusForDepth(_depthOf(edge.sourceId));
-      final tgtR = EgoGraphLayout.radiusForDepth(_depthOf(edge.targetId));
-
-      final dir = (to - from);
+    // Endpoints on the node borders (shared by both passes).
+    Offset? p1Of(GraphEdge e) {
+      final from = layout.positions[e.sourceId], to = layout.positions[e.targetId];
+      if (from == null || to == null) return null;
+      final dir = to - from;
       final len = dir.distance;
-      if (len < 1) continue;
-      final unit = dir / len;
-      final p1 = from + unit * srcR;
-      final p2 = to - unit * tgtR;
+      if (len < 1) return null;
+      return from + (dir / len) * EgoGraphLayout.radiusForDepth(_depthOf(e.sourceId));
+    }
 
+    Offset? p2Of(GraphEdge e) {
+      final from = layout.positions[e.sourceId], to = layout.positions[e.targetId];
+      if (from == null || to == null) return null;
+      final dir = to - from;
+      final len = dir.distance;
+      if (len < 1) return null;
+      return to - (dir / len) * EgoGraphLayout.radiusForDepth(_depthOf(e.targetId));
+    }
+
+    // Pass 1 — all lines first, so every label sits above every edge.
+    for (final edge in edges) {
+      final p1 = p1Of(edge), p2 = p2Of(edge);
+      if (p1 == null || p2 == null) continue;
+      paint.color = _edgeColor(edge.relationType).withValues(alpha: 0.5);
       canvas.drawLine(p1, p2, paint);
+    }
 
-      // Relation type label at midpoint
-      final mid = Offset((p1.dx + p2.dx) / 2, (p1.dy + p2.dy) / 2);
+    // Pass 2 — labels, always-on + pill, each lightly nudged to avoid overlap.
+    for (final edge in edges) {
+      final p1 = p1Of(edge), p2 = p2Of(edge);
+      if (p1 == null || p2 == null) continue;
+
       final label = edge.relationType.replaceAll('_', ' ');
       final tp = TextPainter(
         text: TextSpan(text: label, style: labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
-      // Small white background pill behind label
-      final rect = Rect.fromCenter(
-        center: mid,
-        width: tp.width + 6,
-        height: tp.height + 2,
-      );
+      final sz = Size(tp.width + 6, tp.height + 2);
+
+      // Base slightly outward of the midpoint (roomier angular spacing), then a
+      // small collision-aware perpendicular nudge.
+      final dir = p2 - p1;
+      final len = dir.distance;
+      final unit = len < 1 ? const Offset(1, 0) : dir / len;
+      final base = p1 + dir * 0.55;
+      final perp = Offset(-unit.dy, unit.dx);
+      final pos = _placeLabel(base, sz, unit, perp, placed);
+      final rect = Rect.fromCenter(center: pos, width: sz.width, height: sz.height);
+
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(4)),
-        Paint()..color = colors.surface.withValues(alpha: 0.85),
+        Paint()..color = colors.surface.withValues(alpha: 0.9),
       );
-      tp.paint(canvas, mid - Offset(tp.width / 2, tp.height / 2));
+      tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
+      placed.add(rect);
     }
+  }
+
+  /// Laid-out TextPainter for a node's name label — shared by the node draw and
+  /// the edge-label collision pass so both agree on the label box.
+  TextPainter _nodeLabelTp(GraphNode node) {
+    final isCenter = node.depth == 0;
+    final style = TextStyle(
+      fontSize: isCenter ? 11 : node.depth == 1 ? 10 : 9,
+      color: isCenter ? colors.onSurface : colors.onSurfaceVariant,
+      fontWeight: isCenter ? FontWeight.w600 : FontWeight.w400,
+    );
+    return TextPainter(
+      text: TextSpan(text: node.name, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: 2,
+      ellipsis: '…',
+    )..layout(maxWidth: isCenter ? 120.0 : 90.0);
+  }
+
+  /// Bounding rect of a node's name label (drawn just below the node).
+  Rect _nodeLabelRect(GraphNode node, Offset pos) {
+    final r = EgoGraphLayout.radiusForDepth(node.depth);
+    final tp = _nodeLabelTp(node);
+    final labelPos = pos + Offset(0, r + 4);
+    return Rect.fromCenter(
+      center: labelPos + Offset(0, tp.height / 2),
+      width: tp.width + 6,
+      height: tp.height + 2,
+    );
+  }
+
+  /// Place an edge label near [base], nudging LIGHTLY to avoid [placed] rects.
+  /// Candidates are a small grid: along the edge ([unit], gives each label a
+  /// distinct radius to break the radial pile-up near the center) crossed with a
+  /// perpendicular offset ([perp]). Labels are never dropped (always-on): the
+  /// first fully-clear spot wins, else the least-overlapping one. Displacement is
+  /// capped small (~≤28px along, ≤18px perp) so labels stay tied to their edge.
+  Offset _placeLabel(Offset base, Size sz, Offset unit, Offset perp, List<Rect> placed) {
+    const along = [0.0, -14.0, 14.0, -28.0, 28.0];
+    const cross = [0.0, 9.0, -9.0, 18.0, -18.0];
+    var best = base;
+    var bestOverlap = double.infinity;
+    for (final a in along) {
+      for (final p in cross) {
+        final c = base + unit * a + perp * p;
+        final rect = Rect.fromCenter(center: c, width: sz.width, height: sz.height);
+        var overlap = 0.0;
+        for (final r in placed) {
+          final inter = r.intersect(rect);
+          if (inter.width > 0 && inter.height > 0) overlap += inter.width * inter.height;
+        }
+        if (overlap == 0) return c;
+        if (overlap < bestOverlap) {
+          bestOverlap = overlap;
+          best = c;
+        }
+      }
+    }
+    return best;
   }
 
   void _drawNodes(Canvas canvas) {
@@ -235,19 +330,8 @@ class EgoPainter extends CustomPainter {
         btp.paint(canvas, bPos - Offset(btp.width / 2, btp.height / 2));
       }
 
-      // Node label below (or inside for center)
-      final nameStyle = TextStyle(
-        fontSize: isCenter ? 11 : node.depth == 1 ? 10 : 9,
-        color: isCenter ? colors.onSurface : colors.onSurfaceVariant,
-        fontWeight: isCenter ? FontWeight.w600 : FontWeight.w400,
-      );
-      final maxWidth = isCenter ? 120.0 : 90.0;
-      final tp = TextPainter(
-        text: TextSpan(text: node.name, style: nameStyle),
-        textDirection: TextDirection.ltr,
-        maxLines: 2,
-        ellipsis: '…',
-      )..layout(maxWidth: maxWidth);
+      // Node label below (or inside for center) — same box the collision pass used.
+      final tp = _nodeLabelTp(node);
 
       // White background for readability
       final labelPos = pos + Offset(0, r + 4);
