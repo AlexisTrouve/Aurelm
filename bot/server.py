@@ -597,14 +597,16 @@ class BotServer:
             # Check if compression is needed (20+ text messages since last checkpoint)
             await self._maybe_compress_session(session_id, _write)
 
-            # Emit final context estimate based on persisted history (no tool blocks)
-            # This is the accurate token count for the NEXT message.
-            from .agent import _compress_tool_history, _estimate_tokens
+            # Emit final context estimate based on persisted history — the accurate
+            # token count for the NEXT message. The persisted history is already
+            # plain {role, content} text (checkpoint-compressed), so there is no
+            # separate "compressed" figure: raw == compressed.
+            from .agent import _estimate_tokens
             final_history = self._session_manager.build_llm_history(session_id)
-            final_compressed = _compress_tool_history(final_history)
+            final_tokens = _estimate_tokens(final_history)
             await _write("context_estimate", {
-                "raw_tokens": _estimate_tokens(final_history),
-                "compressed_tokens": _estimate_tokens(final_compressed),
+                "raw_tokens": final_tokens,
+                "compressed_tokens": final_tokens,
                 "round": -1,  # -1 = post-response final estimate
             })
 
@@ -874,11 +876,11 @@ class BotServer:
     async def _get_context_size(self, request: web.Request) -> web.Response:
         """GET /chat/sessions/{session_id}/context_size — Estimate context tokens.
 
-        Uses the exact same pipeline as sending a message:
-        build_llm_history() -> _compress_tool_history() -> _estimate_tokens().
-        Returns raw (before compression) and compressed (what Claude sees) estimates.
+        The persisted history is plain {role, content} text (already checkpoint-
+        compressed), so raw == compressed — the proxy handles prompt caching
+        server-side, there is no separate client-side compression pass.
         """
-        from .agent import _compress_tool_history, _estimate_tokens
+        from .agent import _estimate_tokens
 
         session_id = request.match_info["session_id"]
         history = self._session_manager.build_llm_history(session_id)
@@ -887,13 +889,10 @@ class BotServer:
                 "raw_tokens": 0, "compressed_tokens": 0,
             })
 
-        raw_tokens = _estimate_tokens(history)
-        compressed = _compress_tool_history(history)
-        compressed_tokens = _estimate_tokens(compressed)
-
+        tokens = _estimate_tokens(history)
         return web.json_response({
-            "raw_tokens": raw_tokens,
-            "compressed_tokens": compressed_tokens,
+            "raw_tokens": tokens,
+            "compressed_tokens": tokens,
         })
 
     def _auto_tag_civs(self, session_id: str, tool_calls: list[dict]) -> None:

@@ -190,40 +190,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
-    // Show a bottom-right toast when the agent falls back from Anthropic to Ollama.
-    // The false→true transition fires exactly once per fallback event.
-    ref.listen<bool>(
-      chatProvider.select((s) => s.usedFallback),
-      (prev, next) {
-        if (next && prev == false) {
-          final screenWidth = MediaQuery.of(context).size.width;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.swap_horiz, color: Colors.white, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'API indisponible — bascule sur claude -p',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-              behavior: SnackBarBehavior.floating,
-              // Large left margin pushes the floating snackbar to the right
-              margin: EdgeInsets.only(
-                left: screenWidth - 360,
-                bottom: 80,
-                right: 16,
-              ),
-              duration: const Duration(seconds: 5),
-              backgroundColor: Colors.orange.shade700,
-            ),
-          );
-        }
-      },
-    );
 
     return Focus(
       // Escape: cancel last queued message or ongoing LLM call
@@ -518,6 +484,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
         ),
         actions: [
+          // Model picker — any model the etheryale proxy serves.
+          const _ModelPicker(),
           // Online/offline indicator
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -2114,6 +2082,48 @@ class _TokenUsageBadge extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// App-bar dropdown to pick the model for the next turn — populated from the
+/// bot's /chat/models (which proxies the etheryale /v1/models). Hidden until the
+/// list loads; selecting a model routes subsequent sends through it. Null
+/// selection = the bot's configured default.
+class _ModelPicker extends ConsumerWidget {
+  const _ModelPicker();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(chatModelsProvider).valueOrNull;
+    final models = data?.models ?? const <String>[];
+    if (models.isEmpty) return const SizedBox.shrink();
+
+    final selected = ref.watch(selectedModelProvider);
+    final fallback = (data?.defaultModel.isNotEmpty ?? false)
+        ? data!.defaultModel
+        : models.first;
+    final current = models.contains(selected) ? selected! : fallback;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: models.contains(current) ? current : models.first,
+          isDense: true,
+          icon: const Icon(Icons.expand_more, size: 18),
+          borderRadius: BorderRadius.circular(8),
+          style: Theme.of(context).textTheme.bodySmall,
+          items: [
+            for (final m in models) DropdownMenuItem(value: m, child: Text(m)),
+          ],
+          onChanged: (m) {
+            if (m == null) return;
+            ref.read(selectedModelProvider.notifier).state = m;
+            ref.read(chatProvider.notifier).setModel(m);
+          },
         ),
       ),
     );

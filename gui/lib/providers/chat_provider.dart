@@ -83,9 +83,6 @@ class ChatState {
   /// Active session name + tags (displayed in AppBar)
   final String sessionName;
   final List<String> sessionTags;
-  /// True once the agent fell back from Anthropic to Ollama during this session.
-  /// Used to trigger a one-time toast notification in the UI.
-  final bool usedFallback;
 
   const ChatState({
     this.messages = const [],
@@ -99,7 +96,6 @@ class ChatState {
     this.sessionTotalTokens = 0,
     this.sessionName = '',
     this.sessionTags = const [],
-    this.usedFallback = false,
   });
 
   ChatState copyWith({
@@ -114,7 +110,6 @@ class ChatState {
     int? sessionTotalTokens,
     String? sessionName,
     List<String>? sessionTags,
-    bool? usedFallback,
     bool clearError = false,
     bool clearSession = false,
   }) {
@@ -132,7 +127,6 @@ class ChatState {
       sessionTotalTokens: sessionTotalTokens ?? this.sessionTotalTokens,
       sessionName: sessionName ?? this.sessionName,
       sessionTags: sessionTags ?? this.sessionTags,
-      usedFallback: usedFallback ?? this.usedFallback,
     );
   }
 }
@@ -156,12 +150,24 @@ final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>(
   ),
 );
 
+/// Models the etheryale proxy currently serves + the default (model picker).
+final chatModelsProvider = FutureProvider<ChatModels>(
+  (ref) => ref.watch(chatServiceProvider).fetchModels(),
+);
+
+/// Currently selected model (null = use the bot's configured default).
+final selectedModelProvider = StateProvider<String?>((ref) => null);
+
 class ChatNotifier extends StateNotifier<ChatState> {
   final ChatService _service;
   final ChatSessionsService _sessionsService;
   bool _cancelled = false; // set to true to silently ignore incoming events
+  String? _model; // per-request model override, set from the picker
 
   ChatNotifier(this._service, this._sessionsService) : super(const ChatState());
+
+  /// Set the model used for subsequent sends (from the model picker dropdown).
+  void setModel(String? model) => _model = model;
 
   /// Send a user message and stream the agent's response events.
   ///
@@ -206,6 +212,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
       final stream = _service.sendMessageStream(
         message,
         sessionId: state.sessionId,
+        model: _model,
       );
 
       await for (final event in stream) {
@@ -249,7 +256,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
               inputTokens: event.compressedTokens,
             );
 
+          case TextDeltaEvent():
+            // Live token — append and re-render the in-progress bubble.
+            responseText += event.chunk;
+            _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
+
           case TextEvent():
+            // Authoritative final content (supersedes accumulated deltas).
             responseText = event.content;
             _updateAssistantMessage(responseText, toolCalls, thinkingBlocks);
 
@@ -293,10 +306,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
                   : state.sessionTags,
               pendingTools: [],
             );
-
-          case FallbackEvent():
-            // Signal UI to show a one-time toast (false → true transition)
-            state = state.copyWith(usedFallback: true);
 
           case ErrorEvent():
             state = state.copyWith(

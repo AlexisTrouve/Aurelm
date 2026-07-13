@@ -50,7 +50,14 @@ class ThinkingEvent extends ChatEvent {
   ThinkingEvent({required this.content});
 }
 
-/// Final text response from the agent.
+/// Incremental token of the final answer — streamed live, before the final
+/// [TextEvent] which carries the authoritative full content.
+class TextDeltaEvent extends ChatEvent {
+  final String chunk;
+  TextDeltaEvent({required this.chunk});
+}
+
+/// Final text response from the agent (authoritative; supersedes the deltas).
 class TextEvent extends ChatEvent {
   final String content;
   TextEvent({required this.content});
@@ -105,10 +112,11 @@ class ErrorEvent extends ChatEvent {
   ErrorEvent({required this.message});
 }
 
-/// Backend fallback — Anthropic API failed (503/500), switched to Ollama.
-class FallbackEvent extends ChatEvent {
-  final String reason;
-  FallbackEvent({required this.reason});
+/// The models the etheryale proxy serves + the configured default (for the picker).
+class ChatModels {
+  final List<String> models;
+  final String defaultModel;
+  const ChatModels({required this.models, required this.defaultModel});
 }
 
 /// HTTP client for the /chat endpoint on the local bot server.
@@ -128,11 +136,13 @@ class ChatService {
   Stream<ChatEvent> sendMessageStream(
     String message, {
     String? sessionId,
+    String? model,
   }) async* {
     final uri = Uri.parse('$_baseUrl${AppConstants.botChatEndpoint}');
     final body = jsonEncode({
       'message': message,
       if (sessionId != null) 'session_id': sessionId,
+      if (model != null) 'model': model,  // per-request model override (picker)
     });
 
     final client = http.Client();
@@ -143,8 +153,10 @@ class ChatService {
         ..headers['Content-Type'] = 'application/json'
         ..body = body;
 
+      // Generous timeout: the proxy QUEUES requests (never 429), so a turn may
+      // legitimately wait tens of seconds before it starts streaming.
       final streamed = await client.send(request).timeout(
-        const Duration(seconds: 180),
+        const Duration(seconds: 300),
       );
 
       if (streamed.statusCode != 200) {
@@ -182,11 +194,15 @@ class ChatService {
                 outputTokens: json['output_tokens'] as int? ?? 0,
               );
             case 'context_estimate':
+              final raw = json['raw_tokens'] as int? ?? 0;
               yield ContextEstimateEvent(
-                rawTokens: json['raw_tokens'] as int? ?? 0,
-                compressedTokens: json['compressed_tokens'] as int? ?? 0,
+                rawTokens: raw,
+                // Proxy handles caching server-side; no separate compressed count.
+                compressedTokens: json['compressed_tokens'] as int? ?? raw,
                 round: json['round'] as int? ?? 0,
               );
+            case 'text_delta':
+              yield TextDeltaEvent(chunk: json['chunk'] as String? ?? '');
             case 'text':
               yield TextEvent(
                 content: json['content'] as String? ?? '',
@@ -206,10 +222,6 @@ class ChatService {
                 sessionTags: (json['session_tags'] as List?)
                     ?.cast<String>() ?? const [],
               );
-            case 'fallback':
-              yield FallbackEvent(
-                reason: json['reason'] as String? ?? '',
-              );
             case 'error':
               yield ErrorEvent(
                 message: json['message'] as String? ?? 'Unknown error',
@@ -222,6 +234,23 @@ class ChatService {
     } finally {
       _activeClient = null;
       client.close();
+    }
+  }
+
+  /// Fetch the models the proxy serves + the configured default (model picker).
+  /// Returns an empty list on any failure — the caller falls back to the default.
+  Future<ChatModels> fetchModels() async {
+    try {
+      final uri = Uri.parse('$_baseUrl/chat/models');
+      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) return const ChatModels(models: [], defaultModel: '');
+      final json = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ChatModels(
+        models: (json['models'] as List?)?.cast<String>() ?? const [],
+        defaultModel: json['default'] as String? ?? '',
+      );
+    } catch (_) {
+      return const ChatModels(models: [], defaultModel: '');
     }
   }
 
