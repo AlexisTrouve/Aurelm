@@ -1,0 +1,79 @@
+name: E2E GUI Windows
+
+# Real end-to-end integration tests: boot the Flutter desktop app headless
+# against a deterministic fixture DB and drive the NavigationRail through each
+# core screen. Requires a Windows runner (integration_test -d windows) — the
+# ubuntu Test GUI workflow only runs the unit/widget tests.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+      - 'database/**'                       # fixture schema comes from here
+      - 'pipeline/pipeline/db.py'           # fixture builder loads this
+      - '.github/workflows/e2e-gui-windows.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'gui/**'
+      - 'database/**'
+      - 'pipeline/pipeline/db.py'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: gui
+
+jobs:
+  e2e:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.27.4'
+        channel: 'stable'
+        cache: true
+
+    - name: Setup Python (deterministic fixture builder)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install build dependencies (CMake, Ninja)
+      run: choco install cmake ninja -y
+
+    - name: Create Windows Platform Files
+      run: flutter create --platforms=windows .
+
+    - name: Enable Windows Desktop
+      run: flutter config --enable-windows-desktop
+
+    - name: Get Dependencies
+      run: flutter pub get
+
+    - name: Generate Code (Drift)
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    - name: Build deterministic fixture DB
+      # stdlib-only (loads pipeline/pipeline/db.py by path) — no pip installs.
+      run: python integration_test/fixtures/build_fixture.py
+
+    - name: Run integration tests (retry the flaky first build)
+      shell: pwsh
+      # The Windows `flutter_assemble` custom build step has a known race that
+      # fails the FIRST build after a clean tree ("... .rule stopped, Code 1")
+      # and passes on retry. Retry up to 3x so a green suite isn't masked by it.
+      run: |
+        $ok = $false
+        for ($i = 1; $i -le 3; $i++) {
+          Write-Host "=== E2E attempt $i/3 ==="
+          flutter test integration_test/app_boot_test.dart -d windows
+          if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+          Write-Host "Attempt $i failed (exit $LASTEXITCODE) — likely the flutter_assemble first-build race; retrying."
+        }
+        if (-not $ok) { Write-Error "E2E suite failed after 3 attempts"; exit 1 }
