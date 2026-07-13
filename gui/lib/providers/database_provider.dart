@@ -7,9 +7,19 @@ import '../core/constants/app_constants.dart';
 import '../data/database.dart';
 
 final _logFile = File(r'C:\Users\alexi\Documents\projects\Aurelm\flutter_errors.log');
-void _log(String msg) => _logFile.writeAsStringSync(
-    '[${DateTime.now().toIso8601String()}] $msg\n',
-    mode: FileMode.append, flush: true);
+void _log(String msg) {
+  // Best-effort dev diagnostic (read by Claude to triage crashes). The path is
+  // hardcoded to the dev machine, so the write MUST NOT crash the app anywhere
+  // that dir is absent (CI, Arthur's machine): a failed diagnostic log is not a
+  // real error. Without this guard, DbPathNotifier._init()'s _log() threw a
+  // PathNotFoundException that propagated through dbPathProvider and crashed
+  // every screen — caught only by the E2E suite running in CI.
+  try {
+    _logFile.writeAsStringSync(
+        '[${DateTime.now().toIso8601String()}] $msg\n',
+        mode: FileMode.append, flush: true);
+  } catch (_) {}
+}
 
 const _dbPathPrefKey = 'aurelm_db_path';
 

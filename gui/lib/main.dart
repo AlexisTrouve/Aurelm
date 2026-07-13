@@ -11,15 +11,23 @@ import 'providers/database_provider.dart';
 final _logFile = File(r'C:\Users\alexi\Documents\projects\Aurelm\flutter_errors.log');
 
 void _log(String msg) {
-  final line = '[${DateTime.now().toIso8601String()}] $msg\n';
-  _logFile.writeAsStringSync(line, mode: FileMode.append, flush: true);
+  // Best-effort: the log path is hardcoded to the dev machine, so a missing dir
+  // (CI, Arthur's machine) must not crash the app — a failed diagnostic write is
+  // not a real error.
+  try {
+    final line = '[${DateTime.now().toIso8601String()}] $msg\n';
+    _logFile.writeAsStringSync(line, mode: FileMode.append, flush: true);
+  } catch (_) {}
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Always create/reset log on launch — exists even if no errors.
-  _logFile.writeAsStringSync('[${DateTime.now().toIso8601String()}] APP STARTED\n', flush: true);
+  // Always create/reset log on launch — exists even if no errors. Guarded: a
+  // missing log dir off the dev machine must not abort startup.
+  try {
+    _logFile.writeAsStringSync('[${DateTime.now().toIso8601String()}] APP STARTED\n', flush: true);
+  } catch (_) {}
 
   // Catch Flutter framework errors (build exceptions, layout errors, etc.)
   // and write them to the log file + show in-widget instead of generic "something went wrong".
