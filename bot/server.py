@@ -30,6 +30,7 @@ class BotServer:
         self._app.router.add_post("/sync", self._sync)
         self._app.router.add_get("/sync/preview", self._sync_preview)
         self._app.router.add_post("/chat", self._chat)
+        self._app.router.add_get("/chat/models", self._chat_models)
         self._app.router.add_get("/chat/sessions", self._list_sessions)
         self._app.router.add_post("/chat/sessions", self._create_session)
         self._app.router.add_post("/chat/sessions/{session_id}/rename", self._rename_session)
@@ -500,7 +501,7 @@ class BotServer:
         """
         if self._agent is None:
             return web.json_response(
-                {"error": "Agent not configured (missing ANTHROPIC_API_KEY?)"},
+                {"error": "Agent not configured (missing ETHERYALE_API_KEY?)"},
                 status=503,
             )
 
@@ -514,6 +515,8 @@ class BotServer:
             return web.json_response({"error": "Empty message"}, status=400)
 
         session_id = body.get("session_id")
+        # Optional per-request model override (Flutter model picker); falls back to config default.
+        model = body.get("model") or None
 
         # Load or create session
         if session_id:
@@ -553,7 +556,7 @@ class BotServer:
 
         try:
             # Stream events from the async generator in real time
-            async for event_type, data in self._agent.answer_streaming(history, message):
+            async for event_type, data in self._agent.answer_streaming(history, message, model=model):
                 await _write(event_type, data)
 
                 # When we get the final text, persist conversation in DB
@@ -624,6 +627,16 @@ class BotServer:
 
         await resp.write_eof()
         return resp
+
+    async def _chat_models(self, request: web.Request) -> web.Response:
+        """GET /chat/models — models the proxy serves + the configured default.
+
+        Powers the Flutter model picker. Returns {models: [...], default: "..."}.
+        """
+        if self._agent is None:
+            return web.json_response({"models": [], "default": self.config.model})
+        models = await self._agent.list_models()
+        return web.json_response({"models": models, "default": self.config.model})
 
     async def _list_sessions(self, request: web.Request) -> web.Response:
         """GET /chat/sessions — List all active sessions.

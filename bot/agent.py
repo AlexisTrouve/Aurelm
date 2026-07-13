@@ -1,13 +1,31 @@
-"""LLM agent for answering GM questions. Supports Anthropic Claude and Ollama backends."""
+"""LLM agent for GM questions — single backend: the etheryale proxy.
+
+WHAT: one OpenAI-compatible client talking to the etheryale proxy
+(`https://ai.etheryale.com/v1`), which fronts EVERY model (Claude + GPT) behind a
+single OpenAI Chat Completions surface. This replaces the old three-backend setup
+(Anthropic SDK + Ollama + `claude -p` fallback) with one path.
+
+WHY OpenAI SDK for Claude models: the proxy exposes only the OpenAI surface — even
+to reach a Claude model you speak Chat Completions, not the Anthropic Messages API
+(cf. the proxy INTEGRATION doc §4). Model choice is data-driven: any proxy model,
+overridable per request (Flutter model picker); Claude-only features (extended
+thinking) are gated by model name.
+
+COMMENT: two clients — an async one (`AsyncOpenAI`) drives the main streaming loop
+(the aiohttp server is async); a sync one (`OpenAI`) is handed to tools that make
+their own LLM call (deepExplore), which run inside `asyncio.to_thread`. Auth is
+`x-api-key` (not Bearer). The proxy QUEUES instead of returning 429, so the client
+timeout is generous and there is no aggressive client-side retry.
+"""
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
 import sqlite3
-import subprocess
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from .tool_definitions import TOOL_DEFINITIONS
 from .tools import dispatch_tool
@@ -18,14 +36,14 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 MAX_TOOL_ROUNDS = 10
+# Above this estimated size we inject a "stay focused" reminder into a deep
+# tool-calling chain so the model wraps up instead of drifting.
+CONTEXT_REMINDER_THRESHOLD = 40_000
 
 
-@dataclass
-class AgentResult:
-    """Result from answer_in_conversation — text response + tool calls performed."""
-    response: str
-    tool_calls: list[dict] = field(default_factory=list)  # [{name, input_summary, result_summary}]
-
+# --------------------------------------------------------------------------- #
+# Small helpers (pure, reused by streaming + non-streaming paths)
+# --------------------------------------------------------------------------- #
 
 def _input_summary(tool_input: dict) -> str:
     """One-line summary of tool input, e.g. 'query=bronze, civName=Confluence'."""
@@ -33,7 +51,7 @@ def _input_summary(tool_input: dict) -> str:
         return ""
     parts = [f"{k}={v!r}" for k, v in list(tool_input.items())[:2]]
     summary = ", ".join(parts)
-    return summary[:80] + ("\u2026" if len(summary) > 80 else "")
+    return summary[:80] + ("…" if len(summary) > 80 else "")
 
 
 def _result_summary(result_text: str) -> str:
@@ -41,95 +59,12 @@ def _result_summary(result_text: str) -> str:
     for line in result_text.splitlines():
         line = line.strip().lstrip("#").strip()
         if line:
-            return line[:100] + ("\u2026" if len(line) > 100 else "")
+            return line[:100] + ("…" if len(line) > 100 else "")
     return result_text[:100]
 
 
-def _compress_tool_history(messages: list[dict]) -> list[dict]:
-    """Compress old tool_result turns and strip thinking blocks from history.
-
-    - Tool results: all except the last 2 rounds are compressed to one-liners.
-      Format: tooluse:{name}({input_summary})->{result_first_line}
-    - Thinking blocks: stripped from all assistant messages except the most
-      recent one — they're huge and useless in older history.
-    """
-    # Find indices of user messages that carry tool_result blocks
-    tool_result_indices = [
-        i for i, msg in enumerate(messages)
-        if msg.get("role") == "user"
-        and isinstance(msg.get("content"), list)
-        and any(
-            isinstance(b, dict) and b.get("type") == "tool_result"
-            for b in msg["content"]
-        )
-    ]
-
-    # Keep last 2 tool-result turns intact (was 1 — gives Claude more context)
-    keep_count = 2
-    if len(tool_result_indices) <= keep_count:
-        to_compress: set[int] = set()
-    else:
-        to_compress = set(tool_result_indices[:-keep_count])
-
-    # Find the last assistant message index (to preserve its thinking blocks)
-    last_assistant_idx = -1
-    for i in range(len(messages) - 1, -1, -1):
-        if messages[i].get("role") == "assistant":
-            last_assistant_idx = i
-            break
-
-    result = []
-    for i, msg in enumerate(messages):
-        # Strip thinking blocks from old assistant messages
-        if (
-            msg.get("role") == "assistant"
-            and isinstance(msg.get("content"), list)
-            and i != last_assistant_idx
-        ):
-            stripped = [
-                b for b in msg["content"]
-                if not (isinstance(b, dict) and b.get("type") == "thinking")
-                and not (hasattr(b, "type") and getattr(b, "type", None) == "thinking")
-            ]
-            if stripped != msg["content"]:
-                msg = {**msg, "content": stripped}
-
-        if i not in to_compress:
-            result.append(msg)
-            continue
-
-        # Build tool_use_id -> (name, input) map from the preceding assistant block
-        tool_name_map: dict[str, tuple[str, dict]] = {}
-        if i > 0:
-            prev = messages[i - 1]
-            if prev.get("role") == "assistant" and isinstance(prev.get("content"), list):
-                for block in prev["content"]:
-                    if isinstance(block, dict) and block.get("type") == "tool_use":
-                        tool_name_map[block["id"]] = (
-                            block.get("name", "tool"),
-                            block.get("input", {}),
-                        )
-
-        # Replace each long tool_result with compact format
-        new_blocks = []
-        for block in msg["content"]:
-            if isinstance(block, dict) and block.get("type") == "tool_result":
-                raw = block.get("content", "")
-                if isinstance(raw, str) and len(raw) > 120:
-                    tool_id = block.get("tool_use_id", "")
-                    name, inp = tool_name_map.get(tool_id, ("tool", {}))
-                    inp_str = _input_summary(inp)
-                    res_str = _result_summary(raw)
-                    compact = f"tooluse:{name}({inp_str})->{res_str}"
-                    block = {**block, "content": compact}
-            new_blocks.append(block)
-        result.append({**msg, "content": new_blocks})
-
-    return result
-
-
 def _estimate_tokens(messages: list[dict]) -> int:
-    """Rough token estimate: count chars across all message content, divide by 4."""
+    """Rough token estimate: total chars across message content, divided by 4."""
     total = 0
     for msg in messages:
         content = msg.get("content", "")
@@ -138,71 +73,76 @@ def _estimate_tokens(messages: list[dict]) -> int:
         elif isinstance(content, list):
             for block in content:
                 if isinstance(block, dict):
-                    for v in block.values():
-                        if isinstance(v, str):
-                            total += len(v)
-                elif isinstance(block, str):
-                    total += len(block)
-                elif hasattr(block, "text"):
-                    total += len(getattr(block, "text", ""))
+                    total += sum(len(v) for v in block.values() if isinstance(v, str))
+        for tc in msg.get("tool_calls", []) or []:
+            fn = tc.get("function", {}) if isinstance(tc, dict) else {}
+            total += len(fn.get("arguments", "") or "")
     return total // 4
 
 
-def _build_context_reminder(messages: list[dict]) -> str | None:
-    """Build a context reminder if the conversation is getting long (>40k tokens).
+def _context_reminder(messages: list[dict]) -> dict | None:
+    """A short system reminder for long tool chains, or None if the chain is short.
 
-    Summarizes the user's last question and hints at which tools to use,
-    so Claude doesn't lose track in deep tool-calling chains.
+    Keeps the model anchored on the user's question so it concludes instead of
+    looping. Returned as an OpenAI `role:"system"` message (appended, not merged).
     """
-    estimated = _estimate_tokens(messages)
-    if estimated < 40_000:
+    if _estimate_tokens(messages) < CONTEXT_REMINDER_THRESHOLD:
         return None
-
-    # Find the last actual user message (not a tool_result container)
-    last_user_text = ""
-    for msg in reversed(messages):
-        if msg.get("role") == "user":
-            content = msg.get("content", "")
-            if isinstance(content, str) and content.strip():
-                last_user_text = content.strip()
-                break
-
-    if not last_user_text:
-        return None
-
-    # Truncate if very long
-    if len(last_user_text) > 300:
-        last_user_text = last_user_text[:300] + "..."
-
-    return (
-        f"[RAPPEL CONTEXTE - conversation longue, ~{estimated} tokens]\n"
-        f"Question originale de l'utilisateur: {last_user_text}\n"
-        "Reste concentre sur cette question. Si tu as deja collecte assez "
-        "d'informations via les outils, formule ta reponse finale maintenant."
+    last_user = next(
+        (m["content"] for m in reversed(messages)
+         if m.get("role") == "user" and isinstance(m.get("content"), str) and m["content"].strip()),
+        "",
     )
+    if not last_user:
+        return None
+    if len(last_user) > 300:
+        last_user = last_user[:300] + "..."
+    return {
+        "role": "system",
+        "content": (
+            "[RAPPEL CONTEXTE — conversation longue]\n"
+            f"Question originale : {last_user}\n"
+            "Reste concentre. Si tu as deja assez d'informations via les outils, "
+            "formule ta reponse finale maintenant."
+        ),
+    }
 
 
-OLLAMA_SYSTEM_PROMPT = """\
-Tu es Aurelm, archiviste expert d'un JDR de civilisation. Tu reponds en francais.
+def _vendor_field(obj, name: str):
+    """Read a non-standard field the proxy adds (e.g. `thinking`) off an SDK object.
 
-REGLE ABSOLUE: Tu dois TOUJOURS utiliser les outils disponibles pour chercher dans la base de donnees avant de repondre. Ne reponds JAMAIS de memoire. Chaque fait doit venir d'un outil.
+    The OpenAI SDK may surface unknown fields either as an attribute or bucketed in
+    `model_extra` depending on version — check both so thinking display is robust.
+    """
+    v = getattr(obj, name, None)
+    if v is not None:
+        return v
+    extra = getattr(obj, "model_extra", None)
+    return extra.get(name) if isinstance(extra, dict) else None
 
-Outils principaux:
-- listCivs: lister les civilisations
-- getCivState: etat d'une civilisation (civName requis)
-- searchLore: chercher une entite/concept (query requis)
-- getEntityDetail: fiche complete d'une entite (entityName requis)
-- sanityCheck: verifier une affirmation (statement requis)
-- timeline: chronologie des tours
-- getTurnDetail: detail d'un tour (civName + turnNumber requis)
-- compareCivs: comparer des civilisations (civNames requis)
-- searchTurnContent: recherche plein texte (query requis)
 
-Pour toute question sur le jeu, appelle d'abord un outil, puis reponds avec les resultats."""
+def _build_openai_tools() -> list[dict]:
+    """Convert the Anthropic-shaped TOOL_DEFINITIONS to OpenAI function format."""
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": t["name"],
+                "description": t["description"],
+                "parameters": t["input_schema"],
+            },
+        }
+        for t in TOOL_DEFINITIONS
+    ]
+
+
+def _is_claude(model: str) -> bool:
+    """True for Claude models — the only ones that support the thinking extension."""
+    return model.startswith("claude")
 
 
 def _load_system_prompt(db_path: str | None = None) -> str:
-    """Load SOUL.md + domain-knowledge.md + agent notes from DB as system prompt."""
+    """Load SOUL.md + domain-knowledge.md + agent notes from DB as the system prompt."""
     base = Path(__file__).resolve().parent / "prompts"
     parts = []
 
@@ -214,7 +154,7 @@ def _load_system_prompt(db_path: str | None = None) -> str:
     if dk.exists():
         parts.append(dk.read_text(encoding="utf-8"))
 
-    # Inject agent notes from DB (note_type='agent') — persistent GM instructions
+    # Persistent GM instructions stored as agent-type notes.
     if db_path:
         try:
             conn = sqlite3.connect(db_path)
@@ -236,42 +176,20 @@ def _load_system_prompt(db_path: str | None = None) -> str:
     return "\n\n---\n\n".join(parts)
 
 
-def _build_ollama_tools() -> list[dict]:
-    """Convert TOOL_DEFINITIONS to Ollama tool format."""
-    tools = []
-    for t in TOOL_DEFINITIONS:
-        tools.append({
-            "type": "function",
-            "function": {
-                "name": t["name"],
-                "description": t["description"],
-                "parameters": t["input_schema"],
-            },
-        })
-    return tools
+def _run_tool(db_path: str, tool_name: str, tool_input: dict, *, llm_client=None,
+              model: str | None = None, proxy: str | None = None) -> str:
+    """Execute a tool against the DB (sync — runs in a worker thread).
 
-
-def _run_tool(
-    db_path: str,
-    tool_name: str,
-    tool_input: dict,
-    anthropic_client=None,
-    proxy: str | None = None,
-) -> str:
-    """Execute a tool call against the DB.
-
-    anthropic_client and proxy are passed through for deepExplore sub-agent.
+    llm_client + model are threaded through for the deepExplore sub-agent, which
+    makes its own LLM call via the proxy.
     """
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("PRAGMA foreign_keys = ON")
-        result = dispatch_tool(
+        return dispatch_tool(
             conn, tool_name, tool_input,
-            db_path=db_path,
-            anthropic_client=anthropic_client,
-            proxy=proxy,
+            db_path=db_path, llm_client=llm_client, model=model, proxy=proxy,
         )
-        return result
     except Exception as exc:
         log.exception("Tool %s failed", tool_name)
         return f"Error executing {tool_name}: {exc}"
@@ -279,626 +197,263 @@ def _run_tool(
         conn.close()
 
 
-async def _run_claude_cli(prompt: str, timeout: int = 120) -> str:
-    """Run `claude -p <prompt>` as a fallback when the Anthropic API is down.
-
-    Uses the Claude Code CLI which has its own auth — independent from the API key.
-    Returns the response text, or an error message if the CLI also fails.
-    """
-    import asyncio
-
-    try:
-        result = await asyncio.to_thread(
-            subprocess.run,
-            ["claude", "-p", prompt],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return result.stdout.strip()
-        err = (result.stderr or "unknown error").strip()[:200]
-        return f"*(Fallback claude -p indisponible : {err})*"
-    except Exception as exc:
-        return f"*(Fallback claude -p indisponible : {exc})*"
-
+# --------------------------------------------------------------------------- #
+# Agent
+# --------------------------------------------------------------------------- #
 
 class Agent:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
-        self._claude_prompt = _load_system_prompt(config.db_path)
-        self._ollama_prompt = OLLAMA_SYSTEM_PROMPT
-        self._backend = "ollama"  # default
+        self._system_prompt = _load_system_prompt(config.db_path)
+        self._tools = _build_openai_tools()
+        self._default_model = config.model
+        self._init_clients()
+        log.info("Agent initialized (etheryale proxy, default model=%s)", self._default_model)
 
-        if config.has_anthropic:
-            self._backend = "anthropic"
-            self._init_anthropic()
-        else:
-            self._init_ollama()
+    def _init_clients(self) -> None:
+        """One proxy, two clients: async (main loop) + sync (tools in threads)."""
+        from openai import AsyncOpenAI, OpenAI
 
-        log.info("Agent initialized with %s backend", self._backend)
+        key = self.config.proxy_api_key
+        common = dict(
+            api_key=key,                          # SDK requires it; proxy reads x-api-key
+            base_url=self.config.proxy_base_url,
+            default_headers={"x-api-key": key},   # proxy auth is x-api-key, NOT Bearer
+            timeout=self.config.request_timeout,
+            max_retries=0,                         # proxy queues; don't hammer it
+        )
+        self._aclient = AsyncOpenAI(**common)
+        self._client = OpenAI(**common)
+
+    def _request_extra(self, model: str) -> dict:
+        """extra_body for the request — Claude extended thinking, gated by model."""
+        if _is_claude(model) and self.config.thinking_budget > 0:
+            return {"thinking": {"type": "enabled", "budget_tokens": self.config.thinking_budget}}
+        return {}
 
     def _exec_tool(self, tool_name: str, tool_input: dict) -> str:
-        """Run a tool, passing anthropic client for deepExplore if available."""
-        client = getattr(self, "_anthropic", None)
+        """Run a tool (sync), handing the sync proxy client to deepExplore."""
         return _run_tool(
             self.config.db_path, tool_name, tool_input,
-            anthropic_client=client,
-            proxy=self.config.proxy,
+            llm_client=self._client, model=self._default_model, proxy=self.config.proxy,
         )
 
-    def _init_anthropic(self) -> None:
-        import anthropic
-        import httpx
+    # -------------------- streaming (HTTP /chat) -------------------- #
 
-        http_client = None
-        if self.config.proxy:
-            # Si base_url pointe vers localhost, ne pas router via le proxy réseau —
-            # localhost ne passe pas par un proxy externe.
-            base = self.config.anthropic_base_url or ""
-            is_local = "localhost" in base or "127.0.0.1" in base
-            if not is_local:
-                http_client = httpx.Client(proxy=self.config.proxy)
+    async def answer_streaming(self, history: list[dict], new_message: str,
+                               model: str | None = None):
+        """Async generator yielding (event_type, data) tuples in real time.
 
-        self._anthropic = anthropic.Anthropic(
-            api_key=self.config.anthropic_api_key,
-            base_url=self.config.anthropic_base_url,  # None = api.anthropic.com direct
-            http_client=http_client,
-        )
-        self._anthropic_tools = [
-            {
-                "name": t["name"],
-                "description": t["description"],
-                "input_schema": t["input_schema"],
-            }
-            for t in TOOL_DEFINITIONS
-        ]
-
-    def _init_ollama(self) -> None:
-        self._ollama_model = self.config.ollama_model or "llama3.1:8b"
-        self._ollama_tools = _build_ollama_tools()
-        log.info("Ollama backend: model=%s", self._ollama_model)
-
-    async def summarize_for_compress(self, messages: list[dict], mode: str = "compress") -> str:
-        """Summarize conversation messages into a compact block.
-
-        Args:
-            messages: List of {role, content} dicts to summarize.
-            mode: "compress" (summarize ~20 messages) or "resume" (merge compress blocks).
-
-        Returns:
-            A French summary preserving key facts, entity names, and decisions.
+        Event types: context_estimate, thinking, text_delta, tool_start,
+        tool_result, text (final, carries full content for persistence), error.
+        `history` is a list of plain {role, content} messages (already OpenAI-shaped).
+        `model` overrides the default (Flutter model picker).
         """
-        import asyncio
-
-        if not messages:
-            return "(Aucun message a resumer.)"
-
-        # Build the conversation text for the summarizer
-        lines = []
-        for msg in messages:
-            prefix = "Utilisateur" if msg.get("role") == "user" else "Agent"
-            content = msg.get("content", "")
-            # Truncate very long messages to keep the summarization prompt reasonable
-            if len(content) > 2000:
-                content = content[:2000] + "..."
-            lines.append(f"{prefix}: {content}")
-
-        conversation_text = "\n\n".join(lines)
-
-        if mode == "resume":
-            prompt = (
-                "Tu recois plusieurs blocs COMPRESS successifs d'une session MJ/archiviste-IA.\n"
-                "Fusionne-les en UN SEUL bloc structure. Ne perds rien — si une info apparait "
-                "dans un seul bloc, elle doit rester dans la fusion.\n\n"
-                "CONTRAINTE TOKENS : sois ultra-concis. Chaque bullet = max 1 ligne. "
-                "Sections vides = 'aucun'. Total cible : 400 mots max.\n\n"
-                "REMPLIS EXACTEMENT CES SECTIONS :\n\n"
-                "## INTENTION DE SESSION\n"
-                "[Pourquoi le MJ a ouvert cette session — question centrale, civ ciblee]\n\n"
-                "## OUTILS APPELES\n"
-                "[Un bullet par appel : `nom_outil(params) → résultat_clé`]\n\n"
-                "## FAITS DE LORE ETABLIS\n"
-                "[Faits confirmes, sanity checks, verdicts, deductions]\n\n"
-                "## ENTITES MENTIONNEES\n"
-                "[Nom (type, civ, tours ref.) — une ligne par entite]\n\n"
-                "## TOURS REFERENCES\n"
-                "[Liste : T01, T05, Tour 12...]\n\n"
-                "## DECISIONS ET CONCLUSIONS\n"
-                "[Reponses definitives donnees au MJ, conclusions de l'agent]\n\n"
-                "## POINTS OUVERTS\n"
-                "[Questions sans reponse, threads en attente]\n\n"
-                "## CONTEXTE LIBRE\n"
-                "[Paragraphe court : tout ce qui ne rentre pas dans les sections ci-dessus — "
-                "ton de la session, contexte implicite, details utiles pour la suite]\n\n"
-                "BLOCS A FUSIONNER :\n"
-                f"{conversation_text}"
-            )
-        else:
-            prompt = (
-                "Tu es un archiviste technique. Resume cette conversation MJ/IA en remplissant "
-                "OBLIGATOIREMENT chaque section ci-dessous.\n\n"
-                "CONTRAINTE TOKENS : sois ultra-concis. Chaque bullet = max 1 ligne. "
-                "Sections vides = 'aucun'. Total cible : 250 mots max. "
-                "Prefere les abreviations et la densite a la lisibilite.\n\n"
-                "REMPLIS EXACTEMENT CES SECTIONS :\n\n"
-                "## DEMANDE DU MJ\n"
-                "[Question/tache precise du MJ — civ ciblee, sujet, contexte]\n\n"
-                "## OUTILS APPELES\n"
-                "[Un bullet par appel : `nom_outil(params) → résultat_clé ou verdict`]\n\n"
-                "## FAITS DE LORE ETABLIS\n"
-                "[Faits confirmes ou infirmes, entites liees, sanity check verdicts]\n\n"
-                "## ENTITES MENTIONNEES\n"
-                "[Nom (type, civ, tours ref.) — une ligne par entite citee]\n\n"
-                "## TOURS REFERENCES\n"
-                "[Liste courte : T01, T05, Tour 12...]\n\n"
-                "## DECISIONS ET CONCLUSIONS\n"
-                "[Reponses definitives, conclusions, faits etablis en fin d'echange]\n\n"
-                "## POINTS OUVERTS\n"
-                "[Questions sans reponse, threads en cours d'investigation]\n\n"
-                "## CONTEXTE LIBRE\n"
-                "[Paragraphe court : tout ce qui ne rentre pas dans les sections ci-dessus — "
-                "ton de la session, contexte implicite, details utiles pour la suite]\n\n"
-                "CONVERSATION :\n"
-                f"{conversation_text}"
-            )
-
-        if self._backend == "anthropic":
-            response = await asyncio.to_thread(
-                self._anthropic.messages.create,
-                model="claude-sonnet-4-6",
-                max_tokens=1500 if mode == "compress" else 2500,
-                system="Tu es un archiviste technique ultra-concis. Tu extrais les faits essentiels sans phrases de transition, sans reformulation, sans preambule. Densite maximale, tokens minimaux.",
-                messages=[{"role": "user", "content": prompt}],
-            )
-            parts = [b.text for b in response.content if hasattr(b, "text")]
-            return "\n".join(parts) if parts else "(Resume indisponible.)"
-        else:
-            import ollama as _ollama
-            response = await asyncio.to_thread(
-                _ollama.chat,
-                model=self._ollama_model,
-                messages=[
-                    {"role": "system", "content": "Tu es un archiviste technique ultra-concis. Tu extrais les faits essentiels sans phrases de transition, sans reformulation, sans preambule. Densite maximale, tokens minimaux."},
-                    {"role": "user", "content": prompt},
-                ],
-                options={"num_ctx": 8192, "num_predict": 1500 if mode == "compress" else 2500},
-            )
-            return response.message.content or "(Resume indisponible.)"
-
-    async def answer(self, user_message: str) -> str:
-        if self._backend == "anthropic":
-            return await self._answer_anthropic(user_message)
-        return await self._answer_ollama(user_message)
-
-    async def answer_in_conversation(
-        self,
-        history: list[dict],
-        new_message: str,
-        on_event: Callable[[str, dict], None] | None = None,
-    ) -> AgentResult:
-        """Answer a question with full conversation context.
-
-        Args:
-            history: List of previous {"role": "user/assistant", "content": "..."} messages.
-            new_message: The new user message to answer.
-            on_event: Optional callback fired as events happen in real time.
-                Called with (event_type, data_dict). Event types:
-                - "tool_start": {"name": str, "input_summary": str}
-                - "tool_result": {"name": str, "input_summary": str, "result": str, "result_summary": str}
-                - "thinking": {"content": str}
-
-        Returns:
-            AgentResult with the text response and tool calls performed.
-        """
-        if self._backend == "anthropic":
-            return await self._answer_anthropic_conv(history, new_message, on_event)
-        return await self._answer_ollama_conv(history, new_message, on_event)
-
-    async def answer_streaming(
-        self, history: list[dict], new_message: str
-    ):
-        """Async generator that yields (event_type, data) tuples in real time.
-
-        Events yielded between each LLM round — so the caller can send them
-        to the client while the next LLM call is in progress.
-
-        Event types: "tool_start", "tool_result", "thinking", "text", "done", "usage".
-        The "usage" event is emitted after each LLM round with cumulative token counts.
-        """
-        import asyncio
-
-        messages: list[dict] = [*history, {"role": "user", "content": new_message}]
-        collected_tool_calls: list[dict] = []
-        # Cumulative token usage across all rounds
-        total_input_tokens = 0
-        total_output_tokens = 0
-
-        for _round in range(MAX_TOOL_ROUNDS):
-            # Estimate tokens before compression (raw history size)
-            raw_estimate = _estimate_tokens(messages)
-            compressed = _compress_tool_history(messages)
-            compressed_estimate = _estimate_tokens(compressed)
-
-            # Emit local token estimate so Flutter shows context size + compression effect
-            yield ("context_estimate", {
-                "raw_tokens": raw_estimate,
-                "compressed_tokens": compressed_estimate,
-                "round": _round,
-            })
-
-            if self._backend == "anthropic":
-                # Inject context reminder if conversation is getting long
-                system_parts = self._claude_prompt
-                reminder = _build_context_reminder(compressed)
-                if reminder:
-                    system_parts = f"{self._claude_prompt}\n\n---\n\n{reminder}"
-
-                try:
-                    response = await asyncio.to_thread(
-                        self._anthropic.messages.create,
-                        model="claude-sonnet-4-6",
-                        max_tokens=4096,
-                        system=system_parts,
-                        tools=self._anthropic_tools,
-                        messages=compressed,
-                    )
-                except Exception as _api_exc:
-                    err_str = str(_api_exc)
-                    # Any Anthropic API error → fall back to `claude -p` (CLI).
-                    log.warning("Anthropic API error, falling back to claude -p: %s", err_str[:80])
-                    yield ("fallback", {"reason": err_str[:200], "backend": "claude-cli"})
-                    cli_response = await _run_claude_cli(new_message)
-                    yield ("text", {"content": cli_response, "tool_calls": []})
-                    return
-
-                # Accumulate real API token usage (for cost tracking, not display)
-                if hasattr(response, "usage") and response.usage:
-                    total_input_tokens += getattr(response.usage, "input_tokens", 0)
-                    total_output_tokens += getattr(response.usage, "output_tokens", 0)
-
-                # Yield thinking blocks
-                for block in response.content:
-                    if getattr(block, "type", None) == "thinking":
-                        yield ("thinking", {"content": getattr(block, "thinking", "")})
-
-                if response.stop_reason == "tool_use":
-                    tool_results = []
-                    assistant_content = response.content
-
-                    for block in assistant_content:
-                        if block.type == "tool_use":
-                            inp_str = _input_summary(block.input)
-                            yield ("tool_start", {"name": block.name, "input_summary": inp_str})
-
-                            log.info("Tool call: %s(%s)", block.name, block.input)
-                            result = self._exec_tool(block.name, block.input)
-
-                            tool_results.append({
-                                "type": "tool_result",
-                                "tool_use_id": block.id,
-                                "content": result,
-                            })
-
-                            tc_info = {
-                                "name": block.name,
-                                "input_summary": inp_str,
-                                "result_summary": _result_summary(result),
-                                "result": result,
-                            }
-                            collected_tool_calls.append(tc_info)
-                            yield ("tool_result", tc_info)
-
-                    messages.append({"role": "assistant", "content": assistant_content})
-                    messages.append({"role": "user", "content": tool_results})
-                    continue
-
-                # Final text
-                text_parts = [b.text for b in response.content if hasattr(b, "text")]
-                response_text = "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
-                yield ("text", {"content": response_text, "tool_calls": collected_tool_calls})
-                return
-
-            else:
-                # Ollama backend
-                import ollama as _ollama
-                ollama_messages = [
-                    {"role": "system", "content": self._ollama_prompt},
-                    *messages,
-                ]
-                response = await asyncio.to_thread(
-                    _ollama.chat,
-                    model=self._ollama_model,
-                    messages=ollama_messages,
-                    tools=_build_ollama_tools(),
-                    options={"num_ctx": 8192},
-                )
-                msg = response.message
-
-                # Ollama provides eval/prompt token counts
-                if hasattr(response, "prompt_eval_count"):
-                    total_input_tokens += getattr(response, "prompt_eval_count", 0) or 0
-                    total_output_tokens += getattr(response, "eval_count", 0) or 0
-                    yield ("usage", {
-                        "input_tokens": total_input_tokens,
-                        "output_tokens": total_output_tokens,
-                    })
-
-                if msg.tool_calls:
-                    messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
-                    for tc in msg.tool_calls:
-                        fn = tc.function
-                        inp_str = _input_summary(fn.arguments)
-                        yield ("tool_start", {"name": fn.name, "input_summary": inp_str})
-
-                        result = self._exec_tool(fn.name, fn.arguments)
-                        messages.append({"role": "tool", "content": result})
-
-                        tc_info = {
-                            "name": fn.name,
-                            "input_summary": inp_str,
-                            "result_summary": _result_summary(result),
-                            "result": result,
-                        }
-                        collected_tool_calls.append(tc_info)
-                        yield ("tool_result", tc_info)
-                    continue
-
-                response_text = msg.content if msg.content else "(Pas de reponse.)"
-                yield ("text", {"content": response_text, "tool_calls": collected_tool_calls})
-                return
-
-        yield ("text", {
-            "content": "(Limite de tours d'outils atteinte.)",
-            "tool_calls": collected_tool_calls,
-        })
-
-    # ------------------------------------------------------------------ #
-    # Anthropic backend
-    # ------------------------------------------------------------------ #
-
-    async def _answer_anthropic_conv(
-        self,
-        history: list[dict],
-        new_message: str,
-        on_event: Callable[[str, dict], None] | None = None,
-    ) -> AgentResult:
-        """Run one agent turn with conversation history (Anthropic backend).
-
-        Emits real-time events via on_event callback:
-        - tool_start / tool_result as tools are called
-        - thinking when Claude emits a thinking block
-        """
-        import asyncio
-
-        def _emit(event_type: str, data: dict) -> None:
-            if on_event is not None:
-                on_event(event_type, data)
-
-        messages: list[dict] = [*history, {"role": "user", "content": new_message}]
-        collected_tool_calls: list[dict] = []
-
-        for _round in range(MAX_TOOL_ROUNDS):
-            raw_estimate = _estimate_tokens(messages)
-            compressed = _compress_tool_history(messages)
-            compressed_estimate = _estimate_tokens(compressed)
-            _emit("context_estimate", {
-                "raw_tokens": raw_estimate,
-                "compressed_tokens": compressed_estimate,
-                "round": _round,
-            })
-
-            # Inject context reminder if conversation is getting long
-            system_parts = self._claude_prompt
-            reminder = _build_context_reminder(compressed)
-            if reminder:
-                system_parts = f"{self._claude_prompt}\n\n---\n\n{reminder}"
-
-            response = await asyncio.to_thread(
-                self._anthropic.messages.create,
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
-                system=system_parts,
-                tools=self._anthropic_tools,
-                messages=compressed,
-            )
-
-            # Emit thinking blocks (from extended thinking or <thinking> tags)
-            for block in response.content:
-                if getattr(block, "type", None) == "thinking":
-                    _emit("thinking", {"content": getattr(block, "thinking", "")})
-
-            if response.stop_reason == "tool_use":
-                tool_results = []
-                assistant_content = response.content
-
-                for block in assistant_content:
-                    if block.type == "tool_use":
-                        inp_str = _input_summary(block.input)
-                        # Emit tool_start immediately (before execution)
-                        _emit("tool_start", {
-                            "name": block.name,
-                            "input_summary": inp_str,
-                        })
-
-                        log.info("Tool call: %s(%s)", block.name, block.input)
-                        result = self._exec_tool(block.name, block.input)
-
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result,
-                        })
-
-                        res_summary = _result_summary(result)
-                        tool_call_info = {
-                            "name": block.name,
-                            "input_summary": inp_str,
-                            "result_summary": res_summary,
-                            "result": result,  # full result for UI display
-                        }
-                        collected_tool_calls.append(tool_call_info)
-
-                        # Emit tool_result with full content
-                        _emit("tool_result", tool_call_info)
-
-                messages.append({"role": "assistant", "content": assistant_content})
-                messages.append({"role": "user", "content": tool_results})
-                continue
-
-            # Final text response
-            text_parts = []
-            for block in response.content:
-                if hasattr(block, "text"):
-                    text_parts.append(block.text)
-            response_text = "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
-            return AgentResult(response=response_text, tool_calls=collected_tool_calls)
-
-        return AgentResult(
-            response="(Limite de tours d'outils atteinte.)",
-            tool_calls=collected_tool_calls,
-        )
-
-    async def _answer_anthropic(self, user_message: str) -> str:
-        import asyncio
-
-        messages = [{"role": "user", "content": user_message}]
-
-        for _round in range(MAX_TOOL_ROUNDS):
-            response = await asyncio.to_thread(
-                self._anthropic.messages.create,
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
-                system=self._claude_prompt,
-                tools=self._anthropic_tools,
-                messages=messages,
-            )
-
-            if response.stop_reason == "tool_use":
-                tool_results = []
-                assistant_content = response.content
-
-                for block in assistant_content:
-                    if block.type == "tool_use":
-                        log.info("Tool call: %s(%s)", block.name, block.input)
-                        result = self._exec_tool(block.name, block.input)
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": result,
-                        })
-
-                messages.append({"role": "assistant", "content": assistant_content})
-                messages.append({"role": "user", "content": tool_results})
-                continue
-
-            text_parts = []
-            for block in response.content:
-                if hasattr(block, "text"):
-                    text_parts.append(block.text)
-            return "\n".join(text_parts) if text_parts else "(Pas de reponse.)"
-
-        return "(Limite de tours d'outils atteinte.)"
-
-    # ------------------------------------------------------------------ #
-    # Ollama backend
-    # ------------------------------------------------------------------ #
-
-    async def _answer_ollama_conv(
-        self,
-        history: list[dict],
-        new_message: str,
-        on_event: Callable[[str, dict], None] | None = None,
-    ) -> AgentResult:
-        """Run one agent turn with conversation history (Ollama backend)."""
-        import asyncio
-        import ollama
-
-        def _emit(event_type: str, data: dict) -> None:
-            if on_event is not None:
-                on_event(event_type, data)
-
-        messages = [
-            {"role": "system", "content": self._ollama_prompt},
+        model = model or self._default_model
+        messages: list[dict] = [
+            {"role": "system", "content": self._system_prompt},
             *history,
             {"role": "user", "content": new_message},
         ]
         collected_tool_calls: list[dict] = []
 
         for _round in range(MAX_TOOL_ROUNDS):
-            response = await asyncio.to_thread(
-                ollama.chat,
-                model=self._ollama_model,
-                messages=messages,
-                tools=self._ollama_tools,
-                options={"num_ctx": 8192},
-            )
+            yield ("context_estimate", {
+                "raw_tokens": _estimate_tokens(messages),
+                "round": _round,
+            })
 
-            msg = response.message
+            req_messages = messages
+            reminder = _context_reminder(messages)
+            if reminder:
+                req_messages = [*messages, reminder]
 
-            if msg.tool_calls:
-                messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
+            try:
+                stream = await self._aclient.chat.completions.create(
+                    model=model,
+                    messages=req_messages,
+                    tools=self._tools,
+                    stream=True,
+                    extra_body=self._request_extra(model),
+                )
+            except Exception as exc:  # proxy 502 / upstream 429 / etc. — surface, no fallback
+                log.warning("Proxy request failed: %s", exc)
+                yield ("error", {"message": str(exc)[:300]})
+                return
 
-                for tc in msg.tool_calls:
-                    fn = tc.function
-                    inp_str = _input_summary(fn.arguments)
-                    _emit("tool_start", {"name": fn.name, "input_summary": inp_str})
+            content_parts: list[str] = []
+            # index -> {id, name, args} — tool_call deltas arrive fragmented
+            tool_calls_acc: dict[int, dict] = {}
 
-                    log.info("Tool call: %s(%s)", fn.name, fn.arguments)
-                    result = self._exec_tool(fn.name, fn.arguments)
-                    messages.append({"role": "tool", "content": result})
+            async for chunk in stream:
+                if not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                if delta is None:
+                    continue
 
-                    tool_call_info = {
-                        "name": fn.name,
+                think = _vendor_field(delta, "thinking")
+                if think:
+                    yield ("thinking", {"content": think})
+
+                if delta.content:
+                    content_parts.append(delta.content)
+                    yield ("text_delta", {"chunk": delta.content})
+
+                for tc in (delta.tool_calls or []):
+                    slot = tool_calls_acc.setdefault(tc.index, {"id": "", "name": "", "args": ""})
+                    if tc.id:
+                        slot["id"] = tc.id
+                    if tc.function:
+                        if tc.function.name:
+                            slot["name"] = tc.function.name
+                        if tc.function.arguments:
+                            slot["args"] += tc.function.arguments
+
+            if tool_calls_acc:
+                # Assistant turn that requested tools → execute → feed results → loop.
+                messages.append({
+                    "role": "assistant",
+                    "content": "".join(content_parts) or None,
+                    "tool_calls": [
+                        {"id": s["id"], "type": "function",
+                         "function": {"name": s["name"], "arguments": s["args"] or "{}"}}
+                        for s in tool_calls_acc.values()
+                    ],
+                })
+                for s in tool_calls_acc.values():
+                    try:
+                        inp = json.loads(s["args"]) if s["args"] else {}
+                    except json.JSONDecodeError:
+                        inp = {}
+                    inp_str = _input_summary(inp)
+                    yield ("tool_start", {"name": s["name"], "input_summary": inp_str})
+
+                    result = await asyncio.to_thread(self._exec_tool, s["name"], inp)
+                    messages.append({"role": "tool", "tool_call_id": s["id"], "content": result})
+
+                    tc_info = {
+                        "name": s["name"],
                         "input_summary": inp_str,
                         "result_summary": _result_summary(result),
                         "result": result,
                     }
-                    collected_tool_calls.append(tool_call_info)
-                    _emit("tool_result", tool_call_info)
+                    collected_tool_calls.append(tc_info)
+                    yield ("tool_result", tc_info)
                 continue
 
-            response_text = msg.content if msg.content else "(Pas de reponse.)"
-            return AgentResult(response=response_text, tool_calls=collected_tool_calls)
+            # No tools requested → final answer.
+            text = "".join(content_parts) or "(Pas de reponse.)"
+            yield ("text", {"content": text, "tool_calls": collected_tool_calls})
+            return
 
-        return AgentResult(
-            response="(Limite de tours d'outils atteinte.)",
-            tool_calls=collected_tool_calls,
-        )
+        yield ("text", {
+            "content": "(Limite de tours d'outils atteinte.)",
+            "tool_calls": collected_tool_calls,
+        })
 
-    async def _answer_ollama(self, user_message: str) -> str:
-        import asyncio
-        import ollama
+    # -------------------- non-streaming (Discord) -------------------- #
 
-        messages = [
-            {"role": "system", "content": self._ollama_prompt},
+    async def answer(self, user_message: str, model: str | None = None) -> str:
+        """One agent turn, non-streaming — returns the final text (Discord path)."""
+        model = model or self._default_model
+        messages: list[dict] = [
+            {"role": "system", "content": self._system_prompt},
             {"role": "user", "content": user_message},
         ]
 
         for _round in range(MAX_TOOL_ROUNDS):
-            response = await asyncio.to_thread(
-                ollama.chat,
-                model=self._ollama_model,
-                messages=messages,
-                tools=self._ollama_tools,
-                options={"num_ctx": 8192},
-            )
+            try:
+                resp = await self._aclient.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    tools=self._tools,
+                    extra_body=self._request_extra(model),
+                )
+            except Exception as exc:
+                log.warning("Proxy request failed: %s", exc)
+                return f"(Erreur backend : {str(exc)[:150]})"
 
-            msg = response.message
-
-            # Check for tool calls
+            msg = resp.choices[0].message
             if msg.tool_calls:
-                # Add assistant message with tool calls
-                messages.append({"role": "assistant", "content": msg.content or "", "tool_calls": msg.tool_calls})
-
+                messages.append({
+                    "role": "assistant",
+                    "content": msg.content or None,
+                    "tool_calls": [
+                        {"id": tc.id, "type": "function",
+                         "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                        for tc in msg.tool_calls
+                    ],
+                })
                 for tc in msg.tool_calls:
-                    fn = tc.function
-                    log.info("Tool call: %s(%s)", fn.name, fn.arguments)
-                    result = self._exec_tool(fn.name, fn.arguments)
-                    messages.append({"role": "tool", "content": result})
+                    try:
+                        inp = json.loads(tc.function.arguments or "{}")
+                    except json.JSONDecodeError:
+                        inp = {}
+                    result = await asyncio.to_thread(self._exec_tool, tc.function.name, inp)
+                    messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
                 continue
 
-            # No tool calls -- return text
-            return msg.content if msg.content else "(Pas de reponse.)"
+            return msg.content or "(Pas de reponse.)"
 
         return "(Limite de tours d'outils atteinte.)"
+
+    async def list_models(self) -> list[str]:
+        """Model ids the proxy currently serves — feeds the Flutter model picker."""
+        try:
+            result = await self._aclient.models.list()
+            return [m.id for m in result.data]
+        except Exception as exc:
+            log.warning("models.list failed: %s", exc)
+            return []
+
+    # -------------------- session compaction -------------------- #
+
+    async def summarize_for_compress(self, messages: list[dict], mode: str = "compress") -> str:
+        """Summarize conversation messages into a compact block (session compaction).
+
+        mode: "compress" (summarize ~20 messages) or "resume" (merge compress blocks).
+        """
+        if not messages:
+            return "(Aucun message a resumer.)"
+
+        lines = []
+        for msg in messages:
+            prefix = "Utilisateur" if msg.get("role") == "user" else "Agent"
+            content = msg.get("content", "")
+            if len(content) > 2000:
+                content = content[:2000] + "..."
+            lines.append(f"{prefix}: {content}")
+        conversation_text = "\n\n".join(lines)
+
+        if mode == "resume":
+            instruction = (
+                "Tu recois plusieurs blocs COMPRESS d'une session MJ/archiviste-IA. "
+                "Fusionne-les en UN bloc structure, sans rien perdre. Ultra-concis, "
+                "400 mots max. Sections : INTENTION, OUTILS APPELES, FAITS ETABLIS, "
+                "ENTITES, TOURS, DECISIONS, POINTS OUVERTS, CONTEXTE LIBRE."
+            )
+            max_tokens = 2500
+        else:
+            instruction = (
+                "Resume cette conversation MJ/IA. Ultra-concis, 250 mots max, "
+                "abreviations OK. Sections : DEMANDE DU MJ, OUTILS APPELES, FAITS "
+                "ETABLIS, ENTITES, TOURS, DECISIONS, POINTS OUVERTS, CONTEXTE LIBRE."
+            )
+            max_tokens = 1500
+
+        try:
+            resp = await self._aclient.chat.completions.create(
+                model=self._default_model,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content":
+                     "Tu es un archiviste technique ultra-concis. Faits essentiels, "
+                     "zero preambule, densite maximale."},
+                    {"role": "user", "content": f"{instruction}\n\nCONVERSATION :\n{conversation_text}"},
+                ],
+            )
+            return resp.choices[0].message.content or "(Resume indisponible.)"
+        except Exception as exc:
+            log.warning("Summarize failed: %s", exc)
+            return "(Resume indisponible.)"

@@ -28,21 +28,36 @@ class BotConfig:
     # Discord user IDs of GM accounts (immutable, preferred over display names)
     gm_discord_ids: list[str] = field(default_factory=list)
     channels: list[ChannelConfig] = field(default_factory=list)
-    llm_provider: str = "ollama"  # 'ollama' | 'openrouter'
-    ollama_model: str = "qwen3:14b"
+    # NOTE: llm_provider / ollama_model / anthropic_api_key / anthropic_base_url are
+    # still used by the PIPELINE INGESTION path (run_pipeline extraction), NOT by the
+    # chat agent — the agent now talks only to the etheryale proxy (see below).
+    llm_provider: str = "ollama"  # pipeline: 'ollama' | 'openrouter' | 'claude_proxy'
+    ollama_model: str = "qwen3:14b"  # pipeline extraction model
     extraction_version: str = "v22.2.2-pastlevel"
     discord_token: str = ""
-    anthropic_api_key: str = ""
-    # Base URL du proxy Anthropic (ex: http://localhost:4000). None = api.anthropic.com direct.
-    anthropic_base_url: str | None = None
+    anthropic_api_key: str = ""  # pipeline only (claude_proxy provider)
+    anthropic_base_url: str | None = None  # pipeline only
+
+    # --- Etheryale proxy: the SINGLE LLM backend ------------------------------
+    # WHAT: an OpenAI-compatible surface fronting ALL models (Claude + GPT). The
+    # agent talks to it with the OpenAI SDK — one backend replacing the old
+    # anthropic-SDK / ollama / claude-p trio. Auth is `x-api-key`, not Bearer.
+    # WHY here: model choice is data-driven (any proxy model, per-request override
+    # from the Flutter picker); thinking/vision differences are gated by model.
+    proxy_base_url: str = "https://ai.etheryale.com/v1"
+    proxy_api_key: str = ""             # eai_... — from env ETHERYALE_API_KEY or config
+    model: str = "claude-opus-4-8"      # default; the proxy accepts any of its models
+    thinking_budget: int = 4000         # Claude extended-thinking budget (proxy vendor ext)
+    request_timeout: float = 300.0      # proxy QUEUES (never 429) → generous client timeout
 
     @property
     def has_discord(self) -> bool:
         return bool(self.discord_token)
 
     @property
-    def has_anthropic(self) -> bool:
-        return bool(self.anthropic_api_key)
+    def has_llm(self) -> bool:
+        """True when the etheryale proxy key is configured (the only LLM backend)."""
+        return bool(self.proxy_api_key)
 
 
 def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
@@ -66,6 +81,11 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
         cfg.extraction_version = data.get("extraction_version", cfg.extraction_version)
         cfg.anthropic_base_url = data.get("anthropic_base_url")
         cfg.gm_discord_ids = data.get("gm_discord_ids", cfg.gm_discord_ids)
+        # Etheryale proxy config (the LLM backend)
+        cfg.proxy_base_url = data.get("proxy_base_url", cfg.proxy_base_url)
+        cfg.model = data.get("model", cfg.model)
+        cfg.thinking_budget = data.get("thinking_budget", cfg.thinking_budget)
+        cfg.request_timeout = data.get("request_timeout", cfg.request_timeout)
 
         for ch_id, ch_data in data.get("channels", {}).items():
             cfg.channels.append(ChannelConfig(
@@ -85,6 +105,11 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
     cfg.anthropic_api_key = (
         os.environ.get("ANTHROPIC_API_KEY")
         or data.get("anthropic_api_key", "")
+    )
+    # Etheryale proxy key — env first (ETHERYALE_API_KEY), then config file.
+    cfg.proxy_api_key = (
+        os.environ.get("ETHERYALE_API_KEY")
+        or data.get("proxy_api_key", "")
     )
 
     return cfg
