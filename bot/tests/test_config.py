@@ -20,7 +20,7 @@ class TestLoadConfig:
         assert cfg.bot_port == 8473
         assert cfg.proxy is None
         assert not cfg.has_discord
-        assert not cfg.has_anthropic
+        assert not cfg.has_llm
 
     def test_loads_json(self, tmp_path):
         db_path = str(tmp_path / "aurelm.db")
@@ -58,10 +58,12 @@ class TestLoadConfig:
         Path(db_path).touch()
 
         monkeypatch.setenv("DISCORD_BOT_TOKEN", "test-token")
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")   # pipeline field, still loaded
+        monkeypatch.setenv("ETHERYALE_API_KEY", "eai-test")   # the agent's LLM backend key
 
         cfg = load_config(db_path)
         assert cfg.has_discord
-        assert cfg.has_anthropic
+        assert cfg.has_llm
         assert cfg.discord_token == "test-token"
         assert cfg.anthropic_api_key == "test-key"
+        assert cfg.proxy_api_key == "eai-test"

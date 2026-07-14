@@ -2277,18 +2277,23 @@ def deep_explore(
     question: str,
     context: str | None = None,
     db_path: str | None = None,
-    anthropic_client=None,
+    llm_client=None,
+    model: str = "claude-opus-4-8",
     proxy: str | None = None,
 ) -> str:
-    """Run a sub-agent that chains multiple tool calls to answer a complex question.
+    """Sub-agent that chains multiple tool calls to answer a complex question.
 
-    No round limit — runs until the agent finishes or token budget (~60k) is exhausted.
-    Uses Anthropic Claude if client available, otherwise returns a simple searchLore result.
+    No round limit — runs until it finishes or the ~60k token budget is exhausted.
+    Uses the etheryale proxy (OpenAI Chat Completions) via `llm_client` (a SYNC
+    OpenAI client — this runs inside a worker thread). No client → single
+    searchLore fallback.
     """
-    # Build the sub-agent tool definitions (only the exploration subset)
+    # Sub-agent tool subset, in OpenAI function format (the proxy translates for Claude).
     from .tool_definitions import TOOL_DEFINITIONS
     sub_tools = [
-        {"name": t["name"], "description": t["description"], "input_schema": t["input_schema"]}
+        {"type": "function", "function": {
+            "name": t["name"], "description": t["description"], "parameters": t["input_schema"],
+        }}
         for t in TOOL_DEFINITIONS
         if t["name"] in _DEEP_EXPLORE_TOOLS
     ]
@@ -2297,64 +2302,57 @@ def deep_explore(
     if context:
         user_msg = f"{question}\n\nContexte: {context}"
 
-    # If no Anthropic client, fall back to a single searchLore call
-    if anthropic_client is None:
-        return f"(deepExplore sans backend Claude -- reponse directe)\n\n" + dispatch_tool(
+    if llm_client is None:
+        return "(deepExplore sans backend LLM -- reponse directe)\n\n" + dispatch_tool(
             conn, "searchLore", {"query": question}
         )
 
-    messages = [{"role": "user", "content": user_msg}]
+    messages = [
+        {"role": "system", "content": _DEEP_EXPLORE_SYSTEM},
+        {"role": "user", "content": user_msg},
+    ]
     budget_warning_sent = False
 
     while True:
-        # Check token budget before each API call
-        estimated_tokens = _estimate_tokens(messages)
-        if estimated_tokens > _DEEP_EXPLORE_TOKEN_BUDGET and not budget_warning_sent:
-            # Inject a conclusion prompt — budget almost exhausted
-            messages.append({"role": "user", "content": [
-                {"type": "text", "text":
-                 "[SYSTEME] Budget tokens presque epuise. "
-                 "Conclus ta recherche MAINTENANT avec les informations collectees. "
-                 "Ne lance plus d'outils -- redige ta reponse finale."}
-            ]})
+        # Budget check before each call — force a conclusion when near the limit.
+        if _estimate_tokens(messages) > _DEEP_EXPLORE_TOKEN_BUDGET and not budget_warning_sent:
+            messages.append({"role": "system", "content":
+                "[SYSTEME] Budget tokens presque epuise. Conclus ta recherche "
+                "MAINTENANT avec les infos collectees. Ne lance plus d'outils."})
             budget_warning_sent = True
 
-        response = anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
+        resp = llm_client.chat.completions.create(
+            model=model,
             max_tokens=4096,
-            system=_DEEP_EXPLORE_SYSTEM,
-            tools=sub_tools,
             messages=messages,
+            tools=sub_tools,
         )
+        msg = resp.choices[0].message
 
-        if response.stop_reason == "tool_use" and not budget_warning_sent:
-            tool_results = []
-            for block in response.content:
-                if block.type == "tool_use":
-                    # Execute tool against the DB
-                    tool_conn = sqlite3.connect(db_path) if db_path else conn
-                    try:
-                        tool_conn.execute("PRAGMA foreign_keys = ON")
-                        result = dispatch_tool(tool_conn, block.name, block.input)
-                    except Exception as exc:
-                        result = f"Error: {exc}"
-                    finally:
-                        if db_path and tool_conn is not conn:
-                            tool_conn.close()
-
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    })
-
-            messages.append({"role": "assistant", "content": response.content})
-            messages.append({"role": "user", "content": tool_results})
+        if msg.tool_calls and not budget_warning_sent:
+            messages.append({
+                "role": "assistant",
+                "content": msg.content or None,
+                "tool_calls": [
+                    {"id": tc.id, "type": "function",
+                     "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                    for tc in msg.tool_calls
+                ],
+            })
+            for tc in msg.tool_calls:
+                tool_conn = sqlite3.connect(db_path) if db_path else conn
+                try:
+                    tool_conn.execute("PRAGMA foreign_keys = ON")
+                    result = dispatch_tool(tool_conn, tc.function.name, json.loads(tc.function.arguments or "{}"))
+                except Exception as exc:
+                    result = f"Error: {exc}"
+                finally:
+                    if db_path and tool_conn is not conn:
+                        tool_conn.close()
+                messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
             continue
 
-        # Final text response (or forced conclusion after budget warning)
-        text_parts = [b.text for b in response.content if hasattr(b, "text")]
-        return "\n".join(text_parts) if text_parts else "(Pas de reponse du sous-agent.)"
+        return msg.content or "(Pas de reponse du sous-agent.)"
 
 
 # --------------------------------------------------------------------------- #
@@ -2589,12 +2587,14 @@ def dispatch_tool(
     tool_input: dict,
     *,
     db_path: str | None = None,
-    anthropic_client=None,
+    llm_client=None,
+    model: str = "claude-opus-4-8",
     proxy: str | None = None,
 ) -> str:
     """Route a tool call to the appropriate function. Returns Markdown string.
 
-    Extra kwargs (db_path, anthropic_client, proxy) are only needed for deepExplore.
+    Extra kwargs (db_path, llm_client, model, proxy) are only needed for deepExplore
+    (the sub-agent makes its own LLM call through the etheryale proxy).
     """
     tool_input = _clean_input(tool_input)
 
@@ -2941,7 +2941,8 @@ def dispatch_tool(
             question=question,
             context=tool_input.get("context"),
             db_path=db_path,
-            anthropic_client=anthropic_client,
+            llm_client=llm_client,
+            model=model,
             proxy=proxy,
         )
 

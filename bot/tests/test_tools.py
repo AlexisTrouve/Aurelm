@@ -827,8 +827,8 @@ class TestNotes:
         assert "Propriete speciale" in result
         assert "Regle maison" not in result  # agent note excluded
 
-    def test_dispatch_deep_explore_without_anthropic(self, db):
-        """deepExplore without Anthropic client falls back to searchLore."""
+    def test_dispatch_deep_explore_without_llm(self, db):
+        """deepExplore without an LLM client falls back to a single searchLore."""
         result = dispatch_tool(db, "deepExplore", {"question": "Argile Vivante"})
-        assert "deepExplore sans backend Claude" in result
+        assert "deepExplore sans backend LLM" in result
         assert isinstance(result, str)

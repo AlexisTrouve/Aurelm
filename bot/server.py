@@ -30,6 +30,7 @@ class BotServer:
         self._app.router.add_post("/sync", self._sync)
         self._app.router.add_get("/sync/preview", self._sync_preview)
         self._app.router.add_post("/chat", self._chat)
+        self._app.router.add_get("/chat/models", self._chat_models)
         self._app.router.add_get("/chat/sessions", self._list_sessions)
         self._app.router.add_post("/chat/sessions", self._create_session)
         self._app.router.add_post("/chat/sessions/{session_id}/rename", self._rename_session)
@@ -500,7 +501,7 @@ class BotServer:
         """
         if self._agent is None:
             return web.json_response(
-                {"error": "Agent not configured (missing ANTHROPIC_API_KEY?)"},
+                {"error": "Agent not configured (missing ETHERYALE_API_KEY?)"},
                 status=503,
             )
 
@@ -514,6 +515,8 @@ class BotServer:
             return web.json_response({"error": "Empty message"}, status=400)
 
         session_id = body.get("session_id")
+        # Optional per-request model override (Flutter model picker); falls back to config default.
+        model = body.get("model") or None
 
         # Load or create session
         if session_id:
@@ -553,7 +556,7 @@ class BotServer:
 
         try:
             # Stream events from the async generator in real time
-            async for event_type, data in self._agent.answer_streaming(history, message):
+            async for event_type, data in self._agent.answer_streaming(history, message, model=model):
                 await _write(event_type, data)
 
                 # When we get the final text, persist conversation in DB
@@ -594,14 +597,16 @@ class BotServer:
             # Check if compression is needed (20+ text messages since last checkpoint)
             await self._maybe_compress_session(session_id, _write)
 
-            # Emit final context estimate based on persisted history (no tool blocks)
-            # This is the accurate token count for the NEXT message.
-            from .agent import _compress_tool_history, _estimate_tokens
+            # Emit final context estimate based on persisted history — the accurate
+            # token count for the NEXT message. The persisted history is already
+            # plain {role, content} text (checkpoint-compressed), so there is no
+            # separate "compressed" figure: raw == compressed.
+            from .agent import _estimate_tokens
             final_history = self._session_manager.build_llm_history(session_id)
-            final_compressed = _compress_tool_history(final_history)
+            final_tokens = _estimate_tokens(final_history)
             await _write("context_estimate", {
-                "raw_tokens": _estimate_tokens(final_history),
-                "compressed_tokens": _estimate_tokens(final_compressed),
+                "raw_tokens": final_tokens,
+                "compressed_tokens": final_tokens,
                 "round": -1,  # -1 = post-response final estimate
             })
 
@@ -624,6 +629,16 @@ class BotServer:
 
         await resp.write_eof()
         return resp
+
+    async def _chat_models(self, request: web.Request) -> web.Response:
+        """GET /chat/models — models the proxy serves + the configured default.
+
+        Powers the Flutter model picker. Returns {models: [...], default: "..."}.
+        """
+        if self._agent is None:
+            return web.json_response({"models": [], "default": self.config.model})
+        models = await self._agent.list_models()
+        return web.json_response({"models": models, "default": self.config.model})
 
     async def _list_sessions(self, request: web.Request) -> web.Response:
         """GET /chat/sessions — List all active sessions.
@@ -861,11 +876,11 @@ class BotServer:
     async def _get_context_size(self, request: web.Request) -> web.Response:
         """GET /chat/sessions/{session_id}/context_size — Estimate context tokens.
 
-        Uses the exact same pipeline as sending a message:
-        build_llm_history() -> _compress_tool_history() -> _estimate_tokens().
-        Returns raw (before compression) and compressed (what Claude sees) estimates.
+        The persisted history is plain {role, content} text (already checkpoint-
+        compressed), so raw == compressed — the proxy handles prompt caching
+        server-side, there is no separate client-side compression pass.
         """
-        from .agent import _compress_tool_history, _estimate_tokens
+        from .agent import _estimate_tokens
 
         session_id = request.match_info["session_id"]
         history = self._session_manager.build_llm_history(session_id)
@@ -874,13 +889,10 @@ class BotServer:
                 "raw_tokens": 0, "compressed_tokens": 0,
             })
 
-        raw_tokens = _estimate_tokens(history)
-        compressed = _compress_tool_history(history)
-        compressed_tokens = _estimate_tokens(compressed)
-
+        tokens = _estimate_tokens(history)
         return web.json_response({
-            "raw_tokens": raw_tokens,
-            "compressed_tokens": compressed_tokens,
+            "raw_tokens": tokens,
+            "compressed_tokens": tokens,
         })
 
     def _auto_tag_civs(self, session_id: str, tool_calls: list[dict]) -> None:

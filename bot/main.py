@@ -177,15 +177,19 @@ async def run(config: BotConfig) -> None:
     # HTTP server (always starts)
     server = BotServer(config)
 
-    # Always create the agent (needed for /chat endpoint, not just Discord)
-    agent = Agent(config)
-    backend = "Claude" if config.has_anthropic else f"Ollama ({config.ollama_model})"
-    log.info("Agent backend: %s", backend)
-    server.set_agent(agent)
+    # Create the agent only if the LLM backend (etheryale proxy) is configured.
+    # Without a proxy key the /chat endpoint returns 503 (see BotServer._chat).
+    agent: Agent | None = None
+    if config.has_llm:
+        agent = Agent(config)
+        log.info("Agent backend: etheryale proxy (default model=%s)", config.model)
+        server.set_agent(agent)
+    else:
+        log.warning("ETHERYALE_API_KEY not set -- agent disabled (/chat returns 503)")
 
-    # Discord bot (only if token provided)
+    # Discord bot (only if token provided AND an agent exists)
     bot: AurelmBot | None = None
-    if config.has_discord:
+    if config.has_discord and agent is not None:
         bot = AurelmBot(agent, proxy=config.proxy)
         bot.set_on_ready(lambda: server.set_discord_connected(True))
         server.set_discord_client(bot)
