@@ -40,6 +40,18 @@ MAX_TOOL_ROUNDS = 10
 # tool-calling chain so the model wraps up instead of drifting.
 CONTEXT_REMINDER_THRESHOLD = 40_000
 
+# Models the proxy serves but we DON'T want in the chat picker.
+# WHY: opus-4-6/4-7 are superseded by opus-4-8 (same family, strictly worse) —
+# keeping them only clutters the picker; gpt-image-2 is an image-generation
+# vendor model, not a chat model, and selecting it would break a chat turn.
+# We denylist (not allowlist) so any NEW chat model the proxy adds shows up
+# automatically without a code change.
+HIDDEN_MODELS = frozenset({
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "gpt-image-2",
+})
+
 
 # --------------------------------------------------------------------------- #
 # Small helpers (pure, reused by streaming + non-streaming paths)
@@ -399,10 +411,14 @@ class Agent:
         return "(Limite de tours d'outils atteinte.)"
 
     async def list_models(self) -> list[str]:
-        """Model ids the proxy currently serves — feeds the Flutter model picker."""
+        """Chat model ids the proxy serves — feeds the Flutter model picker.
+
+        Filters out HIDDEN_MODELS (superseded Claude variants + the image-gen
+        vendor model) so the picker only offers current, chat-capable models.
+        """
         try:
             result = await self._aclient.models.list()
-            return [m.id for m in result.data]
+            return [m.id for m in result.data if m.id not in HIDDEN_MODELS]
         except Exception as exc:
             log.warning("models.list failed: %s", exc)
             return []
