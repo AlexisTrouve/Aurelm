@@ -10,7 +10,14 @@ from __future__ import annotations
 
 import asyncio
 
-from bot.agent import Agent, HIDDEN_MODELS
+from bot.agent import (
+    CLAUDE_ONLY_EFFORTS,
+    EFFORT_LEVELS,
+    HIDDEN_MODELS,
+    OPENAI_MAX_EFFORT,
+    Agent,
+    _clamp_effort,
+)
 from bot.config import BotConfig
 
 
@@ -88,6 +95,157 @@ def test_list_models_preserves_proxy_order():
     agent = _agent_with_models(["gpt-5.6-luna", "claude-opus-4-6", "claude-opus-4-8"])
     models = asyncio.run(agent.list_models())
     assert models == ["gpt-5.6-luna", "claude-opus-4-8"]
+
+
+# --------------------------------------------------------------------------- #
+# Reasoning effort + visible-reasoning toggle
+# --------------------------------------------------------------------------- #
+
+
+def test_clamp_effort_downgrades_claude_only_levels_for_gpt():
+    """xhigh/max reach Claude untouched but clamp to `high` for GPT.
+
+    Not cosmetic: sending effort=max to a GPT model kills the upstream connection
+    (measured), so an unclamped picker choice would break the turn.
+    """
+    for level in CLAUDE_ONLY_EFFORTS:
+        assert _clamp_effort("claude-opus-4-8", level) == level
+        assert _clamp_effort("gpt-5.6-luna", level) == OPENAI_MAX_EFFORT
+
+
+def test_clamp_effort_leaves_shared_levels_alone():
+    """Levels both providers accept pass through unchanged for either model."""
+    for level in ("low", "medium", "high"):
+        assert _clamp_effort("claude-opus-4-8", level) == level
+        assert _clamp_effort("gpt-5.6-luna", level) == level
+
+
+def test_request_extra_sends_effort_and_never_a_thinking_budget():
+    """reasoning_effort is the only knob — a `thinking` block would void it.
+
+    The proxy gives an explicit client `thinking` block priority over effort, so
+    emitting both would silently disable the effort picker.
+    """
+    agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key"))
+    extra = agent._request_extra("claude-opus-4-8", "high", False)
+    assert extra == {"reasoning_effort": "high"}
+    assert "thinking" not in extra
+
+
+def test_request_extra_falls_back_to_configured_default_effort():
+    """No per-request effort → the configured default is sent."""
+    agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key", default_effort="low"))
+    assert agent._request_extra("claude-opus-4-8")["reasoning_effort"] == "low"
+
+
+def test_request_extra_show_thinking_adds_include_reasoning():
+    """The visible-reasoning toggle adds include_reasoning; off by default."""
+    agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key"))
+    assert agent._request_extra("claude-opus-4-8", "high", True)["include_reasoning"] is True
+    assert "include_reasoning" not in agent._request_extra("claude-opus-4-8", "high", False)
+
+
+def test_request_extra_clamps_effort_for_gpt():
+    """A GM who picks `max` then switches to GPT gets GPT's hardest level, not a dead turn."""
+    agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key"))
+    assert agent._request_extra("gpt-5.6-luna", "max")["reasoning_effort"] == OPENAI_MAX_EFFORT
+
+
+def test_effort_levels_ordered_weakest_to_strongest():
+    """The picker renders EFFORT_LEVELS in order — lock the contract."""
+    assert EFFORT_LEVELS == ("low", "medium", "high", "xhigh", "max")
+
+
+# --------------------------------------------------------------------------- #
+# Streaming robustness
+# --------------------------------------------------------------------------- #
+
+
+class _FakeFunction:
+    def __init__(self, name: str, arguments: str) -> None:
+        self.name = name
+        self.arguments = arguments
+
+
+class _FakeToolCall:
+    def __init__(self, index: int, tc_id: str, name: str, args: str) -> None:
+        self.index = index
+        self.id = tc_id
+        self.function = _FakeFunction(name, args)
+
+
+class _FakeDelta:
+    def __init__(self, content=None, tool_calls=None) -> None:
+        self.content = content
+        self.tool_calls = tool_calls
+
+
+class _FakeChunk:
+    def __init__(self, delta: _FakeDelta) -> None:
+        self.choices = [type("C", (), {"delta": delta})()]
+
+    def model_dump_json(self) -> str:  # used by the null-entry warning log
+        return '{"fake":"chunk"}'
+
+
+class _FakeStream:
+    def __init__(self, chunks: list) -> None:
+        self._chunks = chunks
+
+    def __aiter__(self):
+        async def gen():
+            for c in self._chunks:
+                yield c
+
+        return gen()
+
+
+class _FakeCompletions:
+    def __init__(self, rounds: list) -> None:
+        self._rounds = list(rounds)
+        self.calls = 0
+
+    async def create(self, **kwargs):
+        chunks = self._rounds[self.calls]
+        self.calls += 1
+        return _FakeStream(chunks)
+
+
+class _FakeStreamingClient:
+    def __init__(self, rounds: list) -> None:
+        self.chat = type("Chat", (), {"completions": _FakeCompletions(rounds)})()
+
+
+def test_streaming_skips_null_tool_call_entries():
+    """A null placeholder in tool_calls must not kill the turn.
+
+    The proxy emits a positional, sparse array on parallel tool calls —
+    `[null, {index:1,...}]` — so the real call rides at index 1 behind a null.
+    Before the guard this raised AttributeError on `tc.index` and the GM got an
+    error instead of an answer (measured on real traffic: 83 nulls in 3 turns).
+    """
+    agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key"))
+    real_call = _FakeToolCall(1, "toolu_1", "listCivs", "{}")
+    agent._aclient = _FakeStreamingClient([
+        [_FakeChunk(_FakeDelta(tool_calls=[None, real_call]))],  # null + real call
+        [_FakeChunk(_FakeDelta(content="Deux civilisations."))],  # final answer
+    ])
+    agent._exec_tool = lambda name, inp: f"result of {name}"  # no DB in this test
+
+    events = []
+
+    async def drive():
+        async for event in agent.answer_streaming([], "Quelles civs ?"):
+            events.append(event)
+
+    asyncio.run(drive())
+    types = [t for t, _ in events]
+
+    assert "error" not in types, "the null entry must not surface as an error"
+    # The real call behind the null still ran end-to-end.
+    assert "tool_start" in types and "tool_result" in types
+    assert [d for t, d in events if t == "tool_result"][0]["name"] == "listCivs"
+    assert [d for t, d in events if t == "text"][-1]["content"] == "Deux civilisations."
 
 
 def test_list_models_empty_on_error():

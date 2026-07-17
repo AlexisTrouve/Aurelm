@@ -47,7 +47,11 @@ class BotConfig:
     proxy_base_url: str = "https://ai.etheryale.com/v1"
     proxy_api_key: str = ""             # eai_... — from env ETHERYALE_API_KEY or config
     model: str = "claude-opus-4-8"      # default; the proxy accepts any of its models
-    thinking_budget: int = 4000         # Claude extended-thinking budget (proxy vendor ext)
+    # Reasoning effort — ONE knob for every provider. The proxy maps it to Claude's
+    # adaptive `output_config.effort` (opus-4-7/4-8) or a derived thinking budget
+    # (sonnet-4-6/opus-4-6/haiku), and passes it straight through to GPT.
+    # Overridable per request by the Flutter effort picker.
+    default_effort: str = "medium"      # low | medium | high | xhigh | max (see agent.EFFORT_LEVELS)
     request_timeout: float = 300.0      # proxy QUEUES (never 429) → generous client timeout
 
     @property
@@ -84,7 +88,7 @@ def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
         # Etheryale proxy config (the LLM backend)
         cfg.proxy_base_url = data.get("proxy_base_url", cfg.proxy_base_url)
         cfg.model = data.get("model", cfg.model)
-        cfg.thinking_budget = data.get("thinking_budget", cfg.thinking_budget)
+        cfg.default_effort = data.get("default_effort", cfg.default_effort)
         cfg.request_timeout = data.get("request_timeout", cfg.request_timeout)
 
         for ch_id, ch_data in data.get("channels", {}).items():

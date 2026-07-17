@@ -112,11 +112,23 @@ class ErrorEvent extends ChatEvent {
   ErrorEvent({required this.message});
 }
 
-/// The models the etheryale proxy serves + the configured default (for the picker).
+/// What the pickers need: proxy models + reasoning-effort levels, and the
+/// backend's default for each. Sourced from /chat/models so the UI never
+/// hardcodes either list.
 class ChatModels {
   final List<String> models;
   final String defaultModel;
-  const ChatModels({required this.models, required this.defaultModel});
+
+  /// Effort levels, weakest → strongest (low, medium, high, xhigh, max).
+  final List<String> efforts;
+  final String defaultEffort;
+
+  const ChatModels({
+    required this.models,
+    required this.defaultModel,
+    this.efforts = const [],
+    this.defaultEffort = '',
+  });
 }
 
 /// HTTP client for the /chat endpoint on the local bot server.
@@ -137,12 +149,17 @@ class ChatService {
     String message, {
     String? sessionId,
     String? model,
+    String? effort,
+    bool showThinking = false,
   }) async* {
     final uri = Uri.parse('$_baseUrl${AppConstants.botChatEndpoint}');
     final body = jsonEncode({
       'message': message,
       if (sessionId != null) 'session_id': sessionId,
-      if (model != null) 'model': model,  // per-request model override (picker)
+      // Per-request overrides from the app-bar pickers; omitted → backend default.
+      if (model != null) 'model': model,
+      if (effort != null) 'effort': effort,
+      if (showThinking) 'show_thinking': true,
     });
 
     final client = http.Client();
@@ -237,8 +254,8 @@ class ChatService {
     }
   }
 
-  /// Fetch the models the proxy serves + the configured default (model picker).
-  /// Returns an empty list on any failure — the caller falls back to the default.
+  /// Fetch what the pickers need: proxy models + effort levels + defaults.
+  /// Returns empty lists on any failure — the pickers then simply don't render.
   Future<ChatModels> fetchModels() async {
     try {
       final uri = Uri.parse('$_baseUrl/chat/models');
@@ -248,6 +265,8 @@ class ChatService {
       return ChatModels(
         models: (json['models'] as List?)?.cast<String>() ?? const [],
         defaultModel: json['default'] as String? ?? '',
+        efforts: (json['efforts'] as List?)?.cast<String>() ?? const [],
+        defaultEffort: json['default_effort'] as String? ?? '',
       );
     } catch (_) {
       return const ChatModels(models: [], defaultModel: '');

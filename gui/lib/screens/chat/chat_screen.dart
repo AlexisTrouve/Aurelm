@@ -486,6 +486,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         actions: [
           // Model picker — any model the etheryale proxy serves.
           const _ModelPicker(),
+          // How hard the agent reasons on the next turn.
+          const _EffortPicker(),
+          // Ask for a readable reasoning summary.
+          const _ThinkingToggle(),
           // Online/offline indicator
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -2126,6 +2130,99 @@ class _ModelPicker extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// App-bar dropdown to pick how hard the agent reasons on the next turn.
+///
+/// The levels come from the bot (/chat/models), weakest → strongest. One knob for
+/// every provider: the bot forwards it as `reasoning_effort`, which the proxy maps
+/// to Anthropic's adaptive effort or to a thinking budget, and passes through to
+/// GPT. Measured on opus-4-8: low→max costs ~2.3x the latency for ~2.8x the tokens,
+/// hence the warning on the heavy levels.
+class _EffortPicker extends ConsumerWidget {
+  const _EffortPicker();
+
+  /// Levels worth warning about — they visibly slow a turn down.
+  static const _slowLevels = {'xhigh', 'max'};
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(chatModelsProvider).valueOrNull;
+    final efforts = data?.efforts ?? const <String>[];
+    if (efforts.isEmpty) return const SizedBox.shrink();
+
+    final selected = ref.watch(selectedEffortProvider);
+    final fallback = (data?.defaultEffort.isNotEmpty ?? false)
+        ? data!.defaultEffort
+        : efforts.first;
+    final current = efforts.contains(selected) ? selected! : fallback;
+    final value = efforts.contains(current) ? current : efforts.first;
+
+    return Tooltip(
+      message: 'Effort de raisonnement\nxhigh/max : nettement plus lent',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bolt,
+              size: 16,
+              color: _slowLevels.contains(value)
+                  ? Theme.of(context).colorScheme.tertiary
+                  : Theme.of(context).iconTheme.color?.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 2),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isDense: true,
+                icon: const Icon(Icons.expand_more, size: 18),
+                borderRadius: BorderRadius.circular(8),
+                style: Theme.of(context).textTheme.bodySmall,
+                items: [
+                  for (final e in efforts)
+                    DropdownMenuItem(value: e, child: Text(e)),
+                ],
+                onChanged: (e) {
+                  if (e == null) return;
+                  ref.read(selectedEffortProvider.notifier).state = e;
+                  ref.read(chatProvider.notifier).setEffort(e);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// App-bar toggle asking the agent to surface a readable reasoning summary.
+///
+/// Honest UX note (measured, not assumed): the classic models (sonnet-4-6, haiku)
+/// stream their thinking regardless of this toggle, while opus-4-7/4-8 fill the
+/// summary only sporadically — so this can legitimately light up and still show
+/// nothing. That's the model being terse, not a bug.
+class _ThinkingToggle extends ConsumerWidget {
+  const _ThinkingToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final on = ref.watch(showThinkingProvider);
+    return IconButton(
+      icon: Icon(on ? Icons.psychology : Icons.psychology_outlined, size: 20),
+      color: on ? Theme.of(context).colorScheme.primary : null,
+      tooltip: on
+          ? 'Raisonnement visible — actif\n(opus-4-8 ne le remplit que par moments)'
+          : 'Afficher le raisonnement de l\'agent',
+      onPressed: () {
+        final next = !on;
+        ref.read(showThinkingProvider.notifier).state = next;
+        ref.read(chatProvider.notifier).setShowThinking(next);
+      },
     );
   }
 }

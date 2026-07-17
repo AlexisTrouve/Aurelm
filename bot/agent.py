@@ -52,6 +52,20 @@ HIDDEN_MODELS = frozenset({
     "gpt-image-2",
 })
 
+# Reasoning-effort levels offered to the GM, weakest → strongest. `reasoning_effort`
+# is the ONE knob across providers: the proxy maps it to Anthropic's adaptive
+# `output_config.effort` for opus-4-7/4-8, to a derived thinking budget for the
+# classic Claude models (sonnet-4-6 / opus-4-6 / haiku), and passes it straight
+# through to GPT. Measured on opus-4-8: low→max is ~2.3x latency, ~2.8x tokens.
+EFFORT_LEVELS = ("low", "medium", "high", "xhigh", "max")
+
+# xhigh/max are Anthropic-only levels. Sending them to a GPT model does NOT return a
+# clean 400 — it kills the upstream connection (measured: 4/4 SSL EOF on gpt-5.6-luna
+# with effort=max, while minimal/low/medium/high succeed). So we clamp them down for
+# non-Claude models rather than let a picker choice break the turn.
+CLAUDE_ONLY_EFFORTS = frozenset({"xhigh", "max"})
+OPENAI_MAX_EFFORT = "high"
+
 
 # --------------------------------------------------------------------------- #
 # Small helpers (pure, reused by streaming + non-streaming paths)
@@ -153,6 +167,18 @@ def _is_claude(model: str) -> bool:
     return model.startswith("claude")
 
 
+def _clamp_effort(model: str, effort: str) -> str:
+    """Reduce an Anthropic-only effort level to the strongest one GPT accepts.
+
+    WHY: xhigh/max are valid for Claude but break the connection on a GPT model
+    (see CLAUDE_ONLY_EFFORTS). A GM who picks "max" then switches to a GPT model
+    should get GPT's hardest setting, not a dead turn.
+    """
+    if effort in CLAUDE_ONLY_EFFORTS and not _is_claude(model):
+        return OPENAI_MAX_EFFORT
+    return effort
+
+
 def _load_system_prompt(db_path: str | None = None) -> str:
     """Load SOUL.md + domain-knowledge.md + agent notes from DB as the system prompt."""
     base = Path(__file__).resolve().parent / "prompts"
@@ -237,11 +263,25 @@ class Agent:
         self._aclient = AsyncOpenAI(**common)
         self._client = OpenAI(**common)
 
-    def _request_extra(self, model: str) -> dict:
-        """extra_body for the request — Claude extended thinking, gated by model."""
-        if _is_claude(model) and self.config.thinking_budget > 0:
-            return {"thinking": {"type": "enabled", "budget_tokens": self.config.thinking_budget}}
-        return {}
+    def _request_extra(self, model: str, effort: str | None = None,
+                       show_thinking: bool = False) -> dict:
+        """extra_body for the request — reasoning effort + optional visible reasoning.
+
+        WHY only reasoning_effort (and never `thinking.budget_tokens`): the proxy gives
+        an explicit client `thinking` block priority and then ignores the effort, so
+        sending both would silently disable the effort knob. One mechanism, no overlap.
+
+        show_thinking asks the proxy for a readable reasoning summary (it sets Claude's
+        `display: "summarized"`). Note: opus-4-7/4-8 fill that summary only sporadically
+        — the classic models stream their thinking regardless. Harmless on GPT (verified).
+        """
+        extra: dict = {}
+        effort = effort or self.config.default_effort
+        if effort:
+            extra["reasoning_effort"] = _clamp_effort(model, effort)
+        if show_thinking:
+            extra["include_reasoning"] = True
+        return extra
 
     def _exec_tool(self, tool_name: str, tool_input: dict) -> str:
         """Run a tool (sync), handing the sync proxy client to deepExplore."""
@@ -253,13 +293,14 @@ class Agent:
     # -------------------- streaming (HTTP /chat) -------------------- #
 
     async def answer_streaming(self, history: list[dict], new_message: str,
-                               model: str | None = None):
+                               model: str | None = None, effort: str | None = None,
+                               show_thinking: bool = False):
         """Async generator yielding (event_type, data) tuples in real time.
 
         Event types: context_estimate, thinking, text_delta, tool_start,
         tool_result, text (final, carries full content for persistence), error.
         `history` is a list of plain {role, content} messages (already OpenAI-shaped).
-        `model` overrides the default (Flutter model picker).
+        `model` / `effort` / `show_thinking` override the defaults (Flutter pickers).
         """
         model = model or self._default_model
         messages: list[dict] = [
@@ -286,7 +327,7 @@ class Agent:
                     messages=req_messages,
                     tools=self._tools,
                     stream=True,
-                    extra_body=self._request_extra(model),
+                    extra_body=self._request_extra(model, effort, show_thinking),
                 )
             except Exception as exc:  # proxy 502 / upstream 429 / etc. — surface, no fallback
                 log.warning("Proxy request failed: %s", exc)
@@ -313,6 +354,13 @@ class Agent:
                     yield ("text_delta", {"chunk": delta.content})
 
                 for tc in (delta.tool_calls or []):
+                    # A null entry carries nothing to accumulate — skip it instead of
+                    # crashing the whole turn on `tc.index`. Logged (not swallowed) so a
+                    # real tool call vanishing this way stays visible in the bot log.
+                    if tc is None:
+                        log.warning("Null tool_call entry in delta, skipped: %s",
+                                    chunk.model_dump_json()[:300])
+                        continue
                     slot = tool_calls_acc.setdefault(tc.index, {"id": "", "name": "", "args": ""})
                     if tc.id:
                         slot["id"] = tc.id
@@ -366,8 +414,13 @@ class Agent:
 
     # -------------------- non-streaming (Discord) -------------------- #
 
-    async def answer(self, user_message: str, model: str | None = None) -> str:
-        """One agent turn, non-streaming — returns the final text (Discord path)."""
+    async def answer(self, user_message: str, model: str | None = None,
+                     effort: str | None = None) -> str:
+        """One agent turn, non-streaming — returns the final text (Discord path).
+
+        No show_thinking: Discord renders text only, a reasoning summary has nowhere
+        to go there. Effort falls back to the configured default.
+        """
         model = model or self._default_model
         messages: list[dict] = [
             {"role": "system", "content": self._system_prompt},
@@ -380,7 +433,7 @@ class Agent:
                     model=model,
                     messages=messages,
                     tools=self._tools,
-                    extra_body=self._request_extra(model),
+                    extra_body=self._request_extra(model, effort),
                 )
             except Exception as exc:
                 log.warning("Proxy request failed: %s", exc)
