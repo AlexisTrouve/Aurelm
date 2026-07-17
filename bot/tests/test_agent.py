@@ -219,10 +219,14 @@ class _FakeStreamingClient:
 def test_streaming_skips_null_tool_call_entries():
     """A null placeholder in tool_calls must not kill the turn.
 
-    The proxy emits a positional, sparse array on parallel tool calls —
-    `[null, {index:1,...}]` — so the real call rides at index 1 behind a null.
-    Before the guard this raised AttributeError on `tc.index` and the GM got an
-    error instead of an answer (measured on real traffic: 83 nulls in 3 turns).
+    HISTORY: the proxy used to emit a positional, sparse array on parallel tool
+    calls — `[null, {index:1,...}]` — and `tc.index` on the null raised
+    AttributeError, so the GM got an error instead of an answer (83 nulls across
+    3 real turns). Fixed proxy-side 2026-07-17; the wire is clean now.
+
+    WHY KEEP THIS: the proxy is deployed independently of Aurelm, so a rollback
+    there must not silently break every turn here. The guard logs rather than
+    swallows, so a regression stays visible instead of hiding.
     """
     agent = Agent(BotConfig(db_path=None, proxy_api_key="test-key"))
     real_call = _FakeToolCall(1, "toolu_1", "listCivs", "{}")
