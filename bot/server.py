@@ -515,8 +515,11 @@ class BotServer:
             return web.json_response({"error": "Empty message"}, status=400)
 
         session_id = body.get("session_id")
-        # Optional per-request model override (Flutter model picker); falls back to config default.
+        # Optional per-request overrides from the Flutter chat pickers; each falls back
+        # to the configured default when absent.
         model = body.get("model") or None
+        effort = body.get("effort") or None            # low|medium|high|xhigh|max
+        show_thinking = bool(body.get("show_thinking"))  # ask for a readable reasoning summary
 
         # Load or create session
         if session_id:
@@ -556,7 +559,9 @@ class BotServer:
 
         try:
             # Stream events from the async generator in real time
-            async for event_type, data in self._agent.answer_streaming(history, message, model=model):
+            async for event_type, data in self._agent.answer_streaming(
+                history, message, model=model, effort=effort, show_thinking=show_thinking,
+            ):
                 await _write(event_type, data)
 
                 # When we get the final text, persist conversation in DB
@@ -631,14 +636,22 @@ class BotServer:
         return resp
 
     async def _chat_models(self, request: web.Request) -> web.Response:
-        """GET /chat/models — models the proxy serves + the configured default.
+        """GET /chat/models — models the proxy serves + effort levels + defaults.
 
-        Powers the Flutter model picker. Returns {models: [...], default: "..."}.
+        Powers the Flutter model and effort pickers, so the UI never hardcodes the
+        lists. Returns {models, default, efforts, default_effort}.
         """
-        if self._agent is None:
-            return web.json_response({"models": [], "default": self.config.model})
-        models = await self._agent.list_models()
-        return web.json_response({"models": models, "default": self.config.model})
+        from .agent import EFFORT_LEVELS
+
+        payload = {
+            "models": [],
+            "default": self.config.model,
+            "efforts": list(EFFORT_LEVELS),
+            "default_effort": self.config.default_effort,
+        }
+        if self._agent is not None:
+            payload["models"] = await self._agent.list_models()
+        return web.json_response(payload)
 
     async def _list_sessions(self, request: web.Request) -> web.Response:
         """GET /chat/sessions — List all active sessions.

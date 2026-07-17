@@ -158,16 +158,34 @@ final chatModelsProvider = FutureProvider<ChatModels>(
 /// Currently selected model (null = use the bot's configured default).
 final selectedModelProvider = StateProvider<String?>((ref) => null);
 
+/// Currently selected reasoning effort (null = use the bot's configured default).
+final selectedEffortProvider = StateProvider<String?>((ref) => null);
+
+/// Whether to ask the agent for a readable reasoning summary.
+///
+/// Off by default: it costs nothing to request, but the newest opus models fill
+/// the summary only sporadically, so leaving it on would show an empty panel more
+/// often than not. The classic models (sonnet-4-6, haiku) stream thinking anyway.
+final showThinkingProvider = StateProvider<bool>((ref) => false);
+
 class ChatNotifier extends StateNotifier<ChatState> {
   final ChatService _service;
   final ChatSessionsService _sessionsService;
   bool _cancelled = false; // set to true to silently ignore incoming events
   String? _model; // per-request model override, set from the picker
+  String? _effort; // per-request reasoning effort, set from the effort picker
+  bool _showThinking = false; // ask for a readable reasoning summary
 
   ChatNotifier(this._service, this._sessionsService) : super(const ChatState());
 
   /// Set the model used for subsequent sends (from the model picker dropdown).
   void setModel(String? model) => _model = model;
+
+  /// Set the reasoning effort for subsequent sends (from the effort dropdown).
+  void setEffort(String? effort) => _effort = effort;
+
+  /// Toggle whether subsequent sends ask for a visible reasoning summary.
+  void setShowThinking(bool show) => _showThinking = show;
 
   /// Send a user message and stream the agent's response events.
   ///
@@ -213,6 +231,8 @@ class ChatNotifier extends StateNotifier<ChatState> {
         message,
         sessionId: state.sessionId,
         model: _model,
+        effort: _effort,
+        showThinking: _showThinking,
       );
 
       await for (final event in stream) {
