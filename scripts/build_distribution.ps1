@@ -189,23 +189,29 @@ Invoke-Native -What "bundled interpreter importing app packages (check ._pth)" -
 # database/migrations dir let the bot serve /health while creating zero tables —
 # the app would install and die on first real use. This asserts the bundled
 # migrations actually build the schema, which is the failure /health hides.
+#
+# The probe is written to a FILE, not passed via `python -c`: a multi-line script
+# handed to a native exe as an argument is quoted differently across PowerShell
+# environments — it ran locally and broke on the CI runner with a SyntaxError.
 $migrateProbe = Join-Path $env:TEMP "aurelm-migrate-probe.db"
+$probeScript = Join-Path $env:TEMP "aurelm-migrate-probe.py"
 if (Test-Path $migrateProbe) { Remove-Item $migrateProbe -Force }
-Invoke-Native -What "bundled migrations build the schema on a fresh DB" -Command {
-    & $bundledPython -c @"
-import sqlite3
+@"
+import sqlite3, sys
 from bot.migrations import apply_migrations
-db = r'$migrateProbe'
+db = sys.argv[1]
 apply_migrations(db)
 tables = [r[0] for r in sqlite3.connect(db).execute(
-    \"SELECT name FROM sqlite_master WHERE type='table'\")]
+    "SELECT name FROM sqlite_master WHERE type='table'")]
 core = [t for t in tables if t.startswith(('civ_', 'turn_', 'entity_'))]
 assert 'civ_civilizations' in tables, f'no civ table; got {len(tables)} tables'
 assert len(core) >= 3, f'schema looks empty: {tables}'
 print(f'migrations OK: {len(tables)} tables, core present')
-"@
+"@ | Set-Content -Path $probeScript -Encoding ascii
+Invoke-Native -What "bundled migrations build the schema on a fresh DB" -Command {
+    & $bundledPython $probeScript $migrateProbe
 }
-Remove-Item $migrateProbe -Force -ErrorAction SilentlyContinue
+Remove-Item $migrateProbe, $probeScript -Force -ErrorAction SilentlyContinue
 
 if (-not (Test-Path (Join-Path $OutDir "aurelm_gui.exe"))) { throw "aurelm_gui.exe missing from the bundle" }
 
