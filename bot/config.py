@@ -63,6 +63,27 @@ class BotConfig:
         """True when the etheryale proxy key is configured (the only LLM backend)."""
         return bool(self.proxy_api_key)
 
+    @property
+    def pipeline_llm_key(self) -> str | None:
+        """API key for the PIPELINE's LLM provider (ingestion), or None if it needs none.
+
+        WHY a property: this per-provider choice was duplicated verbatim in main.py
+        and server.py — a third copy was one sync path away from existing.
+
+        WHY a fallback instead of collapsing the two keys: `claude_proxy` and the chat
+        agent both talk to the etheryale proxy, but keeping a DISTINCT pipeline key is
+        legitimate — the proxy routes per key and spreads load across upstream accounts
+        ("one key per agent", INTEGRATION §3). So a separate key still wins when set;
+        we only fall back to the agent's key when it isn't, which beats handing the
+        provider an empty string and failing on the first call.
+
+        ollama: local, needs no key. openrouter: has its own key, and the provider
+        resolves it from env/file when we pass None.
+        """
+        if self.llm_provider == "claude_proxy":
+            return self.anthropic_api_key or self.proxy_api_key or None
+        return None
+
 
 def load_config(db_path: str, port_override: int | None = None) -> BotConfig:
     """Load config from aurelm_config.json next to the DB file, plus env vars."""

@@ -24,6 +24,10 @@ dependencies:
   http: ^1.2.2
   flutter_markdown: ^0.7.4
   crypto: ^3.0.7
+  # Stores the etheryale API key at rest. On Windows this is DPAPI-backed, so the
+  # ciphertext is sealed to the user's Windows account and the app carries no
+  # decryption key of its own (see docs/enrollment-client-design.md).
+  flutter_secure_storage: ^9.2.4
   image: ^4.2.0
 
 dev_dependencies:

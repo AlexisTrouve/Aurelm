@@ -303,8 +303,8 @@ class BotServer:
                         if not messages:
                             return {"turns_created": 0, "entities_extracted": 0, "skipped": "no_new_messages"}
 
-                        llm_key = self.config.anthropic_api_key if self.config.llm_provider == "claude_proxy" else None
-                        provider = create_provider(self.config.llm_provider, api_key=llm_key)
+                        provider = create_provider(
+                            self.config.llm_provider, api_key=self.config.pipeline_llm_key)
                         return run_pipeline(
                             db_path=self.config.db_path,
                             civ_name=civ_name,

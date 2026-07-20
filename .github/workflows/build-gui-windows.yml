@@ -1,15 +1,26 @@
-name: Build GUI Windows EXE
+name: Build Windows distribution
 
+# Builds the self-contained bundle Arthur installs: Flutter EXE + an embedded
+# CPython + bot/ + pipeline/. Triggers on the Python side too — the bundle ships
+# that code, so a bot change must rebuild and re-validate it, not just a GUI change.
 on:
   push:
     branches: [ main ]
     paths:
       - 'gui/**'
+      - 'bot/**'
+      - 'pipeline/**'
+      - 'scripts/build_distribution.ps1'
+      - 'requirements-dist.txt'
       - '.github/workflows/build-gui-windows.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'gui/**'
+      - 'bot/**'
+      - 'pipeline/**'
+      - 'scripts/build_distribution.ps1'
+      - 'requirements-dist.txt'
   workflow_dispatch:
 
 defaults:
@@ -73,7 +84,55 @@ jobs:
           Get-ChildItem "build\" -Recurse -Depth 2
         }
 
-    - name: Upload EXE
+    # --- Distribution bundle ---------------------------------------------------
+    # Python here is the BUILD-side pip used to install runtime deps into the
+    # embedded interpreter; the shipped bundle does not depend on it existing.
+    - name: Setup Python (build-side pip)
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Assemble Windows distribution
+      working-directory: .
+      run: ./scripts/build_distribution.ps1 -OutDir dist/aurelm-windows -SkipFlutterBuild
+
+    # The real validation: launch the bot from the BUNDLED interpreter on a clean
+    # runner and require it to serve. This is what catches a broken ._pth, a missing
+    # dependency, or app code that never made it into the bundle — none of which the
+    # Flutter build alone would notice. No API key: the HTTP server must come up
+    # regardless (the agent simply stays disabled without one).
+    - name: Validate the bundle actually runs
+      working-directory: .
+      run: |
+        $py = "dist/aurelm-windows/python/python.exe"
+        $db = Join-Path $env:RUNNER_TEMP "ci-validate.db"
+        $proc = Start-Process -FilePath $py `
+          -ArgumentList "-m","bot","--db",$db,"--port","8479" `
+          -PassThru -NoNewWindow -RedirectStandardOutput bot_ci.log -RedirectStandardError bot_ci_err.log
+        $healthy = $false
+        for ($i = 0; $i -lt 45; $i++) {
+          Start-Sleep -Seconds 1
+          try {
+            $r = Invoke-WebRequest -Uri "http://127.0.0.1:8479/health" -TimeoutSec 2 -UseBasicParsing
+            if ($r.StatusCode -eq 200) { $healthy = $true; break }
+          } catch { }
+        }
+        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        if (-not $healthy) {
+          Write-Host "--- bot stdout ---"; Get-Content bot_ci.log -ErrorAction SilentlyContinue
+          Write-Host "--- bot stderr ---"; Get-Content bot_ci_err.log -ErrorAction SilentlyContinue
+          throw "the bundled bot never served /health"
+        }
+        Write-Host "Bundle validated: the embedded interpreter served /health"
+
+    - name: Upload distribution
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: aurelm-windows-distribution
+        path: dist/aurelm-windows/
+
+    - name: Upload EXE only
       if: success()
       uses: actions/upload-artifact@v4
       with:
