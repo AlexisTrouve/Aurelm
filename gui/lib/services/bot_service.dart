@@ -18,6 +18,8 @@ class BotService {
     String pythonPath = 'python',
     // Extra args inserted before -m (e.g. ['-3.12'] for Windows py launcher)
     List<String> pythonArgs = const [],
+    // etheryale API key, read from the OS-sealed KeyStore by the caller.
+    String? apiKey,
   }) async {
     if (_running) return true;
 
@@ -26,6 +28,15 @@ class BotService {
         pythonPath,
         [...pythonArgs, '-m', 'bot', '--db', dbPath, '--port', '$port'],
         workingDirectory: _findProjectRoot(dbPath),
+        // Hand the key to the bot through the environment instead of a file.
+        // config.py already reads ETHERYALE_API_KEY from the env first, so the
+        // Python side needs no change and never touches secure storage: the key
+        // exists sealed (DPAPI) or in this child's memory, never in plaintext on
+        // disk. Dart merges this with the parent environment by default
+        // (includeParentEnvironment: true), so PATH etc. are preserved.
+        environment: apiKey != null && apiKey.isNotEmpty
+            ? {'ETHERYALE_API_KEY': apiKey}
+            : null,
       );
 
       _process!.stdout

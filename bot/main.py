@@ -100,8 +100,7 @@ async def _run_sync(config: BotConfig, bot: AurelmBot | None) -> dict:
             if config.gm_authors:
                 _runner.GM_AUTHORS = set(config.gm_authors)
 
-            llm_api_key = config.anthropic_api_key if config.llm_provider == "claude_proxy" else None
-            provider = create_provider(config.llm_provider, api_key=llm_api_key)
+            provider = create_provider(config.llm_provider, api_key=config.pipeline_llm_key)
 
             results = {}
             # Reload civ rows inside thread (DB connection must be in same thread)

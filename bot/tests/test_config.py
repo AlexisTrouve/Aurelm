@@ -7,7 +7,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from bot.config import load_config
+from bot.config import BotConfig, load_config
 
 
 class TestLoadConfig:
@@ -67,3 +67,39 @@ class TestLoadConfig:
         assert cfg.discord_token == "test-token"
         assert cfg.anthropic_api_key == "test-key"
         assert cfg.proxy_api_key == "eai-test"
+
+
+class TestPipelineLlmKey:
+    """The PIPELINE's LLM key (ingestion) — distinct from the chat agent's.
+
+    Locks the seam that replaced a copy-pasted expression in main.py and server.py.
+    """
+
+    def test_claude_proxy_prefers_its_own_key(self):
+        """A dedicated pipeline key wins — the proxy routes per key and spreads
+        load across upstream accounts, so a separate key is deliberate, not noise."""
+        cfg = BotConfig(db_path=None, llm_provider="claude_proxy",
+                        anthropic_api_key="pipeline-key", proxy_api_key="agent-key")
+        assert cfg.pipeline_llm_key == "pipeline-key"
+
+    def test_claude_proxy_falls_back_to_the_agent_key(self):
+        """Only ETHERYALE_API_KEY set → the pipeline reuses it instead of being
+        handed an empty string and failing on its first call."""
+        cfg = BotConfig(db_path=None, llm_provider="claude_proxy",
+                        anthropic_api_key="", proxy_api_key="agent-key")
+        assert cfg.pipeline_llm_key == "agent-key"
+
+    def test_claude_proxy_none_when_nothing_configured(self):
+        cfg = BotConfig(db_path=None, llm_provider="claude_proxy",
+                        anthropic_api_key="", proxy_api_key="")
+        assert cfg.pipeline_llm_key is None
+
+    def test_ollama_needs_no_key(self):
+        cfg = BotConfig(db_path=None, llm_provider="ollama", proxy_api_key="agent-key")
+        assert cfg.pipeline_llm_key is None
+
+    def test_openrouter_resolves_its_own_key(self):
+        """None on purpose: OpenRouter is a different service — the provider reads
+        its key from env/file. Passing the etheryale key here would be wrong."""
+        cfg = BotConfig(db_path=None, llm_provider="openrouter", proxy_api_key="agent-key")
+        assert cfg.pipeline_llm_key is None

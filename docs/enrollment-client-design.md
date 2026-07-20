@@ -119,7 +119,7 @@ expired-vs-consumed distinction; it doesn't exist in the response.
 | Setup flag | `gui/lib/services/key_store.dart` (or a small prefs entry) | `setupComplete` — local only; the wizard sets it, the router reads it |
 | Router wiring | `gui/lib/core/router/app_router.dart` | redirect to the wizard when `setup_complete` is false; otherwise straight to the app. **Never** an online check — local state only |
 | Env injection | `gui/lib/services/bot_service.dart:25` | add `environment: { 'ETHERYALE_API_KEY': key }` to `Process.start` (Dart merges with the parent env by default) |
-| Config cleanup | `bot/main.py:103`, `bot/config.py` | **unify the key**: the pipeline's `claude_proxy` path reads `anthropic_api_key` while the agent reads `proxy_api_key` — collapse to one (`proxy_api_key` / `ETHERYALE_API_KEY`) |
+| Pipeline key seam | `bot/config.py` (`pipeline_llm_key`), `bot/main.py`, `bot/server.py` | ✅ done. **Corrected from an earlier draft**: do NOT collapse the pipeline key into the agent's. The proxy routes per key and spreads load across upstream accounts ("one key per agent", INTEGRATION §3), so a distinct pipeline key is deliberate. The duplicated per-provider expression (it existed in *two* places) is now one property, which prefers a dedicated key and falls back to the agent's only when unset |
 | Re-enroll (opt.) | Settings | a "re-activer / changer la clé" action for the key-lost / rotation case — reuses the same redeem flow |
 
 ## Edge cases / UX
