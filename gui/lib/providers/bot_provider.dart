@@ -6,6 +6,7 @@ import '../core/constants/app_constants.dart';
 import '../services/bot_service.dart';
 import '../services/sync_service.dart';
 import 'database_provider.dart';
+import 'enrollment_provider.dart';
 
 final botServiceProvider = Provider<BotService>((ref) {
   final service = BotService();
@@ -31,10 +32,17 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
   final alreadyRunning = await syncService.healthCheck();
   if (alreadyRunning) return;
 
+  // The key comes from the OS-sealed store and is handed to the bot through its
+  // environment — it never lands in a file the bot reads. Null before activation,
+  // in which case the bot still starts but its agent stays disabled (/chat → 503);
+  // the setup gate in app.dart is what normally prevents reaching that state.
+  final apiKey = await ref.read(apiKeyProvider.future);
+
   await ref.read(botServiceProvider).start(
     dbPath: dbPath,
     pythonPath: 'py',
     pythonArgs: ['-3.12'],
+    apiKey: apiKey,
   );
 });
 
