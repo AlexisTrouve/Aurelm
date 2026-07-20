@@ -92,9 +92,23 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Assemble Windows distribution
+    # Inno Setup is preinstalled on the GitHub Windows images, but installing it
+    # here when absent keeps the workflow from breaking silently if that changes.
+    - name: Ensure Inno Setup
       working-directory: .
-      run: ./scripts/build_distribution.ps1 -OutDir dist/aurelm-windows -SkipFlutterBuild
+      run: |
+        if (Get-Command ISCC.exe -ErrorAction SilentlyContinue) {
+          Write-Host "ISCC already available"
+        } elseif (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") {
+          Write-Host "ISCC found in Program Files"
+        } else {
+          Write-Host "Installing Inno Setup via choco"
+          choco install innosetup --no-progress -y
+        }
+
+    - name: Assemble Windows distribution + installer
+      working-directory: .
+      run: ./scripts/build_distribution.ps1 -OutDir dist/aurelm-windows -SkipFlutterBuild -Installer
 
     # The real validation: launch the bot from the BUNDLED interpreter on a clean
     # runner and require it to serve. This is what catches a broken ._pth, a missing
@@ -124,6 +138,54 @@ jobs:
           throw "the bundled bot never served /health"
         }
         Write-Host "Bundle validated: the embedded interpreter served /health"
+
+    # Installing and running the INSTALLED app is a stronger claim than "the
+    # installer compiled": it catches a bad [Files] rule, a mangled ._pth, or an
+    # app/ tree that never made it into the setup — none of which compilation
+    # notices. Installs to a throwaway dir so nothing leaks between steps.
+    - name: Validate the installer end to end
+      working-directory: .
+      run: |
+        $setup = Get-ChildItem dist/Aurelm-Setup-*.exe | Select-Object -First 1
+        if (-not $setup) { throw "no installer produced" }
+        $target = Join-Path $env:RUNNER_TEMP "AurelmInstallTest"
+        $p = Start-Process -FilePath $setup.FullName `
+          -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/DIR=$target" -Wait -PassThru
+        if ($p.ExitCode -ne 0) { throw "installer exited $($p.ExitCode)" }
+
+        foreach ($must in @("aurelm_gui.exe","python\python.exe","app\bot\__init__.py","python\python312._pth")) {
+          if (-not (Test-Path (Join-Path $target $must))) { throw "missing after install: $must" }
+        }
+
+        $db = Join-Path $env:RUNNER_TEMP "installer-validate.db"
+        $proc = Start-Process -FilePath (Join-Path $target "python\python.exe") `
+          -ArgumentList "-m","bot","--db",$db,"--port","8481" `
+          -PassThru -NoNewWindow -RedirectStandardOutput inst.log -RedirectStandardError inst_err.log
+        $healthy = $false
+        for ($i = 0; $i -lt 45; $i++) {
+          Start-Sleep -Seconds 1
+          try {
+            $r = Invoke-WebRequest -Uri "http://127.0.0.1:8481/health" -TimeoutSec 2 -UseBasicParsing
+            if ($r.StatusCode -eq 200) { $healthy = $true; break }
+          } catch { }
+        }
+        Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+        if (-not $healthy) {
+          Get-Content inst.log, inst_err.log -ErrorAction SilentlyContinue
+          throw "the INSTALLED bot never served /health"
+        }
+
+        $u = Start-Process -FilePath (Join-Path $target "unins000.exe") `
+          -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait -PassThru
+        if ($u.ExitCode -ne 0) { throw "uninstaller exited $($u.ExitCode)" }
+        Write-Host "Installer validated: installed, served /health, uninstalled cleanly"
+
+    - name: Upload installer
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: aurelm-installer
+        path: dist/Aurelm-Setup-*.exe
 
     - name: Upload distribution
       if: success()
