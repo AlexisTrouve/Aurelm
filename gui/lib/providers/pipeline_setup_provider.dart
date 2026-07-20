@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/bot_config_service.dart';
+import '../services/ollama_service.dart';
 import 'database_provider.dart';
 import 'enrollment_provider.dart';
 
@@ -21,8 +24,11 @@ extension PipelineEngineId on PipelineEngine {
 }
 
 /// The default model Arthur's GPU (RTX 5070 Ti) runs well; also the value the bot
-/// config already defaults to, so choosing it changes nothing surprising.
+/// config already defaults to, so choosing it changes nothing surprising. Mirrors
+/// the recommended entry in the model registry.
 const kDefaultOllamaModel = 'qwen3:14b';
+
+final ollamaServiceProvider = Provider<OllamaService>((ref) => OllamaService());
 
 /// Snapshot of the local Ollama install: is it reachable, and which models are
 /// pulled. An empty list with reachable=false means Ollama isn't running/installed.
@@ -128,4 +134,86 @@ class PipelineSetupNotifier extends StateNotifier<PipelineSetupState> {
 final pipelineSetupProvider =
     StateNotifierProvider<PipelineSetupNotifier, PipelineSetupState>((ref) {
   return PipelineSetupNotifier(ref);
+});
+
+// --------------------------------------------------------------------------- //
+// Model download (Ollama pull)
+// --------------------------------------------------------------------------- //
+
+enum PullStatus { idle, downloading, done, error }
+
+class PullState {
+  final PullStatus status;
+
+  /// Model currently being pulled (or the one that finished/failed).
+  final String? model;
+
+  /// 0.0–1.0 during a byte-counted phase, null for indeterminate phases.
+  final double? fraction;
+
+  /// Ollama's current phase text, or a failure message.
+  final String? message;
+
+  const PullState({
+    this.status = PullStatus.idle,
+    this.model,
+    this.fraction,
+    this.message,
+  });
+
+  bool get isDownloading => status == PullStatus.downloading;
+}
+
+/// Downloads a model through Ollama, exposing live progress. The wizard does NOT
+/// install Ollama itself — this only pulls a model into an already-running Ollama.
+class OllamaPullNotifier extends StateNotifier<PullState> {
+  final Ref _ref;
+  StreamSubscription<PullProgress>? _sub;
+
+  OllamaPullNotifier(this._ref) : super(const PullState());
+
+  /// Start pulling [model]. Safe to call again after done/error; ignored while a
+  /// pull is already running.
+  void download(String model) {
+    if (state.isDownloading) return;
+    state = PullState(status: PullStatus.downloading, model: model, message: 'Démarrage…');
+    _sub?.cancel();
+    _sub = _ref.read(ollamaServiceProvider).pull(model).listen((p) {
+      if (p.error != null) {
+        state = PullState(status: PullStatus.error, model: model, message: p.error);
+        _sub?.cancel();
+      } else if (p.done) {
+        state = PullState(status: PullStatus.done, model: model);
+        // The installed-models list changed — let the status probe refresh so the
+        // panel flips to "prêt".
+        _ref.invalidate(ollamaStatusProvider);
+        _sub?.cancel();
+      } else {
+        state = PullState(
+          status: PullStatus.downloading,
+          model: model,
+          fraction: p.fraction,
+          message: p.status,
+        );
+      }
+    }, onError: (Object e) {
+      state = PullState(status: PullStatus.error, model: model, message: '$e');
+    });
+  }
+
+  void reset() {
+    _sub?.cancel();
+    state = const PullState();
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+}
+
+final ollamaPullProvider =
+    StateNotifierProvider<OllamaPullNotifier, PullState>((ref) {
+  return OllamaPullNotifier(ref);
 });

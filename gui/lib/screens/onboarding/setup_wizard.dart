@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/ollama_models.dart';
 import '../../providers/discord_provider.dart';
 import '../../providers/enrollment_provider.dart';
 import '../../providers/pipeline_setup_provider.dart';
@@ -641,40 +642,195 @@ class _OllamaPanel extends ConsumerWidget {
             ],
           );
         }
-        final hasDefault = s.hasModel(kDefaultOllamaModel);
+        final pull = ref.watch(ollamaPullProvider);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _StatusLine(ok: true, text: 'Ollama détecté — ${s.models.length} modèle(s)'),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              // `value`, not `initialValue`: CI builds on Flutter 3.27.4 where the
-              // param is `value`; `initialValue` only exists on the newer local SDK.
-              // ignore: deprecated_member_use
-              value: s.models.contains(selectedModel)
-                  ? selectedModel
-                  : (hasDefault ? kDefaultOllamaModel : s.models.first),
-              decoration: const InputDecoration(
-                labelText: 'Modèle', isDense: true, border: OutlineInputBorder(),
+            const Text('Choisis un modèle à télécharger :'),
+            const SizedBox(height: 8),
+            // The curated registry, recommended first — the single source of truth
+            // lives in models/ollama_models.dart, read here and (later) in Settings.
+            for (final m in kRecommendedModels)
+              _ModelChoice(
+                model: m,
+                selected: selectedModel == m.id,
+                installed: s.hasModel(m.id),
+                onTap: () => ref.read(pipelineSetupProvider.notifier).selectModel(m.id),
               ),
-              items: [
-                for (final m in s.models) DropdownMenuItem(value: m, child: Text(m)),
-              ],
-              onChanged: (m) {
-                if (m != null) {
-                  ref.read(pipelineSetupProvider.notifier).selectModel(m);
-                }
-              },
+            const SizedBox(height: 12),
+            _DownloadArea(
+              selectedModel: selectedModel,
+              installed: s.hasModel(selectedModel),
+              pull: pull,
+              onDownload: () =>
+                  ref.read(ollamaPullProvider.notifier).download(selectedModel),
             ),
-            if (!hasDefault) ...[
-              const SizedBox(height: 8),
-              Text('Astuce : $kDefaultOllamaModel est recommandé pour ta carte.',
-                  style: Theme.of(context).textTheme.bodySmall),
-              const _CopyCommand('ollama pull $kDefaultOllamaModel'),
-            ],
           ],
         );
       },
+    );
+  }
+}
+
+/// One selectable model row: label, size, recommended badge, and install state.
+class _ModelChoice extends StatelessWidget {
+  final RecommendedModel model;
+  final bool selected;
+  final bool installed;
+  final VoidCallback onTap;
+
+  const _ModelChoice({
+    required this.model,
+    required this.selected,
+    required this.installed,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: selected ? scheme.primary : scheme.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                  size: 18, color: selected ? scheme.primary : scheme.outline),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(model.label,
+                            style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(width: 6),
+                        Text(model.size,
+                            style: Theme.of(context).textTheme.bodySmall),
+                        if (model.recommended) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: scheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text('Recommandé',
+                                style: TextStyle(
+                                    fontSize: 10, color: scheme.onPrimaryContainer)),
+                          ),
+                        ],
+                      ],
+                    ),
+                    Text(model.note, style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              if (installed)
+                const Padding(
+                  padding: EdgeInsets.only(left: 6),
+                  child: Icon(Icons.check_circle, size: 18, color: Colors.green),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The action zone under the model list: "already installed", a download button,
+/// a live progress bar, or an error with retry — depending on state.
+class _DownloadArea extends StatelessWidget {
+  final String selectedModel;
+  final bool installed;
+  final PullState pull;
+  final VoidCallback onDownload;
+
+  const _DownloadArea({
+    required this.selectedModel,
+    required this.installed,
+    required this.pull,
+    required this.onDownload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Already on disk → nothing to do.
+    if (installed) {
+      return const _StatusLine(ok: true, text: 'Modèle déjà présent — prêt à l\'emploi.');
+    }
+
+    // A pull is running (or finished/failed) for THIS model.
+    if (pull.model == selectedModel) {
+      switch (pull.status) {
+        case PullStatus.downloading:
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LinearProgressIndicator(value: pull.fraction),
+              const SizedBox(height: 6),
+              Text(
+                pull.fraction != null
+                    ? '${pull.message ?? "Téléchargement"} — ${(pull.fraction! * 100).toStringAsFixed(0)} %'
+                    : (pull.message ?? 'Téléchargement…'),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          );
+        case PullStatus.done:
+          return const _StatusLine(ok: true, text: 'Téléchargement terminé.');
+        case PullStatus.error:
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatusLine(ok: false, text: pull.message ?? 'Échec du téléchargement.'),
+              const SizedBox(height: 4),
+              OutlinedButton(onPressed: onDownload, child: const Text('Réessayer')),
+            ],
+          );
+        case PullStatus.idle:
+          break;
+      }
+    }
+
+    // Not installed, no pull in flight → offer the download.
+    final size = kRecommendedModels
+        .firstWhere((m) => m.id == selectedModel,
+            orElse: () => const RecommendedModel(
+                id: '', label: '', size: '', note: ''))
+        .size;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton.icon(
+          key: const Key('ollama_download'),
+          icon: const Icon(Icons.download, size: 18),
+          label: Text('Télécharger${size.isNotEmpty ? " ($size)" : ""}'),
+          onPressed: onDownload,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Le téléchargement peut prendre plusieurs minutes. Tu peux aussi cliquer '
+          '"Terminer" et le lancer plus tard.',
+          style: Theme.of(context).textTheme.bodySmall,
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }
