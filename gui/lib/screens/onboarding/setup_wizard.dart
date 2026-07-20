@@ -648,7 +648,10 @@ class _OllamaPanel extends ConsumerWidget {
             _StatusLine(ok: true, text: 'Ollama détecté — ${s.models.length} modèle(s)'),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: s.models.contains(selectedModel)
+              // `value`, not `initialValue`: CI builds on Flutter 3.27.4 where the
+              // param is `value`; `initialValue` only exists on the newer local SDK.
+              // ignore: deprecated_member_use
+              value: s.models.contains(selectedModel)
                   ? selectedModel
                   : (hasDefault ? kDefaultOllamaModel : s.models.first),
               decoration: const InputDecoration(
