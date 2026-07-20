@@ -38,10 +38,11 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
   // the setup gate in app.dart is what normally prevents reaching that state.
   final apiKey = await ref.read(apiKeyProvider.future);
 
+  // No interpreter hardcoded here: BotService detects a packaged bundle (its own
+  // embedded Python) and falls back to the dev launcher otherwise. Passing
+  // 'py -3.12' from here used to guarantee failure on a machine without Python.
   await ref.read(botServiceProvider).start(
     dbPath: dbPath,
-    pythonPath: 'py',
-    pythonArgs: ['-3.12'],
     apiKey: apiKey,
   );
 });

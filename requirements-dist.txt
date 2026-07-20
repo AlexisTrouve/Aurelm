@@ -1,0 +1,16 @@
+# Runtime dependencies shipped in the packaged app (Step 10 distribution).
+#
+# WHY a separate file: bot/requirements.txt is the bot's dev set and
+# pipeline/requirements.txt still lists spacy + fr_core_news_lg (~550 MB) and
+# pydantic, none of which the code imports any more — bundling from those would
+# ship half a gigabyte of dead weight. This list is what the app actually needs
+# to run, verified by counting real import sites across bot/ and pipeline/.
+#
+# Keep in sync when a new runtime import appears; the build script installs
+# exactly this into the embedded interpreter.
+
+discord.py>=2.3,<3      # Discord gateway (bot/discord_client.py)
+openai>=1.40,<2         # etheryale proxy client (bot/agent.py, bot/tools.py)
+aiohttp>=3.9,<4         # HTTP server (bot/server.py)
+httpx>=0.27,<1          # pipeline LLM providers
+ollama>=0.3.0           # local pipeline provider
