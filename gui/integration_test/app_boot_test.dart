@@ -42,6 +42,8 @@ import 'package:aurelm_gui/screens/graph/graph_screen.dart';
 import 'package:aurelm_gui/screens/subjects/subject_browser_screen.dart';
 import 'package:aurelm_gui/screens/settings/settings_screen.dart';
 import 'package:aurelm_gui/screens/civilization/civ_relations_screen.dart';
+import 'package:aurelm_gui/providers/enrollment_provider.dart';
+import 'package:aurelm_gui/screens/onboarding/setup_wizard.dart';
 
 /// Deterministic fixture DB, built by `integration_test/fixtures/build_fixture.py`.
 /// Resolved from the current directory (flutter test runs with cwd = gui/), so
@@ -58,6 +60,11 @@ Future<void> _pumpFor(WidgetTester tester, {int frames = 20}) async {
 }
 
 /// Boot the real app headless with the fixture DB and no bot subprocess.
+///
+/// setupCompleteProvider is forced true: these tests exercise an ALREADY-ACTIVATED
+/// instance. Without it the first-run wizard legitimately takes over the screen and
+/// every screen assertion below fails — which is exactly how this suite caught the
+/// gate being added.
 Future<void> _bootApp(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({'aurelm_db_path': _fixtureDb});
   final prefs = await SharedPreferences.getInstance();
@@ -66,6 +73,7 @@ Future<void> _bootApp(WidgetTester tester) async {
       overrides: [
         sharedPrefsProvider.overrideWithValue(prefs),
         autoStartBotProvider.overrideWith((ref) async {}),
+        setupCompleteProvider.overrideWith((ref) async => true),
       ],
       child: const AurelmApp(),
     ),
@@ -92,6 +100,30 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   // Boot proof: the app comes up on the fixture DB (initialLocation '/entities').
+  // The gate itself: an instance that was never activated must land on the wizard,
+  // not on a shell backed by a bot it has no key for. Locks both directions —
+  // _bootApp above proves an activated instance still reaches the app.
+  testWidgets('an un-activated instance shows the setup wizard, not the shell',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'aurelm_db_path': _fixtureDb});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          autoStartBotProvider.overrideWith((ref) async {}),
+          setupCompleteProvider.overrideWith((ref) async => false),
+        ],
+        child: const AurelmApp(),
+      ),
+    );
+    await _pumpFor(tester, frames: 12);
+
+    expect(find.byType(SetupWizard), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing,
+        reason: 'the app shell must not be reachable before activation');
+  });
+
   testWidgets('boots headless on a fixture DB and renders the Entities shell',
       (tester) async {
     await _bootApp(tester);
