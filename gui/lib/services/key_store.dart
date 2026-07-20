@@ -26,6 +26,7 @@ class KeyStore {
 
   static const _keyApiKey = 'etheryale_api_key';
   static const _keyDiscordToken = 'discord_bot_token';
+  static const _keyOpenRouterKey = 'openrouter_api_key';
   static const _keySetupComplete = 'setup_complete';
 
   /// The etheryale API key, or null when this instance was never activated.
@@ -46,6 +47,14 @@ class KeyStore {
   Future<void> writeDiscordToken(String token) =>
       _storage.write(key: _keyDiscordToken, value: token);
 
+  /// The OpenRouter API key, or null when the pipeline uses Ollama (which needs
+  /// none). Sealed and injected like every other secret — the pipeline provider
+  /// reads it from OPENROUTER_API_KEY in the bot's environment.
+  Future<String?> readOpenRouterKey() async => _storage.read(key: _keyOpenRouterKey);
+
+  Future<void> writeOpenRouterKey(String key) =>
+      _storage.write(key: _keyOpenRouterKey, value: key);
+
   /// True once the first-run wizard finished. Read on every launch to decide
   /// whether to show the wizard — a purely LOCAL check, never a network call, so
   /// a normal launch works offline (see "Behavioral rules" in the design doc).
@@ -63,6 +72,7 @@ class KeyStore {
   Future<void> clear() async {
     await _storage.delete(key: _keyApiKey);
     await _storage.delete(key: _keyDiscordToken);
+    await _storage.delete(key: _keyOpenRouterKey);
     await _storage.delete(key: _keySetupComplete);
   }
 }

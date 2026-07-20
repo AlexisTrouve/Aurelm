@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/discord_provider.dart';
 import '../../providers/enrollment_provider.dart';
+import '../../providers/pipeline_setup_provider.dart';
 import '../../services/discord_service.dart';
 
 /// First-run wizard — the only moment Aurelm needs the network to set itself up.
@@ -13,16 +15,15 @@ import '../../services/discord_service.dart';
 ///   1. Activation  — trade a one-time code for the etheryale API key (implemented)
 ///   2. Database    — create + migrate the local DB                   (implemented)
 ///   3. Discord     — bot token, verify, channel↔civ mapping       (implemented)
-///   4. Pipeline    — Ollama or OpenRouter for ingestion      (placeholder, Step 10 #3)
+///   4. Pipeline    — Ollama (local) or OpenRouter (cloud) for ingestion (implemented)
 ///
 /// WHY it sits above the router: until a key exists there is no bot, so the shell,
 /// the database and the navigation rail have nothing to show. Gating here also
 /// guarantees the bot is not auto-started key-less (which would leave /chat on 503).
 ///
-/// COMMENT: the last step is a visible placeholder rather than hidden — its content
-/// depends on a chantier not designed yet, and showing the shape keeps the wizard
-/// honest about what's coming. Finishing marks `setup_complete`, which is what every
-/// later launch checks (locally, offline).
+/// COMMENT: every step now has a real side effect and owns its own forward button;
+/// the last one marks `setup_complete`, which is what every later launch checks
+/// (locally, offline) to decide whether the wizard runs at all.
 class SetupWizard extends ConsumerStatefulWidget {
   const SetupWizard({super.key});
 
@@ -45,10 +46,8 @@ class _SetupWizardState extends ConsumerState<SetupWizard> {
       (title: 'Activation', body: _ActivationStep(onDone: () => setState(() => _step = 1))),
       (title: 'Base', body: _DatabaseStep(onDone: () => setState(() => _step = 2))),
       (title: 'Discord', body: DiscordStep(onDone: () => setState(() => _step = 3))),
-      (title: 'Analyse', body: const _PlaceholderStep(
-        what: 'Moteur d\'analyse',
-        why: 'Ollama (local) ou OpenRouter (cloud) pour traiter les tours.',
-      )),
+      // Last step: its own action finishes the whole wizard.
+      (title: 'Analyse', body: PipelineStep(onDone: _finish)),
     ];
 
     return Scaffold(
@@ -74,21 +73,15 @@ class _SetupWizardState extends ConsumerState<SetupWizard> {
                 const SizedBox(height: 28),
                 steps[_step].body,
                 const SizedBox(height: 24),
-                // Steps that have a side effect (activation redeem, DB migrate,
-                // Discord save) own their forward action — the bar only drives the
-                // placeholder steps, which have none.
+                // Every step now owns its forward action (each has a side effect:
+                // redeem, migrate, Discord save, pipeline save), so the bar only
+                // offers "Retour".
                 _NavBar(
                   showBack: _step > 0,
                   onBack: () => setState(() => _step -= 1),
-                  showForward: _step >= 3,
+                  showForward: false,
                   isLast: _step == steps.length - 1,
-                  onForward: () {
-                    if (_step < steps.length - 1) {
-                      setState(() => _step += 1);
-                    } else {
-                      _finish();
-                    }
-                  },
+                  onForward: () {},
                 ),
               ],
             ),
@@ -532,30 +525,267 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
-/// A wizard step whose real content belongs to a chantier that isn't designed yet.
-/// Shown rather than hidden so the wizard doesn't silently pretend setup is finished.
-class _PlaceholderStep extends StatelessWidget {
-  final String what;
-  final String why;
-  const _PlaceholderStep({required this.what, required this.why});
+/// Step 4 — pick the ingestion engine: local Ollama or cloud OpenRouter.
+///
+/// WHY both stay: Ollama is free and private but needs the model pulled onto the
+/// machine; OpenRouter needs no install but costs per run and wants a key. Arthur's
+/// GPU makes Ollama the natural default, so we default to it and only ask for a key
+/// on the OpenRouter branch.
+class PipelineStep extends ConsumerStatefulWidget {
+  final VoidCallback onDone;
+  const PipelineStep({super.key, required this.onDone});
+
+  @override
+  ConsumerState<PipelineStep> createState() => _PipelineStepState();
+}
+
+class _PipelineStepState extends ConsumerState<PipelineStep> {
+  final _keyCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _finish() async {
+    final ok = await ref.read(pipelineSetupProvider.notifier).save(
+          openRouterKey: _keyCtrl.text,
+        );
+    if (ok && mounted) widget.onDone();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(pipelineSetupProvider);
+    final notifier = ref.read(pipelineSetupProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('Comment veux-tu analyser les tours de jeu ?'),
+        const SizedBox(height: 12),
+        _EngineChoice(
+          selected: state.engine == PipelineEngine.ollama,
+          icon: Icons.computer,
+          title: 'Ollama — local',
+          subtitle: 'Gratuit et privé. Nécessite le modèle sur ta machine.',
+          onTap: () => notifier.selectEngine(PipelineEngine.ollama),
+        ),
+        const SizedBox(height: 8),
+        _EngineChoice(
+          selected: state.engine == PipelineEngine.openrouter,
+          icon: Icons.cloud_outlined,
+          title: 'OpenRouter — cloud',
+          subtitle: 'Aucune installation. Nécessite une clé API (payant à l\'usage).',
+          onTap: () => notifier.selectEngine(PipelineEngine.openrouter),
+        ),
+        const SizedBox(height: 16),
+        if (state.engine == PipelineEngine.ollama)
+          const _OllamaPanel()
+        else
+          _OpenRouterPanel(controller: _keyCtrl),
+        if (state.error != null) ...[
+          const SizedBox(height: 12),
+          Text(state.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              textAlign: TextAlign.center),
+        ],
+        const SizedBox(height: 20),
+        FilledButton(
+          key: const Key('pipeline_finish'),
+          onPressed: state.saving ? null : _finish,
+          child: state.saving
+              ? const SizedBox(
+                  height: 18, width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Terminer'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Live status of the local Ollama, with a copyable pull command when the default
+/// model isn't there. WHY not auto-pull: a pull is a multi-GB, minutes-long
+/// download that wants its own progress UI — pushing it into a wizard step would
+/// block the whole setup on a bar we don't have.
+class _OllamaPanel extends ConsumerWidget {
+  const _OllamaPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(ollamaStatusProvider);
+    final selectedModel = ref.watch(pipelineSetupProvider).ollamaModel;
+
+    return status.when(
+      loading: () => const _StatusLine(ok: true, text: 'Détection d\'Ollama…'),
+      error: (_, __) =>
+          const _StatusLine(ok: false, text: 'Impossible de détecter Ollama.'),
+      data: (s) {
+        if (!s.reachable) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _StatusLine(
+                ok: false,
+                text: 'Ollama n\'est pas détecté. Installe-le puis récupère le modèle :',
+              ),
+              const SizedBox(height: 8),
+              const _CopyCommand('ollama pull $kDefaultOllamaModel'),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => ref.invalidate(ollamaStatusProvider),
+                child: const Text('Revérifier'),
+              ),
+            ],
+          );
+        }
+        final hasDefault = s.hasModel(kDefaultOllamaModel);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _StatusLine(ok: true, text: 'Ollama détecté — ${s.models.length} modèle(s)'),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              // `value`, not `initialValue`: CI builds on Flutter 3.27.4 where the
+              // param is `value`; `initialValue` only exists on the newer local SDK.
+              // ignore: deprecated_member_use
+              value: s.models.contains(selectedModel)
+                  ? selectedModel
+                  : (hasDefault ? kDefaultOllamaModel : s.models.first),
+              decoration: const InputDecoration(
+                labelText: 'Modèle', isDense: true, border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final m in s.models) DropdownMenuItem(value: m, child: Text(m)),
+              ],
+              onChanged: (m) {
+                if (m != null) {
+                  ref.read(pipelineSetupProvider.notifier).selectModel(m);
+                }
+              },
+            ),
+            if (!hasDefault) ...[
+              const SizedBox(height: 8),
+              Text('Astuce : $kDefaultOllamaModel est recommandé pour ta carte.',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const _CopyCommand('ollama pull $kDefaultOllamaModel'),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _OpenRouterPanel extends StatelessWidget {
+  final TextEditingController controller;
+  const _OpenRouterPanel({required this.controller});
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(Icons.construction_outlined,
-            size: 40, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 12),
-        Text(what, style: Theme.of(context).textTheme.titleMedium),
+        TextField(
+          key: const Key('openrouter_key_field'),
+          controller: controller,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: 'Clé API OpenRouter',
+            hintText: 'sk-or-…',
+            border: OutlineInputBorder(),
+          ),
+        ),
         const SizedBox(height: 6),
-        Text(why,
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center),
-        const SizedBox(height: 10),
-        Text('À configurer dans Réglages pour l\'instant.',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center),
+        Text('La clé est stockée de façon sécurisée (jamais en clair sur le disque).',
+            style: Theme.of(context).textTheme.bodySmall),
       ],
+    );
+  }
+}
+
+/// A one-line command in a mono box with a copy button — for the Ollama pull.
+class _CopyCommand extends StatelessWidget {
+  final String command;
+  const _CopyCommand(this.command);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(command,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 16),
+            tooltip: 'Copier',
+            onPressed: () => Clipboard.setData(ClipboardData(text: command)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A selectable engine card for the pipeline step.
+class _EngineChoice extends StatelessWidget {
+  final bool selected;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _EngineChoice({
+    required this.selected,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: selected ? scheme.primary : scheme.outlineVariant,
+            width: selected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? scheme.primary : scheme.onSurfaceVariant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: Theme.of(context).textTheme.titleSmall),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+            if (selected) Icon(Icons.check_circle, color: scheme.primary, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

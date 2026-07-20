@@ -39,6 +39,7 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
   final keyStore = ref.read(keyStoreProvider);
   final apiKey = await keyStore.readKey();
   final discordToken = await keyStore.readDiscordToken();
+  final openRouterKey = await keyStore.readOpenRouterKey();
 
   // No interpreter hardcoded here: BotService detects a packaged bundle (its own
   // embedded Python) and falls back to the dev launcher otherwise. Passing
@@ -47,6 +48,7 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
     dbPath: dbPath,
     apiKey: apiKey,
     discordToken: discordToken,
+    openRouterKey: openRouterKey,
   );
 });
 
