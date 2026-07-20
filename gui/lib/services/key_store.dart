@@ -25,6 +25,7 @@ class KeyStore {
       : _storage = storage ?? const FlutterSecureStorage();
 
   static const _keyApiKey = 'etheryale_api_key';
+  static const _keyDiscordToken = 'discord_bot_token';
   static const _keySetupComplete = 'setup_complete';
 
   /// The etheryale API key, or null when this instance was never activated.
@@ -36,6 +37,14 @@ class KeyStore {
       _storage.write(key: _keyApiKey, value: key);
 
   Future<bool> hasKey() async => (await readKey()) != null;
+
+  /// The Discord bot token, or null when Discord was never configured. Sealed the
+  /// same way as the API key (DPAPI) — it is just as much a secret and is handed to
+  /// the bot the same way, through the subprocess environment.
+  Future<String?> readDiscordToken() async => _storage.read(key: _keyDiscordToken);
+
+  Future<void> writeDiscordToken(String token) =>
+      _storage.write(key: _keyDiscordToken, value: token);
 
   /// True once the first-run wizard finished. Read on every launch to decide
   /// whether to show the wizard — a purely LOCAL check, never a network call, so
@@ -49,10 +58,11 @@ class KeyStore {
   Future<void> markSetupComplete() =>
       _storage.write(key: _keySetupComplete, value: 'true');
 
-  /// Wipe both entries — used by "re-activate" (key lost, revoked, or rotated),
+  /// Wipe every entry — used by "re-activate" (key lost, revoked, or rotated),
   /// which sends the user back through the wizard with a fresh code.
   Future<void> clear() async {
     await _storage.delete(key: _keyApiKey);
+    await _storage.delete(key: _keyDiscordToken);
     await _storage.delete(key: _keySetupComplete);
   }
 }

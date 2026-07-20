@@ -32,11 +32,13 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
   final alreadyRunning = await syncService.healthCheck();
   if (alreadyRunning) return;
 
-  // The key comes from the OS-sealed store and is handed to the bot through its
-  // environment — it never lands in a file the bot reads. Null before activation,
-  // in which case the bot still starts but its agent stays disabled (/chat → 503);
-  // the setup gate in app.dart is what normally prevents reaching that state.
-  final apiKey = await ref.read(apiKeyProvider.future);
+  // Secrets come from the OS-sealed store and are handed to the bot through its
+  // environment — they never land in a file the bot reads. The key is null before
+  // activation (agent stays disabled, /chat → 503); the Discord token is null when
+  // the user skipped that step (bot runs HTTP-only, no gateway).
+  final keyStore = ref.read(keyStoreProvider);
+  final apiKey = await keyStore.readKey();
+  final discordToken = await keyStore.readDiscordToken();
 
   // No interpreter hardcoded here: BotService detects a packaged bundle (its own
   // embedded Python) and falls back to the dev launcher otherwise. Passing
@@ -44,6 +46,7 @@ final autoStartBotProvider = FutureProvider<void>((ref) async {
   await ref.read(botServiceProvider).start(
     dbPath: dbPath,
     apiKey: apiKey,
+    discordToken: discordToken,
   );
 });
 
