@@ -91,6 +91,32 @@ class BotService {
     _logController.close();
   }
 
+  /// Create + migrate the database, then return — no server, no Discord.
+  ///
+  /// WHY the wizard needs this: Flutter's Drift layer only creates a handful of its
+  /// own tables; the ~35 core tables are built by the bot's SQL migrations. Opening
+  /// a fresh DB in the app before those run leaves every civ/entity query failing.
+  /// This runs `-m bot --migrate-only` and awaits a clean exit, so the wizard can
+  /// guarantee a complete schema before pointing the app at the file.
+  Future<bool> migrate({required String dbPath}) async {
+    final launcher = _resolveLauncher(dbPath);
+    try {
+      final result = await Process.run(
+        launcher.executable,
+        [...launcher.leadingArgs, '-m', 'bot', '--db', dbPath, '--migrate-only'],
+        workingDirectory: launcher.workingDir,
+      );
+      if (result.exitCode != 0) {
+        _logController.add('[MIGRATE] failed (${result.exitCode}): ${result.stderr}');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      _logController.add('[MIGRATE] could not launch: $e');
+      return false;
+    }
+  }
+
   String _findProjectRoot(String dbPath) {
     // Walk up from DB path to find the project root (contains bot/ directory)
     var dir = Directory(dbPath).parent;
