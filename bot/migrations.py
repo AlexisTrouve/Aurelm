@@ -54,6 +54,26 @@ def _execute_migration_sql(conn: sqlite3.Connection, sql: str, migration_dir: Pa
     conn.commit()
 
 
+def _find_migrations_dir(db_file: Path) -> Path | None:
+    """Locate database/migrations/, or None if it truly isn't anywhere expected.
+
+    WHY two candidates: historically this was derived from the DB's location
+    (`<db>/../../database/migrations`), which only holds when the DB sits inside
+    the repo — true in dev, false for a user whose DB lives in Documents\\Aurelm.
+    A packaged install has the DB somewhere else entirely, so we ALSO look relative
+    to the bot package, where the build script copies the migrations. The DB-relative
+    path is tried first so a dev checkout keeps its existing behaviour exactly.
+    """
+    candidates = [
+        db_file.parent.parent / "database" / "migrations",   # dev: DB inside the repo
+        Path(__file__).resolve().parent.parent / "database" / "migrations",  # bundle: next to bot/
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
 def apply_migrations(db_path: str) -> None:
     """Apply all pending migrations from database/migrations/ directory.
 
@@ -64,10 +84,15 @@ def apply_migrations(db_path: str) -> None:
     db_file = Path(db_path)
     is_new_db = not db_file.exists()
 
-    migrations_dir = db_file.parent.parent / "database" / "migrations"
-    if not migrations_dir.exists():
-        log.warning(f"Migrations directory {migrations_dir} not found - skipping")
-        return
+    migrations_dir = _find_migrations_dir(db_file)
+    if migrations_dir is None:
+        # A fresh DB with no migrations to apply is not a warning — it's a broken
+        # install: every table is missing and the app is dead. Fail loudly.
+        raise FileNotFoundError(
+            "database/migrations not found. Looked next to the DB and next to the "
+            "bot package. In a packaged build the build script must copy "
+            "database/migrations into the bundle."
+        )
 
     # Connect to database (creates it if doesn't exist)
     conn = sqlite3.connect(db_path)
