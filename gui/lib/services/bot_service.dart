@@ -20,8 +20,9 @@ class BotService {
     // to know which environment they're in.
     String? pythonPath,
     List<String>? pythonArgs,
-    // etheryale API key, read from the OS-sealed KeyStore by the caller.
+    // Secrets read from the OS-sealed KeyStore by the caller.
     String? apiKey,
+    String? discordToken,
   }) async {
     if (_running) return true;
 
@@ -31,19 +32,25 @@ class BotService {
       final leadingArgs = pythonArgs ?? launcher.leadingArgs;
       _logController.add('[BOT] launching via $executable (cwd ${launcher.workingDir})');
 
+      // Hand secrets to the bot through the environment instead of a file.
+      // config.py reads ETHERYALE_API_KEY and DISCORD_BOT_TOKEN from the env first,
+      // so the Python side needs no change and never touches secure storage: a
+      // secret exists sealed (DPAPI) or in this child's memory, never in plaintext
+      // on disk. Passing null skips the whole map so Dart still inherits the parent
+      // environment (PATH etc.); a partial map would replace it, so build one map.
+      final env = <String, String>{};
+      if (apiKey != null && apiKey.isNotEmpty) env['ETHERYALE_API_KEY'] = apiKey;
+      if (discordToken != null && discordToken.isNotEmpty) {
+        env['DISCORD_BOT_TOKEN'] = discordToken;
+      }
+
       _process = await Process.start(
         executable,
         [...leadingArgs, '-m', 'bot', '--db', dbPath, '--port', '$port'],
         workingDirectory: launcher.workingDir,
-        // Hand the key to the bot through the environment instead of a file.
-        // config.py already reads ETHERYALE_API_KEY from the env first, so the
-        // Python side needs no change and never touches secure storage: the key
-        // exists sealed (DPAPI) or in this child's memory, never in plaintext on
-        // disk. Dart merges this with the parent environment by default
+        // Dart merges this with the parent environment by default
         // (includeParentEnvironment: true), so PATH etc. are preserved.
-        environment: apiKey != null && apiKey.isNotEmpty
-            ? {'ETHERYALE_API_KEY': apiKey}
-            : null,
+        environment: env.isEmpty ? null : env,
       );
 
       _process!.stdout
@@ -89,6 +96,32 @@ class BotService {
   void dispose() {
     stop();
     _logController.close();
+  }
+
+  /// Create + migrate the database, then return — no server, no Discord.
+  ///
+  /// WHY the wizard needs this: Flutter's Drift layer only creates a handful of its
+  /// own tables; the ~35 core tables are built by the bot's SQL migrations. Opening
+  /// a fresh DB in the app before those run leaves every civ/entity query failing.
+  /// This runs `-m bot --migrate-only` and awaits a clean exit, so the wizard can
+  /// guarantee a complete schema before pointing the app at the file.
+  Future<bool> migrate({required String dbPath}) async {
+    final launcher = _resolveLauncher(dbPath);
+    try {
+      final result = await Process.run(
+        launcher.executable,
+        [...launcher.leadingArgs, '-m', 'bot', '--db', dbPath, '--migrate-only'],
+        workingDirectory: launcher.workingDir,
+      );
+      if (result.exitCode != 0) {
+        _logController.add('[MIGRATE] failed (${result.exitCode}): ${result.stderr}');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      _logController.add('[MIGRATE] could not launch: $e');
+      return false;
+    }
   }
 
   String _findProjectRoot(String dbPath) {

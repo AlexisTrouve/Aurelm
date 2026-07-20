@@ -1,7 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../services/enrollment_service.dart';
 import '../services/key_store.dart';
+import 'bot_provider.dart';
+import 'database_provider.dart';
 
 /// OS-sealed store for the API key + the first-run flag.
 final keyStoreProvider = Provider<KeyStore>((ref) => KeyStore());
@@ -89,4 +95,77 @@ final activationProvider =
     ref.watch(enrollmentServiceProvider),
     ref.watch(keyStoreProvider),
   );
+});
+
+// --------------------------------------------------------------------------- //
+// Wizard step 2 — database
+// --------------------------------------------------------------------------- //
+
+/// The default database location: `<Documents>\Aurelm\aurelm.db`.
+///
+/// WHY a default rather than a folder picker: Arthur's premise is zero maintenance;
+/// choosing a path is a decision he has no basis to make. The wizard still exposes
+/// a "change location" affordance for the rare user who wants one.
+Future<String> defaultDbPath() async {
+  final docs = await getApplicationDocumentsDirectory();
+  return p.join(docs.path, 'Aurelm', 'aurelm.db');
+}
+
+enum DbSetupStatus { idle, preparing, ready }
+
+class DbSetupState {
+  final DbSetupStatus status;
+  final String? path;
+  final String? error;
+  const DbSetupState({this.status = DbSetupStatus.idle, this.path, this.error});
+  bool get isPreparing => status == DbSetupStatus.preparing;
+}
+
+/// Creates the database at a chosen path and applies the full schema.
+///
+/// COMMENT: the schema is built by the bot's migrations (`--migrate-only`), not by
+/// Flutter — Drift only creates its own few tables. We migrate here, synchronously
+/// awaiting a clean exit, BEFORE calling setPath, so the moment the app mounts and
+/// Drift opens the file every core table already exists. Doing it after setPath
+/// would race the app's first queries against an empty database.
+class DbSetupNotifier extends StateNotifier<DbSetupState> {
+  final Ref _ref;
+  DbSetupNotifier(this._ref) : super(const DbSetupState());
+
+  /// Prepare the DB at [path] (or the default). Returns true when it's schema'd
+  /// and now the active database.
+  Future<bool> prepare({String? path}) async {
+    if (state.isPreparing) return false;
+    state = const DbSetupState(status: DbSetupStatus.preparing);
+
+    final dbPath = path ?? await defaultDbPath();
+    try {
+      await Directory(p.dirname(dbPath)).create(recursive: true);
+    } catch (e) {
+      state = DbSetupState(
+        status: DbSetupStatus.idle,
+        error: 'Impossible de créer le dossier de la base : $e',
+      );
+      return false;
+    }
+
+    final ok = await _ref.read(botServiceProvider).migrate(dbPath: dbPath);
+    if (!ok) {
+      state = const DbSetupState(
+        status: DbSetupStatus.idle,
+        error: 'La préparation de la base a échoué. Réessaie.',
+      );
+      return false;
+    }
+
+    // Only now point the app at it — the schema is complete.
+    _ref.read(dbPathProvider.notifier).setPath(dbPath);
+    state = DbSetupState(status: DbSetupStatus.ready, path: dbPath);
+    return true;
+  }
+}
+
+final dbSetupProvider =
+    StateNotifierProvider<DbSetupNotifier, DbSetupState>((ref) {
+  return DbSetupNotifier(ref);
 });
