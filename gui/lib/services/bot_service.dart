@@ -23,6 +23,7 @@ class BotService {
     // Secrets read from the OS-sealed KeyStore by the caller.
     String? apiKey,
     String? discordToken,
+    String? openRouterKey,
   }) async {
     if (_running) return true;
 
@@ -42,6 +43,9 @@ class BotService {
       if (apiKey != null && apiKey.isNotEmpty) env['ETHERYALE_API_KEY'] = apiKey;
       if (discordToken != null && discordToken.isNotEmpty) {
         env['DISCORD_BOT_TOKEN'] = discordToken;
+      }
+      if (openRouterKey != null && openRouterKey.isNotEmpty) {
+        env['OPENROUTER_API_KEY'] = openRouterKey;
       }
 
       _process = await Process.start(
