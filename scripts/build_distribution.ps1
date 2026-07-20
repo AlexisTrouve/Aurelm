@@ -36,13 +36,22 @@
 
 .PARAMETER Zip
     Also produce <OutDir>.zip.
+
+.PARAMETER Installer
+    Also compile scripts/installer.iss into a single Aurelm-Setup-<version>.exe
+    (requires Inno Setup; see Resolve-Iscc).
+
+.PARAMETER AppVersion
+    Version stamped on the installer. Defaults to the version in gui/pubspec.yaml.
 #>
 [CmdletBinding()]
 param(
     [string]$OutDir = "dist/aurelm-windows",
     [string]$PythonVersion = "3.12.10",
     [switch]$SkipFlutterBuild,
-    [switch]$Zip
+    [switch]$Zip,
+    [switch]$Installer,
+    [string]$AppVersion
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +73,22 @@ function Invoke-Native {
     $ErrorActionPreference = 'Continue'
     try { & $Command } finally { $ErrorActionPreference = $previous }
     if ($LASTEXITCODE -ne 0) { throw "$What failed (exit code $LASTEXITCODE)" }
+}
+
+# Finds the Inno Setup compiler. WHY a search rather than a fixed path: winget
+# installs it per-user under LocalAppData, the classic installer puts it in
+# Program Files, and GitHub runners ship it somewhere else again — hardcoding any
+# one of those makes the build work on exactly one machine.
+function Resolve-Iscc {
+    $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if ($onPath) { return $onPath.Source }
+    $candidates = @(
+        "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
+        "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+        "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    )
+    foreach ($c in $candidates) { if (Test-Path $c) { return $c } }
+    throw "Inno Setup (ISCC.exe) not found. Install it (winget install JRSoftware.InnoSetup) or drop -Installer."
 }
 
 Write-Host "== Aurelm distribution build ==" -ForegroundColor Cyan
@@ -167,4 +192,35 @@ if ($Zip) {
     if (Test-Path $zipPath) { Remove-Item -Force $zipPath }
     Compress-Archive -Path (Join-Path $OutDir "*") -DestinationPath $zipPath
     Write-Host "Zipped: $zipPath" -ForegroundColor Green
+}
+
+# --- 7. Installer (optional) --------------------------------------------------
+if ($Installer) {
+    Write-Host "`n[7/7] Compiling the installer..." -ForegroundColor Yellow
+
+    if (-not $AppVersion) {
+        # Single source of truth for the version: the app's own pubspec. Inno wants
+        # a plain x.y.z, so drop any "+build" suffix Flutter allows.
+        $pubspec = Get-Content (Join-Path $repoRoot "gui/pubspec.yaml") -Raw
+        if ($pubspec -match '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)') {
+            $AppVersion = $Matches[1]
+        } else {
+            throw "could not read a x.y.z version from gui/pubspec.yaml (pass -AppVersion)"
+        }
+    }
+
+    $iscc = Resolve-Iscc
+    $issPath = Join-Path $PSScriptRoot "installer.iss"
+    $installerOut = Join-Path $repoRoot "dist"
+    Write-Host "      compiler: $iscc"
+    Write-Host "      version:  $AppVersion"
+
+    Invoke-Native -What "ISCC installer.iss" -Command {
+        & $iscc "/DAppVersion=$AppVersion" "/DBundleDir=$OutDir" "/DOutDir=$installerOut" $issPath
+    }
+
+    $setupExe = Join-Path $installerOut "Aurelm-Setup-$AppVersion.exe"
+    if (-not (Test-Path $setupExe)) { throw "installer not produced at $setupExe" }
+    $setupMb = [math]::Round((Get-Item $setupExe).Length / 1MB, 1)
+    Write-Host "Installer OK: $setupExe ($setupMb MB)" -ForegroundColor Green
 }
