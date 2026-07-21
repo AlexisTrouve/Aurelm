@@ -21,80 +21,125 @@ class EgoGraphLayout {
   }
 
   /// Compute layout for a given canvas size and graph data.
+  ///
+  /// Two-step: (1) lay the ego graph out in a UNIT coordinate space (center at
+  /// origin, depth-1 ring at radius 1, depth-2 at 1.7); (2) auto-fit that cloud
+  /// into the real canvas — scale to fill the pane, translate to center on the
+  /// content. Fitting (rather than the old fixed 220/340px radius caps) is what
+  /// stops the graph from sitting tiny in a big pane or clipping in a small one;
+  /// it mirrors the headless exporter's matplotlib set_xlim/ylim framing.
   static EgoGraphLayout compute(Size size, GraphData data) {
-    if (data.nodes.isEmpty) return EgoGraphLayout(positions: {}, nodeRadius: 28);
+    if (data.nodes.isEmpty) return const EgoGraphLayout(positions: {}, nodeRadius: 28);
 
-    final center = Offset(size.width / 2, size.height / 2);
-    final positions = <int, Offset>{};
+    // --- 1. Unit-space radial layout, center at origin ----------------------
+    const rawR1 = 1.0; // depth-1 ring radius (unit)
+    const rawR2 = 1.7; // depth-2 ring radius (unit) — matches exporter ring gap
+    final raw = <int, Offset>{};
 
     final centerNode = data.nodes.where((n) => n.depth == 0).firstOrNull;
     final depth1 = data.nodes.where((n) => n.depth == 1).toList();
     final depth2 = data.nodes.where((n) => n.depth == 2).toList();
 
-    if (centerNode != null) positions[centerNode.id] = center;
+    if (centerNode != null) raw[centerNode.id] = Offset.zero;
 
-    // Depth-1 ring radius adapts to count — less crowded with few nodes
-    final r1 = min(size.shortestSide * 0.30, 220.0);
+    // Depth-1 ring — evenly spaced, 12 o'clock start.
+    final parentAngles = <int, double>{};
     for (int i = 0; i < depth1.length; i++) {
       final angle = (2 * pi * i / depth1.length) - pi / 2;
-      positions[depth1[i].id] = center + Offset(cos(angle) * r1, sin(angle) * r1);
+      parentAngles[depth1[i].id] = angle;
+      raw[depth1[i].id] = Offset(cos(angle) * rawR1, sin(angle) * rawR1);
     }
 
-    // Depth-2 ring — grouped near their depth-1 parent (using edges)
+    // Depth-2 ring — clustered within +/-45 degrees of their depth-1 parent.
     if (depth2.isNotEmpty) {
-      final r2 = min(size.shortestSide * 0.48, 340.0);
-      // Group depth-2 nodes by parent
-      final parentAngles = <int, double>{};
-      for (int i = 0; i < depth1.length; i++) {
-        parentAngles[depth1[i].id] = (2 * pi * i / depth1.length) - pi / 2;
-      }
-
-      // Assign each depth-2 node to a parent via edges
+      // Assign each depth-2 node to a parent via edges (first depth-1 hit wins).
       final parentOf = <int, int>{};
       for (final d2 in depth2) {
-        // Find first edge connecting this node to a depth-1 node
         for (final edge in data.edges) {
-          if (edge.sourceId == d2.id && positions.containsKey(edge.targetId)) {
+          if (edge.sourceId == d2.id && parentAngles.containsKey(edge.targetId)) {
             parentOf[d2.id] = edge.targetId;
             break;
           }
-          if (edge.targetId == d2.id && positions.containsKey(edge.sourceId)) {
+          if (edge.targetId == d2.id && parentAngles.containsKey(edge.sourceId)) {
             parentOf[d2.id] = edge.sourceId;
             break;
           }
         }
       }
 
-      // Group by parent and space evenly around parent angle
       final byParent = <int, List<int>>{};
       for (final d2 in depth2) {
         final pid = parentOf[d2.id];
-        if (pid != null) {
-          byParent.putIfAbsent(pid, () => []).add(d2.id);
-        }
+        if (pid != null) byParent.putIfAbsent(pid, () => []).add(d2.id);
       }
 
-      // Unparented depth-2 nodes get evenly distributed around the outer ring
+      // Unparented depth-2 nodes get evenly distributed around the outer ring.
       final unparented = depth2.where((n) => !parentOf.containsKey(n.id)).toList();
       for (int i = 0; i < unparented.length; i++) {
         final angle = (2 * pi * i / max(unparented.length, 1)) - pi / 2;
-        positions[unparented[i].id] = center + Offset(cos(angle) * r2, sin(angle) * r2);
+        raw[unparented[i].id] = Offset(cos(angle) * rawR2, sin(angle) * rawR2);
       }
 
       for (final entry in byParent.entries) {
         final parentAngle = parentAngles[entry.key] ?? 0.0;
         final siblings = entry.value;
-        final spread = pi / 4; // +/- 45° spread around parent
+        const spread = pi / 4; // +/- 45 degrees around parent
         for (int i = 0; i < siblings.length; i++) {
           final offset = siblings.length == 1
               ? 0.0
               : -spread / 2 + spread * i / (siblings.length - 1);
           final angle = parentAngle + offset;
-          positions[siblings[i]] = center + Offset(cos(angle) * r2, sin(angle) * r2);
+          raw[siblings[i]] = Offset(cos(angle) * rawR2, sin(angle) * rawR2);
         }
       }
     }
 
+    // --- 2. Auto-fit the unit cloud into the real canvas --------------------
+    return _fit(raw, size);
+  }
+
+  /// Scale + translate the unit-space [raw] positions to fill [size] while
+  /// leaving a margin for node discs and their labels, then center the content
+  /// cloud on the canvas.
+  ///
+  /// HOW: measure the raw bounding box; scale it to the largest factor that
+  /// still fits inside the pane minus margins; cap that factor so a 1-2 node
+  /// graph doesn't blow up (outer ring <= 42% of the shortest side); finally
+  /// map the raw bbox center onto the canvas center.
+  static EgoGraphLayout _fit(Map<int, Offset> raw, Size size) {
+    if (raw.isEmpty) return const EgoGraphLayout(positions: {}, nodeRadius: 28);
+
+    var minX = double.infinity, minY = double.infinity;
+    var maxX = -double.infinity, maxY = -double.infinity, maxR = 0.0;
+    raw.forEach((_, p) {
+      minX = min(minX, p.dx);
+      maxX = max(maxX, p.dx);
+      minY = min(minY, p.dy);
+      maxY = max(maxY, p.dy);
+      maxR = max(maxR, p.distance);
+    });
+    final rawW = max(maxX - minX, 1e-6);
+    final rawH = max(maxY - minY, 1e-6);
+    final rawCenter = Offset((minX + maxX) / 2, (minY + maxY) / 2);
+
+    // Margins reserve room for node discs (radius up to 28) + name labels drawn
+    // below them; proportional to the pane so wide/tall panes breathe.
+    final marginX = max(80.0, size.width * 0.07);
+    final marginY = max(80.0, size.height * 0.09);
+    final availW = max(size.width - 2 * marginX, 50.0);
+    final availH = max(size.height - 2 * marginY, 50.0);
+
+    var scale = min(availW / rawW, availH / rawH);
+    if (maxR > 0) {
+      // Don't let a tiny graph expand past 42% of the shortest side.
+      scale = min(scale, 0.42 * size.shortestSide / maxR);
+    }
+
+    final canvasCenter = Offset(size.width / 2, size.height / 2);
+    final positions = <int, Offset>{};
+    raw.forEach((id, p) {
+      positions[id] = canvasCenter + (p - rawCenter) * scale;
+    });
     return EgoGraphLayout(positions: positions, nodeRadius: 28);
   }
 }
@@ -135,7 +180,7 @@ class EgoPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final labelStyle = TextStyle(
-      fontSize: 9,
+      fontSize: 10,
       color: colors.onSurfaceVariant.withValues(alpha: 0.9),
       fontWeight: FontWeight.w400,
     );
@@ -199,12 +244,13 @@ class EgoPainter extends CustomPainter {
       )..layout();
       final sz = Size(tp.width + 6, tp.height + 2);
 
-      // Base slightly outward of the midpoint (roomier angular spacing), then a
-      // small collision-aware perpendicular nudge.
+      // Base well outward of the midpoint (0.62) so labels pull OUT of the
+      // convergence zone near the ego center where every edge meets — that zone
+      // is where relation labels used to pile up. Then a collision-aware nudge.
       final dir = p2 - p1;
       final len = dir.distance;
       final unit = len < 1 ? const Offset(1, 0) : dir / len;
-      final base = p1 + dir * 0.55;
+      final base = p1 + dir * 0.62;
       final perp = Offset(-unit.dy, unit.dx);
       final pos = _placeLabel(base, sz, unit, perp, placed);
       final rect = Rect.fromCenter(center: pos, width: sz.width, height: sz.height);
@@ -223,7 +269,7 @@ class EgoPainter extends CustomPainter {
   TextPainter _nodeLabelTp(GraphNode node) {
     final isCenter = node.depth == 0;
     final style = TextStyle(
-      fontSize: isCenter ? 11 : node.depth == 1 ? 10 : 9,
+      fontSize: isCenter ? 13 : node.depth == 1 ? 12 : 11,
       color: isCenter ? colors.onSurface : colors.onSurfaceVariant,
       fontWeight: isCenter ? FontWeight.w600 : FontWeight.w400,
     );
@@ -232,7 +278,7 @@ class EgoPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
       maxLines: 2,
       ellipsis: '…',
-    )..layout(maxWidth: isCenter ? 120.0 : 90.0);
+    )..layout(maxWidth: isCenter ? 130.0 : 100.0);
   }
 
   /// Bounding rect of a node's name label (drawn just below the node).
@@ -252,10 +298,11 @@ class EgoPainter extends CustomPainter {
   /// distinct radius to break the radial pile-up near the center) crossed with a
   /// perpendicular offset ([perp]). Labels are never dropped (always-on): the
   /// first fully-clear spot wins, else the least-overlapping one. Displacement is
-  /// capped small (~≤28px along, ≤18px perp) so labels stay tied to their edge.
+  /// capped (~≤40px along, ≤26px perp) so labels stay tied to their edge while
+  /// having enough room to escape the dense center annulus.
   Offset _placeLabel(Offset base, Size sz, Offset unit, Offset perp, List<Rect> placed) {
-    const along = [0.0, -14.0, 14.0, -28.0, 28.0];
-    const cross = [0.0, 9.0, -9.0, 18.0, -18.0];
+    const along = [0.0, -14.0, 14.0, -28.0, 28.0, -40.0, 40.0];
+    const cross = [0.0, 9.0, -9.0, 18.0, -18.0, 26.0, -26.0];
     var best = base;
     var bestOverlap = double.infinity;
     for (final a in along) {
