@@ -1,5 +1,12 @@
 # Chatbot — Graceful Fallback API → claude -p
 
+> ⚠️ **OBSOLÈTE (2026-07).** Ce doc décrit le fallback `claude -p` de l'ancien
+> backend à 3 voies (SDK Anthropic + Ollama + `claude -p`). Ce backend a été
+> **entièrement remplacé** par un unique client OpenAI vers le proxy etheryale — le
+> fallback `claude -p` **n'existe plus** (le proxy queue au lieu de rejeter, donc pas
+> de fallback). Conservé comme trace historique. Backend actuel : `docs/deployment.md`
+> et la mémoire `reference_etheryale_proxy_llm_contract`.
+
 ## Contexte
 
 Le chatbot utilise l'API Anthropic (Claude) comme backend principal. Quand l'API est indisponible (503, 500, panne, quota dépassé, etc.), le bot tombait en erreur et renvoyait le message brut dans l'UI Flutter.

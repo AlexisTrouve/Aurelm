@@ -43,14 +43,14 @@ Flutter Desktop GUI (Dashboard)
         ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
         ├── Wiki Generator (MkDocs Material)
         ├── SQLite Database
-        └── Claude Agent (Claude API primary, claude -p CLI fallback)
+        └── Claude Agent (via the etheryale proxy — one OpenAI-compatible backend)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
 ### Directory Layout
 
 - **gui/**: Flutter Desktop (Dart, Riverpod 2.6, Drift, GoRouter) — GM dashboard. ~110 Dart source files, 7 test files. Flutter 3.38.8 installed locally. CI also builds via GitHub Actions. Run `dart run build_runner build --delete-conflicting-outputs` after any schema/DAO change.
-- **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 16 tools (listCivs, getCivState, getTurnDetail, searchLore, getEntityDetail, sanityCheck, timeline, compareCivs, searchTurnContent, getStructuredFacts, listSubjects, getNotes, getSubjectDetail, deepExplore, getFavorites, getCivRelations), aiohttp HTTP server on :8473, discord.py for Discord gateway, Anthropic SDK for Claude API with NDJSON streaming + graceful `claude -p` CLI fallback. 94+ tests passing.
+- **bot/**: Python Discord bot + HTTP API + Claude agent. `python -m bot --db aurelm.db` starts the bot. 16 tools (listCivs, getCivState, getTurnDetail, searchLore, getEntityDetail, sanityCheck, timeline, compareCivs, searchTurnContent, getStructuredFacts, listSubjects, getNotes, getSubjectDetail, deepExplore, getFavorites, getCivRelations), aiohttp HTTP server on :8473, discord.py for Discord gateway. **Agent backend: the etheryale proxy** (`ai.etheryale.com/v1`, OpenAI-compatible, fronting all Claude + GPT models) via the **OpenAI SDK** — NOT the Anthropic SDK, and no `claude -p` fallback (both removed). Auth is `x-api-key`. Per-request model picker + reasoning-effort knob (`reasoning_effort`) + visible-reasoning toggle (`include_reasoning`), all from the Flutter chat UI. 135 tests passing. Contract + traps: `docs/deployment.md`, the memory `reference_etheryale_proxy_llm_contract`.
 - **pipeline/**: Python ML pipeline — ingestion, LLM entity extraction, chunking, summarization, subject tracking (MJ↔PJ). 10-stage pipeline (+ stage 6.5 preanalysis). `--model` and `--extraction-version` CLI args. Reference entities in `pipeline/data/reference_entities.json`.
 - **pipeline/scripts/**: Standalone benchmark/scoring/profiling utilities. See `pipeline/scripts/README.md` for usage. Not part of the pipeline itself — run manually for evaluation and tuning.
 - **wiki/**: MkDocs Material — auto-generated game wiki
@@ -131,8 +131,9 @@ Turns Aurelm into a **generic entity-relation engine + headless exporters**, reu
 
 ### Next Steps
 - [x] **Merged `feat/generic-engine` to main** — PR #1, merge commit `5a2867d` (2026-07-12).
-- [ ] **Step 9**: Graph redesign — in-app Flutter force-directed graph still unusable (the headless `exporters graph` ego-graph is a separate, usable render, not a GUI fix).
-- [ ] **Step 10**: Deployment — packaging, Arthur's machine setup, Discord bot invite
+- [x] **Chat agent → etheryale proxy** (PRs #4-6): dropped the 3-backend setup (Anthropic SDK + Ollama + `claude -p`) for one OpenAI-compatible client on the etheryale proxy; per-request model picker, reasoning-effort knob, visible-reasoning toggle; fixed a latent sparse-`tool_calls` crash (fixed proxy-side too).
+- [x] **Step 10**: Deployment — **done + adversarially reviewed** (PRs #7-13). Self-contained Windows installer (`Aurelm-Setup.exe`: Flutter EXE + embedded CPython + `bot/` + `pipeline/pipeline/` + `database/`), a 4-step first-run wizard (activation code → DB migrate → Discord bot + channel↔civ mapping → Ollama/OpenRouter engine + in-app model download), all secrets DPAPI-sealed and injected via the bot subprocess env, one-time enrollment code via the proxy. **Full reference: `docs/deployment.md`.** Remaining is irreducibly on the user's side (create their Discord app, install Ollama if chosen) — the wizard guides + verifies it.
+- [ ] **Step 9**: Graph redesign — in-app Flutter force-directed graph still unusable (the headless `exporters graph` ego-graph is a separate, usable render, not a GUI fix). *The only substantive open item.*
 
 ## Environment Notes (Dev Machine)
 
@@ -157,7 +158,7 @@ Turns Aurelm into a **generic entity-relation engine + headless exporters**, reu
 - **Dart/Flutter** for GUI
 - **SQLite** as single database (no ORM — raw SQL with prepared statements)
 - **Ollama** for local LLM inference (qwen3:8b dev, qwen3:14b prod — fits 8/16GB VRAM)
-- **Claude API** as primary agent backend, local LLM as fallback
+- **Etheryale proxy** (`ai.etheryale.com/v1`, OpenAI-compatible) as the single agent backend, via the OpenAI SDK (`x-api-key` auth). The old Anthropic-SDK / Ollama / `claude -p` trio is gone.
 
 ## Coding Conventions
 
@@ -208,7 +209,7 @@ Turns Aurelm into a **generic entity-relation engine + headless exporters**, reu
 - `cd mcp-server && npm test` — MCP server tests (48 tests via vitest)
 - `cd pipeline && pytest` — Pipeline tests (~253 passed / 5 skipped on `feat/generic-engine`: adds test_domain_profile, test_document_loader, test_novel_seed, test_fuzzy_cjk, test_dedup_alias to the civ suite). The only 2 failures are `_real` LLM-integration tests needing a live Ollama — ignore them.
 - `cd Aurelm && py -3.12 -m pytest exporters/tests` — Exporters tests (~23: graph render incl. CJK, glossary, characters, history, ego-graph layout, read-only DB).
-- `python -m pytest bot/tests/` — Bot tests (94 tests: tools, config, dispatch, notes, deep_explore)
+- `python -m pytest bot/tests/` — Bot tests (135 tests: tools, config incl. `pipeline_llm_key`, dispatch, notes, deep_explore, migrations, model/effort filters)
 - `cd gui && flutter test` — GUI tests (7 tests: widget tests for EntityTypeBadge/StatCard/EmptyState, model tests for FilterState/GraphData/AppConstants). Requires `dart run build_runner build` first for Drift codegen.
 - **Test data**: Use `../civjdr/Background/*.md` as real game data for pipeline testing
 

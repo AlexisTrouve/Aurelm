@@ -98,7 +98,7 @@ Discord Channels (one per civilization + global)
 
 ### Bot + Agent (Primary)
 
-- **Tech**: Python (discord.py + aiohttp + Anthropic SDK)
+- **Tech**: Python (discord.py + aiohttp + **OpenAI SDK** → the etheryale proxy, `x-api-key`). The Anthropic SDK / `claude -p` backends were removed in the chat→proxy rework; see `docs/deployment.md`.
 - **14 tools**: All original MCP tools + getStructuredFacts, listSubjects, getSubjectDetail, getNotes, deepExplore
 - **NDJSON streaming**: Real-time streaming to Flutter GUI with thinking blocks and tool results
 - **Persistent sessions**: Chat sessions with tags, auto-tag by civilization, resume support
