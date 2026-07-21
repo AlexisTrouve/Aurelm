@@ -21,7 +21,6 @@ import '../../providers/database_provider.dart';
 import '../../providers/chat_sessions_provider.dart';
 import '../../providers/lore_links_provider.dart';
 import '../../providers/side_panel_provider.dart';
-import '../../services/chat_sessions_service.dart';
 import '../../utils/lore_linker.dart';
 import '../../widgets/common/side_panel.dart';
 
@@ -1119,16 +1118,28 @@ class _MessageBubbleState extends ConsumerState<_MessageBubble> {
       ),
     );
 
+    // Reasoning was asked for this turn but the model answered without surfacing
+    // any — correct adaptive behaviour on a simple question, not a broken toggle.
+    // Gated on content being present: thinking streams before the answer, so once
+    // content arrives with no thinking, none is coming.
+    final answeredDirectly = !isUser &&
+        message.thinkingRequested &&
+        message.thinkingBlocks.isEmpty &&
+        message.content.isNotEmpty;
+
     // For assistant messages, show thinking blocks + tool cards above the bubble
     Widget content = bubble;
     if (!isUser &&
-        (message.toolCalls.isNotEmpty || message.thinkingBlocks.isNotEmpty)) {
+        (message.toolCalls.isNotEmpty ||
+            message.thinkingBlocks.isNotEmpty ||
+            answeredDirectly)) {
       content = Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ...message.thinkingBlocks.map((t) => _ThinkingBlock(content: t)),
+            if (answeredDirectly) const _DirectAnswerNote(),
             ...message.toolCalls.map((tc) => _ToolCallCard(toolCall: tc)),
             if (message.content.isNotEmpty) bubble,
           ],
@@ -1771,6 +1782,34 @@ class _SummaryBubbleState extends State<_SummaryBubble> {
 // Thinking block — collapsible, brain icon
 // ---------------------------------------------------------------------------
 
+/// Shown when visible reasoning was requested but the (adaptive) model answered
+/// directly — so an empty reasoning panel reads as intentional, not broken.
+class _DirectAnswerNote extends StatelessWidget {
+  const _DirectAnswerNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6, left: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bolt, size: 13, color: scheme.outline),
+          const SizedBox(width: 4),
+          Text(
+            'Réponse directe — le raisonnement n\'apparaît que sur les questions complexes.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.outline,
+                  fontStyle: FontStyle.italic,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ThinkingBlock extends StatefulWidget {
   final String content;
   const _ThinkingBlock({required this.content});
@@ -2216,7 +2255,7 @@ class _ThinkingToggle extends ConsumerWidget {
       icon: Icon(on ? Icons.psychology : Icons.psychology_outlined, size: 20),
       color: on ? Theme.of(context).colorScheme.primary : null,
       tooltip: on
-          ? 'Raisonnement visible — actif\n(opus-4-8 ne le remplit que par moments)'
+          ? 'Raisonnement visible — actif\n(les modèles forts le montrent sur les questions complexes ; haiku, toujours)'
           : 'Afficher le raisonnement de l\'agent',
       onPressed: () {
         final next = !on;
