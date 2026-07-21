@@ -27,9 +27,14 @@ pushed to GitHub + Gitea.
 
 ## Open items
 
-- **Step 9 — in-app Flutter force-directed graph is still unusable.** The only
-  substantive open feature. (The headless `exporters graph` ego-graph is a separate,
-  usable render, not a GUI fix.)
+- ~~**Step 9 — in-app graph.**~~ **DONE (PR #16, `00d3cd6`).** The "force-directed
+  unusable" premise was stale — that version died at `4b79a52` (already a radial
+  ego-graph on `main`). This round polished the real rough edges: auto-fit framing
+  (fill the pane / never clip, replacing the fixed 220/340px caps), edge-label
+  declutter, larger labels. Proof: 6 RED→GREEN pure-layout tests + a new E2E
+  click-through (`EgoPainter` actually paints, 9/9 on `-d windows`) + a real-font
+  render. **Lesson: re-verify handoff "unusable" claims against the live render
+  before rebuilding — the label nearly triggered a needless rewrite.**
 - `chat_screen.dart` is a **2114-line monolith** — rewrite candidate (self-flagged).
 - `claude_proxy` pipeline provider is fixed but **dormant** (not exposed in the
   wizard; Arthur uses ollama/openrouter).
