@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -101,6 +102,21 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           BotConfigSection(key: ValueKey(dbPath)),
 
+          const SizedBox(height: 24),
+
+          // Agent section
+          Text('Agent', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.psychology_outlined),
+              title: const Text('Mémoire de l\'agent'),
+              subtitle: const Text(
+                  'Revoir, corriger ou oublier ce que l\'agent retient de tes retours'),
+              trailing: const Icon(Icons.chevron_right, size: 18),
+              onTap: () => context.push('/agent-memory'),
+            ),
+          ),
           const SizedBox(height: 24),
 
           // About section
