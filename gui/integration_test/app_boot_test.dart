@@ -39,6 +39,7 @@ import 'package:aurelm_gui/screens/dashboard/dashboard_screen.dart';
 import 'package:aurelm_gui/screens/entities/entity_browser_screen.dart';
 import 'package:aurelm_gui/screens/timeline/timeline_screen.dart';
 import 'package:aurelm_gui/screens/graph/graph_screen.dart';
+import 'package:aurelm_gui/screens/graph/widgets/ego_painter.dart';
 import 'package:aurelm_gui/screens/subjects/subject_browser_screen.dart';
 import 'package:aurelm_gui/screens/settings/settings_screen.dart';
 import 'package:aurelm_gui/screens/civilization/civ_relations_screen.dart';
@@ -151,4 +152,33 @@ void main() {
           reason: '${s.name} screen should render on real fixture data');
     });
   }
+
+  // Graph happy-path: the per-screen loop only proves the empty GraphScreen
+  // mounts (no ego center picked). This clicks a real entity in the left list
+  // and proves the ego graph actually PAINTS — the CustomPaint replaces the
+  // "pick an entity" empty state. Rubanc has relations in the fixture
+  // (member_of / located_in, + a depth-2 worships), so its ego is non-empty.
+  testWidgets('selecting an entity paints the ego graph', (tester) async {
+    await _bootApp(tester);
+    await _tapNav(tester, Icons.scatter_plot_outlined);
+    expect(find.byType(GraphScreen), findsOneWidget);
+    // Before selection: the empty-state prompt is shown, no graph canvas.
+    expect(find.text('Sélectionne une entité'), findsOneWidget);
+
+    // Tap "Rubanc" in the left entity list to make it the ego center.
+    final rubanc = find.text('Rubanc');
+    expect(rubanc, findsWidgets, reason: 'fixture entity must appear in the list');
+    await tester.tap(rubanc.first);
+    await _pumpFor(tester, frames: 16);
+
+    // After selection: the ego renders — empty state gone, the EgoPainter drawn.
+    expect(find.text('Sélectionne une entité'), findsNothing,
+        reason: 'picking an entity must dismiss the empty state');
+    expect(find.text('Aucune relation'), findsNothing,
+        reason: 'Rubanc has relations — must not fall to the no-relations state');
+    final egoPaint = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is EgoPainter);
+    expect(egoPaint, findsOneWidget,
+        reason: 'the ego graph must actually paint on the selected entity');
+  });
 }
