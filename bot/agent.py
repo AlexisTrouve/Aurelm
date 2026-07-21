@@ -23,7 +23,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import sqlite3
+import unicodedata
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -179,8 +181,15 @@ def _clamp_effort(model: str, effort: str) -> str:
     return effort
 
 
-def _load_system_prompt(db_path: str | None = None) -> str:
-    """Load SOUL.md + domain-knowledge.md + agent notes from DB as the system prompt."""
+def _load_system_prompt(db_path: str | None = None, include_notes: bool = True) -> str:
+    """Load the STATIC system prompt: SOUL.md + domain-knowledge.md (+ agent notes).
+
+    ``include_notes`` is kept True for backward compatibility (external callers get
+    the historical behaviour). The Agent builds its base with include_notes=False
+    and injects agent notes DYNAMICALLY per request via `_recall_agent_notes` — the
+    prompt should not carry every note statically anymore (that never refreshed and
+    flooded unrelated context).
+    """
     base = Path(__file__).resolve().parent / "prompts"
     parts = []
 
@@ -192,8 +201,8 @@ def _load_system_prompt(db_path: str | None = None) -> str:
     if dk.exists():
         parts.append(dk.read_text(encoding="utf-8"))
 
-    # Persistent GM instructions stored as agent-type notes.
-    if db_path:
+    # Persistent GM instructions stored as agent-type notes (legacy static path).
+    if db_path and include_notes:
         try:
             conn = sqlite3.connect(db_path)
             rows = conn.execute(
@@ -212,6 +221,97 @@ def _load_system_prompt(db_path: str | None = None) -> str:
     if not parts:
         return "Tu es Aurelm, archiviste expert du monde de jeu. Reponds en francais."
     return "\n\n---\n\n".join(parts)
+
+
+# --------------------------------------------------------------------------- #
+# Agent-note recall (memory layer, increment 1)
+# --------------------------------------------------------------------------- #
+
+# French stopwords too common to be useful recall keys (kept small on purpose).
+_FR_STOPWORDS = frozenset({
+    "avec", "dans", "pour", "sans", "sous", "elle", "vous", "nous", "leur",
+    "leurs", "cette", "cela", "quoi", "quel", "quelle", "quels", "quelles",
+    "mais", "donc", "alors", "plus", "moins", "tout", "tous", "toute", "toutes",
+    "etre", "avoir", "fait", "faire", "peux", "peut", "sont", "etait", "chez",
+    "comme", "meme", "tres", "deja", "encore",
+})
+
+
+def _norm(text: str) -> str:
+    """Lowercase + strip diacritics for accent-insensitive matching."""
+    nfkd = unicodedata.normalize("NFKD", (text or "").lower())
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
+
+
+def _keywords(text: str) -> set[str]:
+    """Meaningful query tokens: >=4 chars, not a stopword."""
+    return {
+        t for t in re.split(r"[^a-z0-9]+", _norm(text))
+        if len(t) >= 4 and t not in _FR_STOPWORDS
+    }
+
+
+def _recall_agent_notes(db_path: str | None, query: str, limit: int = 12) -> str:
+    """Return the block of agent-type notes RELEVANT to `query`, or "".
+
+    Selection (no regression + real recall):
+    - pinned OR civ_id NULL  -> always injected (general/behavioural instructions;
+      preserves the old always-on behaviour so nothing that was injected is lost).
+    - civ-scoped note         -> injected only when its civ is named in the query,
+      or a query keyword overlaps the note text. That is the recall.
+    - note_type != 'agent'    -> never injected.
+
+    Returns a block prefixed with the '\\n\\n---\\n\\n' separator so it appends
+    cleanly onto the static base prompt, or "" when nothing is relevant.
+    """
+    if not db_path:
+        return ""
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT title, content, pinned, civ_id FROM notes "
+                "WHERE note_type = 'agent' ORDER BY created_at ASC"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # Old DB (pre-migration-021): no civ_id column -> all treated as global.
+            rows = [
+                (t, c, p, None)
+                for (t, c, p) in conn.execute(
+                    "SELECT title, content, pinned FROM notes "
+                    "WHERE note_type = 'agent' ORDER BY created_at ASC"
+                ).fetchall()
+            ]
+        civs = conn.execute("SELECT id, name FROM civ_civilizations").fetchall()
+        conn.close()
+    except Exception:
+        return ""  # notes/civ table may not exist on very old DBs
+
+    if not rows:
+        return ""
+
+    nquery = _norm(query)
+    qkeys = _keywords(query)
+    # Civ ids named in the query (normalized civ name is a substring of the query).
+    named_civ_ids = {cid for cid, name in civs if name and _norm(name) in nquery}
+
+    selected: list[tuple[str, str]] = []
+    for title, content, pinned, civ_id in rows:
+        if pinned or civ_id is None:
+            selected.append((title, content))          # always-on instruction
+            continue
+        note_norm = _norm(f"{title or ''} {content or ''}")
+        if civ_id in named_civ_ids or any(k in note_norm for k in qkeys):
+            selected.append((title, content))          # recalled by relevance
+
+    if not selected:
+        return ""
+
+    note_lines = ["## Instructions du MJ", ""]
+    for title, content in selected[:limit]:
+        note_lines.append(f"**{title or '(instruction)'}**: {content or ''}")
+        note_lines.append("")
+    return "\n\n---\n\n" + "\n".join(note_lines)
 
 
 def _run_tool(db_path: str, tool_name: str, tool_input: dict, *, llm_client=None,
@@ -242,7 +342,10 @@ def _run_tool(db_path: str, tool_name: str, tool_input: dict, *, llm_client=None
 class Agent:
     def __init__(self, config: BotConfig) -> None:
         self.config = config
-        self._system_prompt = _load_system_prompt(config.db_path)
+        # STATIC base only (SOUL + domain-knowledge). Agent notes are injected
+        # DYNAMICALLY per request by _recall_agent_notes, so they refresh without a
+        # restart and only relevant ones enter context.
+        self._system_prompt = _load_system_prompt(config.db_path, include_notes=False)
         self._tools = _build_openai_tools()
         self._default_model = config.model
         self._init_clients()
@@ -304,7 +407,8 @@ class Agent:
         """
         model = model or self._default_model
         messages: list[dict] = [
-            {"role": "system", "content": self._system_prompt},
+            {"role": "system",
+             "content": self._system_prompt + _recall_agent_notes(self.config.db_path, new_message)},
             *history,
             {"role": "user", "content": new_message},
         ]
@@ -423,7 +527,8 @@ class Agent:
         """
         model = model or self._default_model
         messages: list[dict] = [
-            {"role": "system", "content": self._system_prompt},
+            {"role": "system",
+             "content": self._system_prompt + _recall_agent_notes(self.config.db_path, user_message)},
             {"role": "user", "content": user_message},
         ]
 
