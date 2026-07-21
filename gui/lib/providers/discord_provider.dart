@@ -105,22 +105,32 @@ class DiscordConnectNotifier extends StateNotifier<DiscordConnectState> {
     final db = _ref.read(databaseProvider);
     if (db == null) return false;
 
-    await _ref.read(keyStoreProvider).writeDiscordToken(token.trim());
+    // Defensive: a DPAPI write or a DB write can throw (storage locked, disk full).
+    // Return false so the UI shows a retryable error instead of hanging.
+    try {
+      await _ref.read(keyStoreProvider).writeDiscordToken(token.trim());
 
-    final byId = {for (final c in state.channels) c.channelId: c};
-    for (final entry in mappings.entries) {
-      final civName = entry.value.civName.trim();
-      if (civName.isEmpty) continue;
-      final ch = byId[entry.key];
-      await db.civilizationDao.createCiv(
-        name: civName,
-        playerName: entry.value.player.trim().isEmpty ? null : entry.value.player.trim(),
-        discordChannelId: entry.key,
-        discordGuildName: ch?.guildName,
-        discordChannelName: ch?.channelName,
-      );
+      final byId = {for (final c in state.channels) c.channelId: c};
+      for (final entry in mappings.entries) {
+        final civName = entry.value.civName.trim();
+        if (civName.isEmpty) continue;
+        final ch = byId[entry.key];
+        final player = entry.value.player.trim();
+        await db.civilizationDao.createCiv(
+          name: civName,
+          // null when blank. On a first-run insert that's correct (no player). Edge:
+          // re-mapping an existing civ with a blank field clears its player_name —
+          // acceptable for a one-time wizard, not worth a DAO change used elsewhere.
+          playerName: player.isEmpty ? null : player,
+          discordChannelId: entry.key,
+          discordGuildName: ch?.guildName,
+          discordChannelName: ch?.channelName,
+        );
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
-    return true;
   }
 }
 

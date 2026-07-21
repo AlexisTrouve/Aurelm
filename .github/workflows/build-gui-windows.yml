@@ -178,7 +178,16 @@ jobs:
         $u = Start-Process -FilePath (Join-Path $target "unins000.exe") `
           -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait -PassThru
         if ($u.ExitCode -ne 0) { throw "uninstaller exited $($u.ExitCode)" }
-        Write-Host "Installer validated: installed, served /health, uninstalled cleanly"
+        # Exit code 0 isn't proof of removal — assert the tree is actually gone, so a
+        # broken [UninstallDelete] (the post-install __pycache__ under app/ + python/)
+        # can't ship green.
+        Start-Sleep -Seconds 3
+        foreach ($leftover in @("app","python","aurelm_gui.exe")) {
+          if (Test-Path (Join-Path $target $leftover)) {
+            throw "uninstall left $leftover behind"
+          }
+        }
+        Write-Host "Installer validated: installed, served /health, uninstalled and removed its files"
 
     - name: Upload installer
       if: success()

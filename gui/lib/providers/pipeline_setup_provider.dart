@@ -41,15 +41,12 @@ class OllamaStatus {
       models.any((m) => m == name || m.startsWith('$name:'));
 }
 
-/// Probes the locally running Ollama. Reachable is inferred from whether the tags
-/// endpoint answered at all — the model list is empty both when Ollama is down and
-/// when it's up with nothing pulled, so we distinguish the two here.
+/// Probes the locally running Ollama. Reachability is whether /api/tags answered,
+/// NOT whether any model is installed — a fresh Ollama has none, and treating that
+/// as "not detected" would hide the download UI in exactly its target state.
 final ollamaStatusProvider = FutureProvider<OllamaStatus>((ref) async {
-  final models = await BotConfigService.fetchOllamaModels();
-  // fetchOllamaModels swallows errors into an empty list, so a non-empty list
-  // proves reachability; for the empty case we can't tell down-vs-empty from here,
-  // so treat "any answer" optimistically as reachable only when models exist.
-  return OllamaStatus(reachable: models.isNotEmpty, models: models);
+  final probe = await BotConfigService.probeOllama();
+  return OllamaStatus(reachable: probe.reachable, models: probe.models);
 });
 
 class PipelineSetupState {

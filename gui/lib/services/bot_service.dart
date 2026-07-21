@@ -8,6 +8,11 @@ class BotService {
   Process? _process;
   final _logController = StreamController<String>.broadcast();
   bool _running = false;
+  // Set synchronously at the top of start(). `_running` only flips true AFTER the
+  // ~15s health wait, so without this a second start() in that window would see
+  // "not running", spawn a duplicate bot fighting for port 8473, and orphan the
+  // first process — with the secrets handed to both.
+  bool _starting = false;
 
   Stream<String> get logStream => _logController.stream;
   bool get isRunning => _running;
@@ -25,7 +30,9 @@ class BotService {
     String? discordToken,
     String? openRouterKey,
   }) async {
-    if (_running) return true;
+    // Guard synchronously, before any await, against a re-entrant start().
+    if (_running || _starting) return _running;
+    _starting = true;
 
     try {
       final launcher = _resolveLauncher(dbPath);
@@ -88,6 +95,8 @@ class BotService {
     } catch (e) {
       _logController.add('[BOT] Failed to start: $e');
       return false;
+    } finally {
+      _starting = false;
     }
   }
 
@@ -176,8 +185,12 @@ class BotService {
   }
 
   /// True when running from a packaged bundle rather than a dev checkout.
+  /// Must match _resolveLauncher's packaged test exactly (both python AND app),
+  /// or a half-present install would report packaged while the launcher falls back
+  /// to the dev `py` that isn't there.
   static bool get isPackaged {
     final exeDir = File(Platform.resolvedExecutable).parent.path;
-    return File('$exeDir/python/python.exe').existsSync();
+    return File('$exeDir/python/python.exe').existsSync() &&
+        Directory('$exeDir/app').existsSync();
   }
 }
