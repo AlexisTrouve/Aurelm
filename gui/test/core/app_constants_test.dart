@@ -4,10 +4,15 @@ import 'package:aurelm_gui/core/constants/app_constants.dart';
 
 void main() {
   group('AppConstants', () {
-    test('has 7 entity types', () {
-      expect(AppConstants.entityTypes.length, 7);
-      expect(AppConstants.entityTypes, contains('person'));
-      expect(AppConstants.entityTypes, contains('creature'));
+    test('has the full entity-type vocabulary', () {
+      // Locks the exact set (not just a count) so a future add/remove is a
+      // deliberate test change, not a silent drift — this test had rotted at 7
+      // while the vocab grew to 10 (person..belief, per the domain Key Concepts).
+      const expected = {
+        'person', 'place', 'technology', 'institution', 'resource',
+        'creature', 'event', 'civilization', 'caste', 'belief',
+      };
+      expect(AppConstants.entityTypes.toSet(), expected);
     });
 
     test('has 5 segment types', () {
