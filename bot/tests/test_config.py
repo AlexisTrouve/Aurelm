@@ -75,19 +75,20 @@ class TestPipelineLlmKey:
     Locks the seam that replaced a copy-pasted expression in main.py and server.py.
     """
 
-    def test_claude_proxy_prefers_its_own_key(self):
-        """A dedicated pipeline key wins — the proxy routes per key and spreads
-        load across upstream accounts, so a separate key is deliberate, not noise."""
+    def test_claude_proxy_prefers_the_proxy_key(self):
+        """The etheryale proxy authenticates with the eai_ key, so proxy_api_key
+        wins — NOT anthropic_api_key (which on a dev box is a raw sk-ant- key that
+        the proxy would reject)."""
         cfg = BotConfig(db_path=None, llm_provider="claude_proxy",
-                        anthropic_api_key="pipeline-key", proxy_api_key="agent-key")
-        assert cfg.pipeline_llm_key == "pipeline-key"
+                        anthropic_api_key="sk-ant-wrong", proxy_api_key="eai-right")
+        assert cfg.pipeline_llm_key == "eai-right"
 
-    def test_claude_proxy_falls_back_to_the_agent_key(self):
-        """Only ETHERYALE_API_KEY set → the pipeline reuses it instead of being
-        handed an empty string and failing on its first call."""
+    def test_claude_proxy_falls_back_to_anthropic_field(self):
+        """Only the anthropic field set → used as a deliberately-placed pipeline key
+        rather than handing the provider nothing."""
         cfg = BotConfig(db_path=None, llm_provider="claude_proxy",
-                        anthropic_api_key="", proxy_api_key="agent-key")
-        assert cfg.pipeline_llm_key == "agent-key"
+                        anthropic_api_key="eai-in-anthropic-field", proxy_api_key="")
+        assert cfg.pipeline_llm_key == "eai-in-anthropic-field"
 
     def test_claude_proxy_none_when_nothing_configured(self):
         cfg = BotConfig(db_path=None, llm_provider="claude_proxy",

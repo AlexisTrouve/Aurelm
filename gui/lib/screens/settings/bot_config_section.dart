@@ -1,15 +1,15 @@
-/// Bot & Discord configuration section for the settings screen.
-/// Tokens, LLM provider/model, bot port. Channel binding is done in civ detail.
+// Bot & Discord configuration section for the settings screen.
+// Tokens, LLM provider/model, bot port. Channel binding is done in civ detail.
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/bot_config.dart';
 import '../../providers/bot_config_provider.dart';
+import '../../providers/enrollment_provider.dart';
 import '../../services/bot_config_service.dart';
 
 class BotConfigSection extends ConsumerStatefulWidget {
@@ -21,11 +21,9 @@ class BotConfigSection extends ConsumerStatefulWidget {
 
 class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   final _discordTokenCtrl = TextEditingController();
-  final _anthropicKeyCtrl = TextEditingController();
   final _botPortCtrl = TextEditingController();
 
   bool _showToken = false;
-  bool _showApiKey = false;
   bool _initialized = false;
   bool _saving = false;
 
@@ -39,6 +37,22 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   void initState() {
     super.initState();
     _detectOllamaModels();
+    _loadDiscordToken();
+  }
+
+  /// The Discord token lives in the OS credential store (DPAPI), not the config
+  /// file — load it into the field so Settings edits the sealed value, not a
+  /// plaintext copy.
+  Future<void> _loadDiscordToken() async {
+    try {
+      final token = await ref.read(keyStoreProvider).readDiscordToken();
+      if (mounted && token != null) {
+        setState(() => _discordTokenCtrl.text = token);
+      }
+    } catch (_) {
+      // Secure storage unavailable — leave the field empty rather than crash the
+      // Settings screen; the user can re-enter and save.
+    }
   }
 
   Future<void> _detectOllamaModels() async {
@@ -50,7 +64,6 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   @override
   void dispose() {
     _discordTokenCtrl.dispose();
-    _anthropicKeyCtrl.dispose();
     _botPortCtrl.dispose();
     super.dispose();
   }
@@ -63,8 +76,7 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   void _syncFromConfig(BotConfig cfg) {
     if (_initialized) return;
     _initialized = true;
-    _discordTokenCtrl.text = cfg.discordToken;
-    _anthropicKeyCtrl.text = cfg.anthropicApiKey;
+    // NOT the Discord token — that comes from DPAPI via _loadDiscordToken().
     _llmProvider = cfg.llmProvider;
     _selectedModel = cfg.ollamaModel;
     _botPortCtrl.text = cfg.botPort.toString();
@@ -73,10 +85,9 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   }
 
   BotConfig _buildConfig(BotConfig base) {
+    // No secrets here — the Discord token is saved separately to DPAPI in _save().
     return base.copyWith(
       botPort: int.tryParse(_botPortCtrl.text.trim()) ?? base.botPort,
-      discordToken: _discordTokenCtrl.text.trim(),
-      anthropicApiKey: _anthropicKeyCtrl.text.trim(),
       llmProvider: _llmProvider,
       ollamaModel: _selectedModel,
       gmDiscordIds: _gmDiscordIds,
@@ -87,6 +98,11 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
   Future<void> _save(BotConfig base) async {
     setState(() => _saving = true);
     try {
+      // The token goes to the sealed store; everything else to the config file.
+      final token = _discordTokenCtrl.text.trim();
+      if (token.isNotEmpty) {
+        await ref.read(keyStoreProvider).writeDiscordToken(token);
+      }
       await ref.read(botConfigProvider.notifier).save(_buildConfig(base));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -179,6 +195,9 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
             const SizedBox(height: 12),
             _secretField('Discord Bot Token', _discordTokenCtrl, _showToken,
                 () => setState(() => _showToken = !_showToken)),
+            const SizedBox(height: 6),
+            Text('Stocké de façon sécurisée (jamais en clair sur le disque).',
+                style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: _discordTokenCtrl.text.trim().isEmpty
@@ -187,9 +206,6 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
               icon: const Icon(Icons.open_in_new, size: 16),
               label: const Text('Inviter le bot sur Discord'),
             ),
-            const SizedBox(height: 16),
-            _secretField('Anthropic API Key', _anthropicKeyCtrl, _showApiKey,
-                () => setState(() => _showApiKey = !_showApiKey)),
           ],
         ),
       ),
@@ -205,21 +221,11 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
         labelText: label,
         isDense: true,
         border: const OutlineInputBorder(),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(visible ? Icons.visibility_off : Icons.visibility,
-                  size: 18),
-              onPressed: onToggle,
-            ),
-            IconButton(
-              icon: const Icon(Icons.copy, size: 18),
-              tooltip: 'Copier',
-              onPressed: () =>
-                  Clipboard.setData(ClipboardData(text: ctrl.text)),
-            ),
-          ],
+        // No copy button on a secret field — putting a token on the clipboard makes
+        // it readable by any process (and clipboard history). Reveal only.
+        suffixIcon: IconButton(
+          icon: Icon(visible ? Icons.visibility_off : Icons.visibility, size: 18),
+          onPressed: onToggle,
         ),
       ),
       style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
@@ -305,6 +311,9 @@ class _BotConfigSectionState extends ConsumerState<BotConfigSection> {
           )
         else
           DropdownButtonFormField<String>(
+            // `value` not `initialValue`: CI builds on Flutter 3.27.4 where only
+            // `value` exists (see docs/deployment.md §10, version skew).
+            // ignore: deprecated_member_use
             value: modelIds.contains(_selectedModel) ? _selectedModel : null,
             decoration: InputDecoration(
               labelText: 'Modele',

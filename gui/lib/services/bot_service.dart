@@ -137,8 +137,9 @@ class BotService {
     }
   }
 
-  String _findProjectRoot(String dbPath) {
-    // Walk up from DB path to find the project root (contains bot/ directory)
+  /// Walk up from the DB path to the project root (the nearest ancestor with a
+  /// `bot/` dir). Static so resolveLauncherFor stays a pure, testable function.
+  static String findProjectRoot(String dbPath) {
     var dir = Directory(dbPath).parent;
     for (var i = 0; i < 5; i++) {
       if (Directory('${dir.path}/bot').existsSync()) {
@@ -162,8 +163,15 @@ class BotService {
   /// not what makes `-m bot` work there — we still point it at `app/` so relative
   /// paths and logs land somewhere sensible.
   ({String executable, List<String> leadingArgs, String workingDir}) _resolveLauncher(
-      String dbPath) {
-    final exeDir = File(Platform.resolvedExecutable).parent.path;
+          String dbPath) =>
+      resolveLauncherFor(File(Platform.resolvedExecutable).parent.path, dbPath);
+
+  /// Pure launcher resolution, split out so CI can unit-test the packaged-vs-dev
+  /// decision (P2: the GUI EXE is never launched in CI, so this logic would
+  /// otherwise ship unproven). Given [exeDir] and [dbPath], pick the interpreter,
+  /// its leading args, and the cwd.
+  static ({String executable, List<String> leadingArgs, String workingDir})
+      resolveLauncherFor(String exeDir, String dbPath) {
     final bundledPython = File('$exeDir/python/python.exe');
     final bundledApp = Directory('$exeDir/app');
 
@@ -180,17 +188,18 @@ class BotService {
     return (
       executable: 'py',
       leadingArgs: const <String>['-3.12'],
-      workingDir: _findProjectRoot(dbPath),
+      workingDir: findProjectRoot(dbPath),
     );
   }
 
+  /// True when [exeDir] holds a packaged bundle. Must match resolveLauncherFor's
+  /// packaged test exactly (both python AND app), or a half-present install would
+  /// report packaged while the launcher falls back to the dev `py` that isn't there.
+  static bool isPackagedAt(String exeDir) =>
+      File('$exeDir/python/python.exe').existsSync() &&
+      Directory('$exeDir/app').existsSync();
+
   /// True when running from a packaged bundle rather than a dev checkout.
-  /// Must match _resolveLauncher's packaged test exactly (both python AND app),
-  /// or a half-present install would report packaged while the launcher falls back
-  /// to the dev `py` that isn't there.
-  static bool get isPackaged {
-    final exeDir = File(Platform.resolvedExecutable).parent.path;
-    return File('$exeDir/python/python.exe').existsSync() &&
-        Directory('$exeDir/app').existsSync();
-  }
+  static bool get isPackaged =>
+      isPackagedAt(File(Platform.resolvedExecutable).parent.path);
 }
