@@ -57,6 +57,7 @@ class FactExtractor:
         focus_model: Optional[str] = None,
         validate_model: Optional[str] = None,
         mask_model: Optional[str] = None,
+        exclude_entity_types: Optional[list[str]] = None,
     ):
         """
         Initialize the fact extractor.
@@ -69,13 +70,26 @@ class FactExtractor:
             focus_model: Model for the focus call (call 3). Overrides version.focus_model.
             validate_model: Model for the validate call (call 4). Overrides version.validate_model.
             mask_model: Model for masked entity passes. Overrides version.mask_model.
+            exclude_entity_types: Entity types to suppress at the ontology gate
+                (e.g. ["technology"]). Subtracted from the profile's allowed set,
+                so excluded types are dropped at extraction — never persisted,
+                never seen by any downstream stage. None (default) = no change.
         """
         self.model = model
         self.version = version or V1_BASELINE
         # Ontology gate for THIS version's domain profile (default civ). The
         # entity-type gate below consults this set instead of a global constant,
         # so a novel-profile version accepts novel types without civ changing.
-        self.allowed_entity_types = get_profile(self.version.profile).entity_types
+        #
+        # exclude_entity_types is subtracted here (the single chokepoint): every
+        # extraction call funnels its raw output through _coerce_entity_list against
+        # this set, so removing a type suppresses it across all call sites at once —
+        # before dedup/validate/persist and before relations/mentions/aliases/subjects
+        # exist for it. Case-insensitive, stripped, to match the coerce comparison.
+        _allowed = get_profile(self.version.profile).entity_types
+        if exclude_entity_types:
+            _allowed = _allowed - {t.strip().lower() for t in exclude_entity_types}
+        self.allowed_entity_types = _allowed
         # Use provided provider, or fall back to OllamaProvider for backwards compat
         self.provider = provider or OllamaProvider(base_url=ollama_base_url)
         # Per-stage model overrides from external config (higher priority than version defaults)
