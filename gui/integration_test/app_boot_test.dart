@@ -42,6 +42,7 @@ import 'package:aurelm_gui/screens/graph/graph_screen.dart';
 import 'package:aurelm_gui/screens/graph/widgets/ego_painter.dart';
 import 'package:aurelm_gui/screens/subjects/subject_browser_screen.dart';
 import 'package:aurelm_gui/screens/settings/settings_screen.dart';
+import 'package:aurelm_gui/screens/settings/agent_memory_screen.dart';
 import 'package:aurelm_gui/screens/civilization/civ_relations_screen.dart';
 import 'package:aurelm_gui/providers/enrollment_provider.dart';
 import 'package:aurelm_gui/screens/onboarding/setup_wizard.dart';
@@ -180,5 +181,77 @@ void main() {
         (w) => w is CustomPaint && w.painter is EgoPainter);
     expect(egoPaint, findsOneWidget,
         reason: 'the ego graph must actually paint on the selected entity');
+  });
+
+  // Agent-memory review — a Settings sub-route (no rail icon). Opens it via the
+  // Settings entry and asserts the fixture's two memories render.
+  testWidgets('Settings opens the agent-memory review with its memories',
+      (tester) async {
+    // Tall viewport so the settings ListView (lazy) builds the Agent entry that
+    // sits below the fold; reset after so other tests keep the default size.
+    await tester.binding.setSurfaceSize(const Size(1200, 2600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await _bootApp(tester);
+    await _tapNav(tester, Icons.settings_outlined);
+    final entry = find.text('Mémoire de l\'agent');
+    expect(entry, findsWidgets, reason: 'Settings must list the agent-memory entry');
+    await tester.ensureVisible(entry.first);
+    await _pumpFor(tester, frames: 4);
+    await tester.tap(entry.first);
+    await _pumpFor(tester, frames: 16);
+
+    expect(find.byType(AgentMemoryScreen), findsOneWidget);
+    expect(find.textContaining('bronze'), findsWidgets,
+        reason: 'the fixture fact memory must render');
+    expect(find.textContaining('citer le tour'), findsWidgets,
+        reason: 'the fixture preference memory must render');
+  });
+
+  // Real destructive interaction, on a COPY of the fixture so the shared e2e.db
+  // stays byte-stable: delete a memory through the confirm dialog and prove the
+  // row leaves the list (repo.delete + provider invalidation actually wired).
+  testWidgets('deleting a memory removes it from the list', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 2600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final tmp =
+        '${Directory.systemTemp.path}/aurelm_memdel_${DateTime.now().microsecondsSinceEpoch}.db';
+    File(_fixtureDb).copySync(tmp);
+    SharedPreferences.setMockInitialValues({'aurelm_db_path': tmp});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPrefsProvider.overrideWithValue(prefs),
+          autoStartBotProvider.overrideWith((ref) async {}),
+          setupCompleteProvider.overrideWith((ref) async => true),
+        ],
+        child: const AurelmApp(),
+      ),
+    );
+    await _pumpFor(tester);
+
+    await _tapNav(tester, Icons.settings_outlined);
+    final entry = find.text('Mémoire de l\'agent');
+    await tester.ensureVisible(entry.first);
+    await _pumpFor(tester, frames: 4);
+    await tester.tap(entry.first);
+    await _pumpFor(tester, frames: 16);
+
+    // Two memories → two delete buttons.
+    expect(find.byIcon(Icons.delete_outline), findsNWidgets(2));
+    await tester.tap(find.byIcon(Icons.delete_outline).first);
+    await _pumpFor(tester, frames: 6);
+    expect(find.text('Supprimer cette mémoire ?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Supprimer'));
+    await _pumpFor(tester, frames: 16);
+
+    // One memory removed → one delete button remains.
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget,
+        reason: 'the deleted memory must leave the list after invalidation');
+    // Best-effort cleanup — Drift still holds the copy open on Windows (file
+    // lock), so a failed delete here is not a test failure; OS temp cleanup handles it.
+    try {
+      File(tmp).deleteSync();
+    } catch (_) {}
   });
 }

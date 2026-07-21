@@ -14,6 +14,7 @@ import '../../screens/timeline/timeline_screen.dart';
 import '../../screens/timeline/turn_detail_screen.dart';
 import '../../screens/graph/graph_screen.dart';
 import '../../screens/settings/settings_screen.dart';
+import '../../screens/settings/agent_memory_screen.dart';
 import '../../screens/subjects/subject_browser_screen.dart';
 import '../../screens/subjects/subject_detail_screen.dart';
 import '../../screens/chat/chat_screen.dart';
@@ -63,6 +64,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/civs/alias-resolver',
             pageBuilder: (context, state) => const NoTransitionPage(
               child: CivAliasResolverScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/agent-memory',
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: AgentMemoryScreen(),
             ),
           ),
           GoRoute(

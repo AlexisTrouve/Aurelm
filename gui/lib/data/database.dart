@@ -298,6 +298,24 @@ void _ensureMigrations(dynamic db) {
     "ALTER TABLE pipeline_progress ADD COLUMN llm_calls_done INTEGER DEFAULT 0",
     "ALTER TABLE pipeline_progress ADD COLUMN llm_calls_total INTEGER DEFAULT 0",
     "ALTER TABLE pipeline_progress ADD COLUMN turn_number INTEGER",
+    // Migration 039: agent memory store (self-authored from GM feedback). Flutter
+    // opens the DB via Drift, which does NOT run the SQL migrations, so the raw-SQL
+    // repository needs this table present or customSelect throws "no such table".
+    '''CREATE TABLE IF NOT EXISTS agent_memory (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        mem_key     TEXT    NOT NULL,
+        description TEXT    NOT NULL DEFAULT '',
+        content     TEXT    NOT NULL DEFAULT '',
+        civ_id      INTEGER REFERENCES civ_civilizations(id) ON DELETE CASCADE,
+        keywords    TEXT    NOT NULL DEFAULT '',
+        mem_type    TEXT    NOT NULL DEFAULT 'fact',
+        source_turn INTEGER REFERENCES turn_turns(id) ON DELETE SET NULL,
+        active      INTEGER NOT NULL DEFAULT 1,
+        created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+        updated_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+    )''',
+    'CREATE INDEX IF NOT EXISTS idx_agent_memory_active ON agent_memory(active) WHERE active = 1',
+    'CREATE INDEX IF NOT EXISTS idx_agent_memory_civ    ON agent_memory(civ_id) WHERE civ_id IS NOT NULL',
   ];
 
   for (final sql in statements) {
