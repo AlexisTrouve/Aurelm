@@ -1868,6 +1868,70 @@ def get_entities_by_tag(
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Agent memory (self-authored from GM feedback) — write side
+# --------------------------------------------------------------------------- #
+
+def save_memory(
+    conn: sqlite3.Connection,
+    mem_key: str,
+    content: str,
+    description: str = "",
+    civ_id: int | None = None,
+    mem_type: str = "fact",
+    keywords: str = "",
+) -> str:
+    """Upsert an agent memory keyed by (mem_key, civ_id).
+
+    WHY upsert: a memory is something the agent MAINTAINS — re-saving the same key
+    (e.g. correcting a ruling) must UPDATE the row, not stack duplicates that would
+    both surface at recall. `civ_id IS ?` matches the NULL (global) scope too.
+    """
+    mem_key = (mem_key or "").strip()
+    content = (content or "").strip()
+    if not mem_key or not content:
+        return "Error: key and content are required."
+    mem_type = mem_type if mem_type in ("fact", "preference") else "fact"
+
+    existing = conn.execute(
+        "SELECT id FROM agent_memory WHERE mem_key = ? AND civ_id IS ?",
+        (mem_key, civ_id),
+    ).fetchone()
+    if existing:
+        conn.execute(
+            "UPDATE agent_memory SET content = ?, description = ?, keywords = ?, "
+            "mem_type = ?, active = 1, updated_at = datetime('now') WHERE id = ?",
+            (content, description, keywords, mem_type, existing[0]),
+        )
+        conn.commit()
+        return f"Mémoire mise à jour : {mem_key}"
+
+    conn.execute(
+        "INSERT INTO agent_memory (mem_key, description, content, civ_id, keywords, mem_type) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (mem_key, description, content, civ_id, keywords, mem_type),
+    )
+    conn.commit()
+    return f"Mémoire enregistrée : {mem_key}"
+
+
+def forget_memory(conn: sqlite3.Connection, mem_key: str, civ_id: int | None = None) -> str:
+    """Deactivate an agent memory (kept for the review trail, not recalled)."""
+    mem_key = (mem_key or "").strip()
+    row = conn.execute(
+        "SELECT id FROM agent_memory WHERE mem_key = ? AND civ_id IS ? AND active = 1",
+        (mem_key, civ_id),
+    ).fetchone()
+    if not row:
+        return f"Aucune mémoire active nommée '{mem_key}'."
+    conn.execute(
+        "UPDATE agent_memory SET active = 0, updated_at = datetime('now') WHERE id = ?",
+        (row[0],),
+    )
+    conn.commit()
+    return f"Mémoire oubliée : {mem_key}"
+
+
 def _get_notes_for(
     conn: sqlite3.Connection,
     entity_id: int | None = None,
@@ -2998,5 +3062,35 @@ def dispatch_tool(
         if not entity_name:
             return "Error: entityName is required."
         return find_entity_on_map(conn, entity_name)
+
+    if tool_name == "saveMemory":
+        key = (tool_input.get("key") or "").strip()
+        content = (tool_input.get("content") or "").strip()
+        if not key or not content:
+            return "Error: key and content are required."
+        civ_id = None
+        if tool_input.get("civName"):
+            resolved = _resolve()
+            if resolved and "error" in resolved:
+                return resolved["error"]
+            if resolved:
+                civ_id = resolved["id"]
+        return save_memory(
+            conn, key, content,
+            description=(tool_input.get("description") or ""),
+            civ_id=civ_id,
+            mem_type=(tool_input.get("type") or "fact"),
+        )
+
+    if tool_name == "forgetMemory":
+        key = (tool_input.get("key") or "").strip()
+        if not key:
+            return "Error: key is required."
+        civ_id = None
+        if tool_input.get("civName"):
+            resolved = _resolve()
+            if resolved and "error" not in resolved:
+                civ_id = resolved["id"]
+        return forget_memory(conn, key, civ_id=civ_id)
 
     return f"Unknown tool: {tool_name}"

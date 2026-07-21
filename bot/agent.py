@@ -314,6 +314,60 @@ def _recall_agent_notes(db_path: str | None, query: str, limit: int = 12) -> str
     return "\n\n---\n\n" + "\n".join(note_lines)
 
 
+def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
+    """Return the agent's self-authored memories RELEVANT to `query`, or "".
+
+    These are written by the agent from GM feedback (see the saveMemory tool).
+    Recall rules:
+    - mem_type 'preference' -> always injected (behavioural, applies to every answer).
+    - mem_type 'fact'       -> injected only when its civ is named in the query or a
+      query keyword overlaps the memory (a world ruling is topical, not always-on).
+    Only active memories are considered. Tolerant of DBs predating migration 039.
+    """
+    if not db_path:
+        return ""
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            rows = conn.execute(
+                "SELECT mem_key, description, content, civ_id, keywords, mem_type "
+                "FROM agent_memory WHERE active = 1 ORDER BY updated_at DESC"
+            ).fetchall()
+        except sqlite3.OperationalError:
+            conn.close()
+            return ""  # table absent (pre-migration-039)
+        civs = conn.execute("SELECT id, name FROM civ_civilizations").fetchall()
+        conn.close()
+    except Exception:
+        return ""
+
+    if not rows:
+        return ""
+
+    nquery = _norm(query)
+    qkeys = _keywords(query)
+    named_civ_ids = {cid for cid, name in civs if name and _norm(name) in nquery}
+
+    selected: list[tuple[str, str, str]] = []
+    for mem_key, description, content, civ_id, keywords, mem_type in rows:
+        if mem_type == "preference":
+            selected.append((mem_key, description, content))     # always-on
+            continue
+        text = _norm(f"{mem_key} {description} {content} {keywords}")
+        if (civ_id is not None and civ_id in named_civ_ids) or any(k in text for k in qkeys):
+            selected.append((mem_key, description, content))     # recalled fact
+
+    if not selected:
+        return ""
+
+    lines = ["## Mémoire de l'agent (rulings et préférences du MJ — font foi)", ""]
+    for mem_key, description, content in selected[:limit]:
+        head = description or mem_key
+        lines.append(f"**{head}**: {content}")
+        lines.append("")
+    return "\n\n---\n\n" + "\n".join(lines)
+
+
 def _run_tool(db_path: str, tool_name: str, tool_input: dict, *, llm_client=None,
               model: str | None = None, proxy: str | None = None) -> str:
     """Execute a tool against the DB (sync — runs in a worker thread).
@@ -408,7 +462,9 @@ class Agent:
         model = model or self._default_model
         messages: list[dict] = [
             {"role": "system",
-             "content": self._system_prompt + _recall_agent_notes(self.config.db_path, new_message)},
+             "content": self._system_prompt
+             + _recall_agent_notes(self.config.db_path, new_message)
+             + _recall_memories(self.config.db_path, new_message)},
             *history,
             {"role": "user", "content": new_message},
         ]
@@ -528,7 +584,9 @@ class Agent:
         model = model or self._default_model
         messages: list[dict] = [
             {"role": "system",
-             "content": self._system_prompt + _recall_agent_notes(self.config.db_path, user_message)},
+             "content": self._system_prompt
+             + _recall_agent_notes(self.config.db_path, user_message)
+             + _recall_memories(self.config.db_path, user_message)},
             {"role": "user", "content": user_message},
         ]
 
