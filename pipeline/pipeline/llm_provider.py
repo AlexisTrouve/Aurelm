@@ -338,6 +338,7 @@ class OpenRouterProvider(LLMProvider):
         self,
         api_key: str | None = None,
         base_url: str = "https://openrouter.ai/api/v1",
+        extra_headers: dict | None = None,
     ):
         # API key: explicit > env var > .env file
         self.api_key = api_key or self._load_api_key()
@@ -347,6 +348,11 @@ class OpenRouterProvider(LLMProvider):
                 "or add it to pipeline/.env"
             )
         self.base_url = base_url
+        # Extra auth headers merged onto every request. WHY: the etheryale proxy
+        # (claude_proxy) authenticates with `x-api-key`, NOT the `Authorization:
+        # Bearer` this provider sends — without this, that path 401s (the chat agent
+        # hits the same requirement). OpenRouter itself needs none.
+        self.extra_headers = extra_headers or {}
         self._client: Any = None
         # Usage tracking — accumulates across all calls
         self._total_prompt_tokens = 0
@@ -397,6 +403,8 @@ class OpenRouterProvider(LLMProvider):
                     # OpenRouter recommends these for tracking
                     "HTTP-Referer": "https://github.com/AlexisTrouve/Aurelm",
                     "X-Title": "Aurelm Pipeline",
+                    # e.g. x-api-key for the etheryale proxy (claude_proxy).
+                    **self.extra_headers,
                 },
             )
         return self._client
@@ -622,10 +630,20 @@ def create_provider(
             base_url=base_url or "https://openrouter.ai/api/v1",
         )
     elif provider_name == "claude_proxy":
-        # Claude proxy (etheryale.com) uses OpenRouter-compatible API
+        # Claude proxy (etheryale.com): OpenAI-compatible surface, but auth is
+        # `x-api-key`, not Bearer — pass it as an extra header (the Bearer this
+        # provider always sends is simply ignored by the proxy). Require the key
+        # explicitly here rather than let OpenRouterProvider fall back to
+        # OPENROUTER_API_KEY, which would send an unrelated key to the proxy.
+        if not api_key:
+            raise ValueError(
+                "claude_proxy requires the etheryale key (eai_...). Set "
+                "ETHERYALE_API_KEY (agent) or a dedicated pipeline key."
+            )
         return OpenRouterProvider(
             api_key=api_key,
             base_url=base_url or "https://ai.etheryale.com/v1",
+            extra_headers={"x-api-key": api_key},
         )
     else:
         raise ValueError(

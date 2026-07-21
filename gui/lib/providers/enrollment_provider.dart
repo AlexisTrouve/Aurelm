@@ -69,8 +69,20 @@ class ActivationNotifier extends StateNotifier<ActivationState> {
 
     switch (result) {
       case EnrollmentSuccess(:final apiKey):
-        // Persist first — the code is already spent.
-        await _keyStore.writeKey(apiKey);
+        // Persist first — the code is already spent. A DPAPI write can throw
+        // (storage locked/unavailable); if it does, don't leave the spinner hung
+        // with the key lost — surface a recoverable error. We do NOT echo the key
+        // into the message (leak-safety is the whole point of this store); the code
+        // is spent, so the recovery is a new code.
+        try {
+          await _keyStore.writeKey(apiKey);
+        } catch (e) {
+          state = ActivationState(
+            status: ActivationStatus.idle,
+            error: 'La clé n\'a pas pu être sauvegardée ($e). Demande un nouveau code.',
+          );
+          return false;
+        }
         state = const ActivationState(status: ActivationStatus.success);
         return true;
       case EnrollmentError(:final failure):

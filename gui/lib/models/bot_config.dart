@@ -1,4 +1,4 @@
-/// Mirror of aurelm_config.json for the bot configuration UI.
+// Mirror of aurelm_config.json for the bot configuration UI.
 
 class ChannelConfig {
   final String channelId;
@@ -88,8 +88,12 @@ class BotConfig {
       'llm_provider': llmProvider,
       'ollama_model': ollamaModel,
       if (anthropicBaseUrl != null) 'anthropic_base_url': anthropicBaseUrl,
-      if (anthropicApiKey.isNotEmpty) 'anthropic_api_key': anthropicApiKey,
-      if (discordToken.isNotEmpty) 'discord_token': discordToken,
+      // Secrets are NEVER written here. The Discord token + any API key live sealed
+      // in the OS credential store (DPAPI, via KeyStore) and reach the bot through
+      // its environment. aurelm_config.json is plaintext next to the DB, so putting
+      // a secret in it would be exactly the on-disk leak the whole design avoids.
+      // (discord_token / anthropic_api_key are still read by fromJson for backward
+      // compat with an old file, but never emitted.)
       'channels': channelsMap,
     };
   }

@@ -1,4 +1,4 @@
-/// Reads/writes aurelm_config.json located next to the DB file.
+// Reads/writes aurelm_config.json located next to the DB file, and probes Ollama.
 
 import 'dart:convert';
 import 'dart:io';
@@ -54,20 +54,33 @@ class BotConfigService {
 
   /// Query locally running Ollama for installed models.
   static Future<List<String>> fetchOllamaModels() async {
+    return (await probeOllama()).models;
+  }
+
+  /// Probe Ollama, distinguishing "not running" from "running with no models".
+  ///
+  /// WHY separate from the model list: a fresh Ollama install has ZERO models by
+  /// definition, so inferring reachability from a non-empty list would report a
+  /// working Ollama as "not detected" — and hide the in-app download UI in exactly
+  /// the state (fresh install) it exists for. Reachability is whether /api/tags
+  /// actually answered 200; the model list is a separate fact.
+  static Future<({bool reachable, List<String> models})> probeOllama() async {
     try {
       final resp = await http
           .get(Uri.parse('http://localhost:11434/api/tags'))
           .timeout(const Duration(seconds: 3));
-      if (resp.statusCode != 200) return [];
+      if (resp.statusCode != 200) return (reachable: false, models: <String>[]);
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
       final models = (body['models'] as List?) ?? [];
-      return models
+      final names = models
           .map((m) => (m as Map<String, dynamic>)['name'] as String? ?? '')
           .where((n) => n.isNotEmpty)
           .toList()
         ..sort();
+      // 200 answered → reachable, even if the list is empty.
+      return (reachable: true, models: names);
     } catch (_) {
-      return [];
+      return (reachable: false, models: <String>[]);
     }
   }
 

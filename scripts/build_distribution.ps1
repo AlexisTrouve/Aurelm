@@ -161,12 +161,25 @@ import site
 Write-Host "[5/6] Copying app code + Flutter build..." -ForegroundColor Yellow
 $appDir = Join-Path $OutDir "app"
 New-Item -ItemType Directory -Force -Path $appDir | Out-Null
-# database/ carries the SQL migrations. Without it a fresh DB on the user's machine
-# gets zero tables — the app installs and then dies on first launch. apply_migrations
-# resolves it relative to the bot package, i.e. app/database/migrations here.
-foreach ($pkg in @("bot", "pipeline", "database")) {
+
+# bot/ ships whole. database/ ships WHOLE on purpose: migration 001 does
+# `.read ../schema.sql`, which resolves to app/database/schema.sql — copying only
+# migrations/ would silently break first-run schema creation (zero tables, and
+# /health would still come up, hiding it).
+foreach ($pkg in @("bot", "database")) {
     Copy-Item -Recurse -Force (Join-Path $repoRoot $pkg) (Join-Path $appDir $pkg)
 }
+
+# pipeline/ is a NAMESPACE package whose only runtime-imported part is
+# pipeline/pipeline/ (bot imports `pipeline.pipeline.*`). Ship ONLY that. The rest
+# of the tree — archive_db/ (the dev's game DBs), roman_exports/ (a private corpus),
+# data/, maps/, benchmark scripts, and a dev pipeline/aurelm_config.json holding real
+# Discord IDs — is git-tracked and must NEVER end up in a user's installer. Verified:
+# pipeline/pipeline/ loads no file from those dirs at runtime (only OPENROUTER_API_KEY
+# from the env we inject).
+New-Item -ItemType Directory -Force -Path (Join-Path $appDir "pipeline") | Out-Null
+Copy-Item -Recurse -Force (Join-Path $repoRoot "pipeline/pipeline") `
+    (Join-Path $appDir "pipeline/pipeline")
 # Tests and caches are dead weight in a shipped app.
 Get-ChildItem -Path $appDir -Recurse -Directory -Include "__pycache__", "tests", ".pytest_cache" |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue

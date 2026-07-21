@@ -70,18 +70,19 @@ class BotConfig:
         WHY a property: this per-provider choice was duplicated verbatim in main.py
         and server.py — a third copy was one sync path away from existing.
 
-        WHY a fallback instead of collapsing the two keys: `claude_proxy` and the chat
-        agent both talk to the etheryale proxy, but keeping a DISTINCT pipeline key is
-        legitimate — the proxy routes per key and spreads load across upstream accounts
-        ("one key per agent", INTEGRATION §3). So a separate key still wins when set;
-        we only fall back to the agent's key when it isn't, which beats handing the
-        provider an empty string and failing on the first call.
+        `claude_proxy` targets the etheryale proxy, which authenticates with the
+        `eai_...` key — so PREFER `proxy_api_key` (the agent's etheryale key), and only
+        fall back to `anthropic_api_key` if an operator deliberately stuffed a
+        dedicated eai_ key there (the proxy spreads load per key — "one key per agent",
+        INTEGRATION §3). The old order preferred `anthropic_api_key`, which on a dev
+        box loads a raw `sk-ant-...` from ANTHROPIC_API_KEY and would be sent to the
+        proxy — wrong key, guaranteed auth failure.
 
         ollama: local, needs no key. openrouter: has its own key, and the provider
         resolves it from env/file when we pass None.
         """
         if self.llm_provider == "claude_proxy":
-            return self.anthropic_api_key or self.proxy_api_key or None
+            return self.proxy_api_key or self.anthropic_api_key or None
         return None
 
 

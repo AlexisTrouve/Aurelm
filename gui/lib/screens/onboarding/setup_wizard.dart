@@ -263,6 +263,7 @@ class _DiscordStepState extends ConsumerState<DiscordStep> {
   final Map<String, TextEditingController> _civCtrls = {};
   final Map<String, TextEditingController> _playerCtrls = {};
   bool _saving = false;
+  String? _saveError;
 
   @override
   void dispose() {
@@ -286,21 +287,59 @@ class _DiscordStepState extends ConsumerState<DiscordStep> {
   }
 
   Future<void> _finish() async {
-    setState(() => _saving = true);
-    final mappings = <String, ({String civName, String player})>{};
-    _civCtrls.forEach((channelId, ctrl) {
-      mappings[channelId] = (
-        civName: ctrl.text,
-        player: _playerCtrls[channelId]?.text ?? '',
-      );
+    setState(() {
+      _saving = true;
+      _saveError = null;
     });
-    final ok = await ref.read(discordConnectProvider.notifier).save(
-          token: _tokenCtrl.text,
-          mappings: mappings,
+    try {
+      // Build the mapping from the CURRENT verified channels only — not from every
+      // controller ever created. Otherwise a civ name typed against token A's
+      // channels would be written as a phantom civ after switching to token B.
+      final channels = ref.read(discordConnectProvider).channels;
+      final mappings = <String, ({String civName, String player})>{};
+      for (final ch in channels) {
+        mappings[ch.channelId] = (
+          civName: _civCtrls[ch.channelId]?.text ?? '',
+          player: _playerCtrls[ch.channelId]?.text ?? '',
         );
-    if (!mounted) return;
-    setState(() => _saving = false);
-    if (ok) widget.onDone();
+      }
+
+      // Two channels mapped to one civ name would silently lose a binding (createCiv
+      // upserts by name). Refuse it with a clear message instead.
+      final names = <String>{};
+      for (final m in mappings.values) {
+        final n = m.civName.trim();
+        if (n.isEmpty) continue;
+        if (!names.add(n.toLowerCase())) {
+          setState(() {
+            _saving = false;
+            _saveError = 'Deux salons pointent vers « $n ». Donne un nom distinct à chaque civilisation.';
+          });
+          return;
+        }
+      }
+
+      final ok = await ref.read(discordConnectProvider.notifier).save(
+            token: _tokenCtrl.text,
+            mappings: mappings,
+          );
+      if (!mounted) return;
+      if (ok) {
+        widget.onDone();
+      } else {
+        setState(() {
+          _saving = false;
+          _saveError = 'Enregistrement impossible. Réessaie.';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _saveError = 'Enregistrement impossible : $e';
+        });
+      }
+    }
   }
 
   @override
@@ -368,6 +407,12 @@ class _DiscordStepState extends ConsumerState<DiscordStep> {
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text('Enregistrer et continuer'),
           ),
+          if (_saveError != null) ...[
+            const SizedBox(height: 8),
+            Text(_saveError!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                textAlign: TextAlign.center),
+          ],
         ],
       ],
     );
