@@ -28,6 +28,11 @@ class ChatMessage {
   final List<ToolCallInfo> toolCalls;
   /// Claude thinking blocks emitted during this turn.
   final List<String> thinkingBlocks;
+  /// Whether visible reasoning was requested for this turn. Lets the UI tell
+  /// "empty because not asked for" from "empty because the model answered
+  /// directly" — the strong models (opus-4-8, sonnet-5) reason adaptively and emit
+  /// nothing on trivial questions, which without this reads as a broken toggle.
+  final bool thinkingRequested;
 
   const ChatMessage({
     required this.role,
@@ -36,6 +41,7 @@ class ChatMessage {
     this.messageType = MessageType.text,
     this.toolCalls = const [],
     this.thinkingBlocks = const [],
+    this.thinkingRequested = false,
   });
 
   /// Create a copy with additional fields appended (used during streaming).
@@ -53,6 +59,7 @@ class ChatMessage {
       thinkingBlocks: thinkingBlock != null
           ? [...thinkingBlocks, thinkingBlock]
           : thinkingBlocks,
+      thinkingRequested: thinkingRequested,
     );
   }
 }
@@ -407,6 +414,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
       timestamp: DateTime.now(),
       toolCalls: List.unmodifiable(toolCalls),
       thinkingBlocks: List.unmodifiable(thinkingBlocks),
+      // Stamp whether reasoning was asked for THIS turn, so the bubble can show a
+      // "answered directly" note when an adaptive model emits no thinking.
+      thinkingRequested: _showThinking,
     );
 
     // Replace or append the assistant message
