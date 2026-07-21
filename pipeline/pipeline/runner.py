@@ -88,6 +88,11 @@ def run_pipeline(
     # Multi-civ tracking: which civ in the batch (1-indexed)
     civ_index: int = 1,
     civ_total: int = 1,
+    # Entity types to NOT extract/persist (e.g. ["technology"] when a sibling
+    # system owns that type). Subtracted from the FactExtractor ontology gate;
+    # excluded types never become entities, so no downstream relation/mention/
+    # alias/subject is created for them. None (default) = current behaviour.
+    exclude_entity_types: list[str] | None = None,
 ) -> dict:
     """Run the full pipeline: load -> chunk -> classify -> NER -> summarize -> persist.
 
@@ -216,6 +221,7 @@ def run_pipeline(
     fact_extractor = FactExtractor(
         model=extraction_model, version=version, provider=llm_provider,
         focus_model=focus_model, validate_model=validation_model,
+        exclude_entity_types=exclude_entity_types,
     ) if use_llm else None
 
     conn = get_connection(db_path)
@@ -1855,6 +1861,7 @@ def run_pipeline_for_channels(
     model: str = "qwen3:14b",
     provider: LLMProvider | None = None,
     llm_config: LLMConfig | None = None,
+    exclude_entity_types: list[str] | None = None,
 ) -> dict:
     """Run pipeline for all civs with a discord_channel_id set in DB.
 
@@ -1915,6 +1922,7 @@ def run_pipeline_for_channels(
             channel_id=channel_id,
             civ_index=ci + 1,
             civ_total=total_civs,
+            exclude_entity_types=exclude_entity_types,
         )
 
         aggregated["civs_processed"] += 1
@@ -1957,6 +1965,12 @@ def main() -> None:
     parser.add_argument("--no-llm", action="store_true", help="Skip LLM summarization (use extractive fallback)")
     parser.add_argument("--wiki-dir", default=None, help="Wiki directory (enables wiki generation)")
     parser.add_argument("--track-progress", action="store_true", help="Enable progress tracking for UI")
+    parser.add_argument(
+        "--exclude-entity-types", nargs="*", default=None, metavar="TYPE",
+        help="Entity types to NOT extract/persist (e.g. --exclude-entity-types "
+             "technology). Excluded types are dropped at the ontology gate, so no "
+             "downstream relation/mention/alias is created for them. Default: none.",
+    )
     parser.add_argument(
         "--extraction-version", required=True,
         help=f"Extraction version to use. Available: {', '.join(list_versions())}",
@@ -2033,6 +2047,7 @@ def main() -> None:
         model=config.default_model if config else args.model,
         provider=llm_provider,
         llm_config=config,
+        exclude_entity_types=args.exclude_entity_types,
     )
 
 

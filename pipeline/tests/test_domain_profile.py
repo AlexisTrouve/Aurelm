@@ -81,6 +81,50 @@ def test_fact_extractor_entity_gate_follows_profile():
     assert novel_fe.allowed_entity_types == NOVEL_PROFILE.entity_types
 
 
+# --- exclude_entity_types: opt-in suppression of a type at the gate ----------
+# WHY: a sibling system (Demiurgos) owns a curated `technology` extractor and
+# writes clean technology entities itself; Aurelm's generic qwen extraction must
+# be able to NOT extract technology so its ~50-70% noise doesn't pollute them.
+# The exclusion is subtracted from the FactExtractor ontology gate, so excluded
+# types are dropped at extraction — before persistence and any downstream stage.
+
+def test_exclude_entity_types_subtracts_from_gate():
+    fe = FactExtractor(version=get_version("v22.2.2-pastlevel"),
+                       exclude_entity_types=["technology"])
+    assert "technology" not in fe.allowed_entity_types
+    # every other civ type is untouched
+    assert fe.allowed_entity_types == CIV_PROFILE.entity_types - {"technology"}
+
+
+def test_exclude_entity_types_default_is_backward_compatible():
+    # None / omitted must leave the gate exactly as before (strict rétrocompat).
+    assert FactExtractor(version=get_version("v22.2.2-pastlevel")).allowed_entity_types \
+        == CIV_PROFILE.entity_types
+    assert FactExtractor(version=get_version("v22.2.2-pastlevel"),
+                         exclude_entity_types=None).allowed_entity_types \
+        == CIV_PROFILE.entity_types
+
+
+def test_excluded_type_is_dropped_at_coerce_but_others_survive():
+    # The gate itself: _coerce_entity_list drops an entity whose type is not in
+    # the (post-exclusion) allowed set, and keeps the rest. This is the behaviour
+    # that guarantees 0 technology entities are ever created.
+    fe = FactExtractor(version=get_version("v22.2.2-pastlevel"),
+                       exclude_entity_types=["technology"])
+    raw = [
+        {"name": "Argile Vivante", "type": "technology", "context": "c"},
+        {"name": "Rubanc", "type": "person", "context": "c"},
+        {"name": "Vallée de la Confluence", "type": "place", "context": "c"},
+    ]
+    kept = {e.text for e in FactExtractor._coerce_entity_list(raw, fe.allowed_entity_types)}
+    assert "Argile Vivante" not in kept          # technology suppressed
+    assert kept == {"Rubanc", "Vallée de la Confluence"}
+    # sanity: WITHOUT exclusion, the same technology entity survives the gate
+    keep_all = {e.text for e in FactExtractor._coerce_entity_list(
+        raw, CIV_PROFILE.entity_types)}
+    assert "Argile Vivante" in keep_all
+
+
 # --- relation gate follows the profile (E2E on a tiny DB) -------------------
 
 def _relations_db() -> sqlite3.Connection:
