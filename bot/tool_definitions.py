@@ -25,8 +25,8 @@ _STD = {
     "limit": {"type": "integer"},
 }
 
-# 12 tools (réduit depuis 18).
-# Tools supprimés (absorbés) :
+# 24 tools : 22 lecture + saveMemory / forgetMemory (mémoire auto-écrite par l'agent).
+# Tools absorbés (leurs alias restent dispatchables mais ne sont plus annoncés) :
 #   filterTimeline  → timeline (params standard)
 #   exploreRelations → getEntityDetail(relations=true)
 #   entityActivity   → getEntityDetail(activity=true)
@@ -421,6 +421,55 @@ TOOL_DEFINITIONS = [
                 },
             },
             "required": ["question"],
+        },
+    },
+    {
+        "name": "saveMemory",
+        "description": (
+            "Enregistre une mémoire durable POUR TOI-MÊME à partir d'un retour du MJ : "
+            "une correction, un ruling sur le monde, ou une préférence de réponse. "
+            "Upsert par 'key' — réappeler avec la MÊME key MET À JOUR la mémoire (pas de doublon). "
+            "Appelle-le quand le MJ te corrige, énonce une règle du monde, ou dit comment il veut ses réponses. "
+            "Ne PAS l'utiliser pour du contenu déjà dans la base (entités, tours) — seulement les retours du MJ."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "Slug court et stable identifiant la mémoire (ex: 'confluence-bronze', 'style-citation'). Réutilise la même key pour corriger/mettre à jour.",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Le fait, la règle ou la préférence à retenir, en une phrase.",
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Résumé d'une ligne pour le rappel (optionnel).",
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["fact", "preference"],
+                    "description": "'fact' = ruling/correction sur le monde (défaut, rappelé quand pertinent). 'preference' = comment répondre (toujours injecté).",
+                },
+                "civName": {
+                    "type": "string",
+                    "description": "Civ concernée (optionnel). Vide = mémoire globale.",
+                },
+            },
+            "required": ["key", "content"],
+        },
+    },
+    {
+        "name": "forgetMemory",
+        "description": "Désactive une mémoire que tu avais enregistrée, quand le MJ te dit qu'elle est fausse ou périmée. Identifiée par sa 'key' (+ civName si elle était civ-scopée).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "key": {"type": "string", "description": "La key de la mémoire à oublier."},
+                "civName": {"type": "string", "description": "Civ de la mémoire si elle était civ-scopée."},
+            },
+            "required": ["key"],
         },
     },
 ]
