@@ -1,9 +1,23 @@
-# Handoff — Aurelm (Step 10 done + reviewed, chat on the proxy)
+# Handoff — Aurelm (Step 10 done, Step 9 polished, pipeline type-exclusion shipped)
 
-Paste-ready briefing for the next session. Everything below is on `main` (`ec05e89`),
+Paste-ready briefing for the next session. Everything below is on `main` (`9bfca5f`),
 pushed to GitHub + Gitea.
 
 ## State: what's done
+
+- **Step 9 — in-app graph: DONE** (PR #16, `00d3cd6`). The "force-directed unusable"
+  premise was stale — that version died at `4b79a52` (already a radial ego-graph on
+  `main`). This round polished the real rough edges: auto-fit framing (fill the pane /
+  never clip, replacing the fixed 220/340px caps), edge-label declutter, larger labels.
+  Proof: 6 RED→GREEN pure-layout tests + a new E2E click-through (`EgoPainter` actually
+  paints, 9/9 on `-d windows`) + a real-font render. **Lesson: re-verify handoff
+  "unusable" claims against a live render before rebuilding.**
+- **Pipeline `exclude_entity_types` — DONE** (PR #17, `9bfca5f`). `run_pipeline(...,
+  exclude_entity_types=["technology"])` suppresses an entity type at the ontology gate
+  (`FactExtractor.allowed_entity_types` → `_coerce_entity_list`), dropped at extraction,
+  cascade-free by construction. Default `None` = unchanged. Built for the Aurelm↔Demiurgos
+  split (Demiurgos owns curated technology extraction). Full doc + integration contract:
+  **`docs/exclude-entity-types.md`**; memory `project_aurelm_demiurgos_technology_split`.
 
 - **Chat agent → etheryale proxy** (PRs #4-6). One OpenAI-compatible client
   (`ai.etheryale.com/v1`, `x-api-key`) fronting all Claude + GPT. No Anthropic SDK,
@@ -27,14 +41,6 @@ pushed to GitHub + Gitea.
 
 ## Open items
 
-- ~~**Step 9 — in-app graph.**~~ **DONE (PR #16, `00d3cd6`).** The "force-directed
-  unusable" premise was stale — that version died at `4b79a52` (already a radial
-  ego-graph on `main`). This round polished the real rough edges: auto-fit framing
-  (fill the pane / never clip, replacing the fixed 220/340px caps), edge-label
-  declutter, larger labels. Proof: 6 RED→GREEN pure-layout tests + a new E2E
-  click-through (`EgoPainter` actually paints, 9/9 on `-d windows`) + a real-font
-  render. **Lesson: re-verify handoff "unusable" claims against the live render
-  before rebuilding — the label nearly triggered a needless rewrite.**
 - `chat_screen.dart` is a **2114-line monolith** — rewrite candidate (self-flagged).
 - `claude_proxy` pipeline provider is fixed but **dormant** (not exposed in the
   wizard; Arthur uses ollama/openrouter).
@@ -85,6 +91,7 @@ models — test with a HARD prompt if verifying.
 ## Key files
 
 - `docs/deployment.md` — the whole Step 10 system (read first).
+- `docs/exclude-entity-types.md` — the pipeline type-exclusion feature + Demiurgos contract.
 - `docs/enrollment-api-handoff.md` + `enrollment-client-design.md` — the activation flow.
 - `bot/`, `gui/lib/services/{key_store,enrollment_service,discord_service,ollama_service}.dart`,
   `gui/lib/screens/onboarding/setup_wizard.dart`, `scripts/build_distribution.ps1`,
@@ -93,6 +100,8 @@ models — test with a HARD prompt if verifying.
 
 ## Test surface
 
-- `python -m pytest bot/tests/` — 135. `cd pipeline && pytest` — full suite incl.
-  `test_llm_provider_auth`. `cd gui && flutter test test/` — unit incl. ollama parse +
-  launcher resolution. `flutter test integration_test/app_boot_test.dart -d windows` — 8.
+- `python -m pytest bot/tests/` — 135. `cd pipeline && pytest -k "not _real"` — 270
+  passed / 5 skipped (incl. `test_domain_profile` exclude_entity_types gate). `cd gui &&
+  flutter test test/` — 41 unit (incl. ollama parse, launcher resolution, graph layout).
+  `flutter test integration_test/app_boot_test.dart -d windows` — 9 (incl. graph
+  click-through). Pre-existing: `test/core/app_constants` fixed to 10 types this session.
