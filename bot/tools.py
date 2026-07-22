@@ -1919,6 +1919,87 @@ def save_memory(
     return f"Mémoire enregistrée : {mem_key}"
 
 
+def discover_memory(
+    conn: sqlite3.Connection,
+    keys: list[str] | None = None,
+    civ_id: int | None = None,
+    mem_type: str | None = None,
+    include_inactive: bool = False,
+) -> str:
+    """Read side of the agent's own memory — inventory, or full entries by key.
+
+    WHY: recall is push-only (relevance-gated), so a memory it doesn't surface is
+    invisible to the agent — it can neither answer "what do I already know?" nor look
+    up the key of a memory it wants to correct. This is the pull counterpart.
+
+    - without ``keys`` -> a COMPACT inventory (key, description, scope, anchor) with
+      NO content, so listing everything stays cheap in tokens.
+    - with ``keys``    -> the full entries for exactly those keys; keys that don't
+      exist are reported explicitly rather than silently dropped.
+    """
+    where = []
+    params: list = []
+    if not include_inactive:
+        where.append("m.active = 1")
+    if civ_id is not None:
+        where.append("m.civ_id = ?")
+        params.append(civ_id)
+    if mem_type:
+        where.append("m.mem_type = ?")
+        params.append(mem_type)
+    if keys:
+        where.append(f"m.mem_key IN ({','.join('?' * len(keys))})")
+        params.extend(keys)
+
+    sql = (
+        "SELECT m.mem_key, m.description, m.content, m.mem_type, m.active, "
+        "       c.name AS civ_name, t.turn_number "
+        "FROM agent_memory m "
+        "LEFT JOIN civ_civilizations c ON c.id = m.civ_id "
+        "LEFT JOIN turn_turns t ON t.id = m.source_turn "
+        + (" WHERE " + " AND ".join(where) if where else "")
+        + " ORDER BY m.active DESC, m.updated_at DESC"
+    )
+    rows = conn.execute(sql, params).fetchall()
+
+    def _scope(civ_name, turn_number, active) -> str:
+        bits = [civ_name or "global"]
+        if turn_number is not None:
+            bits.append(f"dès T{turn_number}")
+        if not active:
+            bits.append("oubliée")
+        return " · ".join(bits)
+
+    if keys:
+        found = {r[0] for r in rows}
+        missing = [k for k in keys if k not in found]
+        if not rows:
+            return f"Aucune mémoire pour : {', '.join(f'`{k}`' for k in keys)}."
+        out = [f"## Mémoire de l'agent — {len(rows)} entrée(s)", ""]
+        for mem_key, description, content, m_type, active, civ_name, turn_number in rows:
+            kind = "préférence" if m_type == "preference" else "fait"
+            out.append(f"### `{mem_key}` ({kind} · {_scope(civ_name, turn_number, active)})")
+            if description:
+                out.append(f"**{description}**")
+            out.append(content or "")
+            out.append("")
+        if missing:
+            out.append(f"Introuvable(s) : {', '.join(f'`{k}`' for k in missing)}.")
+        return "\n".join(out)
+
+    if not rows:
+        return "Aucune mémoire enregistrée."
+
+    out = [f"## Mémoire de l'agent — inventaire ({len(rows)})", ""]
+    for mem_key, description, _content, m_type, active, civ_name, turn_number in rows:
+        kind = "préférence" if m_type == "preference" else "fait"
+        label = description or "(sans description)"
+        out.append(f"- `{mem_key}` — {label} · {kind} · {_scope(civ_name, turn_number, active)}")
+    out.append("")
+    out.append("Utilise `discoverMemory(keys=[...])` pour lire le contenu de ces mémoires.")
+    return "\n".join(out)
+
+
 def forget_memory(conn: sqlite3.Connection, mem_key: str, civ_id: int | None = None) -> str:
     """Deactivate an agent memory (kept for the review trail, not recalled)."""
     mem_key = (mem_key or "").strip()
@@ -3066,6 +3147,28 @@ def dispatch_tool(
         if not entity_name:
             return "Error: entityName is required."
         return find_entity_on_map(conn, entity_name)
+
+    if tool_name == "discoverMemory":
+        civ_id = None
+        if tool_input.get("civName"):
+            resolved = _resolve()
+            if resolved and "error" in resolved:
+                return resolved["error"]
+            if resolved:
+                civ_id = resolved["id"]
+        raw_keys = tool_input.get("keys")
+        keys = None
+        if isinstance(raw_keys, list):
+            keys = [str(k).strip() for k in raw_keys if str(k).strip()] or None
+        elif isinstance(raw_keys, str) and raw_keys.strip():
+            keys = [raw_keys.strip()]  # tolerate a bare string
+        return discover_memory(
+            conn,
+            keys=keys,
+            civ_id=civ_id,
+            mem_type=(tool_input.get("type") or None),
+            include_inactive=bool(tool_input.get("includeInactive")),
+        )
 
     if tool_name == "editMemory":
         # One tool that does everything: create / update (default) or forget.

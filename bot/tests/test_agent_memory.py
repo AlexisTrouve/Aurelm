@@ -13,7 +13,7 @@ from __future__ import annotations
 import sqlite3
 
 from bot.agent import _recall_memories
-from bot.tools import forget_memory, save_memory
+from bot.tools import discover_memory, forget_memory, save_memory
 
 # Mirrors migration 039_agent_memory.sql (tests are self-contained).
 _SCHEMA = """
@@ -233,6 +233,85 @@ def test_recall_no_anchor_when_source_turn_null(tmp_path):
     out = _recall_memories(db, "quoi que ce soit")
     assert "bronze exige" in out
     assert "à partir de T" not in out  # no anchor => no "as of" clause
+
+
+# --- discoverMemory: the agent READS its own memory -------------------------
+# Recall is push-only (relevance-gated), so without this the agent cannot ask
+# "what do I already know?" nor look up the key of a memory it wants to correct.
+
+def test_discover_inventory_lists_keys_without_content():
+    """No keys -> a compact inventory: keys + descriptions, but NOT the content."""
+    c = _conn()
+    save_memory(c, "confluence-bronze", "Les Confluents n'ont pas de bronze.",
+                description="Bronze de la Confluence", civ_id=1, source_turn=1)
+    save_memory(c, "style-citation", "Toujours citer le tour.",
+                description="Style de reponse", civ_id=None, mem_type="preference")
+
+    out = discover_memory(c)
+    assert "confluence-bronze" in out and "style-citation" in out
+    assert "Bronze de la Confluence" in out          # descriptions shown
+    assert "n'ont pas de bronze" not in out          # content NOT shown (cheap)
+    assert "T12" in out                              # anchor shown in the inventory
+
+
+def test_discover_by_keys_returns_content():
+    c = _conn()
+    save_memory(c, "confluence-bronze", "Les Confluents n'ont pas de bronze.", civ_id=1)
+    save_memory(c, "style-citation", "Toujours citer le tour.", civ_id=None)
+
+    out = discover_memory(c, keys=["confluence-bronze"])
+    assert "n'ont pas de bronze" in out       # full content for the asked key
+    assert "citer le tour" not in out         # the other memory is not returned
+
+
+def test_discover_reports_unknown_keys():
+    """An unknown key must be reported, not silently dropped."""
+    c = _conn()
+    save_memory(c, "connue", "contenu", civ_id=None)
+    out = discover_memory(c, keys=["connue", "inexistante"])
+    assert "contenu" in out
+    assert "inexistante" in out  # explicitly flagged as not found
+
+
+def test_discover_excludes_inactive_unless_asked():
+    c = _conn()
+    save_memory(c, "vieille", "info perimee", civ_id=None)
+    forget_memory(c, "vieille")
+
+    assert "vieille" not in discover_memory(c)
+    assert "vieille" in discover_memory(c, include_inactive=True)
+
+
+def test_discover_filters_by_civ_and_type():
+    c = _conn()
+    save_memory(c, "conf-fact", "fait confluence", civ_id=1, mem_type="fact")
+    save_memory(c, "cds-fact", "fait cheveux", civ_id=2, mem_type="fact")
+    save_memory(c, "pref", "une preference", civ_id=None, mem_type="preference")
+
+    civ_only = discover_memory(c, civ_id=1)
+    assert "conf-fact" in civ_only and "cds-fact" not in civ_only
+
+    prefs = discover_memory(c, mem_type="preference")
+    assert "pref" in prefs and "conf-fact" not in prefs
+
+
+def test_dispatch_discovermemory_wiring():
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    save_memory(c, "conf-fact", "fait confluence", civ_id=1)
+    save_memory(c, "cds-fact", "fait cheveux", civ_id=2)
+
+    out = dispatch_tool(c, "discoverMemory", {"civName": "Confluence"})
+    assert "conf-fact" in out and "cds-fact" not in out  # civName -> civ_id filter
+
+    full = dispatch_tool(c, "discoverMemory", {"keys": ["conf-fact"]})
+    assert "fait confluence" in full  # content returned for the asked key
+
+
+def test_discover_empty_is_explicit():
+    c = _conn()
+    assert "aucune" in discover_memory(c).lower()
 
 
 def test_recall_missing_table_tolerated(tmp_path):
