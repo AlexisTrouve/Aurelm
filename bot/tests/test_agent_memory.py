@@ -18,6 +18,7 @@ from bot.tools import forget_memory, save_memory
 # Mirrors migration 039_agent_memory.sql (tests are self-contained).
 _SCHEMA = """
 CREATE TABLE civ_civilizations (id INTEGER PRIMARY KEY, name TEXT, player_name TEXT);
+CREATE TABLE turn_turns (id INTEGER PRIMARY KEY AUTOINCREMENT, civ_id INTEGER, turn_number INTEGER);
 CREATE TABLE agent_memory (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     mem_key     TEXT NOT NULL,
@@ -41,6 +42,8 @@ def _conn() -> sqlite3.Connection:
         "INSERT INTO civ_civilizations (id, name) VALUES (?, ?)",
         [(1, "Confluence"), (2, "Cheveux de Sang")],
     )
+    # A turn to anchor memories on (civ 1, turn 12 -> turn_id 1).
+    c.execute("INSERT INTO turn_turns (id, civ_id, turn_number) VALUES (1, 1, 12)")
     c.commit()
     return c
 
@@ -54,6 +57,8 @@ def _file_db(tmp_path) -> tuple[str, sqlite3.Connection]:
         "INSERT INTO civ_civilizations (id, name) VALUES (?, ?)",
         [(1, "Confluence"), (2, "Cheveux de Sang")],
     )
+    # A turn to anchor memories on (civ 1, turn 12 -> turn_id 1).
+    c.execute("INSERT INTO turn_turns (id, civ_id, turn_number) VALUES (1, 1, 12)")
     c.commit()
     return str(p), c
 
@@ -149,6 +154,53 @@ def test_dispatch_save_requires_key_and_content():
     assert "Error" in dispatch_tool(c, "saveMemory", {"content": "x"})   # no key
     assert "Error" in dispatch_tool(c, "saveMemory", {"key": "k"})       # no content
     assert c.execute("SELECT COUNT(*) FROM agent_memory").fetchone()[0] == 0
+
+
+# --- increment 3: source_turn anchoring ("as of turn N") --------------------
+
+def test_save_memory_stores_source_turn():
+    c = _conn()
+    save_memory(c, "confluence-bronze", "pas de bronze", civ_id=1, source_turn=1)
+    assert c.execute(
+        "SELECT source_turn FROM agent_memory WHERE mem_key='confluence-bronze'"
+    ).fetchone()[0] == 1
+
+
+def test_dispatch_resolves_turn_number_to_id():
+    """The model passes a turn NUMBER (T12); dispatch resolves it to the turn_id
+    for that civ before storing it as the anchor."""
+    from bot.tools import dispatch_tool
+
+    c = _conn()  # seeds turn (civ 1, turn_number 12) -> turn_id 1
+    out = dispatch_tool(c, "saveMemory", {
+        "key": "confluence-bronze",
+        "content": "Les Confluents n'ont pas de bronze.",
+        "civName": "Confluence",
+        "turnNumber": 12,
+    })
+    assert "enregistr" in out.lower()
+    assert c.execute(
+        "SELECT source_turn FROM agent_memory WHERE mem_key='confluence-bronze'"
+    ).fetchone()[0] == 1  # resolved (civ 1, turn 12) -> turn_id 1
+
+
+def test_recall_shows_anchor_turn(tmp_path):
+    db, c = _file_db(tmp_path)  # seeds turn (civ 1, turn 12) -> turn_id 1
+    save_memory(c, "confluence-bronze",
+                "Les Confluents n'ont pas de bronze.", civ_id=1, mem_type="fact", source_turn=1)
+    c.close()
+    out = _recall_memories(db, "recap de la Confluence")
+    assert "bronze" in out
+    assert "T12" in out  # the anchor is surfaced so the agent reasons "as of T12"
+
+
+def test_recall_no_anchor_when_source_turn_null(tmp_path):
+    db, c = _file_db(tmp_path)
+    save_memory(c, "regle-globale", "Le bronze exige l'etain.", civ_id=None, mem_type="preference")
+    c.close()
+    out = _recall_memories(db, "quoi que ce soit")
+    assert "bronze exige" in out
+    assert "à partir de T" not in out  # no anchor => no "as of" clause
 
 
 def test_recall_missing_table_tolerated(tmp_path):

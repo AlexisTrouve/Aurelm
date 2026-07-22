@@ -330,8 +330,11 @@ def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
         conn = sqlite3.connect(db_path)
         try:
             rows = conn.execute(
-                "SELECT mem_key, description, content, civ_id, keywords, mem_type "
-                "FROM agent_memory WHERE active = 1 ORDER BY updated_at DESC"
+                "SELECT m.mem_key, m.description, m.content, m.civ_id, m.keywords, "
+                "       m.mem_type, t.turn_number "
+                "FROM agent_memory m "
+                "LEFT JOIN turn_turns t ON t.id = m.source_turn "
+                "WHERE m.active = 1 ORDER BY m.updated_at DESC"
             ).fetchall()
         except sqlite3.OperationalError:
             conn.close()
@@ -348,22 +351,25 @@ def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
     qkeys = _keywords(query)
     named_civ_ids = {cid for cid, name in civs if name and _norm(name) in nquery}
 
-    selected: list[tuple[str, str, str]] = []
-    for mem_key, description, content, civ_id, keywords, mem_type in rows:
+    selected: list[tuple[str, str, str, int | None]] = []
+    for mem_key, description, content, civ_id, keywords, mem_type, turn_number in rows:
         if mem_type == "preference":
-            selected.append((mem_key, description, content))     # always-on
+            selected.append((mem_key, description, content, turn_number))     # always-on
             continue
         text = _norm(f"{mem_key} {description} {content} {keywords}")
         if (civ_id is not None and civ_id in named_civ_ids) or any(k in text for k in qkeys):
-            selected.append((mem_key, description, content))     # recalled fact
+            selected.append((mem_key, description, content, turn_number))     # recalled fact
 
     if not selected:
         return ""
 
     lines = ["## Mémoire de l'agent (rulings et préférences du MJ — font foi)", ""]
-    for mem_key, description, content in selected[:limit]:
+    for mem_key, description, content, turn_number in selected[:limit]:
         head = description or mem_key
-        lines.append(f"**{head}**: {content}")
+        # Surface the anchor so the agent treats the memory as "as of T<n>" and can
+        # flag when newer pipeline data may have superseded it.
+        anchor = f" (à partir de T{turn_number})" if turn_number is not None else ""
+        lines.append(f"**{head}**{anchor}: {content}")
         lines.append("")
     return "\n\n---\n\n" + "\n".join(lines)
 
