@@ -1,9 +1,21 @@
-# Handoff — Aurelm (Step 10 done, Step 9 polished, pipeline type-exclusion shipped)
+# Handoff — Aurelm (agent memory layer shipped; Step 9/10 done)
 
-Paste-ready briefing for the next session. Everything below is on `main` (`9bfca5f`),
+Paste-ready briefing for the next session. Everything below is on `main` (`0df2b8c`),
 pushed to GitHub + Gitea.
 
 ## State: what's done
+
+- **Agent memory layer — DONE** (PRs #18-21). The agent keeps **its own memory**,
+  written from Arthur's feedback (`editMemory`: create / update / forget) and
+  **recalled per request** with its key and turn anchor surfaced; memories take
+  precedence over pipeline data; Arthur reviews them in Settings → *Mémoire de
+  l'agent*. It also fixed the agent's biggest structural weakness — the system prompt
+  used to be assembled **once at startup**, static and blind to the question.
+  **Read `docs/agent-memory.md` first** — it holds the full reference AND the approved
+  implementation plan for the two next pieces (`discoverMemory`, memory→DB links).
+  **Known gap:** whether a live model actually calls `editMemory` at the right moments
+  is *unproven* — machinery is tested, behaviour is not. A live-LLM test / dogfood is
+  the recommended next validation.
 
 - **Step 9 — in-app graph: DONE** (PR #16, `00d3cd6`). The "force-directed unusable"
   premise was stale — that version died at `4b79a52` (already a radial ego-graph on
@@ -41,6 +53,16 @@ pushed to GitHub + Gitea.
 
 ## Open items
 
+- **Memory layer, next two pieces — planned and approved, not built.** Full step-by-step
+  in `docs/agent-memory.md` ("Planned"):
+  1. **`discoverMemory`** — the agent can't currently *read* its own memory (recall is
+     push-only). One read tool: compact inventory without `keys`, full entries with
+     `keys: [...]`. Small, no migration.
+  2. **Memory → DB article links** (`entity` / `turn` / `subject`). ⚠️ **Entity ids are
+     not stable** — `alias_resolver` merges entities and redirects mentions/relations/
+     aliases/subjects; memory links **must be added to that redirect in the same
+     change** or they rot onto deactivated entities.
+- **Live-LLM test / dogfood of the memory layer** — the one unproven angle (see above).
 - `chat_screen.dart` is a **2114-line monolith** — rewrite candidate (self-flagged).
 - `claude_proxy` pipeline provider is fixed but **dormant** (not exposed in the
   wizard; Arthur uses ollama/openrouter).
@@ -90,6 +112,7 @@ models — test with a HARD prompt if verifying.
 
 ## Key files
 
+- `docs/agent-memory.md` — the agent memory layer + the approved plan for the next two pieces.
 - `docs/deployment.md` — the whole Step 10 system (read first).
 - `docs/exclude-entity-types.md` — the pipeline type-exclusion feature + Demiurgos contract.
 - `docs/enrollment-api-handoff.md` + `enrollment-client-design.md` — the activation flow.
@@ -100,7 +123,7 @@ models — test with a HARD prompt if verifying.
 
 ## Test surface
 
-- `python -m pytest bot/tests/` — 135. `cd pipeline && pytest -k "not _real"` — 270
+- `python -m pytest bot/tests/` — 156 (incl. memory + note recall). `cd pipeline && pytest -k "not _real"` — 270
   passed / 5 skipped (incl. `test_domain_profile` exclude_entity_types gate). `cd gui &&
   flutter test test/` — 41 unit (incl. ollama parse, launcher resolution, graph layout).
   `flutter test integration_test/app_boot_test.dart -d windows` — 9 (incl. graph
