@@ -340,6 +340,24 @@ def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
             conn.close()
             return ""  # table absent (pre-migration-039)
         civs = conn.execute("SELECT id, name FROM civ_civilizations").fetchall()
+        # Linked database articles, so the agent knows what it can drill into.
+        # Tolerant of DBs predating migration 040.
+        links_by_key: dict[str, list[str]] = {}
+        try:
+            for mem_key, ent, subj, turn in conn.execute(
+                "SELECT m.mem_key, e.canonical_name, s.title, t.turn_number "
+                "FROM agent_memory_links l "
+                "JOIN agent_memory m ON m.id = l.memory_id "
+                "LEFT JOIN entity_entities e ON e.id = l.entity_id "
+                "LEFT JOIN subject_subjects s ON s.id = l.subject_id "
+                "LEFT JOIN turn_turns t ON t.id = l.turn_id "
+                "WHERE m.active = 1"
+            ).fetchall():
+                label = ent or (f"sujet «{subj}»" if subj else (f"T{turn}" if turn is not None else None))
+                if label:
+                    links_by_key.setdefault(mem_key, []).append(label)
+        except sqlite3.OperationalError:
+            pass
         conn.close()
     except Exception:
         return ""
@@ -373,6 +391,9 @@ def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
         if turn_number is not None:
             meta.append(f"dès T{turn_number}")
         lines.append(f"**{head}** [{' · '.join(meta)}]: {content}")
+        linked = links_by_key.get(mem_key)
+        if linked:
+            lines.append(f"  → liens : {', '.join(linked)}")
         lines.append("")
     return "\n\n---\n\n" + "\n".join(lines)
 

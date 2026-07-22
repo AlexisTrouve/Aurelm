@@ -1,10 +1,11 @@
 # Agent memory layer
 
 The agent keeps **its own memory**, written from Arthur's feedback and recalled
-automatically when relevant. This is the reference for what shipped (increments 1–3
-+ the tool unification) and the plan for what's next.
+automatically when relevant — it can also read it back (`discoverMemory`) and tie a
+memory to the database articles it concerns.
 
-Shipped: PRs #18, #19, #20, #21 (`main` at `0df2b8c`, 2026-07-22).
+Shipped: PRs #18-21 (increments 1–3 + the tool unification), then `discoverMemory` and
+memory→article links. 2026-07-22.
 
 ---
 
@@ -92,6 +93,34 @@ SOUL.md tells the agent to use it when Arthur asks what it remembers, **before c
 a memory on a topic** (so it updates instead of duplicating under a new key), and to
 find a key the recall didn't show.
 
+### Links to database articles (migration 040)
+
+A memory can point at the articles it concerns. The agent passes **names**, dispatch
+resolves them to ids:
+
+```
+editMemory(..., links: ["entity:Argile Vivante", "turn:12", "subject:18"])
+```
+
+- `entity:` resolves by canonical name, then by alias (fuzzy) — the model knows names,
+  not ids. `turn:` resolves by (civ, turn number), since turn numbers are per-civ.
+  `subject:` is already a numeric id in the GM's vocabulary.
+- Unresolvable specs are **skipped**, never stored as dangling rows. Capped at 8 links
+  per memory so recall stays cheap.
+- Links are **replaced** on every upsert (they describe the memory as it now stands).
+- At recall they render under the memory: `→ liens : Argile Vivante, T12` — the agent's
+  entry point to drill in (`getEntityDetail`, `getTurnDetail`, `getSubjectDetail`)
+  instead of searching blind. The review screen shows them as 🔗 chips.
+
+**⚠️ Entity ids are not stable — and that is handled.** `alias_resolver` merges entities
+and deactivates the secondary, so a link stored as `entity_id=42` would rot onto a dead
+article once 42 is merged into 7. `_redirect_memory_links` (in `alias_resolver.py`) is
+called from **all three** redirect sites — the main merge, the orphan-pointer pass, and
+`runner.py`'s dedup merge — right next to where mentions and relations are redirected.
+It is tolerant of DBs predating migration 040. Tested in
+`pipeline/tests/test_alias_resolver.py` (a link follows a merge; a missing table never
+crashes a merge).
+
 ### Recall — `_recall_memories` (per request)
 
 Runs on every request, before the model call, and appends to the system prompt:
@@ -142,8 +171,10 @@ Drift `customSelect`/`customStatement`, no codegen) + `agentMemoryProvider`
 | path | role |
 |---|---|
 | `database/migrations/039_agent_memory.sql` | the table |
-| `bot/tools.py` | `save_memory` / `forget_memory` + the `editMemory` dispatch |
-| `bot/tool_definitions.py` | `editMemory` schema |
+| `database/migrations/040_agent_memory_links.sql` | links to entities / turns / subjects |
+| `bot/tools.py` | `save_memory` / `forget_memory` / `discover_memory` / `_set_memory_links` + dispatch |
+| `bot/tool_definitions.py` | `editMemory` + `discoverMemory` schemas |
+| `pipeline/pipeline/alias_resolver.py` | `_redirect_memory_links` — keeps entity links alive across merges (called from all 3 redirect sites, incl. `runner.py`'s) |
 | `bot/agent.py` | `_recall_agent_notes`, `_recall_memories`, injection into both answer paths |
 | `bot/prompts/SOUL.md` | when to memorise, key reuse, precedence + anchoring |
 | `gui/lib/data/repositories/agent_memory_repository.dart` | raw-SQL repo |
@@ -171,52 +202,10 @@ it. That is behaviour, not mechanism — it needs a **live-LLM test or dogfood**
 
 ---
 
-# Planned — implementation plan
+# Planned
 
-~~**A. `discoverMemory`**~~ — **SHIPPED** (see "Read" above). One extension left.
+Nothing outstanding on the memory layer itself — increments 1-3, `discoverMemory` and
+memory→article links have all shipped.
 
-## B. Links from a memory to database articles
-
-**Why.** Anchoring a memory to the entities/turns/subjects it concerns grounds it in
-the knowledge base: the agent can drill down (`getEntityDetail`) and Arthur can click
-through in the UI.
-
-**⚠️ The trap: entity ids are not stable.** `alias_resolver` **merges** entities —
-it redirects mentions, relations, aliases and subjects from the secondary to the
-primary and deactivates the secondary. A memory link stored as `entity_id=42` would
-dangle onto a deactivated entity once 42 is merged into 7. **Memory links must be
-added to that redirect list in the same change** — three lines now, a silent rot
-otherwise.
-
-**Shape**
-
-```sql
--- migration 040
-agent_memory_links(id, memory_id → agent_memory ON DELETE CASCADE,
-                   entity_id?, subject_id?, turn_id?)   -- exactly one target set
-```
-
-The agent passes **names**, dispatch resolves them:
-`editMemory(..., links: ["entity:Argile Vivante", "turn:12", "subject:18"])`.
-
-**Steps**
-1. `database/migrations/040_agent_memory_links.sql` — the table + indexes, FKs with
-   `ON DELETE CASCADE`. *(No semicolons inside SQL comments — the migration runner
-   splits on `;` before stripping comments.)*
-2. `gui/lib/data/database.dart` `_ensureMigrations` — add the `CREATE TABLE IF NOT
-   EXISTS` (Drift does not run SQL migrations).
-3. `bot/tools.py` — `editMemory` gains `links`; resolve `entity:` by name/alias
-   (fuzzy, like `getEntityDetail`), `turn:` by (civ, number), `subject:` by id.
-   Links are **replaced** on upsert. Cap the count to bound recall cost.
-4. `bot/agent.py` `_recall_memories` — join the links and render them inline
-   (`→ liens : Argile Vivante (entity), T12`) so the agent knows what to drill into.
-5. **`pipeline/pipeline/alias_resolver.py`** — add `agent_memory_links.entity_id` to
-   the secondary→primary redirect, next to mentions/relations/aliases/subjects. **This
-   is the mandatory step**, not an optimisation.
-6. Flutter — repo loads links, the card shows them as chips (clickable navigation to
-   the entity/turn/subject is a nice-to-have, not required for the first cut).
-7. Tests — name→id resolution; recall renders links; **an alias-merge test proving a
-   memory link follows the merge**; a gui E2E asserting a link chip renders.
-
-**Cost**: moderate — migration + write path + recall + resolver fix + UI. The resolver
-fix (step 5) ships **with** it, not after.
+The one thing still **unverified** is behavioural, not mechanical: see "Known gap"
+above. A live-LLM test or a dogfood session is the next validation.

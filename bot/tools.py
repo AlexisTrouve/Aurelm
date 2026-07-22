@@ -1919,6 +1919,80 @@ def save_memory(
     return f"Mémoire enregistrée : {mem_key}"
 
 
+#: Bound the number of links per memory so recall stays cheap.
+_MAX_MEMORY_LINKS = 8
+
+
+def _set_memory_links(
+    conn: sqlite3.Connection,
+    memory_id: int,
+    specs: list,
+    civ_id: int | None = None,
+) -> None:
+    """Replace a memory's links to database articles.
+
+    ``specs`` are what the model writes: ``"entity:Argile Vivante"``, ``"turn:12"``,
+    ``"subject:18"``. Entities resolve by canonical name then alias (the model knows
+    names, not ids); turns resolve by (civ, turn_number) since turn numbers are per-civ;
+    subjects are already numeric ids in the GM's vocabulary. Unresolvable specs are
+    skipped rather than stored as dangling rows.
+    """
+    try:
+        conn.execute("DELETE FROM agent_memory_links WHERE memory_id = ?", (memory_id,))
+    except sqlite3.OperationalError:
+        return  # table absent (pre-migration-040)
+
+    for spec in specs[:_MAX_MEMORY_LINKS]:
+        text = str(spec or "").strip()
+        if ":" not in text:
+            continue
+        kind, _, value = text.partition(":")
+        kind, value = kind.strip().lower(), value.strip()
+        if not value:
+            continue
+
+        entity_id = subject_id = turn_id = None
+        if kind == "entity":
+            row = conn.execute(
+                "SELECT id FROM entity_entities WHERE canonical_name = ? AND is_active = 1",
+                (value,),
+            ).fetchone() or conn.execute(
+                "SELECT e.id FROM entity_entities e LEFT JOIN entity_aliases a ON a.entity_id = e.id "
+                "WHERE (e.canonical_name LIKE ? OR a.alias LIKE ?) AND e.is_active = 1 LIMIT 1",
+                (f"%{value}%", f"%{value}%"),
+            ).fetchone()
+            if row:
+                entity_id = row[0]
+        elif kind == "turn":
+            try:
+                row = conn.execute(
+                    "SELECT id FROM turn_turns WHERE civ_id IS ? AND turn_number = ?",
+                    (civ_id, int(value)),
+                ).fetchone()
+                if row:
+                    turn_id = row[0]
+            except (TypeError, ValueError):
+                continue
+        elif kind == "subject":
+            try:
+                row = conn.execute(
+                    "SELECT id FROM subject_subjects WHERE id = ?", (int(value),)
+                ).fetchone()
+                if row:
+                    subject_id = row[0]
+            except (TypeError, ValueError):
+                continue
+
+        if entity_id is None and subject_id is None and turn_id is None:
+            continue
+        conn.execute(
+            "INSERT INTO agent_memory_links (memory_id, entity_id, subject_id, turn_id) "
+            "VALUES (?, ?, ?, ?)",
+            (memory_id, entity_id, subject_id, turn_id),
+        )
+    conn.commit()
+
+
 def discover_memory(
     conn: sqlite3.Connection,
     keys: list[str] | None = None,
@@ -3205,12 +3279,26 @@ def dispatch_tool(
                     source_turn = trow[0]
             except (TypeError, ValueError):
                 pass
-        return save_memory(
+        result = save_memory(
             conn, key, content,
             description=(tool_input.get("description") or ""),
             civ_id=civ_id,
             mem_type=(tool_input.get("type") or "fact"),
             source_turn=source_turn,
         )
+
+        # Links to database articles ("entity:Nom", "turn:12", "subject:18").
+        # Replaced wholesale on each upsert so the memory's links match what was passed.
+        raw_links = tool_input.get("links")
+        if isinstance(raw_links, str):
+            raw_links = [raw_links]
+        if isinstance(raw_links, list):
+            row = conn.execute(
+                "SELECT id FROM agent_memory WHERE mem_key = ? AND civ_id IS ?",
+                (key, civ_id),
+            ).fetchone()
+            if row:
+                _set_memory_links(conn, row[0], raw_links, civ_id)
+        return result
 
     return f"Unknown tool: {tool_name}"

@@ -483,3 +483,51 @@ class TestStoreAliases:
         self_rels = conn.execute("SELECT * FROM entity_relations WHERE source_entity_id = target_entity_id").fetchall()
         conn.close()
         assert len(self_rels) == 0
+
+
+# ---------------------------------------------------------------------------
+# Agent-memory links must survive entity merges
+# ---------------------------------------------------------------------------
+# Entity ids are NOT stable: a merge deactivates the secondary. A memory link left on
+# it would resolve to a dead article, so every redirect site calls _redirect_memory_links.
+
+def _memory_links_db():
+    import sqlite3
+
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        """
+        CREATE TABLE entity_entities (id INTEGER PRIMARY KEY, canonical_name TEXT, is_active INTEGER DEFAULT 1);
+        CREATE TABLE agent_memory (id INTEGER PRIMARY KEY, mem_key TEXT);
+        CREATE TABLE agent_memory_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, memory_id INTEGER, entity_id INTEGER
+        );
+        """
+    )
+    conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (7, 'Argile Vivante')")
+    conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (9, 'Argile')")
+    conn.execute("INSERT INTO agent_memory (id, mem_key) VALUES (1, 'argile-ruling')")
+    conn.execute("INSERT INTO agent_memory_links (memory_id, entity_id) VALUES (1, 7)")
+    conn.commit()
+    return conn
+
+
+def test_memory_link_follows_an_entity_merge():
+    from pipeline.alias_resolver import _redirect_memory_links
+
+    conn = _memory_links_db()
+    _redirect_memory_links(conn, 7, 9)  # 7 merged into 9
+    assert conn.execute(
+        "SELECT entity_id FROM agent_memory_links WHERE memory_id = 1"
+    ).fetchone()[0] == 9
+
+
+def test_redirect_memory_links_tolerates_missing_table():
+    """Databases predating migration 040 have no agent_memory_links — never crash a merge."""
+    import sqlite3
+
+    from pipeline.alias_resolver import _redirect_memory_links
+
+    conn = sqlite3.connect(":memory:")
+    conn.execute("CREATE TABLE entity_entities (id INTEGER PRIMARY KEY)")
+    _redirect_memory_links(conn, 1, 2)  # no-op, not an exception

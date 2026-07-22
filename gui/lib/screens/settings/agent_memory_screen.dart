@@ -91,6 +91,18 @@ class _MemoryCard extends ConsumerWidget {
                 Text(memory.description,
                     style: const TextStyle(fontWeight: FontWeight.w600)),
               Text(memory.content),
+              if (memory.links.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                // Linked database articles (entities / turns / subjects) this memory concerns.
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final label in memory.links)
+                      _chip('🔗 $label', scheme.tertiary),
+                  ],
+                ),
+              ],
               const SizedBox(height: 4),
               Row(
                 children: [

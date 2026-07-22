@@ -1389,6 +1389,9 @@ def store_aliases(db_path: str, aliases: list[ConfirmedAlias]) -> int:
                 (pid, pid),
             )
 
+            # 3b. Redirect agent-memory links (entity ids are not stable across merges)
+            _redirect_memory_links(conn, sid, pid)
+
             # 4. Merge tags: union of primary + secondary tag lists
             # (tags column may not exist on older DBs without migration 013)
             try:
@@ -1489,6 +1492,26 @@ def _resolve_orphan_pointers(conn) -> None:
                     "DELETE FROM entity_relations WHERE source_entity_id = ? AND target_entity_id = ?",
                     (active_id, active_id),
                 )
+                _redirect_memory_links(conn, orphan_id, active_id)
+
+
+def _redirect_memory_links(conn, from_entity_id: int, to_entity_id: int) -> None:
+    """Point agent-memory links at the surviving entity after a merge.
+
+    WHY this exists: entity ids are NOT stable. A merge deactivates the secondary, so a
+    memory link left on it would resolve to a dead article — the agent would drill into
+    a deactivated entity and the GM would click a broken chip. Every place that
+    redirects mentions/relations must redirect these too.
+
+    Tolerant of databases predating migration 040 (no agent_memory_links table).
+    """
+    try:
+        conn.execute(
+            "UPDATE agent_memory_links SET entity_id = ? WHERE entity_id = ?",
+            (to_entity_id, from_entity_id),
+        )
+    except Exception:
+        pass  # table absent (pre-migration-040) — nothing to redirect
 
 
 def _find_active_root(conn, entity_id: int) -> int | None:

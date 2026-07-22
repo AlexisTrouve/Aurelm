@@ -16,6 +16,10 @@ class AgentMemory {
   final bool active;
   final String updatedAt;
 
+  /// Labels of the database articles this memory links to (entity names, turn
+  /// numbers, subject titles) — display only.
+  final List<String> links;
+
   const AgentMemory({
     required this.id,
     required this.memKey,
@@ -27,6 +31,7 @@ class AgentMemory {
     required this.sourceTurn,
     required this.active,
     required this.updatedAt,
+    this.links = const [],
   });
 }
 
@@ -55,9 +60,30 @@ class AgentMemoryRepository {
       'ORDER BY m.active DESC, m.updated_at DESC',
     ).get();
 
+    // Linked database articles, keyed by memory id (one extra query, not N+1).
+    final linkRows = await db.customSelect(
+      'SELECT l.memory_id, e.canonical_name AS entity_name, s.title AS subject_title, '
+      '       t.turn_number '
+      'FROM agent_memory_links l '
+      'LEFT JOIN entity_entities e ON e.id = l.entity_id '
+      'LEFT JOIN subject_subjects s ON s.id = l.subject_id '
+      'LEFT JOIN turn_turns t ON t.id = l.turn_id',
+    ).get();
+    final linksByMemory = <int, List<String>>{};
+    for (final r in linkRows) {
+      final entity = r.read<String?>('entity_name');
+      final subject = r.read<String?>('subject_title');
+      final turn = r.read<int?>('turn_number');
+      final label = entity ?? (subject ?? (turn != null ? 'T$turn' : null));
+      if (label != null) {
+        linksByMemory.putIfAbsent(r.read<int>('memory_id'), () => []).add(label);
+      }
+    }
+
     return [
       for (final r in rows)
         AgentMemory(
+          links: linksByMemory[r.read<int>('id')] ?? const [],
           id: r.read<int>('id'),
           memKey: r.read<String>('mem_key'),
           description: r.read<String?>('description') ?? '',

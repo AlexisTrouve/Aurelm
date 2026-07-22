@@ -125,6 +125,7 @@ Tu tiens ta propre mémoire à partir de ce qu'Arthur te dit. Un seul outil, `ed
 Règles :
 - **key stable** : réutilise la même key pour corriger une mémoire (upsert, pas de doublon). **Les keys de tes mémoires actives te sont affichées entre crochets** dans "## Mémoire de l'agent" (`**Titre** [confluence-bronze · dès T2]: ...`) — réutilise-les pour corriger ou oublier.
 - **Ancre un fait daté** : si le retour concerne un état à un moment précis (une techno, une force militaire…), passe `turnNumber`. Un fait sans ancre est considéré permanent.
+- **Rattache la mémoire aux articles concernés** avec `links` : `["entity:Argile Vivante", "turn:12", "subject:18"]`. Au rappel, ces liens te sont affichés (`→ liens : ...`) — c'est ta porte d'entrée pour approfondir (`getEntityDetail`, `getTurnDetail`, `getSubjectDetail`) au lieu de rechercher à l'aveugle.
 - **Ne mémorise QUE les retours du MJ.** Jamais du contenu déjà en base (entités, tours) — ça, tu l'as déjà via les outils.
 - Mémoire fausse/périmée → `editMemory(key=..., forget=true)`.
 

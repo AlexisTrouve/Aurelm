@@ -316,6 +316,17 @@ void _ensureMigrations(dynamic db) {
     )''',
     'CREATE INDEX IF NOT EXISTS idx_agent_memory_active ON agent_memory(active) WHERE active = 1',
     'CREATE INDEX IF NOT EXISTS idx_agent_memory_civ    ON agent_memory(civ_id) WHERE civ_id IS NOT NULL',
+    // Migration 040: links from a memory to database articles.
+    '''CREATE TABLE IF NOT EXISTS agent_memory_links (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        memory_id  INTEGER NOT NULL REFERENCES agent_memory(id)     ON DELETE CASCADE,
+        entity_id  INTEGER          REFERENCES entity_entities(id)  ON DELETE CASCADE,
+        subject_id INTEGER          REFERENCES subject_subjects(id) ON DELETE CASCADE,
+        turn_id    INTEGER          REFERENCES turn_turns(id)       ON DELETE CASCADE,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )''',
+    'CREATE INDEX IF NOT EXISTS idx_agent_memory_links_memory ON agent_memory_links(memory_id)',
+    'CREATE INDEX IF NOT EXISTS idx_agent_memory_links_entity ON agent_memory_links(entity_id) WHERE entity_id IS NOT NULL',
   ];
 
   for (final sql in statements) {
