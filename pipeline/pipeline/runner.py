@@ -1676,6 +1676,10 @@ def _periodic_entity_dedup(conn, civ_id: int) -> int:
                 "UPDATE OR IGNORE entity_aliases SET entity_id = ? WHERE entity_id = ?",
                 (primary_id, eid),
             )
+            # Agent-memory links must follow the merge too — entity ids are not stable,
+            # and a link left on the secondary would point at a deactivated article.
+            from .alias_resolver import _redirect_memory_links
+            _redirect_memory_links(conn, eid, primary_id)
             # Deactivate secondary (soft delete to preserve history)
             conn.execute(
                 "UPDATE entity_entities SET is_active = 0 WHERE id = ?", (eid,)

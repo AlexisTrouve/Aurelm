@@ -497,6 +497,16 @@ TOOL_DEFINITIONS = [
                     "type": "integer",
                     "description": "Ancre le fait à un tour ('à partir de T12'). Optionnel, avec civName. Pour un fait daté qui pourrait évoluer.",
                 },
+                "links": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Articles de la base que cette mémoire concerne, pour pouvoir y revenir : "
+                        "'entity:Argile Vivante', 'turn:12', 'subject:18'. Les entités se résolvent "
+                        "par nom (ou alias), les tours par numéro pour la civ donnée. "
+                        "Remplace les liens existants à chaque appel. Max 8."
+                    ),
+                },
                 "forget": {
                     "type": "boolean",
                     "description": "true = OUBLIER (désactiver) la mémoire de cette key, quand le MJ dit qu'elle est fausse/périmée. Ignore les autres champs.",

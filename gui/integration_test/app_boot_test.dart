@@ -207,6 +207,8 @@ void main() {
         reason: 'the fixture preference memory must render');
     expect(find.text('dès T2'), findsOneWidget,
         reason: 'the anchored fact must show its "as of turn" chip');
+    expect(find.textContaining('Argile Vivante'), findsWidgets,
+        reason: 'the linked database article must render as a chip');
   });
 
   // Real destructive interaction, on a COPY of the fixture so the shared e2e.db

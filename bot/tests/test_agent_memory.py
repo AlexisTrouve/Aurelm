@@ -19,6 +19,16 @@ from bot.tools import discover_memory, forget_memory, save_memory
 _SCHEMA = """
 CREATE TABLE civ_civilizations (id INTEGER PRIMARY KEY, name TEXT, player_name TEXT);
 CREATE TABLE turn_turns (id INTEGER PRIMARY KEY AUTOINCREMENT, civ_id INTEGER, turn_number INTEGER);
+CREATE TABLE entity_entities (id INTEGER PRIMARY KEY AUTOINCREMENT, canonical_name TEXT,
+    entity_type TEXT, civ_id INTEGER, is_active INTEGER DEFAULT 1, disabled INTEGER DEFAULT 0);
+CREATE TABLE entity_aliases (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, alias TEXT);
+CREATE TABLE subject_subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, civ_id INTEGER, title TEXT);
+CREATE TABLE agent_memory_links (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    memory_id  INTEGER NOT NULL REFERENCES agent_memory(id) ON DELETE CASCADE,
+    entity_id  INTEGER, subject_id INTEGER, turn_id INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE agent_memory (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     mem_key     TEXT NOT NULL,
@@ -44,6 +54,10 @@ def _conn() -> sqlite3.Connection:
     )
     # A turn to anchor memories on (civ 1, turn 12 -> turn_id 1).
     c.execute("INSERT INTO turn_turns (id, civ_id, turn_number) VALUES (1, 1, 12)")
+    # An entity + subject to link memories to.
+    c.execute("INSERT INTO entity_entities (id, canonical_name, entity_type, civ_id) "
+              "VALUES (7, 'Argile Vivante', 'technology', 1)")
+    c.execute("INSERT INTO subject_subjects (id, civ_id, title) VALUES (18, 1, 'Exploiter l''argile')")
     c.commit()
     return c
 
@@ -59,6 +73,10 @@ def _file_db(tmp_path) -> tuple[str, sqlite3.Connection]:
     )
     # A turn to anchor memories on (civ 1, turn 12 -> turn_id 1).
     c.execute("INSERT INTO turn_turns (id, civ_id, turn_number) VALUES (1, 1, 12)")
+    # An entity + subject to link memories to.
+    c.execute("INSERT INTO entity_entities (id, canonical_name, entity_type, civ_id) "
+              "VALUES (7, 'Argile Vivante', 'technology', 1)")
+    c.execute("INSERT INTO subject_subjects (id, civ_id, title) VALUES (18, 1, 'Exploiter l''argile')")
     c.commit()
     return str(p), c
 
@@ -312,6 +330,57 @@ def test_dispatch_discovermemory_wiring():
 def test_discover_empty_is_explicit():
     c = _conn()
     assert "aucune" in discover_memory(c).lower()
+
+
+# --- memory -> DB article links ---------------------------------------------
+
+def test_editmemory_resolves_link_names_to_ids():
+    """The model passes names ('entity:Argile Vivante'); dispatch resolves them to ids."""
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    out = dispatch_tool(c, "editMemory", {
+        "key": "argile-ruling",
+        "content": "L'argile durcit en 3 secondes.",
+        "civName": "Confluence",
+        "links": ["entity:Argile Vivante", "turn:12", "subject:18"],
+    })
+    assert "enregistr" in out.lower()
+    mid = c.execute("SELECT id FROM agent_memory WHERE mem_key='argile-ruling'").fetchone()[0]
+    rows = c.execute(
+        "SELECT entity_id, subject_id, turn_id FROM agent_memory_links WHERE memory_id=?",
+        (mid,),
+    ).fetchall()
+    assert (7, None, None) in rows       # entity resolved by name
+    assert (None, None, 1) in rows       # turn 12 (civ 1) -> turn_id 1
+    assert (None, 18, None) in rows      # subject by id
+
+
+def test_links_are_replaced_on_upsert():
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    dispatch_tool(c, "editMemory", {"key": "k", "content": "v", "civName": "Confluence",
+                                    "links": ["entity:Argile Vivante", "turn:12"]})
+    dispatch_tool(c, "editMemory", {"key": "k", "content": "v2", "civName": "Confluence",
+                                    "links": ["subject:18"]})
+    mid = c.execute("SELECT id FROM agent_memory WHERE mem_key='k'").fetchone()[0]
+    rows = c.execute(
+        "SELECT entity_id, subject_id, turn_id FROM agent_memory_links WHERE memory_id=?",
+        (mid,),
+    ).fetchall()
+    assert rows == [(None, 18, None)]  # old links replaced, not accumulated
+
+
+def test_recall_renders_links(tmp_path):
+    db, c = _file_db(tmp_path)
+    save_memory(c, "argile-ruling", "L'argile durcit vite.", civ_id=1)
+    mid = c.execute("SELECT id FROM agent_memory WHERE mem_key='argile-ruling'").fetchone()[0]
+    c.execute("INSERT INTO agent_memory_links (memory_id, entity_id) VALUES (?, 7)", (mid,))
+    c.commit()
+    c.close()
+    out = _recall_memories(db, "recap de la Confluence")
+    assert "Argile Vivante" in out  # the linked article is named so the agent can drill in
 
 
 def test_recall_missing_table_tolerated(tmp_path):

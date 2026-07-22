@@ -154,6 +154,12 @@ def _build() -> None:
         ],
     )
 
+    # Link the anchored memory to the entity it concerns (renders a 🔗 chip).
+    cur.execute(
+        "INSERT INTO agent_memory_links (memory_id, entity_id) "
+        "SELECT id, 2 FROM agent_memory WHERE mem_key = 'confluence-bronze'"
+    )
+
     conn.commit()
     conn.close()
 
