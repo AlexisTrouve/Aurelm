@@ -3067,11 +3067,11 @@ def dispatch_tool(
             return "Error: entityName is required."
         return find_entity_on_map(conn, entity_name)
 
-    if tool_name == "saveMemory":
+    if tool_name == "editMemory":
+        # One tool that does everything: create / update (default) or forget.
         key = (tool_input.get("key") or "").strip()
-        content = (tool_input.get("content") or "").strip()
-        if not key or not content:
-            return "Error: key and content are required."
+        if not key:
+            return "Error: key is required."
         civ_id = None
         if tool_input.get("civName"):
             resolved = _resolve()
@@ -3079,6 +3079,15 @@ def dispatch_tool(
                 return resolved["error"]
             if resolved:
                 civ_id = resolved["id"]
+
+        # forget=true -> deactivate this memory, ignore the content fields.
+        if tool_input.get("forget"):
+            return forget_memory(conn, key, civ_id=civ_id)
+
+        content = (tool_input.get("content") or "").strip()
+        if not content:
+            return "Error: content is required (unless forget=true)."
+
         # Anchor: the model passes a turn NUMBER; resolve it to the turn_id for
         # this civ (turn numbers are per-civ). Unresolvable -> no anchor.
         source_turn = None
@@ -3100,16 +3109,5 @@ def dispatch_tool(
             mem_type=(tool_input.get("type") or "fact"),
             source_turn=source_turn,
         )
-
-    if tool_name == "forgetMemory":
-        key = (tool_input.get("key") or "").strip()
-        if not key:
-            return "Error: key is required."
-        civ_id = None
-        if tool_input.get("civName"):
-            resolved = _resolve()
-            if resolved and "error" not in resolved:
-                civ_id = resolved["id"]
-        return forget_memory(conn, key, civ_id=civ_id)
 
     return f"Unknown tool: {tool_name}"

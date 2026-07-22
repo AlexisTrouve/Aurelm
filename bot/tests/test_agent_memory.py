@@ -1,9 +1,9 @@
 """Increment 2 of the agent memory layer: the agent WRITES memories for itself.
 
 The agent saves durable memories from GM feedback (corrections, world rulings,
-answer preferences) via `saveMemory`, keyed by a slug so re-saving the same key
+answer preferences) via `editMemory`, keyed by a slug so re-saving the same key
 UPDATES instead of duplicating (a memory it maintains, not an append-log), and
-`forgetMemory` deactivates a stale one. `_recall_memories` surfaces the relevant
+`editMemory(forget=true)` deactivates a stale one. `_recall_memories` surfaces the relevant
 ones per request:
 - type 'preference'  -> always injected (behavioural, applies to every answer).
 - type 'fact'        -> only when its civ is named or a query keyword overlaps.
@@ -122,38 +122,59 @@ def test_forgotten_memory_not_recalled(tmp_path):
     assert "reserve d'or" not in _recall_memories(db, "recap Confluence")
 
 
-def test_dispatch_routes_save_and_forget():
-    """Wiring lock: the model's tool call flows through dispatch_tool → a memory row,
-    with civName resolved to civ_id; forgetMemory deactivates it."""
+def test_editmemory_creates_updates_and_forgets():
+    """One tool does everything: dispatch_tool('editMemory', ...) creates (civName
+    resolved), updates on the same key, and forgets with forget=true."""
     from bot.tools import dispatch_tool
 
     c = _conn()
-    out = dispatch_tool(c, "saveMemory", {
+    # create
+    out = dispatch_tool(c, "editMemory", {
         "key": "confluence-bronze",
         "content": "Les Confluents n'ont pas de bronze.",
         "type": "fact",
         "civName": "Confluence",
     })
     assert "enregistr" in out.lower()
-    row = c.execute(
+    assert c.execute(
         "SELECT content, civ_id, mem_type FROM agent_memory WHERE mem_key='confluence-bronze'"
-    ).fetchone()
-    assert row == ("Les Confluents n'ont pas de bronze.", 1, "fact")  # civName -> civ_id=1
+    ).fetchone() == ("Les Confluents n'ont pas de bronze.", 1, "fact")
 
-    out2 = dispatch_tool(c, "forgetMemory", {"key": "confluence-bronze", "civName": "Confluence"})
+    # update (same key -> no duplicate)
+    dispatch_tool(c, "editMemory", {
+        "key": "confluence-bronze", "content": "Ils ont du bronze depuis T20.", "civName": "Confluence",
+    })
+    rows = c.execute("SELECT content FROM agent_memory WHERE mem_key='confluence-bronze'").fetchall()
+    assert len(rows) == 1 and rows[0][0] == "Ils ont du bronze depuis T20."
+
+    # forget
+    out2 = dispatch_tool(c, "editMemory", {
+        "key": "confluence-bronze", "civName": "Confluence", "forget": True,
+    })
     assert "oubli" in out2.lower()
     assert c.execute(
         "SELECT active FROM agent_memory WHERE mem_key='confluence-bronze'"
     ).fetchone()[0] == 0
 
 
-def test_dispatch_save_requires_key_and_content():
+def test_editmemory_requires_key_and_content():
     from bot.tools import dispatch_tool
 
     c = _conn()
-    assert "Error" in dispatch_tool(c, "saveMemory", {"content": "x"})   # no key
-    assert "Error" in dispatch_tool(c, "saveMemory", {"key": "k"})       # no content
+    assert "Error" in dispatch_tool(c, "editMemory", {"content": "x"})   # no key
+    assert "Error" in dispatch_tool(c, "editMemory", {"key": "k"})       # no content (and not forget)
     assert c.execute("SELECT COUNT(*) FROM agent_memory").fetchone()[0] == 0
+
+
+def test_editmemory_forget_needs_no_content():
+    """forget=true must work without content (it ignores the content fields)."""
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    save_memory(c, "k", "x", civ_id=None)
+    out = dispatch_tool(c, "editMemory", {"key": "k", "forget": True})
+    assert "oubli" in out.lower()
+    assert c.execute("SELECT active FROM agent_memory WHERE mem_key='k'").fetchone()[0] == 0
 
 
 # --- increment 3: source_turn anchoring ("as of turn N") --------------------
@@ -172,7 +193,7 @@ def test_dispatch_resolves_turn_number_to_id():
     from bot.tools import dispatch_tool
 
     c = _conn()  # seeds turn (civ 1, turn_number 12) -> turn_id 1
-    out = dispatch_tool(c, "saveMemory", {
+    out = dispatch_tool(c, "editMemory", {
         "key": "confluence-bronze",
         "content": "Les Confluents n'ont pas de bronze.",
         "civName": "Confluence",
@@ -192,6 +213,17 @@ def test_recall_shows_anchor_turn(tmp_path):
     out = _recall_memories(db, "recap de la Confluence")
     assert "bronze" in out
     assert "T12" in out  # the anchor is surfaced so the agent reasons "as of T12"
+
+
+def test_recall_surfaces_the_key(tmp_path):
+    """The mem_key must appear in the recalled block so the agent can reuse it via
+    editMemory to correct or forget the memory."""
+    db, c = _file_db(tmp_path)
+    save_memory(c, "confluence-bronze", "pas de bronze", description="Bronze",
+                civ_id=1, mem_type="fact")
+    c.close()
+    out = _recall_memories(db, "recap de la Confluence")
+    assert "confluence-bronze" in out  # the key is visible, not just the description
 
 
 def test_recall_no_anchor_when_source_turn_null(tmp_path):

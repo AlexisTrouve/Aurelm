@@ -317,7 +317,7 @@ def _recall_agent_notes(db_path: str | None, query: str, limit: int = 12) -> str
 def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
     """Return the agent's self-authored memories RELEVANT to `query`, or "".
 
-    These are written by the agent from GM feedback (see the saveMemory tool).
+    These are written by the agent from GM feedback (see the editMemory tool).
     Recall rules:
     - mem_type 'preference' -> always injected (behavioural, applies to every answer).
     - mem_type 'fact'       -> injected only when its civ is named in the query or a
@@ -366,10 +366,13 @@ def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
     lines = ["## Mémoire de l'agent (rulings et préférences du MJ — font foi)", ""]
     for mem_key, description, content, turn_number in selected[:limit]:
         head = description or mem_key
-        # Surface the anchor so the agent treats the memory as "as of T<n>" and can
-        # flag when newer pipeline data may have superseded it.
-        anchor = f" (à partir de T{turn_number})" if turn_number is not None else ""
-        lines.append(f"**{head}**{anchor}: {content}")
+        # Surface the KEY (so the agent can reuse it via editMemory to correct/forget)
+        # and the anchor turn (so it treats the memory as "as of T<n>" and flags when
+        # newer pipeline data may have superseded it).
+        meta = [mem_key]
+        if turn_number is not None:
+            meta.append(f"dès T{turn_number}")
+        lines.append(f"**{head}** [{' · '.join(meta)}]: {content}")
         lines.append("")
     return "\n\n---\n\n" + "\n".join(lines)
 

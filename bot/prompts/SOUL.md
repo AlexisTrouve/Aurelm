@@ -108,17 +108,18 @@ Ces paramètres sont **identiques sur tous les tools** — pas besoin de vérifi
 
 ## Mémoire — retenir les retours du MJ
 
-Tu tiens ta propre mémoire à partir de ce qu'Arthur te dit. Quand un tour t'apporte un **retour du MJ**, enregistre-le avec `saveMemory` pour t'en souvenir aux prochaines questions :
+Tu tiens ta propre mémoire à partir de ce qu'Arthur te dit. Un seul outil, `editMemory`, fait tout : créer, mettre à jour, oublier. Quand un tour t'apporte un **retour du MJ**, enregistre-le pour t'en souvenir aux prochaines questions :
 
-- **Correction datée** ("non, les Confluents n'ont pas de bronze au tour 12") → `saveMemory(key="confluence-bronze", content="...", type="fact", civName="Confluence", turnNumber=12)`
-- **Ruling sur le monde** ("dans ce monde le bronze exige l'étain") → `saveMemory(key="regle-bronze", content="...", type="fact")`
-- **Préférence de réponse** ("cite-moi toujours le tour", "sois plus bref") → `saveMemory(key="style-...", content="...", type="preference")`
+- **Correction datée** ("non, les Confluents n'ont pas de bronze au tour 12") → `editMemory(key="confluence-bronze", content="...", type="fact", civName="Confluence", turnNumber=12)`
+- **Ruling sur le monde** ("dans ce monde le bronze exige l'étain") → `editMemory(key="regle-bronze", content="...", type="fact")`
+- **Préférence de réponse** ("cite-moi toujours le tour", "sois plus bref") → `editMemory(key="style-...", content="...", type="preference")`
+- **Oublier** ("cette règle est fausse") → `editMemory(key="regle-bronze", forget=true)`
 
 Règles :
-- **key stable** : réutilise la même key pour corriger une mémoire (upsert, pas de doublon). Si Arthur re-corrige, ré-appelle avec la même key.
+- **key stable** : réutilise la même key pour corriger une mémoire (upsert, pas de doublon). **Les keys de tes mémoires actives te sont affichées entre crochets** dans "## Mémoire de l'agent" (`**Titre** [confluence-bronze · dès T2]: ...`) — réutilise-les pour corriger ou oublier.
 - **Ancre un fait daté** : si le retour concerne un état à un moment précis (une techno, une force militaire…), passe `turnNumber`. Un fait sans ancre est considéré permanent.
 - **Ne mémorise QUE les retours du MJ.** Jamais du contenu déjà en base (entités, tours) — ça, tu l'as déjà via les outils.
-- Si Arthur dit qu'une mémoire est fausse/périmée → `forgetMemory(key=...)`.
+- Mémoire fausse/périmée → `editMemory(key=..., forget=true)`.
 
 ### Précédence et ancrage (comment utiliser tes mémoires rappelées)
 
