@@ -12,6 +12,7 @@ class AgentMemory {
   final int? civId;
   final String? civName; // joined for display, null = global memory
   final String memType; // 'fact' | 'preference'
+  final int? sourceTurn; // anchor turn NUMBER ("as of T<n>"), null = permanent
   final bool active;
   final String updatedAt;
 
@@ -23,6 +24,7 @@ class AgentMemory {
     required this.civId,
     required this.civName,
     required this.memType,
+    required this.sourceTurn,
     required this.active,
     required this.updatedAt,
   });
@@ -45,9 +47,11 @@ class AgentMemoryRepository {
 
     final rows = await db.customSelect(
       'SELECT m.id, m.mem_key, m.description, m.content, m.civ_id, '
-      '       c.name AS civ_name, m.mem_type, m.active, m.updated_at '
+      '       c.name AS civ_name, m.mem_type, t.turn_number AS anchor_turn, '
+      '       m.active, m.updated_at '
       'FROM agent_memory m '
       'LEFT JOIN civ_civilizations c ON c.id = m.civ_id '
+      'LEFT JOIN turn_turns t ON t.id = m.source_turn '
       'ORDER BY m.active DESC, m.updated_at DESC',
     ).get();
 
@@ -61,6 +65,7 @@ class AgentMemoryRepository {
           civId: r.read<int?>('civ_id'),
           civName: r.read<String?>('civ_name'),
           memType: r.read<String?>('mem_type') ?? 'fact',
+          sourceTurn: r.read<int?>('anchor_turn'),
           active: r.read<int>('active') != 0,
           updatedAt: r.read<String?>('updated_at') ?? '',
         ),

@@ -1880,12 +1880,16 @@ def save_memory(
     civ_id: int | None = None,
     mem_type: str = "fact",
     keywords: str = "",
+    source_turn: int | None = None,
 ) -> str:
     """Upsert an agent memory keyed by (mem_key, civ_id).
 
     WHY upsert: a memory is something the agent MAINTAINS — re-saving the same key
     (e.g. correcting a ruling) must UPDATE the row, not stack duplicates that would
     both surface at recall. `civ_id IS ?` matches the NULL (global) scope too.
+
+    ``source_turn`` (a turn_id) anchors a fact "as of turn N": it is surfaced at
+    recall so the agent reasons about whether newer pipeline data supersedes it.
     """
     mem_key = (mem_key or "").strip()
     content = (content or "").strip()
@@ -1900,16 +1904,16 @@ def save_memory(
     if existing:
         conn.execute(
             "UPDATE agent_memory SET content = ?, description = ?, keywords = ?, "
-            "mem_type = ?, active = 1, updated_at = datetime('now') WHERE id = ?",
-            (content, description, keywords, mem_type, existing[0]),
+            "mem_type = ?, source_turn = ?, active = 1, updated_at = datetime('now') WHERE id = ?",
+            (content, description, keywords, mem_type, source_turn, existing[0]),
         )
         conn.commit()
         return f"Mémoire mise à jour : {mem_key}"
 
     conn.execute(
-        "INSERT INTO agent_memory (mem_key, description, content, civ_id, keywords, mem_type) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (mem_key, description, content, civ_id, keywords, mem_type),
+        "INSERT INTO agent_memory (mem_key, description, content, civ_id, keywords, mem_type, source_turn) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (mem_key, description, content, civ_id, keywords, mem_type, source_turn),
     )
     conn.commit()
     return f"Mémoire enregistrée : {mem_key}"
@@ -3075,11 +3079,26 @@ def dispatch_tool(
                 return resolved["error"]
             if resolved:
                 civ_id = resolved["id"]
+        # Anchor: the model passes a turn NUMBER; resolve it to the turn_id for
+        # this civ (turn numbers are per-civ). Unresolvable -> no anchor.
+        source_turn = None
+        turn_raw = tool_input.get("turnNumber")
+        if turn_raw is not None and civ_id is not None:
+            try:
+                trow = conn.execute(
+                    "SELECT id FROM turn_turns WHERE civ_id = ? AND turn_number = ?",
+                    (civ_id, int(turn_raw)),
+                ).fetchone()
+                if trow:
+                    source_turn = trow[0]
+            except (TypeError, ValueError):
+                pass
         return save_memory(
             conn, key, content,
             description=(tool_input.get("description") or ""),
             civ_id=civ_id,
             mem_type=(tool_input.get("type") or "fact"),
+            source_turn=source_turn,
         )
 
     if tool_name == "forgetMemory":

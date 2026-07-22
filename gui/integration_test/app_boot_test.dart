@@ -205,6 +205,8 @@ void main() {
         reason: 'the fixture fact memory must render');
     expect(find.textContaining('citer le tour'), findsWidgets,
         reason: 'the fixture preference memory must render');
+    expect(find.text('dès T2'), findsOneWidget,
+        reason: 'the anchored fact must show its "as of turn" chip');
   });
 
   // Real destructive interaction, on a COPY of the fixture so the shared e2e.db

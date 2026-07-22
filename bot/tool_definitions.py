@@ -456,6 +456,10 @@ TOOL_DEFINITIONS = [
                     "type": "string",
                     "description": "Civ concernée (optionnel). Vide = mémoire globale.",
                 },
+                "turnNumber": {
+                    "type": "integer",
+                    "description": "Ancre le fait à un tour ('à partir de T12'). Optionnel, avec civName. Utile pour un fait daté qui pourrait évoluer (ex: état d'une techno à un moment donné).",
+                },
             },
             "required": ["key", "content"],
         },

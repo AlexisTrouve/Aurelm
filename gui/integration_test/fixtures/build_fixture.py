@@ -144,12 +144,13 @@ def _build() -> None:
     # --- agent memory (self-authored from GM feedback; migration 039) --------
     cur.executemany(
         "INSERT INTO agent_memory (mem_key, description, content, civ_id, mem_type, "
-        "active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+        "source_turn, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)",
         [
+            # Anchored to turn_id 2 (civ 1, turn 2) -> renders "dès T2".
             ("confluence-bronze", "Bronze de la Confluence",
-             "Les Confluents n'ont pas encore de bronze (ruling MJ).", 1, "fact", _T0, _T0),
+             "Les Confluents n'ont pas encore de bronze (ruling MJ).", 1, "fact", 2, _T0, _T0),
             ("style-citation", "Style de reponse",
-             "Toujours citer le tour et la civ a chaque fait.", None, "preference", _T0, _T0),
+             "Toujours citer le tour et la civ a chaque fait.", None, "preference", None, _T0, _T0),
         ],
     )
 

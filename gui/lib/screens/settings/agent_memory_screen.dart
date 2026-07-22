@@ -70,6 +70,10 @@ class _MemoryCard extends ConsumerWidget {
                   _chip(isPref ? 'préférence' : 'fait', typeColor),
                   const SizedBox(width: 6),
                   _chip(memory.civName ?? 'global', scheme.secondary),
+                  if (memory.sourceTurn != null) ...[
+                    const SizedBox(width: 6),
+                    _chip('dès T${memory.sourceTurn}', Colors.orange),
+                  ],
                   if (!memory.active) ...[
                     const SizedBox(width: 6),
                     _chip('oubliée', Colors.grey),
