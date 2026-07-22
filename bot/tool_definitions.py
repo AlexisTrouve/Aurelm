@@ -25,7 +25,7 @@ _STD = {
     "limit": {"type": "integer"},
 }
 
-# 24 tools : 22 lecture + saveMemory / forgetMemory (mémoire auto-écrite par l'agent).
+# 23 tools : 22 lecture + editMemory (mémoire auto-écrite par l'agent : crée/maj/oublie).
 # Tools absorbés (leurs alias restent dispatchables mais ne sont plus annoncés) :
 #   filterTimeline  → timeline (params standard)
 #   exploreRelations → getEntityDetail(relations=true)
@@ -424,24 +424,27 @@ TOOL_DEFINITIONS = [
         },
     },
     {
-        "name": "saveMemory",
+        "name": "editMemory",
         "description": (
-            "Enregistre une mémoire durable POUR TOI-MÊME à partir d'un retour du MJ : "
-            "une correction, un ruling sur le monde, ou une préférence de réponse. "
-            "Upsert par 'key' — réappeler avec la MÊME key MET À JOUR la mémoire (pas de doublon). "
-            "Appelle-le quand le MJ te corrige, énonce une règle du monde, ou dit comment il veut ses réponses. "
-            "Ne PAS l'utiliser pour du contenu déjà dans la base (entités, tours) — seulement les retours du MJ."
+            "Gère TA propre mémoire durable à partir d'un retour du MJ (correction, ruling sur "
+            "le monde, préférence de réponse). Un seul outil qui fait tout : "
+            "CRÉER / METTRE À JOUR (défaut) ou OUBLIER (forget=true). "
+            "Upsert par 'key' — réappeler avec la MÊME key met à jour (pas de doublon) ; les keys "
+            "de tes mémoires actives te sont montrées entre crochets dans '## Mémoire de l'agent', "
+            "réutilise-les pour corriger ou oublier. "
+            "Appelle-le quand le MJ te corrige, énonce une règle, ou dit comment il veut ses réponses. "
+            "Ne PAS l'utiliser pour du contenu déjà en base (entités, tours) — seulement les retours du MJ."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "key": {
                     "type": "string",
-                    "description": "Slug court et stable identifiant la mémoire (ex: 'confluence-bronze', 'style-citation'). Réutilise la même key pour corriger/mettre à jour.",
+                    "description": "Slug court et stable identifiant la mémoire (ex: 'confluence-bronze', 'style-citation'). Réutilise la même key pour corriger ou oublier.",
                 },
                 "content": {
                     "type": "string",
-                    "description": "Le fait, la règle ou la préférence à retenir, en une phrase.",
+                    "description": "Le fait, la règle ou la préférence à retenir, en une phrase. Requis sauf si forget=true.",
                 },
                 "description": {
                     "type": "string",
@@ -458,20 +461,12 @@ TOOL_DEFINITIONS = [
                 },
                 "turnNumber": {
                     "type": "integer",
-                    "description": "Ancre le fait à un tour ('à partir de T12'). Optionnel, avec civName. Utile pour un fait daté qui pourrait évoluer (ex: état d'une techno à un moment donné).",
+                    "description": "Ancre le fait à un tour ('à partir de T12'). Optionnel, avec civName. Pour un fait daté qui pourrait évoluer.",
                 },
-            },
-            "required": ["key", "content"],
-        },
-    },
-    {
-        "name": "forgetMemory",
-        "description": "Désactive une mémoire que tu avais enregistrée, quand le MJ te dit qu'elle est fausse ou périmée. Identifiée par sa 'key' (+ civName si elle était civ-scopée).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "key": {"type": "string", "description": "La key de la mémoire à oublier."},
-                "civName": {"type": "string", "description": "Civ de la mémoire si elle était civ-scopée."},
+                "forget": {
+                    "type": "boolean",
+                    "description": "true = OUBLIER (désactiver) la mémoire de cette key, quand le MJ dit qu'elle est fausse/périmée. Ignore les autres champs.",
+                },
             },
             "required": ["key"],
         },
