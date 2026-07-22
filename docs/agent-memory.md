@@ -193,19 +193,39 @@ Drift `customSelect`/`customStatement`, no codegen) + `agentMemoryProvider`
 
 Totals at time of writing: **156 bot**, **11 gui E2E** (`-d windows`), **41 gui unit**.
 
-## Known gap (honest)
+## Behaviour — verified live
 
-The **machinery** is proven end-to-end. What is **not** proven: that a live model,
-given SOUL.md, actually calls `editMemory` at the right moments when Arthur corrects
-it. That is behaviour, not mechanism — it needs a **live-LLM test or dogfood**. Treat
-"the agent remembers Arthur's feedback" as *unverified* until then.
+`bot/tests/test_agent_memory_live.py` drives **real turns through the proxy** (opt-in:
+`AURELM_LIVE_LLM=1`, skipped by default so the suite stays fast and offline). Two cases,
+both green on `claude-opus-4-8`:
+
+| case | result |
+|---|---|
+| Explicit ("… le bronze exige de l'étain. **Retiens-le**.") | called `editMemory` and only that; wrote `regle-bronze-etain` as a `fact` with a description; the recall block then surfaced it with its key |
+| **Implicit** ("Non, tu te trompes : les Confluents n'ont jamais eu de bronze…") | also called `editMemory`; wrote `confluence-metallurgie-cuivre` as a `fact` **scoped to civ 1** — it resolved "les Confluents" on its own |
+
+So the model does act on GM feedback, including without being told to remember, and
+picks sane keys/types/scopes.
+
+### What is still unverified
+
+- **The other tools in situ**: `discoverMemory`, `links`, and `forget=true` are
+  mechanically tested but no live turn has been observed choosing them.
+- **Behaviour over time**: whether it re-uses a key on a second correction (rather than
+  minting a new one) across a long session, and whether it over-memorises.
+- Only one model, low effort, single-turn. Treat those as sampled, not proven.
+
+*(Ops note: the proxy flaked twice with transient `Connection error` during this run —
+VPS142 was intermittent. A failing live test may be infrastructure, not logic. Re-run
+before concluding.)*
 
 ---
 
 # Planned
 
 Nothing outstanding on the memory layer itself — increments 1-3, `discoverMemory` and
-memory→article links have all shipped.
+memory→article links have all shipped, and the write path is now verified live (see
+"Behaviour — verified live").
 
-The one thing still **unverified** is behavioural, not mechanical: see "Known gap"
-above. A live-LLM test or a dogfood session is the next validation.
+The remaining unverified items are narrower now: live use of `discoverMemory` / `links`
+/ `forget`, and behaviour over a long session. Listed under "What is still unverified".
