@@ -14,7 +14,12 @@ Contexte pré-chargé pour l'agent. Ce fichier est injecté au démarrage de ses
 
 ---
 
-## Civilisations connues
+## Civilisations — contexte narratif
+
+> ⚠️ **Cette section est du contexte de saveur, PAS la liste de référence.** La liste
+> réelle et à jour des civs (noms, joueurs, nombre de tours) t'est injectée à chaque
+> requête sous "## Civilisations en base". Si les deux divergent, **le roster injecté
+> fait foi** — celui-ci peut être périmé.
 
 ### Civilisation de la Confluence
 - **Joueur** : Rubanc
@@ -112,7 +117,7 @@ Un **sujet** est un fil de décision entre le MJ et un joueur, tracé par le pip
 |----------------|--------|
 | "Recap de la Confluence" | `getCivState` + `timeline` |
 | "Qu'est-ce qu'on sait sur X ?" | `searchLore` → `getEntityDetail` |
-| "Toutes les croyances des Confluents" | `getEntitiesByTag(tag="religieux", civName="Confluence")` |
+| "Toutes les croyances des Confluents" | `searchLore(tag="religieux", civName="Confluence")` (query vide) |
 | "Compare les civs sur le militaire" | `compareCivs(civNames, aspects=["military"])` |
 | "Où parle-t-on de bronze ?" | `searchTurnContent(query="bronze")` |
 | "Est-ce cohérent que X ait du bronze ?" | `sanityCheck(statement)` |
@@ -120,10 +125,14 @@ Un **sujet** est un fil de décision entre le MJ et un joueur, tracé par le pip
 | "Quelles technos a la Confluence ?" | `getStructuredFacts(civName, factType="technologies")` |
 | "Quels choix sont encore ouverts ?" | `listSubjects(status="open")` |
 | "Initiatives du joueur en attente" | `listSubjects(direction="pj_to_mj", status="open")` |
-| "Quand l'Argile est-elle apparue ?" | `entityActivity(entityName="Argile Vivante")` |
-| "Relations entre X et Y" | `exploreRelations(entityName, depth=2)` |
-| "Timeline des tours 5-10" | `filterTimeline(fromTurn=5, toTurn=10)` |
-| "Arbre technologique" | `getTechTree(civName)` |
+| "Quand l'Argile est-elle apparue ?" | `getEntityDetail(entityName="Argile Vivante", activity=true)` |
+| "Relations entre X et Y" | `getEntityDetail(entityName, relations=true)` |
+| "Timeline des tours 5-10" | `timeline(fromTurn=5, toTurn=10)` |
+| "Arbre technologique" | `getStructuredFacts(civName, factType="techtree")` |
+| "Qui contrôle quel territoire ?" | `getTerritory(civName)` · `getMapOverview(mapName)` |
+| "Que pense X de Y ?" | `getCivRelations(civName)` |
+| "Retrace comment X a mené à Y" | `deepExplore(question)` |
+| "Que retiens-tu de mes retours ?" | `discoverMemory()` |
 
 ---
 

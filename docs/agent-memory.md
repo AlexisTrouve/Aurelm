@@ -207,10 +207,16 @@ both green on `claude-opus-4-8`:
 So the model does act on GM feedback, including without being told to remember, and
 picks sane keys/types/scopes.
 
+After the prompt overhaul (map/diplomacy/deepExplore sections added, 5 phantom tool
+names removed, memory triggers sharpened), the explicit case changed from
+`['editMemory']` to **`['discoverMemory', 'editMemory']`** — the agent now checks
+whether it already knows something before writing, as instructed. Measurable proof
+that the prompt edit landed.
+
 ### What is still unverified
 
-- **The other tools in situ**: `discoverMemory`, `links`, and `forget=true` are
-  mechanically tested but no live turn has been observed choosing them.
+- **`links` and `forget=true` in situ**: mechanically tested, but no live turn has
+  been observed choosing them. (`discoverMemory` now has been — see above.)
 - **Behaviour over time**: whether it re-uses a key on a second correction (rather than
   minting a new one) across a long session, and whether it over-memorises.
 - Only one model, low effort, single-turn. Treat those as sampled, not proven.

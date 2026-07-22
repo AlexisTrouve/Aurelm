@@ -141,3 +141,35 @@ def test_missing_civ_id_column_is_tolerated(tmp_path):
     conn.close()
     out = _recall_agent_notes(str(p), "n'importe quoi")
     assert "regle importante" in out
+
+
+# --- civ roster: always-injected, kills the wasted listCivs round ------------
+
+def test_civ_roster_lists_civs_with_players_and_turn_counts(tmp_path):
+    from bot.agent import _civ_roster
+
+    p = tmp_path / "roster.db"
+    conn = sqlite3.connect(str(p))
+    conn.executescript(
+        "CREATE TABLE civ_civilizations (id INTEGER PRIMARY KEY, name TEXT, player_name TEXT);"
+        "CREATE TABLE turn_turns (id INTEGER PRIMARY KEY AUTOINCREMENT, civ_id INTEGER);"
+    )
+    conn.executemany("INSERT INTO civ_civilizations (id, name, player_name) VALUES (?,?,?)",
+                     [(1, "Confluence", "Rubanc"), (2, "Cheveux de Sang", None)])
+    conn.executemany("INSERT INTO turn_turns (civ_id) VALUES (?)", [(1,), (1,), (2,)])
+    conn.commit()
+    conn.close()
+
+    out = _civ_roster(str(p))
+    assert "Confluence" in out and "Cheveux de Sang" in out
+    assert "Rubanc" in out                 # player surfaced
+    assert "2 tour(s)" in out              # turn count per civ
+    assert "listCivs" in out               # tells the model not to waste a round
+
+
+def test_civ_roster_tolerates_missing_tables(tmp_path):
+    from bot.agent import _civ_roster
+
+    p = tmp_path / "empty.db"
+    sqlite3.connect(str(p)).close()
+    assert _civ_roster(str(p)) == ""

@@ -314,6 +314,40 @@ def _recall_agent_notes(db_path: str | None, query: str, limit: int = 12) -> str
     return "\n\n---\n\n" + "\n".join(note_lines)
 
 
+def _civ_roster(db_path: str | None) -> str:
+    """Compact, ALWAYS-injected list of the civs in the DB.
+
+    WHY: without it the model has no idea which civs exist and burns a whole tool round
+    on listCivs just to orient — every single request. It also replaces the hardcoded
+    civ list in domain-knowledge.md as the authoritative source, which would otherwise
+    drift as Arthur adds civilizations.
+    """
+    if not db_path:
+        return ""
+    try:
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute(
+            "SELECT c.name, c.player_name, COUNT(t.id) "
+            "FROM civ_civilizations c LEFT JOIN turn_turns t ON t.civ_id = c.id "
+            "GROUP BY c.id, c.name, c.player_name ORDER BY c.name"
+        ).fetchall()
+        conn.close()
+    except Exception:
+        return ""  # tables absent on a very old/empty DB
+
+    if not rows:
+        return ""
+
+    lines = ["## Civilisations en base (état actuel)", ""]
+    for name, player, turns in rows:
+        who = f" — joueur {player}" if player else ""
+        lines.append(f"- **{name}**{who} · {turns} tour(s)")
+    lines.append("")
+    lines.append("Ce roster t'est injecté à chaque requête : inutile d'appeler `listCivs` "
+                 "pour savoir quelles civs existent.")
+    return "\n\n---\n\n" + "\n".join(lines)
+
+
 def _recall_memories(db_path: str | None, query: str, limit: int = 12) -> str:
     """Return the agent's self-authored memories RELEVANT to `query`, or "".
 
@@ -493,6 +527,7 @@ class Agent:
         messages: list[dict] = [
             {"role": "system",
              "content": self._system_prompt
+             + _civ_roster(self.config.db_path)
              + _recall_agent_notes(self.config.db_path, new_message)
              + _recall_memories(self.config.db_path, new_message)},
             *history,
@@ -615,6 +650,7 @@ class Agent:
         messages: list[dict] = [
             {"role": "system",
              "content": self._system_prompt
+             + _civ_roster(self.config.db_path)
              + _recall_agent_notes(self.config.db_path, user_message)
              + _recall_memories(self.config.db_path, user_message)},
             {"role": "user", "content": user_message},
