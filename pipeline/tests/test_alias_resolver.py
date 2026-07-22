@@ -531,3 +531,80 @@ def test_redirect_memory_links_tolerates_missing_table():
     conn = sqlite3.connect(":memory:")
     conn.execute("CREATE TABLE entity_entities (id INTEGER PRIMARY KEY)")
     _redirect_memory_links(conn, 1, 2)  # no-op, not an exception
+
+
+def test_store_aliases_merge_redirects_memory_links(tmp_path):
+    """CALL-SITE lock: not the helper in isolation, but a REAL store_aliases() merge.
+
+    Proves _redirect_memory_links is actually wired into the merge path — the
+    "function works but was never called" failure mode.
+    """
+    import sqlite3
+
+    from pipeline.alias_resolver import ConfirmedAlias, store_aliases
+
+    db_path = str(tmp_path / "merge_links.db")
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE entity_entities (id INTEGER PRIMARY KEY, canonical_name TEXT,
+            is_active INTEGER DEFAULT 1, tags TEXT, first_seen_turn INTEGER);
+        CREATE TABLE entity_mentions (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, turn_id INTEGER);
+        CREATE TABLE entity_relations (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_entity_id INTEGER, target_entity_id INTEGER, relation_type TEXT);
+        CREATE TABLE entity_aliases (entity_id INTEGER, alias TEXT, first_seen_turn_id INTEGER,
+            UNIQUE(entity_id, alias));
+        CREATE TABLE agent_memory (id INTEGER PRIMARY KEY, mem_key TEXT);
+        CREATE TABLE agent_memory_links (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memory_id INTEGER, entity_id INTEGER);
+        """
+    )
+    conn.execute("INSERT INTO entity_entities (id, canonical_name) VALUES (1, 'A'), (2, 'B')")
+    conn.execute("INSERT INTO agent_memory (id, mem_key) VALUES (1, 'ruling')")
+    conn.execute("INSERT INTO agent_memory_links (memory_id, entity_id) VALUES (1, 2)")
+    conn.commit()
+    conn.close()
+
+    store_aliases(db_path, [ConfirmedAlias(1, "A", 2, "B", "high", "")])  # real merge 2 -> 1
+
+    conn = sqlite3.connect(db_path)
+    linked = conn.execute("SELECT entity_id FROM agent_memory_links WHERE memory_id = 1").fetchone()[0]
+    conn.close()
+    assert linked == 1, "the memory link must follow the merge through the real code path"
+
+
+def test_periodic_dedup_redirects_memory_links():
+    """The OTHER merge path: runner's _periodic_entity_dedup runs after every N turns
+    of every pipeline run, so a memory link must follow that merge too."""
+    import sqlite3
+
+    from pipeline.runner import _periodic_entity_dedup
+
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(
+        """
+        CREATE TABLE entity_entities (id INTEGER PRIMARY KEY, canonical_name TEXT,
+            civ_id INTEGER, is_active INTEGER DEFAULT 1);
+        CREATE TABLE entity_mentions (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, turn_id INTEGER);
+        CREATE TABLE entity_relations (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_entity_id INTEGER, target_entity_id INTEGER, relation_type TEXT);
+        CREATE TABLE entity_aliases (id INTEGER PRIMARY KEY AUTOINCREMENT, entity_id INTEGER, alias TEXT,
+            UNIQUE(entity_id, alias));
+        CREATE TABLE agent_memory (id INTEGER PRIMARY KEY, mem_key TEXT);
+        CREATE TABLE agent_memory_links (id INTEGER PRIMARY KEY AUTOINCREMENT,
+            memory_id INTEGER, entity_id INTEGER);
+        """
+    )
+    # Same normalized name -> duplicates. Entity 1 has a mention so it wins as primary.
+    conn.execute("INSERT INTO entity_entities (id, canonical_name, civ_id) VALUES (1, 'Argile Vivante', 1)")
+    conn.execute("INSERT INTO entity_entities (id, canonical_name, civ_id) VALUES (2, 'argile vivante', 1)")
+    conn.execute("INSERT INTO entity_mentions (entity_id, turn_id) VALUES (1, 5)")
+    conn.execute("INSERT INTO agent_memory (id, mem_key) VALUES (1, 'ruling')")
+    conn.execute("INSERT INTO agent_memory_links (memory_id, entity_id) VALUES (1, 2)")
+    conn.commit()
+
+    merged = _periodic_entity_dedup(conn, 1)
+    assert merged >= 1, "the duplicate should have been merged"
+    assert conn.execute(
+        "SELECT entity_id FROM agent_memory_links WHERE memory_id = 1"
+    ).fetchone()[0] == 1, "the memory link must follow the periodic dedup merge"

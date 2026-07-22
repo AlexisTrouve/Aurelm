@@ -356,6 +356,40 @@ def test_editmemory_resolves_link_names_to_ids():
     assert (None, 18, None) in rows      # subject by id
 
 
+def test_link_resolves_an_entity_by_alias():
+    """The model may name an entity by an alias. 'living clay' is NOT a substring of
+    'Argile Vivante', so this can only pass through the alias lookup."""
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    c.execute("INSERT INTO entity_aliases (entity_id, alias) VALUES (7, 'living clay')")
+    c.commit()
+    dispatch_tool(c, "editMemory", {
+        "key": "k", "content": "v", "civName": "Confluence",
+        "links": ["entity:living clay"],
+    })
+    mid = c.execute("SELECT id FROM agent_memory WHERE mem_key='k'").fetchone()[0]
+    assert c.execute(
+        "SELECT entity_id FROM agent_memory_links WHERE memory_id=?", (mid,)
+    ).fetchone()[0] == 7
+
+
+def test_unresolvable_link_is_skipped_not_stored():
+    """A name that matches nothing must not create a dangling row."""
+    from bot.tools import dispatch_tool
+
+    c = _conn()
+    dispatch_tool(c, "editMemory", {
+        "key": "k", "content": "v", "civName": "Confluence",
+        "links": ["entity:N'existe Pas Du Tout", "entity:Argile Vivante"],
+    })
+    mid = c.execute("SELECT id FROM agent_memory WHERE mem_key='k'").fetchone()[0]
+    rows = c.execute(
+        "SELECT entity_id FROM agent_memory_links WHERE memory_id=?", (mid,)
+    ).fetchall()
+    assert rows == [(7,)]  # only the resolvable one stored
+
+
 def test_links_are_replaced_on_upsert():
     from bot.tools import dispatch_tool
 
