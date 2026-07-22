@@ -25,7 +25,7 @@ _STD = {
     "limit": {"type": "integer"},
 }
 
-# 23 tools : 22 lecture + editMemory (mémoire auto-écrite par l'agent : crée/maj/oublie).
+# 24 tools : 22 lecture + discoverMemory / editMemory (mémoire auto-écrite par l'agent).
 # Tools absorbés (leurs alias restent dispatchables mais ne sont plus annoncés) :
 #   filterTimeline  → timeline (params standard)
 #   exploreRelations → getEntityDetail(relations=true)
@@ -421,6 +421,40 @@ TOOL_DEFINITIONS = [
                 },
             },
             "required": ["question"],
+        },
+    },
+    {
+        "name": "discoverMemory",
+        "description": (
+            "Explore TA propre mémoire (le pendant lecture d'editMemory). "
+            "SANS 'keys' → inventaire compact de tout ce que tu as retenu (key + description + "
+            "portée + ancre, SANS le contenu — peu coûteux). "
+            "AVEC 'keys' → le contenu complet des mémoires demandées. "
+            "Utilise-le quand le MJ demande ce que tu sais/retiens, quand tu cherches la key "
+            "d'une mémoire à corriger ou oublier, ou pour vérifier si tu as déjà un ruling sur "
+            "un sujet. Le rappel automatique ne te montre que les mémoires jugées pertinentes — "
+            "celui-ci te montre les autres."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Les keys dont tu veux le contenu complet. Vide/absent = inventaire de tout.",
+                },
+                "civName": {"type": "string", "description": "Ne montrer que les mémoires de cette civ."},
+                "type": {
+                    "type": "string",
+                    "enum": ["fact", "preference"],
+                    "description": "Filtrer par type.",
+                },
+                "includeInactive": {
+                    "type": "boolean",
+                    "description": "Inclure aussi les mémoires oubliées (défaut: false).",
+                },
+            },
+            "required": [],
         },
     },
     {

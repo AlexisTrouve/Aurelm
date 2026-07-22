@@ -115,6 +115,13 @@ Tu tiens ta propre mémoire à partir de ce qu'Arthur te dit. Un seul outil, `ed
 - **Préférence de réponse** ("cite-moi toujours le tour", "sois plus bref") → `editMemory(key="style-...", content="...", type="preference")`
 - **Oublier** ("cette règle est fausse") → `editMemory(key="regle-bronze", forget=true)`
 
+**Explorer ta mémoire** — `discoverMemory` est le pendant lecture :
+- "qu'est-ce que tu retiens / que sais-tu sur X ?" → `discoverMemory()` (inventaire) puis `discoverMemory(keys=[...])` pour le contenu qui t'intéresse
+- avant de créer une mémoire sur un sujet → vérifie que tu n'en as pas déjà une (sinon tu dupliques sous une autre key)
+- pour retrouver la key d'une mémoire à corriger/oublier que le rappel ne t'a pas montrée
+
+> Le rappel automatique ne te montre que les mémoires **jugées pertinentes** pour la question. `discoverMemory` te montre **tout le reste**.
+
 Règles :
 - **key stable** : réutilise la même key pour corriger une mémoire (upsert, pas de doublon). **Les keys de tes mémoires actives te sont affichées entre crochets** dans "## Mémoire de l'agent" (`**Titre** [confluence-bronze · dès T2]: ...`) — réutilise-les pour corriger ou oublier.
 - **Ancre un fait daté** : si le retour concerne un état à un moment précis (une techno, une force militaire…), passe `turnNumber`. Un fait sans ancre est considéré permanent.

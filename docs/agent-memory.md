@@ -71,6 +71,27 @@ editMemory(key, content?, description?, type?, civName?, turnNumber?, forget?)
 
 Hard delete is deliberately **not** exposed to the agent — that is Arthur's, in the UI.
 
+### Read — `discoverMemory` (the pull counterpart)
+
+```
+discoverMemory(keys?, civName?, type?, includeInactive?)
+```
+
+Recall is **push-only**: it surfaces only what relevance pushes at the agent, so a
+memory it doesn't surface is invisible — the agent could neither answer "what do I
+already know?" nor look up the key of a memory it wants to correct. `discoverMemory`
+is the pull side:
+
+- **without `keys`** → a **compact inventory**: key, description, kind, scope, anchor —
+  **no content**, so listing everything stays cheap in tokens.
+- **with `keys: [...]`** → the **full entries** for exactly those keys. Keys that don't
+  exist are reported explicitly (`Introuvable(s) : ...`) rather than silently dropped.
+- `civName` / `type` filter; `includeInactive` also returns forgotten ones (marked).
+
+SOUL.md tells the agent to use it when Arthur asks what it remembers, **before creating
+a memory on a topic** (so it updates instead of duplicating under a new key), and to
+find a key the recall didn't show.
+
 ### Recall — `_recall_memories` (per request)
 
 Runs on every request, before the model call, and appends to the system prompt:
@@ -152,34 +173,7 @@ it. That is behaviour, not mechanism — it needs a **live-LLM test or dogfood**
 
 # Planned — implementation plan
 
-Two extensions, in this order. Approved 2026-07-22.
-
-## A. `discoverMemory` — let the agent read its own memory
-
-**Why.** Recall is **push-only**: the agent sees only what relevance pushes at it. It
-cannot ask "what do I already know?" nor open a memory it glimpsed. A memory the
-recall doesn't surface is invisible — and the agent cannot look up a key to correct.
-
-**Shape** — one read tool, symmetric with `editMemory`:
-
-```
-discoverMemory(keys?, civName?, type?, includeInactive?)
-```
-
-- **without `keys`** → **compact inventory**: `key · description · scope · anchor`,
-  **no content** (cheap; the agent sees everything it owns).
-- **with `keys: [...]`** → full entries for exactly those keys.
-
-**Steps**
-1. `bot/tools.py`: `discover_memory(conn, keys=None, civ_id=None, mem_type=None, include_inactive=False) -> str` returning Markdown (inventory or full entries).
-2. `bot/tool_definitions.py`: add the `discoverMemory` schema → 24 advertised tools; update the header count comment.
-3. `bot/tools.py` dispatch: `discoverMemory` branch (resolve `civName`).
-4. `bot/prompts/SOUL.md`: when to call it — before answering "what do you know about X",
-   and to find the key of a memory to correct/forget.
-5. Tests: inventory lists keys **without** content; `keys=` returns content; civ/type
-   filters; inactive excluded unless asked; unknown key reported, not silent.
-
-**Cost**: small. No migration, no UI.
+~~**A. `discoverMemory`**~~ — **SHIPPED** (see "Read" above). One extension left.
 
 ## B. Links from a memory to database articles
 
@@ -224,9 +218,5 @@ The agent passes **names**, dispatch resolves them:
 7. Tests — name→id resolution; recall renders links; **an alias-merge test proving a
    memory link follows the merge**; a gui E2E asserting a link chip renders.
 
-**Cost**: moderate — migration + write path + recall + resolver fix + UI.
-
-## Order and rationale
-
-**A first** (small, no migration, unlocks reading immediately), **B second** (the
-larger piece, and its resolver fix must ship with it, not after).
+**Cost**: moderate — migration + write path + recall + resolver fix + UI. The resolver
+fix (step 5) ships **with** it, not after.
