@@ -2387,6 +2387,23 @@ def _estimate_tokens(messages: list) -> int:
 _DEEP_EXPLORE_TOKEN_BUDGET = 60_000
 
 
+def _collected_findings(messages: list) -> str:
+    """What the sub-agent actually gathered, for when it will not write a conclusion.
+
+    WHY: returning a bare "no answer" throws away real research the GM paid for (in
+    time and tokens). An unpolished digest of the tool results is far more useful than
+    nothing, and it makes the failure visible instead of silent.
+    """
+    chunks = [m.get("content") or "" for m in messages if m.get("role") == "tool"]
+    chunks = [c.strip() for c in chunks if c.strip()]
+    if not chunks:
+        return "(Pas de reponse du sous-agent.)"
+    body = "\n\n".join(chunks[-6:])
+    header = ("(Le sous-agent n'a pas redige de conclusion - voici ce qu'il a "
+              "collecte, brut.)\n\n")
+    return (header + body)[:6000]
+
+
 # --------------------------------------------------------------------------- #
 # Tool: getCivRelations
 # --------------------------------------------------------------------------- #
@@ -2535,6 +2552,7 @@ def deep_explore(
         {"role": "user", "content": user_msg},
     ]
     budget_warning_sent = False
+    conclude_attempts = 0
 
     while True:
         # Budget check before each call — force a conclusion when near the limit.
@@ -2551,6 +2569,19 @@ def deep_explore(
             tools=sub_tools,
         )
         msg = resp.choices[0].message
+
+        # Past the budget warning the model often answers with ANOTHER tool call and no
+        # prose. Falling through to the return below would discard every result gathered
+        # so far -- and that happens exactly when the research was long. Nudge it once
+        # for a written conclusion, then fall back to the findings themselves.
+        if msg.tool_calls and budget_warning_sent and not msg.content:
+            if conclude_attempts < 1:
+                conclude_attempts += 1
+                messages.append({"role": "system", "content":
+                    "[SYSTEME] Plus aucun outil. Redige MAINTENANT ta conclusion en texte, "
+                    "a partir des resultats deja collectes."})
+                continue
+            return _collected_findings(messages)
 
         if msg.tool_calls and not budget_warning_sent:
             messages.append({
@@ -2575,7 +2606,7 @@ def deep_explore(
                 messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
             continue
 
-        return msg.content or "(Pas de reponse du sous-agent.)"
+        return msg.content or _collected_findings(messages)
 
 
 # --------------------------------------------------------------------------- #
