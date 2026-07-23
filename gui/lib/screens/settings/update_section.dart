@@ -4,85 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_constants.dart';
-import '../../providers/bot_provider.dart';
-import '../../services/update_service.dart';
+import '../../providers/update_provider.dart';
 
-/// "Mises à jour" panel: shows the installed version, checks the distribution
-/// server, and installs a newer build.
+/// "Mises à jour" panel — a VIEW over [updateControllerProvider].
 ///
-/// Deliberate choices:
-///  - the check is manual + best-effort; an unreachable server reports "à jour ou
-///    injoignable" rather than an error, because the update host is allowed to be down;
-///  - a sha256 mismatch is shown LOUDLY. It is the one failure the user must see:
-///    it means the binary we downloaded is not the one that was published.
-class UpdateSection extends ConsumerStatefulWidget {
+/// The app checks automatically at startup (see UpdateBanner); this card shows the
+/// installed version, lets the user re-check on demand, and is where a failure is
+/// reported in full. A sha256 mismatch is shown LOUDLY: it is the one failure the
+/// user must see, because it means the binary we downloaded is not the one published.
+class UpdateSection extends ConsumerWidget {
   const UpdateSection({super.key});
 
   @override
-  ConsumerState<UpdateSection> createState() => _UpdateSectionState();
-}
-
-class _UpdateSectionState extends ConsumerState<UpdateSection> {
-  final _service = UpdateService();
-  UpdateInfo? _available;
-  bool _busy = false;
-  String? _status;
-  String? _error;
-  double? _progress;
-
-  Future<void> _check() async {
-    setState(() {
-      _busy = true;
-      _error = null;
-      _status = 'Vérification…';
-    });
-    final info = await _service.check(currentVersion: AppConstants.appVersion);
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      _available = info;
-      _status = info == null
-          ? 'Aucune mise à jour (ou serveur injoignable).'
-          : 'Version ${info.version} disponible.';
-    });
-  }
-
-  Future<void> _install() async {
-    final info = _available;
-    if (info == null) return;
-    setState(() {
-      _busy = true;
-      _error = null;
-      _progress = 0;
-      _status = 'Téléchargement…';
-    });
-    try {
-      final file = await _service.download(info, onProgress: (received, total) {
-        if (!mounted || total == null || total <= 0) return;
-        setState(() => _progress = received / total);
-      });
-      if (!mounted) return;
-      setState(() => _status = 'Installation — l\'application va se fermer…');
-      // Stopping the bot releases the embedded python's handles inside the install
-      // directory; without it the installer cannot replace those files.
-      await _service.installAndExit(
-        file,
-        onBeforeExit: () async => ref.read(botServiceProvider).stop(),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _progress = null;
-        _status = null;
-        _error = e is UpdateIntegrityError ? e.message : 'Échec : $e';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(updateControllerProvider);
+    final ctrl = ref.read(updateControllerProvider.notifier);
     final scheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -99,32 +37,35 @@ class _UpdateSectionState extends ConsumerState<UpdateSection> {
                 ),
                 if (Platform.isWindows)
                   FilledButton.tonal(
-                    onPressed: _busy ? null : _check,
+                    onPressed: state.busy ? null : ctrl.check,
                     child: const Text('Vérifier'),
                   ),
               ],
             ),
-            if (_status != null) ...[
+            const SizedBox(height: 4),
+            Text('Vérification automatique au démarrage.',
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+            if (state.status != null) ...[
               const SizedBox(height: 8),
-              Text(_status!, style: TextStyle(color: scheme.onSurfaceVariant)),
+              Text(state.status!, style: TextStyle(color: scheme.onSurfaceVariant)),
             ],
-            if (_progress != null) ...[
+            if (state.progress != null) ...[
               const SizedBox(height: 8),
-              LinearProgressIndicator(value: _progress),
+              LinearProgressIndicator(value: state.progress),
             ],
-            if (_available != null && !_busy) ...[
-              if (_available!.notes.isNotEmpty) ...[
+            if (state.available != null && !state.busy) ...[
+              if (state.available!.notes.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(_available!.notes, style: const TextStyle(fontSize: 12)),
+                Text(state.available!.notes, style: const TextStyle(fontSize: 12)),
               ],
               const SizedBox(height: 12),
               FilledButton.icon(
-                onPressed: _install,
+                onPressed: ctrl.install,
                 icon: const Icon(Icons.download, size: 18),
-                label: Text('Installer ${_available!.version}'),
+                label: Text('Installer ${state.available!.version}'),
               ),
             ],
-            if (_error != null) ...[
+            if (state.error != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(10),
@@ -137,7 +78,7 @@ class _UpdateSectionState extends ConsumerState<UpdateSection> {
                     const Icon(Icons.gpp_bad, color: Colors.red, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(_error!,
+                      child: Text(state.error!,
                           style: const TextStyle(color: Colors.red, fontSize: 12)),
                     ),
                   ],

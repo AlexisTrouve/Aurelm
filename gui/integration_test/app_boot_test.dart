@@ -45,6 +45,8 @@ import 'package:aurelm_gui/screens/settings/settings_screen.dart';
 import 'package:aurelm_gui/screens/settings/agent_memory_screen.dart';
 import 'package:aurelm_gui/screens/civilization/civ_relations_screen.dart';
 import 'package:aurelm_gui/providers/enrollment_provider.dart';
+import 'package:aurelm_gui/providers/update_provider.dart';
+import 'package:aurelm_gui/services/update_service.dart';
 import 'package:aurelm_gui/screens/onboarding/setup_wizard.dart';
 
 /// Deterministic fixture DB, built by `integration_test/fixtures/build_fixture.py`.
@@ -115,6 +117,8 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           autoStartBotProvider.overrideWith((ref) async {}),
           setupCompleteProvider.overrideWith((ref) async => false),
+          updateServiceProvider.overrideWithValue(
+              UpdateService(manifestUrl: 'http://127.0.0.1:9/none.json')),
         ],
         child: const AurelmApp(),
       ),
@@ -228,6 +232,9 @@ void main() {
           sharedPrefsProvider.overrideWithValue(prefs),
           autoStartBotProvider.overrideWith((ref) async {}),
           setupCompleteProvider.overrideWith((ref) async => true),
+          // The shell auto-checks for updates at startup; keep the E2E off the network.
+          updateServiceProvider.overrideWithValue(
+              UpdateService(manifestUrl: 'http://127.0.0.1:9/none.json')),
         ],
         child: const AurelmApp(),
       ),

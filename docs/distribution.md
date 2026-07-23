@@ -68,7 +68,16 @@ client download a truncated file and fail its hash check, for as long as the upl
 
 ## Client
 
-`gui/lib/services/update_service.dart` + the "Mises à jour" card in Settings.
+`gui/lib/services/update_service.dart` (transport + integrity),
+`gui/lib/providers/update_provider.dart` (the flow), and two views over it:
+a slim **banner in the app shell** and the "Mises à jour" card in Settings. The
+download/verify/install flow exists **once**, in the controller.
+
+**The check is automatic, at startup.** Mounting the banner in the shell is what
+starts it (providers are lazy, the shell is built once at launch) — deliberately
+fire-and-forget, so a slow or dead update host can never delay or break the launch.
+The banner appears only when there is something to install and is dismissible for the
+session; dismissing it hides the banner but Settings still offers the update.
 
 Two rules the class exists to enforce:
 
@@ -97,6 +106,11 @@ one.
 
 ## Tests
 
+- `gui/test/providers/update_provider_test.dart` — 5, offline: the startup check
+  surfaces a newer version on its own, stays **silent** when up to date, **a dead
+  update host cannot break startup** (socket error / 500 / garbage all leave no error
+  state), dismiss hides the banner without forgetting the update, and a manual check
+  reports its outcome unlike the silent one.
 - `gui/test/services/update_service_test.dart` — 9, offline: numeric version compare,
   hashless manifest refused, every outage shape returns null, a slow server does not
   hang, a matching hash is accepted, **a tampered binary is rejected and deleted**.
@@ -107,8 +121,5 @@ one.
 
 ## Not done yet
 
-- No automatic check on startup — the user presses "Vérifier". Deliberate for now:
-  a background check that surfaces a banner is easy to add once the manual path has
-  been used in anger.
 - No rollback. If a release is bad, publish a corrected higher version.
 - No signing of the installer (Windows SmartScreen will warn on first run).
