@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../widgets/common/update_banner.dart';
-
 import '../../providers/chat_provider.dart';
 
 class AppShell extends ConsumerWidget {
@@ -116,17 +114,7 @@ class AppShell extends ConsumerWidget {
             ),
           ),
           const VerticalDivider(thickness: 1, width: 1),
-          // Watching the update controller here is what triggers the startup
-          // auto-check (providers are lazy): the shell is built once at launch.
-          // The banner sits ABOVE the routed screen so it is visible from anywhere.
-          Expanded(
-            child: Column(
-              children: [
-                const UpdateBanner(),
-                Expanded(child: child),
-              ],
-            ),
-          ),
+          Expanded(child: child),
         ],
       ),
     );

@@ -101,6 +101,8 @@ class UpdateController extends StateNotifier<UpdateState> {
       await _service.installAndExit(
         file,
         onBeforeExit: () async => _ref.read(botServiceProvider).stop(),
+        launcher: _ref.read(installerLauncherProvider),
+        quit: _ref.read(appQuitProvider),
       );
     } catch (e) {
       if (!mounted) return;
@@ -115,6 +117,15 @@ class UpdateController extends StateNotifier<UpdateState> {
 }
 
 final updateServiceProvider = Provider<UpdateService>((ref) => UpdateService());
+
+/// Injection seams for the FINAL, irreversible step. In production both are null and
+/// the service does the real thing (Process.start + exit). An E2E that clicks
+/// "Installer" overrides them, otherwise the test harness would launch a real
+/// installer and then kill itself with exit(0) — so the one action that matters most
+/// could never be covered.
+final installerLauncherProvider =
+    Provider<Future<void> Function(String path)?>((ref) => null);
+final appQuitProvider = Provider<void Function()?>((ref) => null);
 
 final updateControllerProvider =
     StateNotifierProvider<UpdateController, UpdateState>(

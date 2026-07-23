@@ -7,6 +7,7 @@ import 'providers/bot_provider.dart';
 import 'providers/enrollment_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/onboarding/setup_wizard.dart';
+import 'widgets/common/update_banner.dart';
 
 /// Root widget — gates the whole app behind first-run setup.
 ///
@@ -23,6 +24,19 @@ import 'screens/onboarding/setup_wizard.dart';
 /// `MaterialApp.router` for GoRouter, while the wizard is a plain `home:`. Wrapping a
 /// Router inside a MaterialApp's home instead was clever and wrong — it broke
 /// navigation and turned the boot E2E red.
+/// Prepend the update banner to whatever the app is showing.
+///
+/// WHY here and not inside the navigation shell: the shell sits BEHIND the activation
+/// gate, so an instance stuck on the wizard would never learn a fix exists — and it
+/// could never be tested without first faking activation. Mounted in both MaterialApp
+/// branches, the update check runs whatever screen the user is on.
+Widget _withUpdateBanner(BuildContext context, Widget? child) => Column(
+      children: [
+        const UpdateBanner(),
+        Expanded(child: child ?? const SizedBox.shrink()),
+      ],
+    );
+
 class AurelmApp extends ConsumerWidget {
   const AurelmApp({super.key});
 
@@ -60,6 +74,7 @@ class _MainApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: _withUpdateBanner,
     );
   }
 }
@@ -78,6 +93,7 @@ class _PlainApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ref.watch(themeModeProvider),
       home: child,
+      builder: _withUpdateBanner,
     );
   }
 }

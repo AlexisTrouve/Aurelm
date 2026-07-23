@@ -73,11 +73,19 @@ client download a truncated file and fail its hash check, for as long as the upl
 a slim **banner in the app shell** and the "Mises à jour" card in Settings. The
 download/verify/install flow exists **once**, in the controller.
 
-**The check is automatic, at startup.** Mounting the banner in the shell is what
-starts it (providers are lazy, the shell is built once at launch) — deliberately
-fire-and-forget, so a slow or dead update host can never delay or break the launch.
+**The check is automatic, at startup, and NOT gated behind activation.** The banner is
+mounted in the `builder` of both MaterialApp branches (`lib/app.dart`), above the setup
+gate — it used to live inside the navigation shell, which meant an instance stuck on the
+wizard would never learn a fix exists, and the flow could not be tested without first
+faking activation. Mounting it is what starts the check (providers are lazy) —
+deliberately fire-and-forget, so a slow or dead host can never delay or break the launch.
 The banner appears only when there is something to install and is dismissible for the
 session; dismissing it hides the banner but Settings still offers the update.
+
+`installerLauncherProvider` / `appQuitProvider` are injection seams for the final,
+irreversible step. In production both are null and the service does the real thing;
+an E2E overrides them, otherwise clicking "Installer" would launch a real installer and
+kill the harness with `exit(0)` — the one action that matters most could never be tested.
 
 Two rules the class exists to enforce:
 
@@ -120,6 +128,11 @@ one.
   bot is stopped **before** the installer launches (the ordering the upgrade depends
   on), a stuck bot does not block the update, and a failed launch does **not** quit the
   app (quitting without starting an installer would look like a crash).
+- `gui/integration_test/update_flow_test.dart` — 3, **the real app on `-d windows`**:
+  the banner appears **by itself** after the startup check and **clicking "Installer"**
+  downloads, verifies and launches the installer then quits **in that order**; a
+  **tampered** download launches nothing, does not quit, and shows the failure; and an
+  **un-activated** instance is still offered the update.
 - `gui/test/services/update_service_live_test.dart` — 4, **against the real host**
   (`AURELM_LIVE_DIST=1`): the deployed manifest parses, the current version is not
   offered an update, a real file downloads and verifies, and a **hostile** wrong hash is
