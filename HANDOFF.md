@@ -1,11 +1,18 @@
-# Handoff — Aurelm (agent memory layer shipped; Step 9/10 done)
+# Handoff — Aurelm (memory layer + prompt repair + update distribution shipped)
 
-Paste-ready briefing for the next session. Everything below is on `main` (`0df2b8c`),
+Paste-ready briefing for the next session. Everything below is on `main`,
 pushed to GitHub + Gitea.
 
 ## State: what's done
 
-- **Agent memory layer — DONE** (PRs #18-21). The agent keeps **its own memory**,
+- **Update distribution — DONE.** `dist.etheryale.com` (VPS142, nginx static, TLS,
+  grey-cloud) serves a `latest.json` manifest + the installer; the app checks it from
+  Settings → *Mises à jour*, verifies the **sha256** before running anything, stops the
+  bot and exits so the upgrade can replace locked files. `scripts/publish_release.ps1`
+  builds, hashes, uploads over Tailscale and publishes the manifest **last**. Proven on
+  the real hostname incl. a hostile wrong-hash case. **Doc: `docs/distribution.md`.**
+
+- **Agent memory layer — DONE** (PRs #18-21, + `discoverMemory`, memory→article links). The agent keeps **its own memory**,
   written from Arthur's feedback (`editMemory`: create / update / forget) and
   **recalled per request** with its key and turn anchor surfaced; memories take
   precedence over pipeline data; Arthur reviews them in Settings → *Mémoire de
@@ -53,16 +60,17 @@ pushed to GitHub + Gitea.
 
 ## Open items
 
-- **Memory layer, next two pieces — planned and approved, not built.** Full step-by-step
-  in `docs/agent-memory.md` ("Planned"):
-  1. **`discoverMemory`** — the agent can't currently *read* its own memory (recall is
-     push-only). One read tool: compact inventory without `keys`, full entries with
-     `keys: [...]`. Small, no migration.
-  2. **Memory → DB article links** (`entity` / `turn` / `subject`). ⚠️ **Entity ids are
-     not stable** — `alias_resolver` merges entities and redirects mentions/relations/
-     aliases/subjects; memory links **must be added to that redirect in the same
-     change** or they rot onto deactivated entities.
-- **Live-LLM test / dogfood of the memory layer** — the one unproven angle (see above).
+- **Dogfood.** Everything is built, tested and now updatable — and **nobody has ever
+  used it**. Arthur has never run the installer. This is the only remaining source of
+  real information; every further feature is guesswork until it happens.
+- Agent tools not yet observed in live use: memory `links` and `forget=true`
+  (`discoverMemory` has been). See `docs/agent-memory.md` → "What is still unverified".
+- From an agent recon, evidenced and **unfixed**: `deepExplore` DISCARDS its collected
+  research when the token-budget warning fires and the model answers with one more tool
+  call; relation-following is single-hop only (the multi-hop path exists in dispatch but
+  is not advertised, so "trace A→B→C" is unanswerable); no pagination anywhere (a
+  "list everything" is silently truncated with no "N more"); `compareCivs` has no
+  diplomacy/religion aspect though the tag vocabulary defines them.
 - `chat_screen.dart` is a **2114-line monolith** — rewrite candidate (self-flagged).
 - `claude_proxy` pipeline provider is fixed but **dormant** (not exposed in the
   wizard; Arthur uses ollama/openrouter).
@@ -113,6 +121,7 @@ models — test with a HARD prompt if verifying.
 ## Key files
 
 - `docs/agent-memory.md` — the agent memory layer + the approved plan for the next two pieces.
+- `docs/distribution.md` — how updates reach Arthur (dist.etheryale.com, publish script, integrity rules).
 - `docs/deployment.md` — the whole Step 10 system (read first).
 - `docs/exclude-entity-types.md` — the pipeline type-exclusion feature + Demiurgos contract.
 - `docs/enrollment-api-handoff.md` + `enrollment-client-design.md` — the activation flow.

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+import 'update_section.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -117,6 +119,12 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push('/agent-memory'),
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Updates section
+          Text('Mises à jour', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          const UpdateSection(),
           const SizedBox(height: 24),
 
           // About section

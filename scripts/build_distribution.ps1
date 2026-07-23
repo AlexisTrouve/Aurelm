@@ -254,6 +254,25 @@ if ($Installer) {
         }
     }
 
+    # The app compares ITS OWN version against the update manifest, so the version
+    # the Dart code reports must match the one stamped on the installer. They live in
+    # two files, so they can drift — and a drifted version means the update check
+    # compares against a lie (it would re-offer an update it already installed, or
+    # never offer one at all). Fail the build rather than ship that.
+    $constFile = Join-Path $repoRoot "gui/lib/core/constants/app_constants.dart"
+    $constText = Get-Content $constFile -Raw
+    if ($constText -match "appVersion\s*=\s*'([^']+)'") {
+        $dartVersion = $Matches[1]
+        if ($dartVersion -ne $AppVersion) {
+            throw ("version drift: pubspec.yaml says '$AppVersion' but " +
+                   "AppConstants.appVersion says '$dartVersion'. Make them equal " +
+                   "(pubspec is the source of truth) before building a release.")
+        }
+        Write-Host "      version check: pubspec == AppConstants ($AppVersion) OK" -ForegroundColor DarkGray
+    } else {
+        throw "could not read appVersion from $constFile"
+    }
+
     $iscc = Resolve-Iscc
     $issPath = Join-Path $PSScriptRoot "installer.iss"
     $installerOut = Join-Path $repoRoot "dist"
