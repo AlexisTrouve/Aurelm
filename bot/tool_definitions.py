@@ -99,7 +99,8 @@ TOOL_DEFINITIONS = [
         "name": "getEntityDetail",
         "description": (
             "Fiche complète d'une entité : description, aliases, mentions. "
-            "relations=true pour le graphe de relations (remplace exploreRelations). "
+            "relations=true pour le graphe de relations (avec le pourquoi de chaque lien). "
+            "relationDepth=2 ou 3 pour remonter des chaînes indirectes (remplace exploreRelations). "
             "activity=true pour la timeline d'activité par tour (remplace entityActivity). "
             "Sections opt-in pour contrôler la verbosité."
         ),
@@ -110,7 +111,11 @@ TOOL_DEFINITIONS = [
                 "civName": {"type": "string"},
                 "relations": {
                     "type": "boolean",
-                    "description": "Inclure le graphe de relations (défaut: false)",
+                    "description": "Inclure le graphe de relations, avec le détail de CHAQUE lien (défaut: false)",
+                },
+                "relationDepth": {
+                    "type": "integer",
+                    "description": "Profondeur de parcours des relations (1 = voisins directs, défaut ; 2-3 = chaînes indirectes). Utilise 2 ou 3 pour 'retrace comment X est lié à Y' ou 'qui relie A et B'. Max 3.",
                 },
                 "activity": {
                     "type": "boolean",

@@ -540,12 +540,19 @@ def get_entity_detail(
             """, (eid, eid)).fetchall()
 
             if rels:
-                lines += ["", "## Relations", "", "| Direction | Entity | Type | Relation | Turn |", "|---|---|---|---|---|"]
+                # The description carries the WHY of the link ("allied after the
+                # Confluence traded clay"). It used to be selected and thrown away,
+                # leaving the agent with "A -allied_with-> B" and no idea why.
+                lines += ["", "## Relations", "",
+                          "| Direction | Entity | Type | Relation | Détail | Turn |",
+                          "|---|---|---|---|---|---|"]
                 for rel in rels:
-                    rel_dir, other_name, other_type, rel_type, _desc, turn_num = rel
+                    rel_dir, other_name, other_type, rel_type, desc, turn_num = rel
                     arrow = "->" if rel_dir == "outgoing" else "<-"
                     turn_str = str(turn_num) if turn_num is not None else "-"
-                    lines.append(f"| {arrow} | {other_name} | {other_type} | {rel_type} | {turn_str} |")
+                    detail = truncate((desc or "").replace("|", "/").replace("\n", " "), 120) or "-"
+                    lines.append(
+                        f"| {arrow} | {other_name} | {other_type} | {rel_type} | {detail} | {turn_str} |")
             else:
                 lines += ["", "## Relations", "", "_Aucune relation trouvée._"]
 
@@ -2916,6 +2923,19 @@ def dispatch_tool(
             resolved = _resolve()
             if resolved and "error" not in resolved:
                 civ_id = resolved["id"]
+        # Multi-hop: getEntityDetail absorbed exploreRelations when the tool surface was
+        # consolidated, but the absorption dropped `depth` -- so "trace A -> B -> C" was
+        # unreachable even though explore_relations was still sitting in dispatch.
+        # relationDepth > 1 routes to it, keeping ONE entity tool instead of two.
+        try:
+            rel_depth = int(tool_input.get("relationDepth") or 1)
+        except (TypeError, ValueError):
+            rel_depth = 1
+        if rel_depth > 1:
+            if not entity_name:
+                return "Error: entityName is required."
+            return explore_relations(conn, entity_name, civ_id=civ_id, depth=min(rel_depth, 3))
+
         return get_entity_detail(
             conn,
             entity_name,

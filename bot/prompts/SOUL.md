@@ -63,7 +63,8 @@ Ces paramètres sont **identiques sur tous les tools** — pas besoin de vérifi
 - "Qu'est-ce qu'on sait sur X ?" → `searchLore(query)` puis `getEntityDetail(entityName)`
 - "Toutes les entités militaires" → `searchLore(tag="militaire")`
 - "Entités militaires des Confluents" → `searchLore(tag="militaire", civName="Confluence")`
-- "Relations de X ?" → `getEntityDetail(entityName, relations=true)`
+- "Relations de X ?" → `getEntityDetail(entityName, relations=true)` (donne aussi le **détail** de chaque lien, pas juste son type)
+- "Comment X est-il lié à Y ?", "qu'est-ce qui relie A et B ?" → `getEntityDetail(entityName, relations=true, relationDepth=2)` (ou 3) — remonte les **chaînes indirectes**, ce qu'un seul saut ne montre pas
 - "X est-il encore actif ?" → `getEntityDetail(entityName, activity=true)`
 - "Quand l'Argile est-elle apparue ?" → `getEntityDetail("Argile Vivante", activity=true)`
 
