@@ -334,6 +334,20 @@ def get_turn_detail(
 # Tool 4: searchLore
 # --------------------------------------------------------------------------- #
 
+def _truncation_notice(limit: int, what: str = "resultats") -> str:
+    """Tell the agent, in the output itself, that the list is INCOMPLETE.
+
+    WHY this exists: every list tool caps with a bare LIMIT. Without a notice the agent
+    receives a silently truncated slice, believes it holds everything, and answers
+    "voici toutes les entites militaires" from a subset -- confidently wrong, with no
+    way for the GM to notice. Making the cut visible is what lets it refine the query or
+    say so. Silence here does not lose data, it manufactures false certainty.
+    """
+    return (f"\n\n> **Liste tronquee** : {limit} {what} affiches, il y en a d'autres. "
+            f"Affine la recherche (civName / tag / lastNTurns / entityType) "
+            f"ou augmente `limit`.")
+
+
 def search_lore(
     conn: sqlite3.Connection,
     query: str = "",
@@ -401,8 +415,10 @@ def search_lore(
         WHERE {where_sql}
         ORDER BY mention_count DESC LIMIT ?
     """
-    params.append(limit)
+    params.append(limit + 1)
     entities = conn.execute(sql, params).fetchall()
+    truncated = len(entities) > limit
+    entities = entities[:limit]
 
     if not entities:
         return f'# Lore Search: "{query}"\n\nNo entities found matching "{query}".'
@@ -436,6 +452,8 @@ def search_lore(
     lines.append("*Pour plus de details sur une entite, utilise `getEntityDetail`. "
                   "Pour les faits structures, utilise `getStructuredFacts`.*")
 
+    if truncated:
+        lines.append(_truncation_notice(limit, "entites"))
     return "\n".join(lines)
 
 
@@ -882,9 +900,11 @@ def timeline(
     params.extend(turn_params)
 
     sql += " ORDER BY t.turn_number ASC, c.name LIMIT ?"
-    params.append(limit)
+    params.append(limit + 1)
 
     rows = conn.execute(sql, params).fetchall()
+    truncated = len(rows) > limit
+    rows = rows[:limit]
 
     if not rows:
         return "# Timeline\n\nNo turns found."
@@ -914,6 +934,8 @@ def timeline(
         text = truncate(summary or title or "(no summary)", 80)
         lines.append(f"| {turn_num} | {cn} | {t_type} | {text} | {ec} |")
 
+    if truncated:
+        lines.append(_truncation_notice(limit, "tours"))
     return "\n".join(lines)
 
 
@@ -1100,8 +1122,10 @@ def search_turn_content(
     params.extend(turn_params)
 
     sql += " ORDER BY t.turn_number DESC LIMIT ?"
-    params.append(limit)
+    params.append(limit + 1)
     rows = conn.execute(sql, params).fetchall()
+    truncated = len(rows) > limit
+    rows = rows[:limit]
 
     if not rows:
         return f'# Search: "{query}"\n\nNo matching content found.'
@@ -1113,6 +1137,8 @@ def search_turn_content(
         lines.append(truncate(content, 500))
         lines.append("")
 
+    if truncated:
+        lines.append(_truncation_notice(limit, "extraits"))
     return "\n".join(lines)
 
 
@@ -1695,8 +1721,10 @@ def list_subjects(
         ORDER BY t.turn_number DESC, s.id DESC
         LIMIT ?
         """,
-        params + [limit],
+        params + [limit + 1],
     ).fetchall()
+    truncated = len(rows) > limit
+    rows = rows[:limit]
 
     if not rows:
         label = f"statut={status}" + (f", tag={tag}" if tag else "")
@@ -1725,6 +1753,8 @@ def list_subjects(
 
     total = len(rows)
     lines.append(f"\n_{total} sujet(s). Utiliser `getSubjectDetail(subjectId)` pour le détail d'un sujet._")
+    if truncated:
+        lines.append(_truncation_notice(limit, "sujets"))
     return "\n".join(lines)
 
 
