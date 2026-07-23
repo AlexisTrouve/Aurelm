@@ -85,10 +85,33 @@ if ($remoteSha -ne $sha) {
 Write-Host "      remote hash verified"
 
 # --- 5. Publish the manifest LAST, atomically --------------------------------
+# The manifest travels as a FILE, never as a shell argument: Windows PowerShell 5.1
+# strips the double quotes out of a native command's arguments, so piping this JSON
+# through `ssh "printf ..."` published `{version:0.1.1}` -- valid-looking, unparseable,
+# and only visible by fetching it back. scp + mv keeps the bytes intact and stays atomic.
 Write-Host "[5/5] Publishing manifest..." -ForegroundColor Yellow
-$escaped = $manifest.Replace("'", "'\''")
-& ssh -o ConnectTimeout=20 $SshTarget "printf '%s' '$escaped' > $RemoteDir/.latest.json.tmp && mv -f $RemoteDir/.latest.json.tmp $RemoteDir/latest.json && chmod 644 $RemoteDir/latest.json"
+$localManifest = Join-Path $env:TEMP "aurelm-latest.json"
+[System.IO.File]::WriteAllText($localManifest, $manifest, (New-Object System.Text.UTF8Encoding($false)))
+
+& scp -o ConnectTimeout=20 $localManifest "${SshTarget}:$RemoteDir/.latest.json.tmp"
+if ($LASTEXITCODE -ne 0) { throw "uploading the manifest failed" }
+& ssh -o ConnectTimeout=20 $SshTarget "mv -f $RemoteDir/.latest.json.tmp $RemoteDir/latest.json && chmod 644 $RemoteDir/latest.json"
 if ($LASTEXITCODE -ne 0) { throw "publishing the manifest failed" }
+
+# Fetch it back and parse it. A manifest that does not round-trip is worse than no
+# manifest: every client fails silently and nobody is told.
+try {
+    # Honour a local HTTP proxy: some networks cannot reach the origin IP directly.
+    $irmArgs = @{ Uri = "https://dist.etheryale.com/aurelm/latest.json"; TimeoutSec = 20 }
+    if ($env:HTTPS_PROXY) { $irmArgs.Proxy = $env:HTTPS_PROXY }
+    $served = Invoke-RestMethod @irmArgs
+    if ($served.version -ne $version -or $served.sha256 -ne $sha) {
+        throw "served manifest does not match what we published (got version '$($served.version)')"
+    }
+    Write-Host "      manifest verified live (version $($served.version))"
+} catch {
+    throw "published manifest does not parse when fetched back: $_"
+}
 
 Write-Host "`nPublished $version -> https://dist.etheryale.com/aurelm/latest.json" -ForegroundColor Green
 Write-Host $manifest

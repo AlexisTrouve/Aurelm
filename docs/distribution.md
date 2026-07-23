@@ -125,14 +125,30 @@ one.
   offered an update, a real file downloads and verifies, and a **hostile** wrong hash is
   rejected with nothing left on disk.
 
-## Not done yet
+## Verified end to end (2026-07-23)
 
-- **The real two-version upgrade has never been run.** Every claim in "Why an update
-  path at all" (activation survives, DB preserved, migrations catch up) is read off the
-  installer config, not observed: build vN, activate, create data, install vN+1 over it,
-  and check. That is the one gate still owed before shipping to Arthur.
-- `publish_release.ps1` has been syntax-checked but never executed end-to-end (it needs
-  Inno Setup and a full release build).
+The upgrade was actually run, not reasoned about: installed **0.1.0**, planted state,
+installed **0.1.1** over it silently, and checked.
+
+| claim | observed |
+|---|---|
+| in-place upgrade, not a second install | registered version 0.1.0 -> 0.1.1, **one** entry |
+| activation survives | Credential Manager entry intact after the upgrade |
+| DB outside `{app}` preserved | intact |
+| a user file *inside* `{app}pp` | also preserved (only *uninstall* wipes it) |
+| migrations catch up | a DB with **no** `agent_memory*` tables, run through the **installed** bundle's `python -m bot --migrate-only`, came back with `agent_memory` + `agent_memory_links` and its rows untouched |
+| nginx `.exe` rules | real installer served 200, `application/octet-stream`, `immutable` |
+
+`publish_release.ps1` then published 0.1.1 for real, and the four live client tests pass
+against it.
+
+## Traps this cost us
+
+- **PowerShell 5.1 strips double quotes from native-command arguments.** The first
+  publish shipped `{version:0.1.1,...}` -- unparseable JSON -- because the manifest was
+  piped through `ssh "printf ... '$json'"`. It *looked* fine in the script output and
+  was only visible by fetching it back. The manifest now travels as a **file** (scp +
+  `mv`), and the script **fetches it back and parses it** before declaring success.
 - **Keep .ps1 files ASCII-only.** Windows PowerShell 5.1 reads them as ANSI when there
   is no BOM, so a UTF-8 em-dash inside a double-quoted string terminates the string
   early and the file no longer parses — this actually happened here and was caught only
