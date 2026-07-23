@@ -14,14 +14,14 @@
 
     WHY the embeddable CPython rather than PyInstaller: the app spawns the bot as a
     real subprocess and the pipeline imports it as a package. An interpreter we own
-    keeps that model intact — no freezing, no import hooks, no hidden-import guessing.
+    keeps that model intact -- no freezing, no import hooks, no hidden-import guessing.
 
-    THE ONE NON-OBVIOUS PART — python312._pth:
+    THE ONE NON-OBVIOUS PART -- python312._pth:
     When a `._pth` file sits next to python.exe, CPython takes FULL control of
     sys.path: it ignores PYTHONPATH *and* does not add the working directory, even
     for `-m`. Measured, not assumed: without the `..\app` line below, launching the
     bundle fails with "No module named bot" no matter what cwd it is given. The `.`
-    entry means "the directory holding python.exe", not the cwd — hence the explicit
+    entry means "the directory holding python.exe", not the cwd -- hence the explicit
     relative hop to the app folder.
 
 .PARAMETER OutDir
@@ -62,7 +62,7 @@ Set-Location $repoRoot
 # stderr. WHY: pip reports unrelated dependency conflicts from the build machine's
 # global environment on stderr, and flutter streams progress there too. Under
 # $ErrorActionPreference = 'Stop' PowerShell turns any native stderr line into a
-# terminating NativeCommandError — which aborted this script on a pip run that had
+# terminating NativeCommandError -- which aborted this script on a pip run that had
 # actually succeeded.
 function Invoke-Native {
     param(
@@ -77,7 +77,7 @@ function Invoke-Native {
 
 # Finds the Inno Setup compiler. WHY a search rather than a fixed path: winget
 # installs it per-user under LocalAppData, the classic installer puts it in
-# Program Files, and GitHub runners ship it somewhere else again — hardcoding any
+# Program Files, and GitHub runners ship it somewhere else again -- hardcoding any
 # one of those makes the build work on exactly one machine.
 function Resolve-Iscc {
     $onPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
@@ -120,7 +120,7 @@ Write-Host "[3/6] Fetching embedded CPython $PythonVersion..." -ForegroundColor 
 $pyDir = Join-Path $OutDir "python"
 New-Item -ItemType Directory -Force -Path $pyDir | Out-Null
 
-# Cache the download between builds — it never changes for a given version.
+# Cache the download between builds -- it never changes for a given version.
 $cacheDir = Join-Path $env:TEMP "aurelm-build-cache"
 New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
 $embedZip = Join-Path $cacheDir "python-$PythonVersion-embed-amd64.zip"
@@ -163,7 +163,7 @@ $appDir = Join-Path $OutDir "app"
 New-Item -ItemType Directory -Force -Path $appDir | Out-Null
 
 # bot/ ships whole. database/ ships WHOLE on purpose: migration 001 does
-# `.read ../schema.sql`, which resolves to app/database/schema.sql — copying only
+# `.read ../schema.sql`, which resolves to app/database/schema.sql -- copying only
 # migrations/ would silently break first-run schema creation (zero tables, and
 # /health would still come up, hiding it).
 foreach ($pkg in @("bot", "database")) {
@@ -172,9 +172,9 @@ foreach ($pkg in @("bot", "database")) {
 
 # pipeline/ is a NAMESPACE package whose only runtime-imported part is
 # pipeline/pipeline/ (bot imports `pipeline.pipeline.*`). Ship ONLY that. The rest
-# of the tree — archive_db/ (the dev's game DBs), roman_exports/ (a private corpus),
+# of the tree -- archive_db/ (the dev's game DBs), roman_exports/ (a private corpus),
 # data/, maps/, benchmark scripts, and a dev pipeline/aurelm_config.json holding real
-# Discord IDs — is git-tracked and must NEVER end up in a user's installer. Verified:
+# Discord IDs -- is git-tracked and must NEVER end up in a user's installer. Verified:
 # pipeline/pipeline/ loads no file from those dirs at runtime (only OPENROUTER_API_KEY
 # from the env we inject).
 New-Item -ItemType Directory -Force -Path (Join-Path $appDir "pipeline") | Out-Null
@@ -199,13 +199,13 @@ Invoke-Native -What "bundled interpreter importing app packages (check ._pth)" -
 }
 
 # Migrations against a FRESH DB. WHY this and not just /health: a missing
-# database/migrations dir let the bot serve /health while creating zero tables —
+# database/migrations dir let the bot serve /health while creating zero tables --
 # the app would install and die on first real use. This asserts the bundled
 # migrations actually build the schema, which is the failure /health hides.
 #
 # The probe is written to a FILE, not passed via `python -c`: a multi-line script
 # handed to a native exe as an argument is quoted differently across PowerShell
-# environments — it ran locally and broke on the CI runner with a SyntaxError.
+# environments -- it ran locally and broke on the CI runner with a SyntaxError.
 $migrateProbe = Join-Path $env:TEMP "aurelm-migrate-probe.db"
 $probeScript = Join-Path $env:TEMP "aurelm-migrate-probe.py"
 if (Test-Path $migrateProbe) { Remove-Item $migrateProbe -Force }
@@ -256,7 +256,7 @@ if ($Installer) {
 
     # The app compares ITS OWN version against the update manifest, so the version
     # the Dart code reports must match the one stamped on the installer. They live in
-    # two files, so they can drift — and a drifted version means the update check
+    # two files, so they can drift -- and a drifted version means the update check
     # compares against a lie (it would re-offer an update it already installed, or
     # never offer one at all). Fail the build rather than ship that.
     $constFile = Join-Path $repoRoot "gui/lib/core/constants/app_constants.dart"

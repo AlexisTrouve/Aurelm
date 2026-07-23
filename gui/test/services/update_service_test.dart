@@ -117,4 +117,47 @@ void main() {
       expect(expected.existsSync(), isFalse);
     });
   });
+
+  group('installAndExit', () {
+    test('stops the bot BEFORE launching the installer', () async {
+      // Ordering is the whole point: the embedded python.exe holds handles inside
+      // {app}\python, so the installer cannot replace those files until it is stopped.
+      final order = <String>[];
+      var quit = false;
+      await UpdateService().installAndExit(
+        File('C:/tmp/Aurelm-Setup-1.0.0.exe'),
+        onBeforeExit: () async => order.add('bot-stopped'),
+        launcher: (p) async => order.add('launched:$p'),
+        quit: () => quit = true,
+      );
+      expect(order, ['bot-stopped', 'launched:C:/tmp/Aurelm-Setup-1.0.0.exe']);
+      expect(quit, isTrue, reason: 'the app must exit so the files are released');
+    });
+
+    test('a bot that refuses to stop does not block the update', () async {
+      var launched = false;
+      await UpdateService().installAndExit(
+        File('C:/tmp/x.exe'),
+        onBeforeExit: () async => throw Exception('bot stuck'),
+        launcher: (_) async => launched = true,
+        quit: () {},
+      );
+      expect(launched, isTrue);
+    });
+
+    test('does NOT quit when the installer fails to launch', () async {
+      // Quitting without having started an installer would look like a crash and
+      // leave nothing updated: the error must surface instead.
+      var quit = false;
+      await expectLater(
+        UpdateService().installAndExit(
+          File('C:/tmp/x.exe'),
+          launcher: (_) async => throw const ProcessException('x.exe', [], 'nope'),
+          quit: () => quit = true,
+        ),
+        throwsA(isA<ProcessException>()),
+      );
+      expect(quit, isFalse);
+    });
+  });
 }

@@ -9,7 +9,7 @@
     ORDER MATTERS: the binary is uploaded FIRST and the manifest LAST, written
     atomically (temp file + mv). A manifest that names a binary which is not fully
     uploaded yet would make every client download a truncated file and fail its hash
-    check — visible to the user as a broken update for as long as the upload runs.
+    check -- visible to the user as a broken update for as long as the upload runs.
 
     The host is reached over Tailscale: the public IP is not reachable from every
     network, the Tailscale address always is.
@@ -21,7 +21,7 @@
     Build and hash, print what would be published, but do not touch the server.
 
 .EXAMPLE
-    pwsh scripts/publish_release.ps1 -Notes "Mémoire de l'agent + liens"
+    pwsh scripts/publish_release.ps1 -Notes "Memoire de l'agent + liens"
 #>
 [CmdletBinding()]
 param(
@@ -51,7 +51,7 @@ if (-not (Test-Path $installer)) { throw "installer not found: $installer" }
 $sizeMb = [math]::Round((Get-Item $installer).Length / 1MB, 1)
 Write-Host "[2/5] Artefact: Aurelm-Setup-$version.exe ($sizeMb MB)" -ForegroundColor Yellow
 
-# --- 3. Hash — this is what the client verifies before executing the binary ---
+# --- 3. Hash -- this is what the client verifies before executing the binary ---
 Write-Host "[3/5] Computing sha256..." -ForegroundColor Yellow
 $sha = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
 Write-Host "      $sha"
@@ -74,13 +74,13 @@ if ($DryRun) {
 # --- 4. Upload the binary FIRST ----------------------------------------------
 Write-Host "[4/5] Uploading to $SshTarget..." -ForegroundColor Yellow
 & scp -o ConnectTimeout=20 $installer "${SshTarget}:$RemoteDir/"
-if ($LASTEXITCODE -ne 0) { throw "scp failed — is Tailscale up?" }
+if ($LASTEXITCODE -ne 0) { throw "scp failed -- is Tailscale up?" }
 
 # Verify the remote copy matches before announcing it. A silent truncation here
 # would ship a binary every client rejects.
 $remoteSha = (& ssh -o ConnectTimeout=20 $SshTarget "sha256sum '$RemoteDir/Aurelm-Setup-$version.exe' | cut -d' ' -f1").Trim()
 if ($remoteSha -ne $sha) {
-    throw "remote hash mismatch after upload (local $sha, remote $remoteSha) — NOT publishing"
+    throw "remote hash mismatch after upload (local $sha, remote $remoteSha) -- NOT publishing"
 }
 Write-Host "      remote hash verified"
 

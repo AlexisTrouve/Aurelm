@@ -152,15 +152,32 @@ class UpdateService {
   ///
   /// [onBeforeExit] is where the caller stops the bot subprocess; without that the
   /// embedded python.exe keeps a handle on {app}\python and the upgrade half-applies.
-  Future<void> installAndExit(File installer, {Future<void> Function()? onBeforeExit}) async {
+  /// It therefore MUST run before the installer starts — that ordering is the whole
+  /// point and is locked by a test.
+  ///
+  /// If launching fails we deliberately let the error propagate and do NOT quit:
+  /// killing the app without having started an installer would look like a crash and
+  /// leave nothing updated.
+  Future<void> installAndExit(
+    File installer, {
+    Future<void> Function()? onBeforeExit,
+    Future<void> Function(String path)? launcher,
+    void Function()? quit,
+  }) async {
     if (onBeforeExit != null) {
       try {
         await onBeforeExit();
-      } catch (_) {}
+      } catch (_) {
+        // A bot that refuses to stop must not block the update; the installer
+        // closes remaining processes itself.
+      }
     }
-    await Process.start(installer.path, const [], mode: ProcessStartMode.detached);
+    final launch = launcher ??
+        (String p) async =>
+            Process.start(p, const [], mode: ProcessStartMode.detached);
+    await launch(installer.path);
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    exit(0);
+    (quit ?? () => exit(0))();
   }
 }
 

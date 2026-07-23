@@ -111,9 +111,15 @@ one.
   update host cannot break startup** (socket error / 500 / garbage all leave no error
   state), dismiss hides the banner without forgetting the update, and a manual check
   reports its outcome unlike the silent one.
-- `gui/test/services/update_service_test.dart` — 9, offline: numeric version compare,
+- `gui/test/widgets/update_banner_test.dart` — 3: the banner actually **renders** the
+  version and notes after the startup check, occupies no space when up to date, and
+  "Plus tard" hides it for the session.
+- `gui/test/services/update_service_test.dart` — 12, offline: numeric version compare,
   hashless manifest refused, every outage shape returns null, a slow server does not
-  hang, a matching hash is accepted, **a tampered binary is rejected and deleted**.
+  hang, a matching hash is accepted, **a tampered binary is rejected and deleted**, the
+  bot is stopped **before** the installer launches (the ordering the upgrade depends
+  on), a stuck bot does not block the update, and a failed launch does **not** quit the
+  app (quitting without starting an installer would look like a crash).
 - `gui/test/services/update_service_live_test.dart` — 4, **against the real host**
   (`AURELM_LIVE_DIST=1`): the deployed manifest parses, the current version is not
   offered an update, a real file downloads and verifies, and a **hostile** wrong hash is
@@ -121,5 +127,15 @@ one.
 
 ## Not done yet
 
+- **The real two-version upgrade has never been run.** Every claim in "Why an update
+  path at all" (activation survives, DB preserved, migrations catch up) is read off the
+  installer config, not observed: build vN, activate, create data, install vN+1 over it,
+  and check. That is the one gate still owed before shipping to Arthur.
+- `publish_release.ps1` has been syntax-checked but never executed end-to-end (it needs
+  Inno Setup and a full release build).
+- **Keep .ps1 files ASCII-only.** Windows PowerShell 5.1 reads them as ANSI when there
+  is no BOM, so a UTF-8 em-dash inside a double-quoted string terminates the string
+  early and the file no longer parses — this actually happened here and was caught only
+  by an explicit parse check.
 - No rollback. If a release is bad, publish a corrected higher version.
 - No signing of the installer (Windows SmartScreen will warn on first run).
