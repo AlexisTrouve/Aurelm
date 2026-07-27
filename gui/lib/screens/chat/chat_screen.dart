@@ -9,12 +9,10 @@ import 'dart:io';
 //   - widgets/chat_stream_widgets.dart  : tool card, queued/summary bubbles, thinking,
 //                                         pending chip, empty state, error banner
 //   - widgets/chat_app_bar_pickers.dart : model / effort / thinking pickers + token badge
-// This file keeps ONLY the screen State (lifecycle, send/scroll wiring) and its two
-// build methods (_buildScaffold, _buildSessionsDrawer + its dialogs). The E2E net
-// integration_test/chat_flow_test.dart proves the decomposition is behaviour-neutral.
-//   Still a State method, not yet a widget: _buildSessionsDrawer. Extracting it is
-//   mechanical (per the seam map it touches no State fields) but must wait for a
-//   drawer E2E first — untested UI does not get refactored blind.
+//   - widgets/chat_session_drawer.dart   : the sessions sidebar (_SessionsDrawer) + dialogs
+// This file keeps ONLY the screen State (lifecycle, send/scroll wiring) and the
+// _buildScaffold build method. The E2E net integration_test/chat_flow_test.dart
+// (incl. the drawer parcours) proves the decomposition is behaviour-neutral.
 
 import 'package:drift/drift.dart' show Variable;
 import 'package:file_picker/file_picker.dart';
@@ -38,6 +36,7 @@ part 'widgets/chat_message_bubble.dart';
 part 'widgets/chat_input_bar.dart';
 part 'widgets/chat_stream_widgets.dart';
 part 'widgets/chat_app_bar_pickers.dart';
+part 'widgets/chat_session_drawer.dart';
 
 /// Full-page chat interface for the Aurelm AI agent.
 class ChatScreen extends ConsumerStatefulWidget {
@@ -220,229 +219,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  // Build sessions drawer — list of all sessions with quick access
-  Widget _buildSessionsDrawer(BuildContext context, ChatState chatState) {
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Sessions',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await ref.read(chatProvider.notifier).newSession();
-                      // Refresh the sessions list
-                      ref.invalidate(filteredSessionsProvider);
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Nouvelle'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Sessions list
-          Expanded(
-            child: ref.watch(filteredSessionsProvider).when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, st) => Center(
-                child: Text('Erreur: $err'),
-              ),
-              data: (sessions) {
-                if (sessions.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Aucune session créée.\nCliquez sur "Nouvelle" pour commencer.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: sessions.length,
-                  itemBuilder: (context, index) {
-                    final session = sessions[index];
-                    final isActive = chatState.sessionId == session.sessionId;
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          title: Text(session.name),
-                          subtitle: Text(
-                            '${session.messageCount} messages',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          selected: isActive,
-                          selectedTileColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          onTap: () {
-                            // Switch to this session (pass name + tags for AppBar)
-                            ref.read(chatProvider.notifier).setSessionId(
-                              session.sessionId,
-                              name: session.name,
-                              tags: session.tags,
-                            );
-                            Navigator.pop(context);
-                          },
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                child: const Text('Renommer'),
-                                onTap: () {
-                                  _showRenameDialog(context, session);
-                                },
-                              ),
-                              PopupMenuItem(
-                                child: const Text('Ajouter un tag'),
-                                onTap: () {
-                                  _showAddTagDialog(context, session);
-                                },
-                              ),
-                              PopupMenuItem(
-                                child: Text(
-                                  session.archived ? 'Restaurer' : 'Archiver',
-                                ),
-                                onTap: () {
-                                  ref
-                                      .read(sessionsProvider)
-                                      .toggleArchive(session.sessionId, !session.archived);
-                                },
-                              ),
-                              PopupMenuItem(
-                                child: const Text('Supprimer'),
-                                onTap: () {
-                                  ref.read(sessionsProvider).deleteSession(session.sessionId);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Tags displayed below the tile, outside ListTile constraints
-                        if (session.tags.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                            child: Wrap(
-                              spacing: 4,
-                              runSpacing: 2,
-                              children: session.tags.map((tag) => GestureDetector(
-                                onLongPress: () {
-                                  ref.read(sessionsProvider).removeTag(session.sessionId, tag);
-                                  ref.invalidate(filteredSessionsProvider);
-                                },
-                                child: Chip(
-                                  label: Text(tag),
-                                  labelStyle: Theme.of(context).textTheme.labelSmall,
-                                  padding: EdgeInsets.zero,
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              )).toList(),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRenameDialog(BuildContext context, ChatSessionPreview session) {
-    final controller = TextEditingController(text: session.name);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Renommer la session'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref
-                    .read(sessionsProvider)
-                    .renameSession(session.sessionId, controller.text.trim());
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Renommer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddTagDialog(BuildContext context, ChatSessionPreview session) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajouter un tag'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'ex: Confluence, important...'),
-          onSubmitted: (v) {
-            if (v.trim().isNotEmpty) {
-              ref.read(sessionsProvider).addTag(session.sessionId, v.trim());
-              ref.invalidate(filteredSessionsProvider);
-              Navigator.pop(context);
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                ref.read(sessionsProvider).addTag(session.sessionId, controller.text.trim());
-                ref.invalidate(filteredSessionsProvider);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildScaffold(
       BuildContext context, ChatState chatState, bool isOnline) {
     return SelectionArea(
       child: Scaffold(
         key: _scaffoldKey,
-        drawer: _buildSessionsDrawer(context, chatState),
+        drawer: const _SessionsDrawer(),
         appBar: AppBar(
         // When a session is open: back button + hamburger to open sessions drawer.
         // leadingWidth widened to fit both icons side by side.
