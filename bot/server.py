@@ -557,6 +557,14 @@ class BotServer:
             line = json.dumps(payload, ensure_ascii=False) + "\n"
             await resp.write(line.encode("utf-8"))
 
+        # Bound BEFORE the loop: they were only assigned inside the `event_type ==
+        # "text"` branch, yet used after it (_auto_tag_civs). A turn that ends without a
+        # final text — which is exactly what an upstream proxy failure does — then raised
+        # UnboundLocalError, and that replaced the real cause in the error sent to the
+        # user. The failure masked its own diagnosis.
+        tool_calls: list[dict] = []
+        response_text = ""
+
         try:
             # Stream events from the async generator in real time
             async for event_type, data in self._agent.answer_streaming(

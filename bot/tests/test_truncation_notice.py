@@ -19,10 +19,14 @@ def _many_entities(db, n=8):
 
 
 def test_search_lore_says_when_it_truncated(db):
-    _many_entities(db)
+    _many_entities(db)  # 8 "Garde" + whatever the fixture seeds
     out = dispatch_tool(db, "searchLore", {"query": "Garde", "limit": 3})
     assert "tronquee" in out.lower(), "a capped list must announce it is incomplete"
     assert "limit" in out, "and tell the agent how to get more"
+    # The REAL total must appear, not just "there are more" — otherwise the agent
+    # invents a count (measured live: it answered "41 entites" from a 20-row slice).
+    assert "sur 8 au total" in out, f"the true total must be surfaced: {out[-200:]}"
+    assert "extrapole" in out.lower(), "and it must be told not to guess the rest"
 
 
 def test_search_lore_stays_silent_when_complete(db):

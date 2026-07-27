@@ -334,16 +334,23 @@ def get_turn_detail(
 # Tool 4: searchLore
 # --------------------------------------------------------------------------- #
 
-def _truncation_notice(limit: int, what: str = "resultats") -> str:
+def _truncation_notice(limit: int, what: str = "resultats", total: int | None = None) -> str:
     """Tell the agent, in the output itself, that the list is INCOMPLETE.
 
     WHY this exists: every list tool caps with a bare LIMIT. Without a notice the agent
     receives a silently truncated slice, believes it holds everything, and answers
     "voici toutes les entites militaires" from a subset -- confidently wrong, with no
-    way for the GM to notice. Making the cut visible is what lets it refine the query or
-    say so. Silence here does not lose data, it manufactures false certainty.
+    way for the GM to notice. Silence here does not lose data, it manufactures false
+    certainty.
+
+    WHY the total, and not just "there are more": measured on the live agent. Told only
+    that more existed, asked "combien y en a-t-il en tout ?", it answered "41 entites,
+    Garde 00 a 39" -- a count and a range it had never seen, stated as fact. Knowing the
+    cut exists is not enough; without the number the model fills the gap by inference.
     """
-    return (f"\n\n> **Liste tronquee** : {limit} {what} affiches, il y en a d'autres. "
+    shown = (f"{limit} {what} affiches sur {total} au total"
+             if total is not None else f"{limit} {what} affiches, il y en a d'autres")
+    return (f"\n\n> **Liste tronquee** : {shown}. N'EXTRAPOLE PAS le contenu manquant. "
             f"Affine la recherche (civName / tag / lastNTurns / entityType) "
             f"ou augmente `limit`.")
 
@@ -415,6 +422,17 @@ def search_lore(
         WHERE {where_sql}
         ORDER BY mention_count DESC LIMIT ?
     """
+    # Real total for the truncation notice: without it the agent, asked "combien en
+    # tout ?", invented a count from the visible slice (measured live: "41 entites").
+    count_sql = f"""
+        SELECT COUNT(DISTINCT e.id)
+        FROM entity_entities e
+        LEFT JOIN civ_civilizations c ON e.civ_id = c.id
+        LEFT JOIN entity_aliases a ON a.entity_id = e.id
+        {turn_join}
+        WHERE {where_sql}
+    """
+    total_matches = conn.execute(count_sql, list(params)).fetchone()[0]
     params.append(limit + 1)
     entities = conn.execute(sql, params).fetchall()
     truncated = len(entities) > limit
@@ -453,7 +471,7 @@ def search_lore(
                   "Pour les faits structures, utilise `getStructuredFacts`.*")
 
     if truncated:
-        lines.append(_truncation_notice(limit, "entites"))
+        lines.append(_truncation_notice(limit, "entites", total_matches))
     return "\n".join(lines)
 
 
@@ -1725,6 +1743,12 @@ def list_subjects(
     ).fetchall()
     truncated = len(rows) > limit
     rows = rows[:limit]
+    total_subjects = conn.execute(
+        "SELECT COUNT(*) FROM subject_subjects s "
+        "JOIN turn_turns t ON t.id = s.source_turn_id "
+        "JOIN civ_civilizations c ON c.id = s.civ_id " + where_sql,
+        params,
+    ).fetchone()[0]
 
     if not rows:
         label = f"statut={status}" + (f", tag={tag}" if tag else "")
@@ -1754,7 +1778,7 @@ def list_subjects(
     total = len(rows)
     lines.append(f"\n_{total} sujet(s). Utiliser `getSubjectDetail(subjectId)` pour le détail d'un sujet._")
     if truncated:
-        lines.append(_truncation_notice(limit, "sujets"))
+        lines.append(_truncation_notice(limit, "sujets", total_subjects))
     return "\n".join(lines)
 
 
