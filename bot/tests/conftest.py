@@ -169,6 +169,7 @@ CREATE TABLE map_maps (
     parent_map_id   INTEGER REFERENCES map_maps(id),
     parent_cell_q   INTEGER,
     parent_cell_r   INTEGER,
+    metadata        TEXT,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
