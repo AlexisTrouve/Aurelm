@@ -171,6 +171,19 @@ class TestCompareCivs:
         result = compare_civs(db, civs, aspects=["technology"])
         assert "technology" in result
 
+    def test_diplomacy_and_religion_are_valid_aspects(self, db):
+        """diplomatique + religieux are first-class ENTITY_TAG_VOCAB domains, so the GM
+        must be able to compare civs on them directly -- not have them buried inside
+        politics/culture. Previously these raised 'invalid aspect'."""
+        civs = [
+            {"id": 1, "name": "Civilisation de la Confluence", "player_name": "Rubanc"},
+            {"id": 2, "name": "Cheveux de Sang", "player_name": "PlayerB"},
+        ]
+        for aspect in ("diplomacy", "religion"):
+            result = compare_civs(db, civs, aspects=[aspect])
+            assert "Error" not in result, f"{aspect} must be a valid aspect: {result[:120]}"
+            assert aspect in result, f"the comparison must be scoped to {aspect}"
+
 
 # --------------------------------------------------------------------------- #
 # getEntityDetail
@@ -275,6 +288,28 @@ class TestGetStructuredFacts:
         result = get_structured_facts(db, 1, "Civilisation de la Confluence", from_turn=1, to_turn=1)
         assert "Poisson" in result
         assert "Argile Vivante" not in result
+
+    def test_caps_and_announces_when_too_many_turns(self, db):
+        """factType='all' walked EVERY turn with facts and emitted them all -- on a real
+        game (hundreds of turns) that floods the agent's context. It must cap and, like
+        every other list tool, SAY it capped and give the true total (anti-extrapolation)."""
+        # Seed enough fact-bearing turns to blow past any sane cap.
+        for n in range(10, 60):
+            db.execute(
+                "INSERT INTO turn_turns (civ_id, turn_number, title, summary,"
+                " raw_message_ids, turn_type, technologies) VALUES"
+                " (1, ?, ?, 's', '[]', 'standard', '[\"tech\"]')",
+                (n, f"Tour {n}"))
+        db.commit()
+        result = get_structured_facts(db, 1, "Civilisation de la Confluence", limit=5)
+        assert "tronquee" in result.lower(), "a capped fact dump must announce it is incomplete"
+        assert "extrapole" in result.lower(), "and tell the agent not to guess the rest"
+        # 3 fixture turns (1,2,3) carry facts + 50 seeded = 53 fact-bearing turns total.
+        assert "53" in result, f"the true total must be surfaced, not just 'there are more': {result[-250:]}"
+
+    def test_no_truncation_notice_when_under_cap(self, db):
+        result = get_structured_facts(db, 1, "Civilisation de la Confluence")
+        assert "tronquee" not in result.lower(), "no false alarm on a small, complete dump"
 
     def test_no_facts(self, db):
         result = get_structured_facts(db, 1, "Civilisation de la Confluence", fact_type="technologies", from_turn=99)

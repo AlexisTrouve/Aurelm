@@ -180,7 +180,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "compareCivs",
-        "description": "Compare plusieurs civs sur : military, technology, politics, economy, culture.",
+        "description": "Compare plusieurs civs sur : military, technology, politics, economy, culture, diplomacy, religion.",
         "input_schema": {
             "type": "object",
             "properties": {

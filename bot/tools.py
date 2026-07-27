@@ -982,6 +982,18 @@ ASPECT_ENTITY_MAP: dict[str, dict[str, list[str]]] = {
         "types": ["institution", "event", "place"],
         "keywords": ["culture", "religion", "rituel", "tradition", "art", "musique", "fete", "ceremonie", "croyance", "mythe"],
     },
+    # diplomacy + religion are first-class domains in ENTITY_TAG_VOCAB (diplomatique,
+    # religieux). Folding them into politics/culture meant the GM could not compare civs
+    # on either one directly -- e.g. "qui a le plus d'alliances ?" got drowned in the
+    # whole politics bucket. Kept as their own aspects, narrower keyword sets.
+    "diplomacy": {
+        "types": ["institution", "person", "civilization"],
+        "keywords": ["diplomatie", "alliance", "traite", "ambassade", "delegation", "guerre", "paix", "conflit", "relation", "envoye"],
+    },
+    "religion": {
+        "types": ["belief", "institution", "person"],
+        "keywords": ["religion", "culte", "rituel", "croyance", "dieu", "divin", "sacre", "temple", "pretre", "oracle", "mythe", "esprit"],
+    },
 }
 
 
@@ -1188,12 +1200,17 @@ def get_structured_facts(
     from_turn: int | None = None,
     to_turn: int | None = None,
     last_n_turns: int | None = None,
+    limit: int = 25,
 ) -> str:
     """Structured facts per turn.
 
     fact_type=choices delegates to get_choice_history (narrative bifurcations).
     fact_type=techtree delegates to get_tech_tree (categorized tech tree).
     fact_type=all skips choices and techtree (use explicitly for those).
+
+    limit caps how many fact-bearing turns are emitted. WHY: on a real game (hundreds
+    of turns) an uncapped 'all' dump floods the agent's context; capped + a truncation
+    notice keeps it honest (see _truncation_notice) rather than silently partial.
     """
     if fact_type and fact_type not in VALID_FACT_TYPES and fact_type != "all":
         valid = ", ".join(sorted(VALID_FACT_TYPES) + ["all"])
@@ -1235,7 +1252,9 @@ def get_structured_facts(
         lines.append(f"**Filter:** {fact_type}")
     lines.append("")
 
-    found_any = False
+    # Collect fact-bearing turns FIRST so we can cap the emitted set and still report
+    # the TRUE total. Emitting inside the loop made an honest total impossible.
+    turns_with_facts: list[tuple[int, dict[str, list[str]]]] = []
     for row in rows:
         t_num = row[0]
         facts_for_turn: dict[str, list[str]] = {}
@@ -1244,19 +1263,25 @@ def get_structured_facts(
             items = _parse_json_list(col_map.get(ft))
             if items:
                 facts_for_turn[ft] = items
-
         if facts_for_turn:
-            found_any = True
-            lines.append(f"## Turn {t_num}")
-            lines.append("")
-            for ft, items in facts_for_turn.items():
-                lines.append(f"**{ft.capitalize()}:**")
-                for item in items:
-                    lines.append(f"- {item}")
-                lines.append("")
+            turns_with_facts.append((t_num, facts_for_turn))
 
-    if not found_any:
+    if not turns_with_facts:
         lines.append("No structured facts found for the given filters.")
+        return "\n".join(lines)
+
+    total = len(turns_with_facts)
+    for t_num, facts_for_turn in turns_with_facts[:limit]:
+        lines.append(f"## Turn {t_num}")
+        lines.append("")
+        for ft, items in facts_for_turn.items():
+            lines.append(f"**{ft.capitalize()}:**")
+            for item in items:
+                lines.append(f"- {item}")
+            lines.append("")
+
+    if total > limit:
+        lines.append(_truncation_notice(limit, "tours", total))
 
     return "\n".join(lines)
 
@@ -3113,6 +3138,7 @@ def dispatch_tool(
             from_turn=tool_input.get("fromTurn"),
             to_turn=tool_input.get("toTurn"),
             last_n_turns=tool_input.get("lastNTurns"),
+            limit=int(tool_input.get("limit") or 25),
         )
 
     if tool_name == "getChoiceHistory":
