@@ -55,6 +55,25 @@ void main() {
       expect(r.workingDir, root.path);
     });
 
+    test('dev + DB OUTSIDE the repo → repo root found from the EXE, not the DB dir', () {
+      // The dogfood layout: the GUI exe is nested inside the repo
+      // (<root>/gui/build/windows/x64/runner/Debug) while the DB lives OUTSIDE it
+      // (the wizard's Documents\Aurelm default). Resolving cwd from the DB path
+      // finds no bot/ and `py -m bot` fails with "No module named bot" — the exact
+      // crash the first-run dogfood hit. cwd must come from the EXE's repo.
+      final root = Directory(p.join(tmp.path, 'repo'))..createSync();
+      Directory(p.join(root.path, 'bot')).createSync();
+      final exeDir = Directory(
+          p.join(root.path, 'gui', 'build', 'windows', 'x64', 'runner', 'Debug'))
+        ..createSync(recursive: true);
+      final outsideDb = p.join(tmp.path, 'Documents', 'Aurelm', 'aurelm.db');
+
+      final r = BotService.resolveLauncherFor(exeDir.path, outsideDb);
+      expect(r.executable, 'py');
+      expect(r.workingDir, root.path,
+          reason: 'the bot package lives in the repo the EXE is inside, not by the DB');
+    });
+
     test('half-present bundle (python but no app) falls back to dev, not a broken '
         'packaged launch', () {
       final exeDir = Directory(p.join(tmp.path, 'half'))..createSync();

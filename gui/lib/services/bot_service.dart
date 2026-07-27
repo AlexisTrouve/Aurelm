@@ -137,17 +137,25 @@ class BotService {
     }
   }
 
+  /// Walk up from [startDir] to the nearest ancestor holding a `bot/` package.
+  /// Returns null if none is found before the filesystem root. Cap of 10 because
+  /// the dev EXE is deep (`<repo>/gui/build/windows/x64/runner/Debug`).
+  static String? _findBotRootFrom(String startDir) {
+    var dir = Directory(startDir);
+    for (var i = 0; i < 10; i++) {
+      if (Directory('${dir.path}/bot').existsSync()) return dir.path;
+      final parent = dir.parent;
+      if (parent.path == dir.path) break; // reached the filesystem root
+      dir = parent;
+    }
+    return null;
+  }
+
   /// Walk up from the DB path to the project root (the nearest ancestor with a
   /// `bot/` dir). Static so resolveLauncherFor stays a pure, testable function.
   static String findProjectRoot(String dbPath) {
-    var dir = Directory(dbPath).parent;
-    for (var i = 0; i < 5; i++) {
-      if (Directory('${dir.path}/bot').existsSync()) {
-        return dir.path;
-      }
-      dir = dir.parent;
-    }
-    return Directory(dbPath).parent.path;
+    final dbDir = Directory(dbPath).parent.path;
+    return _findBotRootFrom(dbDir) ?? dbDir;
   }
 
   /// How to launch the bot: the interpreter, its leading args, and the cwd.
@@ -183,12 +191,18 @@ class BotService {
       );
     }
 
-    // Dev checkout: the Windows launcher picks the right interpreter, and the
-    // sources live next to the database.
+    // Dev checkout: the Windows launcher picks the right interpreter. The bot
+    // package lives in the repo — find the repo root from the EXE location first
+    // (the GUI exe is nested inside `<repo>/gui/build/…`). WHY not from the DB:
+    // the wizard's default DB is `Documents\Aurelm\aurelm.db`, OUTSIDE the repo, so
+    // a DB-relative search finds no `bot/` and `py -m bot` dies with "No module
+    // named bot" (the exact first-run crash). Fall back to a DB-relative search
+    // (dev DBs kept inside the repo), then to the DB's own dir.
+    final root = _findBotRootFrom(exeDir) ?? findProjectRoot(dbPath);
     return (
       executable: 'py',
       leadingArgs: const <String>['-3.12'],
-      workingDir: findProjectRoot(dbPath),
+      workingDir: root,
     );
   }
 
