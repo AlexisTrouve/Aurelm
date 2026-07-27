@@ -129,3 +129,82 @@ def test_agent_memorises_an_implicit_correction(tmp_path):
         f"the agent did not memorise an implicit correction (tools: {tools_called})"
     )
     assert rows, "editMemory called but nothing persisted"
+
+
+def test_agent_links_memory_to_an_article(tmp_path):
+    """`links` has NEVER been seen on the wire. Arthur states a ruling about a specific
+    entity and asks to attach it to that article -> the agent should call editMemory
+    with links=['entity:Argile Vivante'], producing a row in agent_memory_links. That
+    row is what lets recall show "→ liens : Argile Vivante" and the agent drill back in.
+    """
+    db = _live_db(tmp_path)
+    agent = Agent(BotConfig(db_path=db, proxy_api_key=_KEY, default_effort="low"))
+
+    events = _run(agent, "Règle à retenir sur la Confluence : l'Argile Vivante durcit "
+                         "instantanément au contact de l'air. Rattache cette note à "
+                         "l'article de l'entité « Argile Vivante » pour qu'on y revienne.")
+
+    tools_called = [d.get("name") for t, d in events if t == "tool_start"]
+    errors = [d for t, d in events if t == "error"]
+    print(f"\n[live-links] tools called: {tools_called}")
+    print(f"[live-links] errors: {errors}")
+    assert not errors, f"the turn errored: {errors}"
+    assert "editMemory" in tools_called, f"editMemory never called (tools: {tools_called})"
+
+    conn = sqlite3.connect(db)
+    try:
+        links = conn.execute(
+            "SELECT m.mem_key, e.canonical_name FROM agent_memory_links l "
+            "JOIN agent_memory m ON m.id = l.memory_id "
+            "LEFT JOIN entity_entities e ON e.id = l.entity_id "
+            "WHERE m.active = 1"
+        ).fetchall()
+    finally:
+        conn.close()
+    print(f"[live-links] links written: {links}")
+    assert links, "editMemory was called but produced NO link row (the `links` path is dead on the wire)"
+    assert any(name and "argile" in name.lower() for _, name in links), (
+        f"a link exists but not to the Argile Vivante entity: {links}"
+    )
+
+
+def test_agent_forgets_a_memory_the_gm_says_is_wrong(tmp_path):
+    """`forget=true` has NEVER been seen on the wire. Pre-seed an ACTIVE memory whose
+    key surfaces at recall (its keyword matches the message), then Arthur says it is
+    false -> the agent should call editMemory(key=..., forget=true), flipping active=0.
+    """
+    db = _live_db(tmp_path)
+    # Seed one active fact memory. Its keyword ("bronze") matches Arthur's message, so
+    # _recall_memories surfaces its KEY in the prompt — the only way the agent knows
+    # which key to forget.
+    conn = sqlite3.connect(db)
+    conn.execute(
+        "INSERT INTO agent_memory (mem_key, description, content, civ_id, keywords,"
+        " mem_type, active, created_at, updated_at) VALUES"
+        " ('confluence-bronze', 'Bronze de la Confluence',"
+        " 'Les Confluents maîtrisent le bronze.', 1, 'bronze metallurgie', 'fact', 1,"
+        " datetime('now'), datetime('now'))")
+    conn.commit()
+    conn.close()
+
+    agent = Agent(BotConfig(db_path=db, proxy_api_key=_KEY, default_effort="low"))
+    events = _run(agent, "Correction : c'est faux, les Confluents n'ont jamais eu de "
+                         "bronze. Cette info est erronée, oublie-la.")
+
+    tools_called = [d.get("name") for t, d in events if t == "tool_start"]
+    errors = [d for t, d in events if t == "error"]
+    print(f"\n[live-forget] tools called: {tools_called}")
+    print(f"[live-forget] errors: {errors}")
+    assert not errors, f"the turn errored: {errors}"
+    assert "editMemory" in tools_called, f"editMemory never called (tools: {tools_called})"
+
+    conn = sqlite3.connect(db)
+    try:
+        active = conn.execute(
+            "SELECT active FROM agent_memory WHERE mem_key = 'confluence-bronze'"
+        ).fetchone()
+    finally:
+        conn.close()
+    print(f"[live-forget] confluence-bronze active flag: {active}")
+    assert active is not None, "the seeded memory vanished entirely"
+    assert active[0] == 0, "the agent did not forget the memory the GM called false (active still 1)"
