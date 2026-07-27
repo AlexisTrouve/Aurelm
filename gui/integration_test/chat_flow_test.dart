@@ -86,25 +86,57 @@ class _FakeChatService extends ChatService {
   }
 }
 
-/// Sessions service that never touches the network. All reads return empty; all
-/// writes are no-ops. The base class already swallows errors, but overriding the
-/// throwing reads (listSessions) keeps the drawer's provider deterministic.
+/// Sessions service that never touches the network. Reads return the seeded list;
+/// writes are recorded (so the drawer net can assert what the UI actually invoked)
+/// but do not hit HTTP. The base class throws on non-200, so every method the drawer
+/// can reach is overridden to stay deterministic.
 class _FakeSessionsService extends ChatSessionsService {
-  _FakeSessionsService() : super(port: 0);
+  _FakeSessionsService({this.seeded = const []}) : super(port: 0);
+
+  final List<ChatSessionPreview> seeded;
+  final List<String> deleted = [];
+  final List<String> archived = [];
+  final List<String> renamedTo = [];
+  final List<String> tagged = [];
 
   @override
   Future<List<ChatSessionPreview>> listSessions(
           {bool archived = false, String? tagFilter}) async =>
-      [];
+      seeded;
   @override
-  Future<String> createSession(String name) async => 'test-session';
+  Future<String> createSession(String name) async => 'new-session';
   @override
   Future<int> getContextSize(String sessionId) async => 0;
   @override
   Future<List<Map<String, dynamic>>> getSessionMessages(
           String sessionId) async =>
       [];
+  @override
+  Future<void> deleteSession(String sessionId) async => deleted.add(sessionId);
+  @override
+  Future<void> toggleArchive(String sessionId, bool value) async =>
+      archived.add(sessionId);
+  @override
+  Future<void> renameSession(String sessionId, String newName) async =>
+      renamedTo.add(newName);
+  @override
+  Future<void> addTag(String sessionId, String tag) async => tagged.add(tag);
+  @override
+  Future<void> removeTag(String sessionId, String tag) async {}
 }
+
+/// Build a session preview with sane defaults.
+ChatSessionPreview _session(String id, String name,
+        {int messages = 3, List<String> tags = const []}) =>
+    ChatSessionPreview(
+      sessionId: id,
+      name: name,
+      messageCount: messages,
+      tags: tags,
+      archived: false,
+      createdAt: '2026-07-01',
+      updatedAt: '2026-07-02',
+    );
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -118,9 +150,11 @@ Future<void> _settle(WidgetTester tester, {int frames = 6}) async {
   }
 }
 
-/// Boot just the ChatScreen with the four faked seams. Returns the fake service
-/// so the test can drive its stream and inspect what was sent.
-Future<_FakeChatService> _bootChat(WidgetTester tester) async {
+/// Boot just the ChatScreen with the four faked seams. Returns the fake chat
+/// service so the test can drive its stream and inspect what was sent. Pass a
+/// [sessionsService] to seed the drawer's session list and inspect its writes.
+Future<_FakeChatService> _bootChat(WidgetTester tester,
+    {_FakeSessionsService? sessionsService}) async {
   await tester.binding.setSurfaceSize(const Size(1400, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -135,7 +169,8 @@ Future<_FakeChatService> _bootChat(WidgetTester tester) async {
       overrides: [
         sharedPrefsProvider.overrideWithValue(prefs),
         chatServiceProvider.overrideWithValue(fake),
-        chatSessionsServiceProvider.overrideWithValue(_FakeSessionsService()),
+        chatSessionsServiceProvider
+            .overrideWithValue(sessionsService ?? _FakeSessionsService()),
         // Online → input bar enabled (send button + field active).
         botHealthProvider.overrideWith((ref) => Stream.value(true)),
         // Assistant bubbles get their text verbatim; no DB, no isolate.
@@ -146,6 +181,25 @@ Future<_FakeChatService> _bootChat(WidgetTester tester) async {
   );
   await _settle(tester);
   return fake;
+}
+
+/// Open the sessions drawer through the real hamburger, which only appears once a
+/// session is active — so we complete a turn first (Done carries the session id).
+Future<void> _openDrawerViaHamburger(
+    WidgetTester tester, _FakeChatService fake) async {
+  await _type(tester, 'bootstrap');
+  await tester.tap(_sendBtn);
+  await _settle(tester);
+  fake.current.add(TextEvent(content: 'ok'));
+  fake.current.add(DoneEvent(sessionId: 's-active', sessionName: 'Session active'));
+  await fake.current.close();
+  await _settle(tester);
+
+  final hamburger = find.byTooltip('Sessions');
+  expect(hamburger, findsOneWidget,
+      reason: 'the drawer hamburger appears once a session is active');
+  await tester.tap(hamburger);
+  await _settle(tester);
 }
 
 /// The message input — the only multiline TextField in the chat column.
@@ -314,5 +368,95 @@ void main() {
     fake.current.add(DoneEvent(sessionId: 's1'));
     await fake.current.close();
     await _settle(tester);
+  });
+
+  // -------------------------------------------------------------------------
+  // Sessions drawer — the net that gates extracting _buildSessionsDrawer into
+  // its own widget. Every wire the extraction could sever is exercised here.
+  // -------------------------------------------------------------------------
+
+  testWidgets('drawer opens and lists the seeded sessions', (tester) async {
+    final sessions = _FakeSessionsService(
+        seeded: [_session('a', 'Alpha'), _session('b', 'Beta', tags: ['Confluence'])]);
+    final fake = await _bootChat(tester, sessionsService: sessions);
+    await _openDrawerViaHamburger(tester, fake);
+
+    expect(find.text('Sessions'), findsOneWidget, reason: 'drawer header');
+    expect(find.text('Alpha'), findsOneWidget);
+    expect(find.text('Beta'), findsOneWidget);
+    expect(find.widgetWithText(Chip, 'Confluence'), findsOneWidget,
+        reason: 'a session tag renders as a chip');
+  });
+
+  testWidgets('tapping a session in the drawer switches to it', (tester) async {
+    final sessions =
+        _FakeSessionsService(seeded: [_session('a', 'Alpha'), _session('b', 'Beta')]);
+    final fake = await _bootChat(tester, sessionsService: sessions);
+    await _openDrawerViaHamburger(tester, fake);
+
+    await tester.tap(find.text('Beta'));
+    await _settle(tester);
+
+    // Drawer closed, the app bar title now shows the picked session's name.
+    expect(find.text('Sessions'), findsNothing, reason: 'drawer must close on select');
+    expect(find.text('Beta'), findsOneWidget,
+        reason: 'the active session name shows in the app bar title');
+  });
+
+  testWidgets('"Nouvelle" resets to a fresh empty session', (tester) async {
+    final sessions = _FakeSessionsService(seeded: [_session('a', 'Alpha')]);
+    final fake = await _bootChat(tester, sessionsService: sessions);
+    await _openDrawerViaHamburger(tester, fake);
+    // Bootstrap turn left one exchange; the empty-state hero is gone.
+    expect(find.byIcon(Icons.auto_awesome), findsNothing);
+
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Nouvelle'));
+    await _settle(tester);
+
+    // newSession() cleared the history → empty-state hero is back.
+    expect(find.byIcon(Icons.auto_awesome), findsOneWidget,
+        reason: 'creating a session must clear the conversation');
+  });
+
+  testWidgets('the rename dialog opens and confirms through the service',
+      (tester) async {
+    final sessions = _FakeSessionsService(seeded: [_session('a', 'Alpha')]);
+    final fake = await _bootChat(tester, sessionsService: sessions);
+    await _openDrawerViaHamburger(tester, fake);
+
+    // Open the per-session overflow menu, choose Renommer.
+    // Scope to the drawer — the app bar ALSO has a more_vert (its overflow menu),
+    // and it sits behind the drawer scrim so tapping it would miss anyway.
+    await tester.tap(find.descendant(
+        of: find.byType(Drawer), matching: find.byIcon(Icons.more_vert)));
+    await _settle(tester);
+    await tester.tap(find.text('Renommer'));
+    await _settle(tester);
+
+    expect(find.text('Renommer la session'), findsOneWidget,
+        reason: 'the rename dialog must open');
+    await tester.enterText(find.byType(TextField).last, 'Alpha renommée');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Renommer'));
+    await _settle(tester);
+
+    expect(sessions.renamedTo, ['Alpha renommée'],
+        reason: 'confirming must call renameSession on the service');
+  });
+
+  testWidgets('deleting a session from the menu calls the service', (tester) async {
+    final sessions = _FakeSessionsService(seeded: [_session('a', 'Alpha')]);
+    final fake = await _bootChat(tester, sessionsService: sessions);
+    await _openDrawerViaHamburger(tester, fake);
+
+    // Scope to the drawer — the app bar ALSO has a more_vert (its overflow menu),
+    // and it sits behind the drawer scrim so tapping it would miss anyway.
+    await tester.tap(find.descendant(
+        of: find.byType(Drawer), matching: find.byIcon(Icons.more_vert)));
+    await _settle(tester);
+    await tester.tap(find.text('Supprimer'));
+    await _settle(tester);
+
+    expect(sessions.deleted, ['a'],
+        reason: 'the Supprimer menu item must call deleteSession(id)');
   });
 }
