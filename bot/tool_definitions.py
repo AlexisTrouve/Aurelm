@@ -407,6 +407,23 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "groundCivTerrain",
+        "description": (
+            "Terrain local structuré autour d'une civ (grounding géographique) : sa province "
+            "d'origine + l'anneau de provinces voisines, avec biome, relief, régime d'eau "
+            "(fleuve/bassin versant, lac, océan), gisements gradués, potentiel minéral et features "
+            "notables. 1 cellule = 1 province de 20 km (échelle empire/région, pas locale)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Nom de la civ (fuzzy match)."},
+                "radius": {"type": "integer", "description": "Rayon en provinces (défaut: 2)."},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
