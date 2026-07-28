@@ -2916,6 +2916,96 @@ def find_entity_on_map(conn: sqlite3.Connection, entity_name: str) -> str:
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Tool: groundCivTerrain — structured local terrain around a civ (grounding)
+# --------------------------------------------------------------------------- #
+
+def _describe_province(terrain: str, meta: dict) -> str:
+    """One readable line per province, from the ingested Theomen metadata.
+
+    This is the GM-facing grounding: terrain + biome + elevation, water regime,
+    named/graded deposit (with its free geological storytelling), dominant resource
+    potential, a landmark feature (Theomen ships prose descriptions), and whether the
+    province is a notable/unique place. Only what's present is shown.
+    """
+    parts: list[str] = [terrain]
+    if meta.get("biome"):
+        parts.append(f"biome {meta['biome']}")
+    if meta.get("elevation_m") is not None:
+        parts.append(f"{meta['elevation_m']:.0f} m")
+    if meta.get("temperature_c") is not None:
+        parts.append(f"{meta['temperature_c']:.0f}°C")
+    seg = [", ".join(parts)]
+
+    w = meta.get("water", {})
+    if w.get("is_river"):
+        km2 = w.get("river_catchment_km2")
+        seg.append(f"fleuve (bassin {km2:,} km²)".replace(",", " ") if km2 else "fleuve")
+    if w.get("is_lake"):
+        seg.append(f"lac {w.get('lake_depth_m', '')} m".strip())
+    if w.get("is_ocean"):
+        seg.append("océan")
+
+    dep = meta.get("deposit")
+    if dep:
+        d = f"gisement {dep.get('name', '?')} ({dep.get('tier', '?')}"
+        if dep.get("formation_type"):
+            d += f", {dep['formation_type']}"
+        seg.append(d + ")")
+    pot = meta.get("resource_potential")
+    if pot:
+        seg.append(f"potentiel {', '.join(pot)}")
+
+    feat = meta.get("feature")
+    if feat:
+        f = feat.get("display_name") or feat.get("name", "")
+        if feat.get("description"):
+            f += f" — {feat['description']}"
+        seg.append(f"feature : {f}")
+
+    b = meta.get("budget_score")
+    if isinstance(b, int) and b >= 5:
+        seg.append("lieu notable")
+    return " ; ".join(seg)
+
+
+def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                       radius: int = 2) -> str:
+    """Structured local terrain around a civ's seat(s) — the Demiurgos GM grounding.
+
+    Finds where the civ is placed (controlling_civ_id), then walks the ring of
+    provinces within `radius` (Chebyshev) that exist on the ingested map. One cell =
+    one 20 km province, so this is empire/region-scale geography, never local terrain.
+    Crops have hard edges: neighbours outside the ingested window simply don't appear.
+    """
+    seats = conn.execute(
+        "SELECT m.id, m.name, mc.q, mc.r FROM map_cells mc "
+        "JOIN map_maps m ON m.id = mc.map_id "
+        "WHERE mc.controlling_civ_id = ? ORDER BY m.name, mc.r, mc.q",
+        (civ_id,),
+    ).fetchall()
+    if not seats:
+        return (f"**{civ_name}** n'a pas de position sur une carte. "
+                "Place-la d'abord (propose_spawn_positions / place_civ).")
+
+    lines = [f"# Terrain local — {civ_name}", ""]
+    for map_id, map_name, sq, sr in seats:
+        lines.append(f"## {map_name} — autour de ({sq},{sr})")
+        rows = conn.execute(
+            "SELECT q, r, terrain_type, metadata FROM map_cells "
+            "WHERE map_id = ? AND q BETWEEN ? AND ? AND r BETWEEN ? AND ? "
+            "ORDER BY r, q",
+            (map_id, sq - radius, sq + radius, sr - radius, sr + radius),
+        ).fetchall()
+        for q, r, terrain, meta_json in rows:
+            meta = json.loads(meta_json) if meta_json else {}
+            dist = max(abs(q - sq), abs(r - sr))
+            tag = " **(siège)**" if dist == 0 else f" _(dist {dist})_"
+            lines.append(f"- ({q},{r}){tag} : {_describe_province(terrain, meta)}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -3352,6 +3442,19 @@ def dispatch_tool(
         if not entity_name:
             return "Error: entityName is required."
         return find_entity_on_map(conn, entity_name)
+
+    if tool_name == "groundCivTerrain":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        # `or 2` would turn a legitimate radius 0 (just the seat) into 2.
+        raw_radius = tool_input.get("radius")
+        radius = 2 if raw_radius is None else max(0, int(raw_radius))
+        return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius)
 
     if tool_name == "discoverMemory":
         civ_id = None
