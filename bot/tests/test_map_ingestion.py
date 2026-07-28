@@ -145,6 +145,18 @@ def test_existing_read_tool_still_works_on_ingested_map(db, tmp_path):
     assert "mountain" in out and "coast" in out   # terrains render in the overview table
 
 
+def test_overview_is_a_semantic_summary_not_a_cell_dump(db, tmp_path):
+    """The refactored overview AGGREGATES (a real world is thousands of provinces)."""
+    res = ingest_world(db, _world(tmp_path), "Terre du Milieu")
+    out = get_map_overview(db, res["map_id"], "Terre du Milieu")
+    assert "6 provinces" in out and "km/province" in out
+    assert "## Biomes" in out and "temperate_forest" in out and "alpine" in out
+    assert "## Ressources" in out and "coal" in out and "iron" in out
+    assert "## Features" in out and "Glacial Cirque" in out
+    # No raw cell table / coordinates.
+    assert "| q | r |" not in out
+
+
 def test_reingest_is_idempotent(db, tmp_path):
     w = _world(tmp_path)
     r1 = ingest_world(db, w, "Terre du Milieu")

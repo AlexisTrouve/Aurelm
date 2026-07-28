@@ -2745,42 +2745,82 @@ def get_maps(conn: sqlite3.Connection) -> str:
 def get_map_overview(
     conn: sqlite3.Connection, map_id: int, map_name: str
 ) -> str:
-    """Cells table + 10 last events for a map. Truncated at 200 cells."""
-    cells = conn.execute(
-        """SELECT mc.q, mc.r, mc.terrain_type, mc.label,
-                  c.name AS civ_name, e.canonical_name AS entity_name
-           FROM map_cells mc
-           LEFT JOIN civ_civilizations c ON c.id = mc.controlling_civ_id
-           LEFT JOIN entity_entities e ON e.id = mc.entity_id
-           WHERE mc.map_id = ?
-           ORDER BY mc.r, mc.q
-           LIMIT 200""",
-        (map_id,),
-    ).fetchall()
+    """Semantic SUMMARY of a map — not a cell dump.
+
+    A real ingested world is thousands of provinces; a 200-row table is useless to an
+    LLM. Instead we aggregate: size/scale, dominant terrains and biomes, resources and
+    notable features present, the civs and their footprint, named places, and recent
+    chronicle events. Geometry stays hidden; the summary is what a GM needs at a glance.
+    """
+    mrow = conn.execute(
+        "SELECT grid_type, grid_cols, grid_rows, metadata FROM map_maps WHERE id = ?",
+        (map_id,)).fetchone()
+    grid_type, cols, grows, meta_json = (mrow or ("hex", 0, 0, None))
+    mmeta = json.loads(meta_json) if meta_json else {}
+    total = conn.execute(
+        "SELECT COUNT(*) FROM map_cells WHERE map_id = ?", (map_id,)).fetchone()[0]
+
+    lines = [f"# Carte : {map_name}", f"{grid_type} {cols}×{grows} — {total} provinces"]
+    if mmeta.get("cell_km"):
+        scale = f"Échelle : {mmeta['cell_km']} km/province"
+        if mmeta.get("seed") is not None:
+            scale += f" · seed {mmeta['seed']}"
+        lines.append(scale)
+    if total == 0:
+        lines.append("\n*(aucune cellule)*")
+        return "\n".join(lines)
+
+    terr = conn.execute(
+        "SELECT terrain_type, COUNT(*) c FROM map_cells WHERE map_id = ? "
+        "GROUP BY terrain_type ORDER BY c DESC", (map_id,)).fetchall()
+    lines += ["", "## Terrains"] + [f"- {t} : {c}" for t, c in terr[:12]]
+
+    # Aggregate the semantic metadata (biomes / deposits / features) in one pass.
+    biomes: dict = {}
+    catalogs: dict = {}
+    feats: dict = {}
+    for (mj,) in conn.execute(
+        "SELECT metadata FROM map_cells WHERE map_id = ? AND metadata IS NOT NULL", (map_id,)):
+        m = json.loads(mj)
+        if m.get("biome"):
+            biomes[m["biome"]] = biomes.get(m["biome"], 0) + 1
+        dep = m.get("deposit") or {}
+        if dep.get("catalog"):
+            catalogs[dep["catalog"]] = catalogs.get(dep["catalog"], 0) + 1
+        f = m.get("feature") or {}
+        fn = f.get("display_name") or f.get("name")
+        if fn:
+            feats[fn] = feats.get(fn, 0) + 1
+
+    def _top(d, n):
+        return sorted(d.items(), key=lambda kv: -kv[1])[:n]
+
+    if biomes:
+        lines += ["", "## Biomes"] + [f"- {b} : {c}" for b, c in _top(biomes, 12)]
+    if catalogs:
+        lines += ["", "## Ressources (gisements)"] + [f"- {k} : {v}" for k, v in _top(catalogs, 20)]
+    if feats:
+        lines += ["", "## Features notables"] + [f"- {k} ({v})" for k, v in _top(feats, 15)]
+
+    civs = conn.execute(
+        "SELECT c.name, COUNT(*) n FROM map_cells mc "
+        "JOIN civ_civilizations c ON c.id = mc.controlling_civ_id "
+        "WHERE mc.map_id = ? GROUP BY c.id ORDER BY n DESC", (map_id,)).fetchall()
+    if civs:
+        lines += ["", "## Civilisations présentes"] + [f"- {n} : {cnt} province(s)" for n, cnt in civs]
+
+    named = conn.execute(
+        "SELECT label FROM map_cells WHERE map_id = ? AND label IS NOT NULL "
+        "ORDER BY r, q LIMIT 20", (map_id,)).fetchall()
+    if named:
+        lines += ["", "## Lieux nommés"] + [f"- {lbl[0]}" for lbl in named]
 
     events = conn.execute(
-        """SELECT q, r, event_type, description, created_at
-           FROM map_cell_events WHERE map_id = ?
-           ORDER BY created_at DESC LIMIT 10""",
-        (map_id,),
-    ).fetchall()
-
-    lines = [f"# Carte : {map_name}\n", "## Cellules\n",
-             "| q | r | Terrain | Label | Civ | Entité |",
-             "|---|---|---------|-------|-----|--------|"]
-    for c in cells:
-        lines.append(
-            f"| {c[0]} | {c[1]} | {c[2]} | {c[3] or ''} "
-            f"| {c[4] or ''} | {c[5] or ''} |"
-        )
-    if not cells:
-        lines.append("*(aucune cellule)*")
-
-    lines.append("\n## 10 derniers événements\n")
-    for ev in events:
-        lines.append(f"- ({ev[0]},{ev[1]}) [{ev[2]}] {ev[3]}  _{ev[4][:10]}_")
-    if not events:
-        lines.append("*(aucun événement)*")
+        "SELECT event_type, description, created_at FROM map_cell_events "
+        "WHERE map_id = ? ORDER BY created_at DESC, id DESC LIMIT 8", (map_id,)).fetchall()
+    if events:
+        lines += ["", "## Événements récents"]
+        lines += [f"- [{t}] {d}  _{ca[:10]}_" for t, d, ca in events]
 
     return "\n".join(lines)
 
