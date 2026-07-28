@@ -9,6 +9,8 @@ import json
 import re
 import sqlite3
 
+from .map_seeding import propose_spawn_positions
+
 # --------------------------------------------------------------------------- #
 # Helpers (ported from mcp-server/src/helpers.ts)
 # --------------------------------------------------------------------------- #
@@ -3006,6 +3008,125 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
     return "\n".join(lines).rstrip()
 
 
+# --------------------------------------------------------------------------- #
+# Tool: foundSettlement — the WRITE socle (semantic target, validate, log, feedback)
+# --------------------------------------------------------------------------- #
+
+def _direction(q: int, r: int, nq: int, nr: int) -> str:
+    """Cardinal from (q,r) to a neighbour. +x = East, +y = South (r grows downward).
+
+    WHY: the LLM must never juggle (q,r) — a neighbourhood is described in relative
+    directions it can actually reason with ("iron 1 province NE").
+    """
+    dx, dy = nq - q, nr - r
+    ns = "S" if dy > 0 else ("N" if dy < 0 else "")
+    ew = "E" if dx > 0 else ("O" if dx < 0 else "")
+    return (ns + ew) or "ici"
+
+
+def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) -> tuple[int, int]:
+    """Resolve a SEMANTIC target to a cell — never a raw (q,r) from the LLM.
+
+    Accepts: a spawn rank ("spawn 1" / "#2" / "3") → the Nth proposeSpawnPositions
+    candidate; or a name → a province carrying that feature / label / mapped entity.
+    Raises ValueError with an actionable message if it can't be resolved.
+    """
+    s = str(at).strip()
+    m = re.match(r"^(?:spawn\s*)?#?\s*(\d+)$", s, re.I)
+    if m:
+        rank = int(m.group(1))
+        cands = propose_spawn_positions(conn, map_name, n=rank)
+        if 1 <= rank <= len(cands):
+            c = cands[rank - 1]
+            return c["q"], c["r"]
+        raise ValueError(f"il n'y a pas de {rank}e proposition de spawn")
+
+    low = s.lower()
+    for q, r, label, meta_json in conn.execute(
+        "SELECT q, r, label, metadata FROM map_cells WHERE map_id = ?", (map_id,)
+    ).fetchall():
+        if label and label.lower() == low:
+            return q, r
+        meta = json.loads(meta_json) if meta_json else {}
+        feat = meta.get("feature") or {}
+        if low in (str(feat.get("name", "")).lower(), str(feat.get("display_name", "")).lower()):
+            return q, r
+    erow = conn.execute(
+        "SELECT mc.q, mc.r FROM map_cells mc JOIN entity_entities e ON e.id = mc.entity_id "
+        "WHERE mc.map_id = ? AND (e.canonical_name = ? OR e.canonical_name LIKE ?) LIMIT 1",
+        (map_id, s, f"%{s}%"),
+    ).fetchone()
+    if erow:
+        return erow[0], erow[1]
+    raise ValueError(
+        f"ancrage « {at} » introuvable sur {map_name} — nomme une feature/entité, "
+        "ou une proposition de spawn (« spawn 1 »)"
+    )
+
+
+def _sole_map(conn: sqlite3.Connection, map_name: str) -> tuple[int, str] | None:
+    """Resolve a map by name, or fall back to the only map if the game has one."""
+    if map_name:
+        row = conn.execute(
+            "SELECT id, name FROM map_maps WHERE name = ? OR name LIKE ? LIMIT 1",
+            (map_name, f"%{map_name}%")).fetchone()
+        return (row[0], row[1]) if row else None
+    rows = conn.execute("SELECT id, name FROM map_maps").fetchall()
+    return (rows[0][0], rows[0][1]) if len(rows) == 1 else None
+
+
+def found_settlement(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                     map_name: str, at, settlement_name: str | None = None) -> str:
+    """Found a civ's settlement on a province — the WRITE template.
+
+    validate (no city in the ocean) → apply (controlling_civ_id + label) → log a
+    `settlement` event (auditable/undoable) → return the new local state (the LLM
+    can't see the map, so the write echoes back what it did). Target is SEMANTIC
+    (`at`): a spawn proposal or a named feature/entity, never a raw (q,r).
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return (f"Carte « {map_name} » introuvable." if map_name
+                else "Précise mapName : plusieurs cartes existent.")
+    map_id, map_name = resolved
+
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Fondation impossible : {e}."
+
+    cell = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    terrain, meta_json = cell
+    meta = json.loads(meta_json) if meta_json else {}
+    if terrain == "ocean" or meta.get("water", {}).get("is_ocean"):
+        return (f"Fondation impossible : « {at} » est en pleine mer. "
+                "Une cité se fonde sur la terre ferme.")
+
+    label = settlement_name or f"Cité de {civ_name}"
+    conn.execute(
+        "UPDATE map_cells SET controlling_civ_id = ?, label = ? "
+        "WHERE map_id = ? AND q = ? AND r = ?", (civ_id, label, map_id, q, r))
+    conn.execute(
+        "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+        "VALUES (?, ?, ?, ?, 'settlement')",
+        (map_id, q, r, f"Fondation de {label} par {civ_name}."))
+    conn.commit()
+
+    out = [f"✓ **{label}** fondée par {civ_name} sur {map_name}.",
+           f"Province : {_describe_province(terrain, meta)}", "", "Voisinage :"]
+    ring = conn.execute(
+        "SELECT q, r, terrain_type, metadata FROM map_cells "
+        "WHERE map_id = ? AND q BETWEEN ? AND ? AND r BETWEEN ? AND ? "
+        "AND NOT (q = ? AND r = ?) ORDER BY r, q",
+        (map_id, q - 1, q + 1, r - 1, r + 1, q, r)).fetchall()
+    for nq, nr, nt, nm in ring:
+        out.append(f"- {_direction(q, r, nq, nr)} : "
+                   f"{_describe_province(nt, json.loads(nm) if nm else {})}")
+    return "\n".join(out)
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -3455,6 +3576,42 @@ def dispatch_tool(
         raw_radius = tool_input.get("radius")
         radius = 2 if raw_radius is None else max(0, int(raw_radius))
         return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius)
+
+    if tool_name == "proposeSpawnPositions":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        picks = propose_spawn_positions(
+            conn, map_name, n=int(tool_input.get("n") or 5),
+            min_spacing=int(tool_input.get("minSpacing") or 0))
+        if not picks:
+            return f"Aucune province habitable proposable sur {map_name}."
+        # Render ranks (NOT coordinates): the agent founds via `at="spawn N"`.
+        lines = [f"# Positions de spawn proposées — {map_name}", ""]
+        for i, p in enumerate(picks, 1):
+            biome = f" ({p['biome']})" if p.get("biome") else ""
+            lines.append(f"{i}. **{p['terrain']}**{biome} — score {p['score']} — "
+                         f"{', '.join(p['why'])}")
+        lines.append("")
+        lines.append('Pour fonder : `foundSettlement(civName, at="spawn N")`.')
+        return "\n".join(lines)
+
+    if tool_name == "foundSettlement":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        return found_settlement(conn, civ["id"], civ["name"],
+                                tool_input.get("mapName", ""), at,
+                                settlement_name=tool_input.get("name"))
 
     if tool_name == "discoverMemory":
         civ_id = None

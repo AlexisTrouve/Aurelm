@@ -424,6 +424,43 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "proposeSpawnPositions",
+        "description": (
+            "Propose des provinces de spawn (positions de départ) classées par habitabilité "
+            "sur une carte. Read-only. Chaque proposition est numérotée : pour fonder ensuite, "
+            "appelle foundSettlement(civName, at='spawn N'). Ne donne JAMAIS de coordonnée à fournir."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "n": {"type": "integer", "description": "Nb de propositions (défaut: 5)."},
+                "minSpacing": {"type": "integer", "description": "Écart min entre propositions (provinces)."},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "foundSettlement",
+        "description": (
+            "Fonde la cité/capitale d'une civ sur une province (ÉCRITURE : pose le contrôle + "
+            "un événement 'settlement' dans l'historique). La cible 'at' est SÉMANTIQUE — "
+            "jamais de (q,r) : soit une proposition de spawn (« spawn 1 »), soit une feature/"
+            "entité nommée (« Glacial Cirque »). Valide (pas de cité en mer) et renvoie le "
+            "terrain local résultant."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Civ qui fonde (fuzzy match)."},
+                "at": {"type": "string", "description": "Cible sémantique : « spawn N » ou nom de feature/entité."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "name": {"type": "string", "description": "Nom de la cité (optionnel)."},
+            },
+            "required": ["civName", "at"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
