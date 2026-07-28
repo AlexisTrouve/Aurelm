@@ -533,6 +533,41 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "expandTerritory",
+        "description": (
+            "Étend le territoire d'une civ en annexant des provinces terrestres libres sur sa "
+            "frontière, biaisé « toward » (une direction cardinale N/S/E/O/NE…, ou une civ/feature "
+            "nommée). Ne prend jamais l'océan ni le territoire d'une autre civ. Écriture : logge "
+            "des événements 'migration'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Civ qui s'étend (fuzzy match)."},
+                "toward": {"type": "string", "description": "Direction (N/S/E/O/NE…) ou civ/feature nommée."},
+                "amount": {"type": "integer", "description": "Nb de provinces à annexer (défaut: 1)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "moveEntity",
+        "description": (
+            "Déplace le pion d'une entité vers une province (ÉCRITURE, un pion par entité par carte). "
+            "Cible 'to' SÉMANTIQUE (civ/feature/entité nommée, ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Entité à déplacer (fuzzy + alias)."},
+                "to": {"type": "string", "description": "Cible sémantique : civ/feature/entité, ou « spawn N »."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["entityName", "to"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "

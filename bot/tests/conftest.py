@@ -197,6 +197,17 @@ CREATE TABLE map_cell_events (
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE map_entity_pawns (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    map_id      INTEGER NOT NULL REFERENCES map_maps(id),
+    q           INTEGER NOT NULL,
+    r           INTEGER NOT NULL,
+    entity_id   INTEGER NOT NULL REFERENCES entity_entities(id),
+    asset_id    INTEGER,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(map_id, entity_id)
+);
+
 CREATE TABLE pipeline_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),

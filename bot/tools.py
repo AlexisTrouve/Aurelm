@@ -3323,6 +3323,147 @@ def annotate(conn: sqlite3.Connection, map_name: str, at,
     return f"✓ Province annotée ({done}) : {_describe_province(row[0], meta)}"
 
 
+# --------------------------------------------------------------------------- #
+# Tools: expandTerritory / moveEntity — richer narrative writes
+# --------------------------------------------------------------------------- #
+
+_CARDINALS = {"n": (0, -1), "s": (0, 1), "e": (1, 0), "o": (-1, 0), "w": (-1, 0),
+              "ne": (1, -1), "no": (-1, -1), "nw": (-1, -1), "se": (1, 1),
+              "so": (-1, 1), "sw": (-1, 1)}
+
+
+def _neighbours8(q: int, r: int):
+    for dr in (-1, 0, 1):
+        for dq in (-1, 0, 1):
+            if dq or dr:
+                yield q + dq, r + dr
+
+
+def _direction_vector(conn: sqlite3.Connection, map_id: int, map_name: str,
+                      toward: str, owned: set) -> tuple[float, float] | None:
+    """A bias direction for expansion: a cardinal, or toward a civ/feature's cell."""
+    s = (toward or "").strip().lower()
+    if s in _CARDINALS:
+        return _CARDINALS[s]
+    # else: a civ or a named anchor → vector from the owned centroid to its cell.
+    target = None
+    resolved = resolve_civ_name(conn, toward)
+    if "error" not in resolved:
+        target = _civ_seat(conn, map_id, resolved["civ"]["id"])
+    if target is None:
+        try:
+            target = _resolve_anchor(conn, map_id, map_name, toward)
+        except ValueError:
+            return None
+    cq = sum(q for q, _ in owned) / len(owned)
+    cr = sum(r for _, r in owned) / len(owned)
+    return (target[0] - cq, target[1] - cr)
+
+
+def _aligned(step: tuple[int, int], dvec: tuple[float, float] | None) -> float:
+    """Dot product of a claim step with the bias direction (0 if no bias)."""
+    if dvec is None:
+        return 0.0
+    import math
+    sn = math.hypot(*step) or 1.0
+    dn = math.hypot(*dvec) or 1.0
+    return (step[0] * dvec[0] + step[1] * dvec[1]) / (sn * dn)
+
+
+def expand_territory(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                     map_name: str, toward: str, amount: int = 1) -> str:
+    """Claim `amount` unclaimed LAND provinces on the civ's frontier, biased `toward`.
+
+    Greedy frontier growth: each round claims the adjacent unclaimed land province best
+    aligned with the direction. Never claims ocean or another civ's land. Logs a
+    `migration` event per claim, echoes what was taken.
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+
+    owned = {(q, r) for q, r in conn.execute(
+        "SELECT q, r FROM map_cells WHERE map_id = ? AND controlling_civ_id = ?",
+        (map_id, civ_id)).fetchall()}
+    if not owned:
+        return f"{civ_name} n'a pas de territoire sur {map_name} — fonde une cité d'abord."
+
+    dvec = _direction_vector(conn, map_id, map_name, toward, owned)
+    claimed: list[tuple[int, int, str]] = []
+    for _ in range(max(1, amount)):
+        best = None
+        for oq, orr in owned:
+            for nq, nr in _neighbours8(oq, orr):
+                if (nq, nr) in owned:
+                    continue
+                cell = conn.execute(
+                    "SELECT terrain_type, controlling_civ_id, metadata FROM map_cells "
+                    "WHERE map_id = ? AND q = ? AND r = ?", (map_id, nq, nr)).fetchone()
+                if not cell or cell[1] is not None:
+                    continue  # off-map or already owned by someone
+                meta = json.loads(cell[2]) if cell[2] else {}
+                if cell[0] == "ocean" or meta.get("water", {}).get("is_ocean"):
+                    continue
+                score = _aligned((nq - oq, nr - orr), dvec)
+                if best is None or score > best[0]:
+                    best = (score, nq, nr, oq, orr, cell[0])
+        if best is None:
+            break
+        _, cq, cr, oq, orr, terrain = best
+        conn.execute("UPDATE map_cells SET controlling_civ_id = ? "
+                     "WHERE map_id = ? AND q = ? AND r = ?", (civ_id, map_id, cq, cr))
+        conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+                     "VALUES (?, ?, ?, ?, 'migration')",
+                     (map_id, cq, cr, f"{civ_name} étend son territoire ({terrain})."))
+        owned.add((cq, cr))
+        claimed.append((oq, orr, terrain, cq, cr))
+    conn.commit()
+
+    if not claimed:
+        return f"{civ_name} ne peut pas s'étendre (frontière bloquée par la mer ou d'autres civs)."
+    lines = [f"✓ {civ_name} annexe {len(claimed)} province(s) sur {map_name}"
+             + (f" vers {toward}" if toward else "") + " :"]
+    for oq, orr, terrain, cq, cr in claimed:
+        lines.append(f"- {_direction(oq, orr, cq, cr)} : {terrain}")
+    lines.append(f"Territoire total : {len(owned)} provinces.")
+    return "\n".join(lines)
+
+
+def move_entity(conn: sqlite3.Connection, map_name: str, entity_name: str, to) -> str:
+    """Move an entity's pawn to a province (one pawn per entity per map)."""
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+
+    erow = conn.execute(
+        "SELECT DISTINCT e.id, e.canonical_name FROM entity_entities e "
+        "LEFT JOIN entity_aliases ea ON ea.entity_id = e.id "
+        "WHERE e.canonical_name = ? OR e.canonical_name LIKE ? OR ea.alias LIKE ? LIMIT 1",
+        (entity_name, f"%{entity_name}%", f"%{entity_name}%")).fetchone()
+    if not erow:
+        return f"Entité « {entity_name} » introuvable."
+    entity_id, ename = erow
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, to)
+    except ValueError as e:
+        return f"Déplacement impossible : {e}."
+
+    conn.execute(
+        "INSERT INTO map_entity_pawns (map_id, entity_id, q, r) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(map_id, entity_id) DO UPDATE SET q = excluded.q, r = excluded.r",
+        (map_id, entity_id, q, r))
+    conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+                 "VALUES (?, ?, ?, ?, 'migration')", (map_id, q, r, f"{ename} se déplace ici."))
+    conn.commit()
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row and row[1] else {}
+    return f"✓ {ename} déplacé sur {map_name} : {_describe_province(row[0], meta) if row else '?'}"
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -3862,6 +4003,25 @@ def dispatch_tool(
             return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
         return annotate(conn, tool_input.get("mapName", ""), at,
                         label=tool_input.get("label"), note=tool_input.get("note"))
+
+    if tool_name == "expandTerritory":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        return expand_territory(conn, civ["id"], civ["name"],
+                                tool_input.get("mapName", ""), tool_input.get("toward", ""),
+                                amount=int(tool_input.get("amount") or 1))
+
+    if tool_name == "moveEntity":
+        entity_name = tool_input.get("entityName", "")
+        to = tool_input.get("to")
+        if not entity_name or to is None or str(to).strip() == "":
+            return "Error: 'entityName' et 'to' (cible sémantique) requis."
+        return move_entity(conn, tool_input.get("mapName", ""), entity_name, to)
 
     if tool_name == "discoverMemory":
         civ_id = None
