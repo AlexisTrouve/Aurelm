@@ -1,8 +1,37 @@
 # Plan — Ingestion carte (source Theomen) + grounding pour Demiurgos
 
 > Réponse d'Aurelm au brief `Demiurgos/AURELM-BRIEF-map-ingestion.md`.
-> **Statut : PLAN à valider (pas de code encore).** Le §1 (CONTRAT) bloque l'export Theomen → à trancher en premier.
-> Tout ci-dessous est **vérifié dans le code** (schéma, tools, absence de writer) et dans la source (`../Gamedesigner/theomen`), pas supposé.
+> **Statut : ✅ IMPLÉMENTÉ + VALIDÉ SUR LE VRAI EXPORT V1 (2026-07-28).** Le plan ci-dessous
+> a été construit ; la partie tools/agent est dans `map-tools-design.md`. Voir « État final »
+> juste en dessous pour ce qui a divergé du plan à la mesure du réel.
+
+---
+
+## État final (ce qui a réellement été livré)
+
+- **Ingestion** : `bot/world_reader.py` (décodeur GMVC stdlib) + `bot/map_ingestion.py`
+  (résolution des noms via sidecars, inversion log10 des ressources, record sémantique
+  → `map_cells.metadata`, **crop-on-ingest**, idempotent) + migration 035 (`map_maps.metadata`).
+  CLI : `python -m bot.map_ingestion`.
+- **Deux corrections de FORMAT** que le contrat gelé n'avait pas cernées, attrapées par le
+  **vrai export** (`theomen/blog/world_aurelm_seed42.world`, planète 1625×812) — le SPEC
+  Theomen ment sur ces deux points, à corriger côté doc Theomen :
+  1. Les métadonnées business (`cell_km`, `wrap_x`, `thresholds`, `max_mass` des couches) sont
+     dans **`manifest["producer"]`**, PAS un `world.json` séparé. Le reader lit `producer`
+     (fallback `world.json`).
+  2. Les sidecars (`biomes.json`, `terrain_types.json`, `deposits.json`, `features.json`) sont
+     **wrappés** sous leur clé plurielle (`{"biomes":[...]}`), pas des listes nues. Le reader
+     tolère les deux ; les fixtures miroir le vrai format.
+  3. Piège du décode déjà noté : le `coord.x/coord.y` d'un chunk GMVC est un **INDEX de chunk**,
+     pas une origine cellule (origine = coord × chunkDims).
+- **Validation complète sur le réel** (`bot/tests/test_real_world_export.py`, opt-in) : cell_km
+  20, wrap_x, 30 biomes, terrain/biome/gisements nommés+gradués/features/rivières
+  (bassin km²)/`resource_potential` (inversion max_mass) résolvent tous. Probe live-LLM :
+  `bot/tests/live_map_probe.py`.
+- **Seeding + tools + fog + transactionnalité de tour** : voir `map-tools-design.md`.
+
+**Leçon (réaffirmée) : un fixture fidèle au spec cache un bug de forme réelle — seul le
+vrai fichier tranche.** (2× : coord-index, puis biomes-wrap + producer-block.)
 
 ---
 
