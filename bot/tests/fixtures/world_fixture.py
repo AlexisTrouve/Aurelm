@@ -113,10 +113,10 @@ def build_world(
 
             blob = bytearray()
             blob += b"GMVC"
-            blob += struct.pack("<H", 1)          # version u16
-            blob += struct.pack("<i", x0)         # coord.x i32
-            blob += struct.pack("<i", y0)         # coord.y i32
-            blob += struct.pack("<h", 0)          # coord.z i16
+            blob += struct.pack("<H", 1)              # version u16
+            blob += struct.pack("<i", x0 // chunk)    # coord.x = CHUNK INDEX (not cell origin)
+            blob += struct.pack("<i", y0 // chunk)    # coord.y = CHUNK INDEX
+            blob += struct.pack("<h", 0)              # coord.z i16
             blob += struct.pack("<I", cell_count)  # cellCount u32
             blob += struct.pack("<H", n_fields)   # nFields u16
             blob += bytes(mask)                    # presence mask

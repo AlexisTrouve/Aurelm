@@ -134,7 +134,7 @@ class World:
         (u01), uint/int bits=N→int*scale+offset.
         """
         schema = self._manifest["coordinate"]
-        cdx = schema["chunkDims"][0]
+        cdx, cdy = schema["chunkDims"][0], schema["chunkDims"][1]
         field_list = self._manifest.get("fields", [])
         n_fields = len(field_list)
         mask_bytes = (n_fields + 7) // 8
@@ -157,9 +157,12 @@ class World:
             (version,) = take("H")
             if version != 1:
                 raise ValueError(f"{blob_path.name}: unsupported chunk version {version}")
-            (x0,) = take("i")
-            (y0,) = take("i")
+            # coord.x/coord.y are CHUNK INDICES (verified against a real Theomen export:
+            # coords are 0,1,2..., not 0,128,256...). Cell origin = index * chunkDims.
+            (cix,) = take("i")
+            (ciy,) = take("i")
             (_z0,) = take("h")
+            x0, y0 = cix * cdx, ciy * cdy
             (cell_count,) = take("I")
             (blob_nfields,) = take("H")
             if blob_nfields != n_fields:
