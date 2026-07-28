@@ -3246,6 +3246,83 @@ def what_is_between(conn: sqlite3.Connection, map_id: int, a: tuple[int, int],
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------- #
+# Tools: recordEvent / annotate — generic narrative writes (reuse the socle)
+# --------------------------------------------------------------------------- #
+
+# The chronicle's event vocabulary (migration 031: map_cell_events.event_type).
+_EVENT_KINDS = {"settlement", "battle", "discovery", "diplomatic",
+                "migration", "disaster", "note"}
+
+
+def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
+                 description: str, civ_name: str | None = None) -> str:
+    """Log a narrative event on a province — the generic write (battle, discovery…).
+
+    Same discipline as foundSettlement: semantic anchor → validate the event kind →
+    log to map_cell_events → echo the province. No state change beyond the chronicle.
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name
+                else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+    k = (kind or "").strip().lower()
+    if k not in _EVENT_KINDS:
+        return (f"Type d'événement inconnu « {kind} ». "
+                f"Valides : {', '.join(sorted(_EVENT_KINDS))}.")
+    if not (description or "").strip():
+        return "Error: description requise."
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Événement impossible : {e}."
+
+    desc = description if not civ_name else f"{description} ({civ_name})"
+    conn.execute(
+        "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+        "VALUES (?, ?, ?, ?, ?)", (map_id, q, r, desc, k))
+    conn.commit()
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row[1] else {}
+    return (f"✓ Événement [{k}] sur {map_name} : {desc}\n"
+            f"Province : {_describe_province(row[0], meta)}")
+
+
+def annotate(conn: sqlite3.Connection, map_name: str, at,
+             label: str | None = None, note: str | None = None) -> str:
+    """Set a GM label and/or attach a note to a province (semantic anchor)."""
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name
+                else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+    if not (label or note):
+        return "Error: fournis un label et/ou une note."
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Annotation impossible : {e}."
+
+    if label:
+        conn.execute("UPDATE map_cells SET label = ? WHERE map_id = ? AND q = ? AND r = ?",
+                     (label, map_id, q, r))
+    if note:
+        conn.execute(
+            "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+            "VALUES (?, ?, ?, ?, 'note')", (map_id, q, r, note))
+    conn.commit()
+    done = ", ".join(p for p in (f"label « {label} »" if label else "",
+                                 "note ajoutée" if note else "") if p)
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row[1] else {}
+    return f"✓ Province annotée ({done}) : {_describe_province(row[0], meta)}"
+
+
 def _clean_input(tool_input: dict) -> dict:
     """Sanitize LLM-generated tool inputs: replace nil-like values with None."""
     return {k: (None if isinstance(v, str) and v in _NIL_VALUES else v) for k, v in tool_input.items()}
@@ -3766,6 +3843,25 @@ def dispatch_tool(
         if not sb:
             return f"{rb['civ']['name']} n'est pas placée sur {map_name}."
         return what_is_between(conn, map_id, sa, sb, ra["civ"]["name"], rb["civ"]["name"])
+
+    if tool_name == "recordEvent":
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        civ_name = None
+        if tool_input.get("civName"):
+            cr = resolve_civ_name(conn, tool_input["civName"])
+            civ_name = cr["civ"]["name"] if "error" not in cr else tool_input["civName"]
+        return record_event(conn, tool_input.get("mapName", ""),
+                            tool_input.get("kind", ""), at,
+                            tool_input.get("description", ""), civ_name=civ_name)
+
+    if tool_name == "annotate":
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        return annotate(conn, tool_input.get("mapName", ""), at,
+                        label=tool_input.get("label"), note=tool_input.get("note"))
 
     if tool_name == "discoverMemory":
         civ_id = None

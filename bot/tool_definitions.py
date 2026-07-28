@@ -497,6 +497,42 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "recordEvent",
+        "description": (
+            "Inscrit un événement narratif sur une province (ÉCRITURE dans la chronique de la "
+            "carte) : kind = settlement|battle|discovery|diplomatic|migration|disaster|note. "
+            "La cible 'at' est SÉMANTIQUE (feature/entité nommée ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "description": "settlement|battle|discovery|diplomatic|migration|disaster|note"},
+                "at": {"type": "string", "description": "Cible sémantique : feature/entité nommée, ou « spawn N »."},
+                "description": {"type": "string", "description": "Ce qui s'est passé."},
+                "civName": {"type": "string", "description": "Civ concernée (optionnel)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["kind", "at", "description"],
+        },
+    },
+    {
+        "name": "annotate",
+        "description": (
+            "Pose un label MJ et/ou une note sur une province (ÉCRITURE). Cible 'at' SÉMANTIQUE "
+            "(feature/entité nommée ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "at": {"type": "string", "description": "Cible sémantique."},
+                "label": {"type": "string", "description": "Nom/label de la province (optionnel)."},
+                "note": {"type": "string", "description": "Note MJ (optionnel)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["at"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
