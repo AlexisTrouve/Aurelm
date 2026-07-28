@@ -159,7 +159,9 @@ def build_world(
         {"id": 1, "name": "temperate_forest", "color": "#3f8f43"},
         {"id": 2, "name": "alpine", "color": "#c9d6e0"},
     ]
-    (out / "biomes.json").write_text(json.dumps(bj, indent=2), encoding="utf-8")
+    # Real Theomen ships biomes.json WRAPPED as {"biomes": [...]}, not a bare list
+    # (verified on a real export). Mirror that shape so tests exercise the real form.
+    (out / "biomes.json").write_text(json.dumps({"biomes": bj}, indent=2), encoding="utf-8")
 
     # Extra name sidecars (terrain_types.json / deposits.json / features.json).
     for fname, entries in (sidecars or {}).items():

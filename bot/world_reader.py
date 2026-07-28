@@ -86,21 +86,26 @@ class World:
 
         fields = {f["name"]: f for f in self._manifest.get("fields", [])}
 
-        biomes = {}
-        bj = self.dir / "biomes.json"
-        if bj.exists():
-            for b in json.loads(bj.read_text("utf-8")):
-                if "id" in b:
-                    biomes[int(b["id"])] = b
+        # Name sidecars: a list of {id, name, ...}. Theomen's real biomes.json wraps it
+        # as {"biomes": [...]} (verified on a real export), so accept both a bare list
+        # and a dict wrapping the list under `wrap_key` (or any list-valued key).
+        def _entries(path: Path, wrap_key: str) -> dict:
+            if not path.exists():
+                return {}
+            data = json.loads(path.read_text("utf-8"))
+            if isinstance(data, dict):
+                data = (data.get(wrap_key)
+                        or next((v for v in data.values() if isinstance(v, list)), []))
+            return {int(e["id"]): e for e in data if isinstance(e, dict) and "id" in e}
 
-        # Optional name sidecars (features/deposits/terrain_types), same shape as biomes.
+        biomes = _entries(self.dir / "biomes.json", "biomes")
         name_maps: dict[str, dict] = {}
         for key, fname in (("features", "features.json"),
                            ("deposits", "deposits.json"),
                            ("terrain_types", "terrain_types.json")):
-            p = self.dir / fname
-            if p.exists():
-                name_maps[key] = {int(e["id"]): e for e in json.loads(p.read_text("utf-8")) if "id" in e}
+            entries = _entries(self.dir / fname, key)
+            if entries:
+                name_maps[key] = entries
 
         return WorldHeader(
             contract_version=wj.get("contract_version", ""),

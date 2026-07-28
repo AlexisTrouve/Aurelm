@@ -61,6 +61,17 @@ def test_decodes_every_cell_with_correct_placement(tmp_path):
             assert cells[(gx, gy)]["biome"] == float((gx + gy) % 3)
 
 
+def test_biomes_json_accepts_both_the_wrapped_and_bare_shapes(tmp_path):
+    """Real Theomen ships biomes.json as {"biomes": [...]} (the fixture now mirrors it);
+    the reader must also tolerate a bare list. This bug loaded 0 biomes on the real
+    export until caught."""
+    import json
+    w = _build(tmp_path)  # fixture writes the wrapped {"biomes": [...]} form
+    assert read_world(w).header.biomes[1]["name"] == "temperate_forest"
+    (w / "biomes.json").write_text(json.dumps([{"id": 1, "name": "x"}]), encoding="utf-8")
+    assert read_world(w).header.biomes[1]["name"] == "x"   # bare list still loads
+
+
 def test_field_sparsity_absent_is_not_zero(tmp_path):
     w = read_world(_build(tmp_path))
     cells = {(c["x"], c["y"]): c for c in w.cells()}
