@@ -3000,10 +3000,11 @@ def _describe_province(terrain: str, meta: dict) -> str:
 
     feat = meta.get("feature")
     if feat:
+        # Facts + evocative LABEL only — never Theomen's finished sentence. The GM
+        # (Demiurgos) writes the prose in its own voice; parroting ours breaks it.
         f = feat.get("display_name") or feat.get("name", "")
-        if feat.get("description"):
-            f += f" — {feat['description']}"
-        seg.append(f"feature : {f}")
+        cat = feat.get("category")
+        seg.append(f"feature : {f}" + (f" ({cat})" if cat else ""))
 
     b = meta.get("budget_score")
     if isinstance(b, int) and b >= 5:
@@ -3051,6 +3052,49 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
             lines.append(f"- {head} : {_describe_province(terrain, meta)}")
         lines.append("")
     return "\n".join(lines).rstrip()
+
+
+# --------------------------------------------------------------------------- #
+# Turn transactionality — atomicity with Demiurgos's shadow-DB turn (option A)
+# --------------------------------------------------------------------------- #
+#
+# WHY: Demiurgos runs a turn on a shadow copy of ITS DB, committed only at end-of-turn.
+# Aurelm is a separate DB written in-process DURING the turn. Without this, a
+# foundSettlement mid-turn survives even if the turn rolls back -> orphan canon.
+#
+# HOW: within a turn, map writes accumulate in the connection's open SQLite
+# transaction but do NOT commit (they ARE visible to subsequent reads/writes on the
+# same connection, so dependent actions and the echo work). commitTurn commits the
+# lot; abortTurn rolls it back, so nothing orphans. Assumes the turn has exclusive DB
+# access (Demiurgos's model: one shadow turn at a time).
+_TURN_CONNS: set[int] = set()  # ids of connections currently inside a turn
+
+
+def _in_turn(conn: sqlite3.Connection) -> bool:
+    return id(conn) in _TURN_CONNS
+
+
+def _maybe_commit(conn: sqlite3.Connection) -> None:
+    """Commit now, UNLESS a turn is open — then defer to commit_turn/abort_turn."""
+    if not _in_turn(conn):
+        conn.commit()
+
+
+def begin_turn(conn: sqlite3.Connection) -> str:
+    _TURN_CONNS.add(id(conn))
+    return "Tour ouvert — les écritures carte sont différées jusqu'à commitTurn/abortTurn."
+
+
+def commit_turn(conn: sqlite3.Connection) -> str:
+    conn.commit()
+    _TURN_CONNS.discard(id(conn))
+    return "Tour validé — écritures carte appliquées au canon."
+
+
+def abort_turn(conn: sqlite3.Connection) -> str:
+    conn.rollback()
+    _TURN_CONNS.discard(id(conn))
+    return "Tour annulé — écritures carte jetées (aucun orphelin)."
 
 
 # --------------------------------------------------------------------------- #
@@ -3157,7 +3201,7 @@ def found_settlement(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
         "VALUES (?, ?, ?, ?, 'settlement')",
         (map_id, q, r, f"Fondation de {label} par {civ_name}."))
-    conn.commit()
+    _maybe_commit(conn)
 
     out = [f"✓ **{label}** fondée par {civ_name} sur {map_name}.",
            f"Province : {_describe_province(terrain, meta)}", "", "Voisinage :"]
@@ -3322,7 +3366,7 @@ def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
     conn.execute(
         "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
         "VALUES (?, ?, ?, ?, ?)", (map_id, q, r, desc, k))
-    conn.commit()
+    _maybe_commit(conn)
     row = conn.execute(
         "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
         (map_id, q, r)).fetchone()
@@ -3353,7 +3397,7 @@ def annotate(conn: sqlite3.Connection, map_name: str, at,
         conn.execute(
             "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
             "VALUES (?, ?, ?, ?, 'note')", (map_id, q, r, note))
-    conn.commit()
+    _maybe_commit(conn)
     done = ", ".join(p for p in (f"label « {label} »" if label else "",
                                  "note ajoutée" if note else "") if p)
     row = conn.execute(
@@ -3458,7 +3502,7 @@ def expand_territory(conn: sqlite3.Connection, civ_id: int, civ_name: str,
                      (map_id, cq, cr, f"{civ_name} étend son territoire ({terrain})."))
         owned.add((cq, cr))
         claimed.append((oq, orr, terrain, cq, cr))
-    conn.commit()
+    _maybe_commit(conn)
 
     if not claimed:
         return f"{civ_name} ne peut pas s'étendre (frontière bloquée par la mer ou d'autres civs)."
@@ -3496,7 +3540,7 @@ def move_entity(conn: sqlite3.Connection, map_name: str, entity_name: str, to) -
         (map_id, entity_id, q, r))
     conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
                  "VALUES (?, ?, ?, ?, 'migration')", (map_id, q, r, f"{ename} se déplace ici."))
-    conn.commit()
+    _maybe_commit(conn)
     row = conn.execute(
         "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
         (map_id, q, r)).fetchone()
@@ -4062,6 +4106,16 @@ def dispatch_tool(
         if not entity_name or to is None or str(to).strip() == "":
             return "Error: 'entityName' et 'to' (cible sémantique) requis."
         return move_entity(conn, tool_input.get("mapName", ""), entity_name, to)
+
+    # Turn transactionality — orchestration only (NOT LLM-facing, absent from
+    # tool_definitions): Demiurgos's turn runner brackets a turn so map writes are
+    # atomic with its shadow-DB commit.
+    if tool_name == "beginTurn":
+        return begin_turn(conn)
+    if tool_name == "commitTurn":
+        return commit_turn(conn)
+    if tool_name == "abortTurn":
+        return abort_turn(conn)
 
     if tool_name == "discoverMemory":
         civ_id = None

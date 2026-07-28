@@ -77,9 +77,10 @@ def test_grounding_describes_seat_and_ring(db, tmp_path):
     assert "coast" in out and "temperate_forest" in out
     assert "fleuve" in out and "800 000 km²" in out
     assert "coal_outcrop" in out and "exposed_carboniferous_forest" in out
-    # Neighbour (2,0): the feature's prose is surfaced (GM prompt-material).
-    assert "Glacial Cirque" in out
-    assert "bowl-shaped valley" in out
+    # Neighbour (2,0): the feature is surfaced as a fact + label, NOT finished prose
+    # (Demiurgos owns the voice) — its name/category appear, its description does not.
+    assert "Glacial Cirque" in out and "geological_formations" in out
+    assert "bowl-shaped valley" not in out
     assert "rich_iron_ore" in out
 
 
