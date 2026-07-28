@@ -1,6 +1,8 @@
 # Design — les tools carte pour un LLM (read + write)
 
-> **Statut : design validé, implémentation à venir (TDD).** Compagnon de
+> **Statut : IMPLÉMENTÉ (branche `feat/map-tools`, TDD).** Les 10 tools + le CLI sont
+> livrés et testés (bot suite 221 passed / 4 skipped) ; build order §6 tout coché.
+> Compagnon de
 > [`map-ingestion-plan.md`](map-ingestion-plan.md) : celui-là décrit comment un monde
 > Theomen entre dans la base ; **celui-ci décrit l'interface agent/LLM** au-dessus —
 > comment le MJ (et le Context Agent de Demiurgos) *perçoit* et *modifie* la carte.
@@ -101,17 +103,17 @@ appliquer l'état → logguer l'événement → renvoyer le nouvel état local.
 
 ---
 
-## 6. Ordre de construction
+## 6. Ordre de construction — ✅ TOUT LIVRÉ
 
-1. **Socle write** : `foundSettlement` (refonte `place_civ`) — valider / appliquer /
-   logguer / feedback → le **template** de tous les writes.
-2. `proposeSpawnPositions` en read-tool (il alimente `foundSettlement`).
-3. Enrichir `groundCivTerrain` (directions relatives + noms).
-4. `findNearest` + `whatIsBetween` (les reads MJ à forte valeur).
-5. `recordEvent` + `annotate` (writes narratifs génériques).
-6. `expandTerritory` + `moveEntity` (writes riches).
-7. Refactor `getMapOverview` en résumé sémantique (pour les vrais mondes).
-8. CLI d'ingestion.
+1. ✅ **Socle write** : `foundSettlement` — valider / appliquer / logguer / feedback →
+   le **template** de tous les writes.
+2. ✅ `proposeSpawnPositions` en read-tool (il alimente `foundSettlement`).
+3. ✅ `groundCivTerrain` enrichi (directions relatives, plus de `(q,r)`).
+4. ✅ `findNearest` + `whatIsBetween` (les reads MJ à forte valeur).
+5. ✅ `recordEvent` + `annotate` (writes narratifs génériques).
+6. ✅ `expandTerritory` + `moveEntity` (writes riches).
+7. ✅ `getMapOverview` refait en résumé sémantique (pour les vrais mondes).
+8. ✅ CLI d'ingestion (`python -m bot.map_ingestion`).
 
 **~10 tools** (4 existants dont 2 à retoucher, ~6 neufs) + le CLI. Tout en Python (une
 source), exposable ensuite via la surface Demiurgos.
