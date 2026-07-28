@@ -89,6 +89,23 @@ def test_dependent_writes_share_the_turn_then_abort_together(db, tmp_path):
     assert _control(db, mid, 1, 0) is None and _control(db, mid, 0, 0) is None  # both gone
 
 
+def test_event_logging_path_is_turn_guarded_too(db, tmp_path):
+    """Demiurgos's sharp point: a map tool that LOGS an event (foundSettlement,
+    recordEvent) must route that write through the turn guard too — else an event
+    commit would betray the accumulated map writes. Proof: events logged in a turn
+    vanish on abort."""
+    mid = _seed(db, tmp_path)
+    dispatch_tool(db, "beginTurn", {})
+    _found(db)  # logs a 'settlement' event
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "battle", "at": "spawn 1", "description": "raid", "mapName": "Terre"})
+    n = db.execute("SELECT COUNT(*) FROM map_cell_events WHERE map_id = ?", (mid,)).fetchone()[0]
+    assert n >= 2                                  # both events visible within the turn
+    dispatch_tool(db, "abortTurn", {})
+    n = db.execute("SELECT COUNT(*) FROM map_cell_events WHERE map_id = ?", (mid,)).fetchone()[0]
+    assert n == 0                                  # the logging path never committed
+
+
 def test_without_a_turn_writes_commit_immediately(db, tmp_path):
     mid = _seed(db, tmp_path)
     _found(db)                                    # no beginTurn → committed now
