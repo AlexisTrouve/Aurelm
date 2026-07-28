@@ -419,6 +419,26 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "civName": {"type": "string", "description": "Nom de la civ (fuzzy match)."},
                 "radius": {"type": "integer", "description": "Rayon en provinces (défaut: 2)."},
+                "fog": {"type": "boolean", "description": "Défaut true : ne révèle que les provinces DÉCOUVERTES par la civ (fog of war). false = omniscience MJ."},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "discoverAround",
+        "description": (
+            "Une civ explore : marque comme DÉCOUVERTES les provinces autour d'un lieu (fog of war). "
+            "'around' = lieu sémantique (feature/entité/« spawn N ») ou vide = son siège. C'est ainsi "
+            "que le fog se lève au fil des tours. Écriture (atomique au tour). Rend les provinces "
+            "nouvellement vues."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Civ qui explore (fuzzy match)."},
+                "around": {"type": "string", "description": "Lieu exploré (défaut : le siège)."},
+                "radius": {"type": "integer", "description": "Rayon exploré en provinces (défaut: 1)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
             },
             "required": ["civName"],
         },

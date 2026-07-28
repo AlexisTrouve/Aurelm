@@ -208,6 +208,16 @@ CREATE TABLE map_entity_pawns (
     UNIQUE(map_id, entity_id)
 );
 
+CREATE TABLE map_cell_discovery (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    map_id      INTEGER NOT NULL REFERENCES map_maps(id),
+    q           INTEGER NOT NULL,
+    r           INTEGER NOT NULL,
+    civ_id      INTEGER NOT NULL REFERENCES civ_civilizations(id),
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(map_id, q, r, civ_id)
+);
+
 CREATE TABLE pipeline_runs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),

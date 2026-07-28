@@ -23,6 +23,32 @@ _TERRAIN_BASE = {
 }
 
 
+def neighbours8(q: int, r: int):
+    """The 8 Chebyshev neighbours of a cell."""
+    for dr in (-1, 0, 1):
+        for dq in (-1, 0, 1):
+            if dq or dr:
+                yield q + dq, r + dr
+
+
+def discover(conn: sqlite3.Connection, map_id: int, civ_id: int, cells) -> None:
+    """Mark provinces as discovered by a civ (fog of war, spatial). Only real cells;
+    idempotent. Does NOT commit — the enclosing write owns the transaction/turn."""
+    for q, r in cells:
+        if conn.execute("SELECT 1 FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+                        (map_id, q, r)).fetchone():
+            conn.execute(
+                "INSERT OR IGNORE INTO map_cell_discovery (map_id, q, r, civ_id) "
+                "VALUES (?, ?, ?, ?)", (map_id, q, r, civ_id))
+
+
+def discovered_set(conn: sqlite3.Connection, map_id: int, civ_id: int) -> set:
+    """The provinces a civ has discovered on a map."""
+    return {(q, r) for q, r in conn.execute(
+        "SELECT q, r FROM map_cell_discovery WHERE map_id = ? AND civ_id = ?",
+        (map_id, civ_id)).fetchall()}
+
+
 def _resolve_map(conn: sqlite3.Connection, map_name: str) -> int:
     """Exact then unique-fuzzy map lookup (mirrors tools.resolve_map_name)."""
     row = conn.execute("SELECT id FROM map_maps WHERE name = ?", (map_name,)).fetchone()
@@ -141,5 +167,7 @@ def place_civ(
         "UPDATE map_cells SET controlling_civ_id = ? WHERE map_id = ? AND q = ? AND r = ?",
         (civ_id, map_id, q, r),
     )
+    # A civ knows its seat + immediate surroundings (fog of war).
+    discover(conn, map_id, civ_id, [(q, r), *neighbours8(q, r)])
     conn.commit()
     return {"civ_id": civ_id, "map_id": map_id, "q": q, "r": r}

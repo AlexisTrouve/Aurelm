@@ -118,6 +118,30 @@ appliquer l'état → logguer l'événement → renvoyer le nouvel état local.
 **~10 tools** (4 existants dont 2 à retoucher, ~6 neufs) + le CLI. Tout en Python (une
 source), exposable ensuite via la surface Demiurgos.
 
+## 6bis. Fog of war (V2) + intégration Demiurgos
+
+Les 5 points remontés par Demiurgos, résolus :
+- **Source unique** : Aurelm est LA source du territoire/cités (Demiurgos déprécie ses
+  `map_zones`/`map_structures`). ✅
+- **Transactionnalité shadow-DB** (option A) : `beginTurn`/`commitTurn`/`abortTurn`
+  encadrent un tour ; les writes carte s'accumulent sans commit, `abortTurn` les jette
+  → zéro canon orphelin si le tour rollback. Orchestration-only (absent de
+  tool_definitions). ✅
+- **Prose** : le grounding rend **faits + labels** (nom + catégorie de feature), jamais
+  la prose finie de Theomen — la plume reste au GM. ✅
+- **Fog of war (V2, SPATIAL)** : `map_cell_discovery` par-civ ; la fondation/expansion
+  sème la découverte du siège + voisinage, `discoverAround(civName, around, radius)`
+  fait explorer, `groundCivTerrain(..., fog=true)` ne révèle que le découvert (les
+  provinces voisines non explorées sont comptées, pas décrites ; `fog=false` =
+  omniscience MJ). ✅
+
+> **DETTE — « feature discover » (connaissance tech-gatée du CONTENU).** Le fog ci-dessus
+> est **spatial** (voir une province). Savoir ce qu'une province **contient** — p. ex.
+> qu'il y a du charbon — dépend du **tech-level** : une civ néolithique ne « découvre »
+> pas le charbon. Il faut une mécanique plus fine (révéler les ressources/features d'une
+> province selon la techno de la civ) — **non résolue, parkée**. Aujourd'hui, une province
+> découverte montre tout son contenu.
+
 ## 7. Décisions ouvertes
 - **Résolution des ancres relatives** (« vers la frontière », « au nord-est ») : jusqu'où
   on va dans la richesse au premier jet ? (défaut : directions cardinales + « vers civ X »

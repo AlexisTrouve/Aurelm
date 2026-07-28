@@ -9,7 +9,7 @@ import json
 import re
 import sqlite3
 
-from .map_seeding import propose_spawn_positions
+from .map_seeding import discover, discovered_set, propose_spawn_positions
 
 # --------------------------------------------------------------------------- #
 # Helpers (ported from mcp-server/src/helpers.ts)
@@ -3013,13 +3013,19 @@ def _describe_province(terrain: str, meta: dict) -> str:
 
 
 def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
-                       radius: int = 2) -> str:
+                       radius: int = 2, fog: bool = True) -> str:
     """Structured local terrain around a civ's seat(s) — the Demiurgos GM grounding.
 
     Finds where the civ is placed (controlling_civ_id), then walks the ring of
     provinces within `radius` (Chebyshev) that exist on the ingested map. One cell =
     one 20 km province, so this is empire/region-scale geography, never local terrain.
     Crops have hard edges: neighbours outside the ingested window simply don't appear.
+
+    fog (default True): reveal only provinces the civ has DISCOVERED — a neolithic civ
+    at turn 0 knows its cradle, not a 40 km neighbourhood. The seat is always shown.
+    Undiscovered in-radius provinces are counted, not described. fog=False = GM
+    omniscience. (Spatial fog only; tech-gated knowledge of a province's CONTENTS is a
+    separate, parked mechanic — see the "feature discover" debt.)
     """
     seats = conn.execute(
         "SELECT m.id, m.name, mc.q, mc.r FROM map_cells mc "
@@ -3029,10 +3035,11 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
     ).fetchall()
     if not seats:
         return (f"**{civ_name}** n'a pas de position sur une carte. "
-                "Place-la d'abord (propose_spawn_positions / place_civ).")
+                "Place-la d'abord (proposeSpawnPositions / foundSettlement).")
 
     lines = [f"# Terrain local — {civ_name}", ""]
     for map_id, map_name, sq, sr in seats:
+        known = discovered_set(conn, map_id, civ_id) if fog else None
         lines.append(f"## {map_name} — voisinage du siège")
         rows = conn.execute(
             "SELECT q, r, terrain_type, metadata FROM map_cells "
@@ -3040,18 +3047,71 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
             "ORDER BY r, q",
             (map_id, sq - radius, sq + radius, sr - radius, sr + radius),
         ).fetchall()
+        unknown = 0
         for q, r, terrain, meta_json in rows:
-            meta = json.loads(meta_json) if meta_json else {}
             dist = max(abs(q - sq), abs(r - sr))
+            # Fog: the seat is always known; other provinces only if discovered.
+            if fog and dist != 0 and (q, r) not in known:
+                unknown += 1
+                continue
+            meta = json.loads(meta_json) if meta_json else {}
             if dist == 0:
                 head = "**(siège)**"
             else:
-                # Relative direction + distance in provinces — never (q,r) (§design).
-                prov = "province" if dist == 1 else "provinces"
+                prov = "province" if dist == 1 else "provinces"  # never (q,r) (§design)
                 head = f"{_direction(sq, sr, q, r)} à {dist} {prov}"
             lines.append(f"- {head} : {_describe_province(terrain, meta)}")
+        if unknown:
+            prov = "province" if unknown == 1 else "provinces"
+            lines.append(f"- _{unknown} {prov} voisine(s) encore inexplorée(s)._")
         lines.append("")
     return "\n".join(lines).rstrip()
+
+
+def discover_around(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                    map_name: str, around, radius: int = 1) -> str:
+    """A civ explores: mark the disk of provinces around an anchor as discovered.
+
+    `around` is a semantic place (feature/entity/spawn) or empty → the civ's seat. This
+    is how fog lifts over time (the GM/turn drives exploration). Echoes the newly-seen
+    provinces as facts. A WRITE (turn-atomic).
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+
+    origin = None
+    if around and str(around).strip():
+        try:
+            origin = _resolve_anchor(conn, map_id, map_name, around)
+        except ValueError:
+            origin = None
+    if origin is None:
+        origin = _civ_seat(conn, map_id, civ_id)
+    if origin is None:
+        return (f"{civ_name} n'a pas de point de départ sur {map_name} — "
+                "fonde une cité ou nomme un lieu à explorer.")
+
+    oq, orr = origin
+    before = discovered_set(conn, map_id, civ_id)
+    discover(conn, map_id, civ_id,
+             [(oq + dq, orr + dr) for dq in range(-radius, radius + 1)
+              for dr in range(-radius, radius + 1)])
+    _maybe_commit(conn)
+    new = discovered_set(conn, map_id, civ_id) - before
+    if not new:
+        return f"{civ_name} explore mais ne découvre rien de nouveau (déjà connu)."
+
+    lines = [f"✓ {civ_name} explore et découvre {len(new)} nouvelle(s) province(s) :"]
+    for q, r in sorted(new, key=lambda c: (c[1], c[0])):
+        row = conn.execute(
+            "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+            (map_id, q, r)).fetchone()
+        meta = json.loads(row[1]) if row and row[1] else {}
+        lines.append(f"- {_direction(oq, orr, q, r)} : "
+                     f"{_describe_province(row[0] if row else '?', meta)}")
+    return "\n".join(lines)
 
 
 # --------------------------------------------------------------------------- #
@@ -3201,6 +3261,7 @@ def found_settlement(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
         "VALUES (?, ?, ?, ?, 'settlement')",
         (map_id, q, r, f"Fondation de {label} par {civ_name}."))
+    discover(conn, map_id, civ_id, [(q, r), *_neighbours8(q, r)])  # fog: knows its cradle
     _maybe_commit(conn)
 
     out = [f"✓ **{label}** fondée par {civ_name} sur {map_name}.",
@@ -3502,6 +3563,8 @@ def expand_territory(conn: sqlite3.Connection, civ_id: int, civ_name: str,
                      (map_id, cq, cr, f"{civ_name} étend son territoire ({terrain})."))
         owned.add((cq, cr))
         claimed.append((oq, orr, terrain, cq, cr))
+    for _oq, _orr, _t, cq, cr in claimed:
+        discover(conn, map_id, civ_id, [(cq, cr), *_neighbours8(cq, cr)])  # sees its new frontier
     _maybe_commit(conn)
 
     if not claimed:
@@ -3996,7 +4059,21 @@ def dispatch_tool(
         # `or 2` would turn a legitimate radius 0 (just the seat) into 2.
         raw_radius = tool_input.get("radius")
         radius = 2 if raw_radius is None else max(0, int(raw_radius))
-        return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius)
+        fog = tool_input.get("fog")
+        fog = True if fog is None else bool(fog)
+        return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius, fog=fog)
+
+    if tool_name == "discoverAround":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        return discover_around(conn, civ["id"], civ["name"], tool_input.get("mapName", ""),
+                               tool_input.get("around", ""),
+                               radius=int(tool_input.get("radius") or 1))
 
     if tool_name == "proposeSpawnPositions":
         resolved = _sole_map(conn, tool_input.get("mapName", ""))
