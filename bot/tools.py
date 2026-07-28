@@ -2992,7 +2992,7 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
 
     lines = [f"# Terrain local — {civ_name}", ""]
     for map_id, map_name, sq, sr in seats:
-        lines.append(f"## {map_name} — autour de ({sq},{sr})")
+        lines.append(f"## {map_name} — voisinage du siège")
         rows = conn.execute(
             "SELECT q, r, terrain_type, metadata FROM map_cells "
             "WHERE map_id = ? AND q BETWEEN ? AND ? AND r BETWEEN ? AND ? "
@@ -3002,8 +3002,13 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         for q, r, terrain, meta_json in rows:
             meta = json.loads(meta_json) if meta_json else {}
             dist = max(abs(q - sq), abs(r - sr))
-            tag = " **(siège)**" if dist == 0 else f" _(dist {dist})_"
-            lines.append(f"- ({q},{r}){tag} : {_describe_province(terrain, meta)}")
+            if dist == 0:
+                head = "**(siège)**"
+            else:
+                # Relative direction + distance in provinces — never (q,r) (§design).
+                prov = "province" if dist == 1 else "provinces"
+                head = f"{_direction(sq, sr, q, r)} à {dist} {prov}"
+            lines.append(f"- {head} : {_describe_province(terrain, meta)}")
         lines.append("")
     return "\n".join(lines).rstrip()
 
@@ -3125,6 +3130,120 @@ def found_settlement(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         out.append(f"- {_direction(q, r, nq, nr)} : "
                    f"{_describe_province(nt, json.loads(nm) if nm else {})}")
     return "\n".join(out)
+
+
+# --------------------------------------------------------------------------- #
+# Tools: findNearest / whatIsBetween — semantic spatial queries (geometry hidden)
+# --------------------------------------------------------------------------- #
+
+def _civ_seat(conn: sqlite3.Connection, map_id: int, civ_id: int) -> tuple[int, int] | None:
+    """A civ's primary province on a map (top-left of what it controls)."""
+    row = conn.execute(
+        "SELECT q, r FROM map_cells WHERE map_id = ? AND controlling_civ_id = ? "
+        "ORDER BY r, q LIMIT 1", (map_id, civ_id)).fetchone()
+    return (row[0], row[1]) if row else None
+
+
+def _origin_from(conn: sqlite3.Connection, map_id: int, map_name: str, frm: str):
+    """Resolve a semantic origin (a placed civ, or a named feature/entity) to a cell."""
+    resolved = resolve_civ_name(conn, frm)
+    if "error" not in resolved:
+        seat = _civ_seat(conn, map_id, resolved["civ"]["id"])
+        if seat:
+            return seat, resolved["civ"]["name"]
+    try:
+        return _resolve_anchor(conn, map_id, map_name, frm), frm
+    except ValueError:
+        return None, frm
+
+
+def _cell_matches(terrain: str, meta: dict, what: str) -> bool:
+    """Does a province match a free-form 'what' (terrain / biome / water / resource)?"""
+    if what in (terrain.lower(), str(meta.get("biome", "")).lower()):
+        return True
+    w = meta.get("water", {})
+    if what in ("river", "fleuve", "rivière") and w.get("is_river"):
+        return True
+    if what in ("lake", "lac") and w.get("is_lake"):
+        return True
+    if what in ("ocean", "mer", "océan") and w.get("is_ocean"):
+        return True
+    dep = meta.get("deposit") or {}
+    if what in (str(dep.get("catalog", "")).lower(), str(dep.get("name", "")).lower()):
+        return True
+    return what in [str(p).lower() for p in (meta.get("resource_potential") or [])]
+
+
+def find_nearest(conn: sqlite3.Connection, map_id: int, map_name: str,
+                 origin: tuple[int, int], origin_label: str, what: str, n: int = 3) -> str:
+    """Nearest provinces matching `what`, from a semantic origin — direction + distance,
+    never (q,r). The geometry (Chebyshev distance, ranking) stays here."""
+    oq, orr = origin
+    wl = what.strip().lower()
+    matches = []
+    for q, r, terrain, meta_json in conn.execute(
+        "SELECT q, r, terrain_type, metadata FROM map_cells WHERE map_id = ?", (map_id,)
+    ).fetchall():
+        if q == oq and r == orr:
+            continue
+        meta = json.loads(meta_json) if meta_json else {}
+        if _cell_matches(terrain, meta, wl):
+            matches.append((max(abs(q - oq), abs(r - orr)), q, r, terrain, meta))
+    if not matches:
+        return f"Rien correspondant à « {what} » sur {map_name} près de {origin_label}."
+    matches.sort(key=lambda m: (m[0], m[1], m[2]))
+    lines = [f"# « {what} » le plus proche — depuis {origin_label}", ""]
+    for dist, q, r, terrain, meta in matches[:n]:
+        prov = "province" if dist == 1 else "provinces"
+        lines.append(f"- {_direction(oq, orr, q, r)} à {dist} {prov} : "
+                     f"{_describe_province(terrain, meta)}")
+    return "\n".join(lines)
+
+
+def _line(a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
+    """Bresenham line between two grid cells (inclusive of both ends)."""
+    (x0, y0), (x1, y1) = a, b
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
+    err = dx - dy
+    x, y, pts = x0, y0, []
+    while True:
+        pts.append((x, y))
+        if (x, y) == (x1, y1):
+            return pts
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+
+
+def what_is_between(conn: sqlite3.Connection, map_id: int, a: tuple[int, int],
+                    b: tuple[int, int], a_label: str, b_label: str) -> str:
+    """The provinces (and barriers) on the line between two civs' seats."""
+    pts = _line(a, b)
+    between = pts[1:-1]
+    if not between:
+        return f"{a_label} et {b_label} sont adjacentes — rien entre elles."
+    lines = [f"# Entre {a_label} et {b_label}",
+             f"Distance : {len(pts) - 1} provinces.", ""]
+    barriers = []
+    for q, r in between:
+        row = conn.execute(
+            "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+            (map_id, q, r)).fetchone()
+        if not row:
+            continue
+        terrain, meta_json = row
+        meta = json.loads(meta_json) if meta_json else {}
+        lines.append(f"- {_describe_province(terrain, meta)}")
+        if terrain in ("mountain", "ocean") or meta.get("water", {}).get("is_ocean"):
+            barriers.append(terrain)
+    if barriers:
+        lines += ["", f"⚠️ Barrière(s) sur le chemin : {', '.join(sorted(set(barriers)))}."]
+    return "\n".join(lines)
 
 
 def _clean_input(tool_input: dict) -> dict:
@@ -3612,6 +3731,41 @@ def dispatch_tool(
         return found_settlement(conn, civ["id"], civ["name"],
                                 tool_input.get("mapName", ""), at,
                                 settlement_name=tool_input.get("name"))
+
+    if tool_name == "findNearest":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        frm, what = tool_input.get("from", ""), tool_input.get("what", "")
+        if not frm or not what:
+            return "Error: 'from' (civ/feature) et 'what' (ressource/biome/terrain/eau) requis."
+        origin, label = _origin_from(conn, map_id, map_name, frm)
+        if origin is None:
+            return f"Point de départ « {frm} » introuvable (civ placée, feature ou entité)."
+        return find_nearest(conn, map_id, map_name, origin, label, what,
+                            n=int(tool_input.get("n") or 3))
+
+    if tool_name == "whatIsBetween":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        ra = resolve_civ_name(conn, tool_input.get("civA", ""))
+        rb = resolve_civ_name(conn, tool_input.get("civB", ""))
+        if "error" in ra:
+            return ra["error"]
+        if "error" in rb:
+            return rb["error"]
+        sa = _civ_seat(conn, map_id, ra["civ"]["id"])
+        sb = _civ_seat(conn, map_id, rb["civ"]["id"])
+        if not sa:
+            return f"{ra['civ']['name']} n'est pas placée sur {map_name}."
+        if not sb:
+            return f"{rb['civ']['name']} n'est pas placée sur {map_name}."
+        return what_is_between(conn, map_id, sa, sb, ra["civ"]["name"], rb["civ"]["name"])
 
     if tool_name == "discoverMemory":
         civ_id = None

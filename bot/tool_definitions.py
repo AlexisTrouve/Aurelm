@@ -461,6 +461,42 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "findNearest",
+        "description": (
+            "Trouve la/les province(s) la/les plus proche(s) correspondant à « what » "
+            "(ressource, biome, terrain, ou eau : river/lake/ocean) depuis un point de départ "
+            "sémantique « from » (une civ placée ou une feature nommée). Rend direction + distance "
+            "en provinces, jamais de (q,r). Ex : « les Confluents ont-ils du fer proche ? »"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "from": {"type": "string", "description": "Départ : nom de civ placée ou de feature/entité."},
+                "what": {"type": "string", "description": "Ce qu'on cherche : ressource (iron/coal…), biome, terrain, ou river/lake/ocean."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "n": {"type": "integer", "description": "Nb de résultats (défaut: 3)."},
+            },
+            "required": ["from", "what"],
+        },
+    },
+    {
+        "name": "whatIsBetween",
+        "description": (
+            "Décrit le terrain et les barrières (montagnes, océan) entre les sièges de deux civs : "
+            "distance en provinces + la séquence de provinces sur le chemin. Ex : « y a-t-il une "
+            "chaîne de montagnes entre les Confluents et les Cheveux de Sang ? »"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civA": {"type": "string", "description": "Première civ (fuzzy match)."},
+                "civB": {"type": "string", "description": "Seconde civ (fuzzy match)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["civA", "civB"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "
