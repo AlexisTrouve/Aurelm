@@ -168,6 +168,41 @@ def test_reingest_is_idempotent(db, tmp_path):
     assert nmaps == 1
 
 
+_CLI_SCHEMA = """
+CREATE TABLE map_maps (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,
+  image_path TEXT, grid_type TEXT DEFAULT 'hex', grid_cols INTEGER, grid_rows INTEGER,
+  parent_map_id INTEGER, parent_cell_q INTEGER, parent_cell_r INTEGER, metadata TEXT,
+  created_at TEXT);
+CREATE TABLE map_cells (map_id INTEGER, q INTEGER, r INTEGER, terrain_type TEXT DEFAULT 'plain',
+  controlling_civ_id INTEGER, entity_id INTEGER, label TEXT, child_map_id INTEGER, metadata TEXT,
+  PRIMARY KEY (map_id, q, r));
+"""
+
+
+def test_cli_ingests_a_window_into_a_db_file(tmp_path):
+    import sqlite3
+    from bot.map_ingestion import main
+    dbf = tmp_path / "game.db"
+    c = sqlite3.connect(dbf)
+    c.executescript(_CLI_SCHEMA)
+    c.close()
+
+    rc = main(["--db", str(dbf), "--world", str(_world(tmp_path)),
+               "--map-name", "CLI", "--window", "1,0,2,2"])
+    assert rc == 0
+    c = sqlite3.connect(dbf)
+    n = c.execute("SELECT COUNT(*) FROM map_cells").fetchone()[0]
+    c.close()
+    assert n == 4                                    # the 2x2 window
+
+
+def test_cli_errors_helpfully_without_a_schema(tmp_path):
+    from bot.map_ingestion import main
+    rc = main(["--db", str(tmp_path / "empty.db"), "--world", str(_world(tmp_path)),
+               "--map-name", "X"])
+    assert rc == 1                                   # no map schema → clear error, not a crash
+
+
 def test_window_crop_only_ingests_the_window(db, tmp_path):
     # Window = the right 2x2 block (global x in [1,3)); local q = gx-1.
     res = ingest_world(db, _world(tmp_path), "Fenetre", window=(1, 0, 2, 2))
