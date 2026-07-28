@@ -3124,10 +3124,19 @@ def discover_around(conn: sqlite3.Connection, civ_id: int, civ_name: str,
 #
 # HOW: within a turn, map writes accumulate in the connection's open SQLite
 # transaction but do NOT commit (they ARE visible to subsequent reads/writes on the
-# same connection, so dependent actions and the echo work). commitTurn commits the
-# lot; abortTurn rolls it back, so nothing orphans. Assumes the turn has exclusive DB
-# access (Demiurgos's model: one shadow turn at a time).
-_TURN_CONNS: set[int] = set()  # ids of connections currently inside a turn
+# SAME connection, so dependent actions and the echo work). commit_turn commits the
+# lot; abort_turn rolls it back, so nothing orphans.
+#
+# CONNECTION CONTRACT (agreed with Demiurgos, in-process Python): the caller holds ONE
+# Aurelm connection per turn, in the turn's thread, and routes EVERY call of the turn
+# (reads and writes) through it. begin_turn/commit_turn/abort_turn are importable
+# callables (orchestration, not LLM tools). Tools accept the passed connection and
+# never open their own; writes never auto-commit inside a turn.
+#
+# Keyed by id(conn): sqlite3.Connection is not weakref-able, so no WeakSet. Demiurgos's
+# turn-runner always commits/aborts in lockstep, so the id is cleaned every turn (a
+# stale id would only linger if a turn were abandoned without commit_turn/abort_turn).
+_TURN_CONNS: set[int] = set()
 
 
 def _in_turn(conn: sqlite3.Connection) -> bool:

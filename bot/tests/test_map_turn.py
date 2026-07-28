@@ -74,6 +74,21 @@ def test_reads_see_pending_writes_within_the_turn(db, tmp_path):
     dispatch_tool(db, "abortTurn", {})
 
 
+def test_dependent_writes_share_the_turn_then_abort_together(db, tmp_path):
+    """Demiurgos's exact model: a 2nd write sees the 1st (uncommitted) within the turn,
+    and abort discards BOTH — nothing half-applied."""
+    mid = _seed(db, tmp_path)
+    dispatch_tool(db, "beginTurn", {})
+    _found(db)                                    # settlement at (1,0), uncommitted
+    # expandTerritory reads controlling_civ_id to find the frontier -> it must SEE the
+    # uncommitted settlement (same connection) to claim its neighbour (0,0).
+    dispatch_tool(db, "expandTerritory",
+                  {"civName": "Confluence", "toward": "O", "mapName": "Terre"})
+    assert _control(db, mid, 0, 0) == 1           # the dependent write worked on pending state
+    dispatch_tool(db, "abortTurn", {})
+    assert _control(db, mid, 1, 0) is None and _control(db, mid, 0, 0) is None  # both gone
+
+
 def test_without_a_turn_writes_commit_immediately(db, tmp_path):
     mid = _seed(db, tmp_path)
     _found(db)                                    # no beginTurn → committed now
