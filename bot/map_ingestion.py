@@ -208,3 +208,53 @@ def ingest_world(
     conn.commit()
     return {"map_id": map_id, "map_name": map_name, "cells": n,
             "window": {"x": wx, "y": wy, "w": ww, "h": wh}}
+
+
+def main(argv=None) -> int:
+    """CLI: ingest a Theomen `.world` export into a game DB.
+
+        python -m bot.map_ingestion --db game.aurelm.db --world seed42.world \
+            --map-name "Terre" [--window x,y,w,h]
+
+    The DB must already carry the map schema (created by `bot --migrate-only`); this is
+    an offline batch step, never an agent tool.
+    """
+    import argparse
+
+    ap = argparse.ArgumentParser(prog="python -m bot.map_ingestion",
+                                 description="Ingest a Theomen .world export into a game DB.")
+    ap.add_argument("--db", required=True, help="path to the game's .aurelm.db")
+    ap.add_argument("--world", required=True, help="path to the .world export directory")
+    ap.add_argument("--map-name", required=True, help="name for the ingested map")
+    ap.add_argument("--window", help="crop 'x,y,w,h' in global cells (default: whole world)")
+    args = ap.parse_args(argv)
+
+    window = None
+    if args.window:
+        try:
+            parts = tuple(int(v) for v in args.window.split(","))
+        except ValueError:
+            ap.error("--window must be four integers 'x,y,w,h'")
+        if len(parts) != 4:
+            ap.error("--window must be 'x,y,w,h'")
+        window = parts
+
+    conn = sqlite3.connect(args.db)
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        res = ingest_world(conn, args.world, args.map_name, window=window)
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e):
+            print(f"error: the DB has no map schema — run `bot --migrate-only --db {args.db}` "
+                  f"first. ({e})")
+            return 1
+        raise
+    finally:
+        conn.close()
+    print(f"Ingested {res['cells']} provinces into map '{res['map_name']}' "
+          f"(id {res['map_id']}) — window {res['window']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

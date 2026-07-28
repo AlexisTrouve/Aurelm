@@ -9,6 +9,8 @@ import json
 import re
 import sqlite3
 
+from .map_seeding import propose_spawn_positions
+
 # --------------------------------------------------------------------------- #
 # Helpers (ported from mcp-server/src/helpers.ts)
 # --------------------------------------------------------------------------- #
@@ -2743,42 +2745,82 @@ def get_maps(conn: sqlite3.Connection) -> str:
 def get_map_overview(
     conn: sqlite3.Connection, map_id: int, map_name: str
 ) -> str:
-    """Cells table + 10 last events for a map. Truncated at 200 cells."""
-    cells = conn.execute(
-        """SELECT mc.q, mc.r, mc.terrain_type, mc.label,
-                  c.name AS civ_name, e.canonical_name AS entity_name
-           FROM map_cells mc
-           LEFT JOIN civ_civilizations c ON c.id = mc.controlling_civ_id
-           LEFT JOIN entity_entities e ON e.id = mc.entity_id
-           WHERE mc.map_id = ?
-           ORDER BY mc.r, mc.q
-           LIMIT 200""",
-        (map_id,),
-    ).fetchall()
+    """Semantic SUMMARY of a map — not a cell dump.
+
+    A real ingested world is thousands of provinces; a 200-row table is useless to an
+    LLM. Instead we aggregate: size/scale, dominant terrains and biomes, resources and
+    notable features present, the civs and their footprint, named places, and recent
+    chronicle events. Geometry stays hidden; the summary is what a GM needs at a glance.
+    """
+    mrow = conn.execute(
+        "SELECT grid_type, grid_cols, grid_rows, metadata FROM map_maps WHERE id = ?",
+        (map_id,)).fetchone()
+    grid_type, cols, grows, meta_json = (mrow or ("hex", 0, 0, None))
+    mmeta = json.loads(meta_json) if meta_json else {}
+    total = conn.execute(
+        "SELECT COUNT(*) FROM map_cells WHERE map_id = ?", (map_id,)).fetchone()[0]
+
+    lines = [f"# Carte : {map_name}", f"{grid_type} {cols}×{grows} — {total} provinces"]
+    if mmeta.get("cell_km"):
+        scale = f"Échelle : {mmeta['cell_km']} km/province"
+        if mmeta.get("seed") is not None:
+            scale += f" · seed {mmeta['seed']}"
+        lines.append(scale)
+    if total == 0:
+        lines.append("\n*(aucune cellule)*")
+        return "\n".join(lines)
+
+    terr = conn.execute(
+        "SELECT terrain_type, COUNT(*) c FROM map_cells WHERE map_id = ? "
+        "GROUP BY terrain_type ORDER BY c DESC", (map_id,)).fetchall()
+    lines += ["", "## Terrains"] + [f"- {t} : {c}" for t, c in terr[:12]]
+
+    # Aggregate the semantic metadata (biomes / deposits / features) in one pass.
+    biomes: dict = {}
+    catalogs: dict = {}
+    feats: dict = {}
+    for (mj,) in conn.execute(
+        "SELECT metadata FROM map_cells WHERE map_id = ? AND metadata IS NOT NULL", (map_id,)):
+        m = json.loads(mj)
+        if m.get("biome"):
+            biomes[m["biome"]] = biomes.get(m["biome"], 0) + 1
+        dep = m.get("deposit") or {}
+        if dep.get("catalog"):
+            catalogs[dep["catalog"]] = catalogs.get(dep["catalog"], 0) + 1
+        f = m.get("feature") or {}
+        fn = f.get("display_name") or f.get("name")
+        if fn:
+            feats[fn] = feats.get(fn, 0) + 1
+
+    def _top(d, n):
+        return sorted(d.items(), key=lambda kv: -kv[1])[:n]
+
+    if biomes:
+        lines += ["", "## Biomes"] + [f"- {b} : {c}" for b, c in _top(biomes, 12)]
+    if catalogs:
+        lines += ["", "## Ressources (gisements)"] + [f"- {k} : {v}" for k, v in _top(catalogs, 20)]
+    if feats:
+        lines += ["", "## Features notables"] + [f"- {k} ({v})" for k, v in _top(feats, 15)]
+
+    civs = conn.execute(
+        "SELECT c.name, COUNT(*) n FROM map_cells mc "
+        "JOIN civ_civilizations c ON c.id = mc.controlling_civ_id "
+        "WHERE mc.map_id = ? GROUP BY c.id ORDER BY n DESC", (map_id,)).fetchall()
+    if civs:
+        lines += ["", "## Civilisations présentes"] + [f"- {n} : {cnt} province(s)" for n, cnt in civs]
+
+    named = conn.execute(
+        "SELECT label FROM map_cells WHERE map_id = ? AND label IS NOT NULL "
+        "ORDER BY r, q LIMIT 20", (map_id,)).fetchall()
+    if named:
+        lines += ["", "## Lieux nommés"] + [f"- {lbl[0]}" for lbl in named]
 
     events = conn.execute(
-        """SELECT q, r, event_type, description, created_at
-           FROM map_cell_events WHERE map_id = ?
-           ORDER BY created_at DESC LIMIT 10""",
-        (map_id,),
-    ).fetchall()
-
-    lines = [f"# Carte : {map_name}\n", "## Cellules\n",
-             "| q | r | Terrain | Label | Civ | Entité |",
-             "|---|---|---------|-------|-----|--------|"]
-    for c in cells:
-        lines.append(
-            f"| {c[0]} | {c[1]} | {c[2]} | {c[3] or ''} "
-            f"| {c[4] or ''} | {c[5] or ''} |"
-        )
-    if not cells:
-        lines.append("*(aucune cellule)*")
-
-    lines.append("\n## 10 derniers événements\n")
-    for ev in events:
-        lines.append(f"- ({ev[0]},{ev[1]}) [{ev[2]}] {ev[3]}  _{ev[4][:10]}_")
-    if not events:
-        lines.append("*(aucun événement)*")
+        "SELECT event_type, description, created_at FROM map_cell_events "
+        "WHERE map_id = ? ORDER BY created_at DESC, id DESC LIMIT 8", (map_id,)).fetchall()
+    if events:
+        lines += ["", "## Événements récents"]
+        lines += [f"- [{t}] {d}  _{ca[:10]}_" for t, d, ca in events]
 
     return "\n".join(lines)
 
@@ -2990,7 +3032,7 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
 
     lines = [f"# Terrain local — {civ_name}", ""]
     for map_id, map_name, sq, sr in seats:
-        lines.append(f"## {map_name} — autour de ({sq},{sr})")
+        lines.append(f"## {map_name} — voisinage du siège")
         rows = conn.execute(
             "SELECT q, r, terrain_type, metadata FROM map_cells "
             "WHERE map_id = ? AND q BETWEEN ? AND ? AND r BETWEEN ? AND ? "
@@ -3000,10 +3042,466 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         for q, r, terrain, meta_json in rows:
             meta = json.loads(meta_json) if meta_json else {}
             dist = max(abs(q - sq), abs(r - sr))
-            tag = " **(siège)**" if dist == 0 else f" _(dist {dist})_"
-            lines.append(f"- ({q},{r}){tag} : {_describe_province(terrain, meta)}")
+            if dist == 0:
+                head = "**(siège)**"
+            else:
+                # Relative direction + distance in provinces — never (q,r) (§design).
+                prov = "province" if dist == 1 else "provinces"
+                head = f"{_direction(sq, sr, q, r)} à {dist} {prov}"
+            lines.append(f"- {head} : {_describe_province(terrain, meta)}")
         lines.append("")
     return "\n".join(lines).rstrip()
+
+
+# --------------------------------------------------------------------------- #
+# Tool: foundSettlement — the WRITE socle (semantic target, validate, log, feedback)
+# --------------------------------------------------------------------------- #
+
+def _direction(q: int, r: int, nq: int, nr: int) -> str:
+    """Cardinal from (q,r) to a neighbour. +x = East, +y = South (r grows downward).
+
+    WHY: the LLM must never juggle (q,r) — a neighbourhood is described in relative
+    directions it can actually reason with ("iron 1 province NE").
+    """
+    dx, dy = nq - q, nr - r
+    ns = "S" if dy > 0 else ("N" if dy < 0 else "")
+    ew = "E" if dx > 0 else ("O" if dx < 0 else "")
+    return (ns + ew) or "ici"
+
+
+def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) -> tuple[int, int]:
+    """Resolve a SEMANTIC target to a cell — never a raw (q,r) from the LLM.
+
+    Accepts: a spawn rank ("spawn 1" / "#2" / "3") → the Nth proposeSpawnPositions
+    candidate; or a name → a province carrying that feature / label / mapped entity.
+    Raises ValueError with an actionable message if it can't be resolved.
+    """
+    s = str(at).strip()
+    m = re.match(r"^(?:spawn\s*)?#?\s*(\d+)$", s, re.I)
+    if m:
+        rank = int(m.group(1))
+        cands = propose_spawn_positions(conn, map_name, n=rank)
+        if 1 <= rank <= len(cands):
+            c = cands[rank - 1]
+            return c["q"], c["r"]
+        raise ValueError(f"il n'y a pas de {rank}e proposition de spawn")
+
+    low = s.lower()
+    for q, r, label, meta_json in conn.execute(
+        "SELECT q, r, label, metadata FROM map_cells WHERE map_id = ?", (map_id,)
+    ).fetchall():
+        if label and label.lower() == low:
+            return q, r
+        meta = json.loads(meta_json) if meta_json else {}
+        feat = meta.get("feature") or {}
+        if low in (str(feat.get("name", "")).lower(), str(feat.get("display_name", "")).lower()):
+            return q, r
+    erow = conn.execute(
+        "SELECT mc.q, mc.r FROM map_cells mc JOIN entity_entities e ON e.id = mc.entity_id "
+        "WHERE mc.map_id = ? AND (e.canonical_name = ? OR e.canonical_name LIKE ?) LIMIT 1",
+        (map_id, s, f"%{s}%"),
+    ).fetchone()
+    if erow:
+        return erow[0], erow[1]
+    raise ValueError(
+        f"ancrage « {at} » introuvable sur {map_name} — nomme une feature/entité, "
+        "ou une proposition de spawn (« spawn 1 »)"
+    )
+
+
+def _sole_map(conn: sqlite3.Connection, map_name: str) -> tuple[int, str] | None:
+    """Resolve a map by name, or fall back to the only map if the game has one."""
+    if map_name:
+        row = conn.execute(
+            "SELECT id, name FROM map_maps WHERE name = ? OR name LIKE ? LIMIT 1",
+            (map_name, f"%{map_name}%")).fetchone()
+        return (row[0], row[1]) if row else None
+    rows = conn.execute("SELECT id, name FROM map_maps").fetchall()
+    return (rows[0][0], rows[0][1]) if len(rows) == 1 else None
+
+
+def found_settlement(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                     map_name: str, at, settlement_name: str | None = None) -> str:
+    """Found a civ's settlement on a province — the WRITE template.
+
+    validate (no city in the ocean) → apply (controlling_civ_id + label) → log a
+    `settlement` event (auditable/undoable) → return the new local state (the LLM
+    can't see the map, so the write echoes back what it did). Target is SEMANTIC
+    (`at`): a spawn proposal or a named feature/entity, never a raw (q,r).
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return (f"Carte « {map_name} » introuvable." if map_name
+                else "Précise mapName : plusieurs cartes existent.")
+    map_id, map_name = resolved
+
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Fondation impossible : {e}."
+
+    cell = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    terrain, meta_json = cell
+    meta = json.loads(meta_json) if meta_json else {}
+    if terrain == "ocean" or meta.get("water", {}).get("is_ocean"):
+        return (f"Fondation impossible : « {at} » est en pleine mer. "
+                "Une cité se fonde sur la terre ferme.")
+
+    label = settlement_name or f"Cité de {civ_name}"
+    conn.execute(
+        "UPDATE map_cells SET controlling_civ_id = ?, label = ? "
+        "WHERE map_id = ? AND q = ? AND r = ?", (civ_id, label, map_id, q, r))
+    conn.execute(
+        "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+        "VALUES (?, ?, ?, ?, 'settlement')",
+        (map_id, q, r, f"Fondation de {label} par {civ_name}."))
+    conn.commit()
+
+    out = [f"✓ **{label}** fondée par {civ_name} sur {map_name}.",
+           f"Province : {_describe_province(terrain, meta)}", "", "Voisinage :"]
+    ring = conn.execute(
+        "SELECT q, r, terrain_type, metadata FROM map_cells "
+        "WHERE map_id = ? AND q BETWEEN ? AND ? AND r BETWEEN ? AND ? "
+        "AND NOT (q = ? AND r = ?) ORDER BY r, q",
+        (map_id, q - 1, q + 1, r - 1, r + 1, q, r)).fetchall()
+    for nq, nr, nt, nm in ring:
+        out.append(f"- {_direction(q, r, nq, nr)} : "
+                   f"{_describe_province(nt, json.loads(nm) if nm else {})}")
+    return "\n".join(out)
+
+
+# --------------------------------------------------------------------------- #
+# Tools: findNearest / whatIsBetween — semantic spatial queries (geometry hidden)
+# --------------------------------------------------------------------------- #
+
+def _civ_seat(conn: sqlite3.Connection, map_id: int, civ_id: int) -> tuple[int, int] | None:
+    """A civ's primary province on a map (top-left of what it controls)."""
+    row = conn.execute(
+        "SELECT q, r FROM map_cells WHERE map_id = ? AND controlling_civ_id = ? "
+        "ORDER BY r, q LIMIT 1", (map_id, civ_id)).fetchone()
+    return (row[0], row[1]) if row else None
+
+
+def _origin_from(conn: sqlite3.Connection, map_id: int, map_name: str, frm: str):
+    """Resolve a semantic origin (a placed civ, or a named feature/entity) to a cell."""
+    resolved = resolve_civ_name(conn, frm)
+    if "error" not in resolved:
+        seat = _civ_seat(conn, map_id, resolved["civ"]["id"])
+        if seat:
+            return seat, resolved["civ"]["name"]
+    try:
+        return _resolve_anchor(conn, map_id, map_name, frm), frm
+    except ValueError:
+        return None, frm
+
+
+def _cell_matches(terrain: str, meta: dict, what: str) -> bool:
+    """Does a province match a free-form 'what' (terrain / biome / water / resource)?"""
+    if what in (terrain.lower(), str(meta.get("biome", "")).lower()):
+        return True
+    w = meta.get("water", {})
+    if what in ("river", "fleuve", "rivière") and w.get("is_river"):
+        return True
+    if what in ("lake", "lac") and w.get("is_lake"):
+        return True
+    if what in ("ocean", "mer", "océan") and w.get("is_ocean"):
+        return True
+    dep = meta.get("deposit") or {}
+    if what in (str(dep.get("catalog", "")).lower(), str(dep.get("name", "")).lower()):
+        return True
+    return what in [str(p).lower() for p in (meta.get("resource_potential") or [])]
+
+
+def find_nearest(conn: sqlite3.Connection, map_id: int, map_name: str,
+                 origin: tuple[int, int], origin_label: str, what: str, n: int = 3) -> str:
+    """Nearest provinces matching `what`, from a semantic origin — direction + distance,
+    never (q,r). The geometry (Chebyshev distance, ranking) stays here."""
+    oq, orr = origin
+    wl = what.strip().lower()
+    matches = []
+    for q, r, terrain, meta_json in conn.execute(
+        "SELECT q, r, terrain_type, metadata FROM map_cells WHERE map_id = ?", (map_id,)
+    ).fetchall():
+        if q == oq and r == orr:
+            continue
+        meta = json.loads(meta_json) if meta_json else {}
+        if _cell_matches(terrain, meta, wl):
+            matches.append((max(abs(q - oq), abs(r - orr)), q, r, terrain, meta))
+    if not matches:
+        return f"Rien correspondant à « {what} » sur {map_name} près de {origin_label}."
+    matches.sort(key=lambda m: (m[0], m[1], m[2]))
+    lines = [f"# « {what} » le plus proche — depuis {origin_label}", ""]
+    for dist, q, r, terrain, meta in matches[:n]:
+        prov = "province" if dist == 1 else "provinces"
+        lines.append(f"- {_direction(oq, orr, q, r)} à {dist} {prov} : "
+                     f"{_describe_province(terrain, meta)}")
+    return "\n".join(lines)
+
+
+def _line(a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
+    """Bresenham line between two grid cells (inclusive of both ends)."""
+    (x0, y0), (x1, y1) = a, b
+    dx, dy = abs(x1 - x0), abs(y1 - y0)
+    sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
+    err = dx - dy
+    x, y, pts = x0, y0, []
+    while True:
+        pts.append((x, y))
+        if (x, y) == (x1, y1):
+            return pts
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+
+
+def what_is_between(conn: sqlite3.Connection, map_id: int, a: tuple[int, int],
+                    b: tuple[int, int], a_label: str, b_label: str) -> str:
+    """The provinces (and barriers) on the line between two civs' seats."""
+    pts = _line(a, b)
+    between = pts[1:-1]
+    if not between:
+        return f"{a_label} et {b_label} sont adjacentes — rien entre elles."
+    lines = [f"# Entre {a_label} et {b_label}",
+             f"Distance : {len(pts) - 1} provinces.", ""]
+    barriers = []
+    for q, r in between:
+        row = conn.execute(
+            "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+            (map_id, q, r)).fetchone()
+        if not row:
+            continue
+        terrain, meta_json = row
+        meta = json.loads(meta_json) if meta_json else {}
+        lines.append(f"- {_describe_province(terrain, meta)}")
+        if terrain in ("mountain", "ocean") or meta.get("water", {}).get("is_ocean"):
+            barriers.append(terrain)
+    if barriers:
+        lines += ["", f"⚠️ Barrière(s) sur le chemin : {', '.join(sorted(set(barriers)))}."]
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# Tools: recordEvent / annotate — generic narrative writes (reuse the socle)
+# --------------------------------------------------------------------------- #
+
+# The chronicle's event vocabulary (migration 031: map_cell_events.event_type).
+_EVENT_KINDS = {"settlement", "battle", "discovery", "diplomatic",
+                "migration", "disaster", "note"}
+
+
+def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
+                 description: str, civ_name: str | None = None) -> str:
+    """Log a narrative event on a province — the generic write (battle, discovery…).
+
+    Same discipline as foundSettlement: semantic anchor → validate the event kind →
+    log to map_cell_events → echo the province. No state change beyond the chronicle.
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name
+                else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+    k = (kind or "").strip().lower()
+    if k not in _EVENT_KINDS:
+        return (f"Type d'événement inconnu « {kind} ». "
+                f"Valides : {', '.join(sorted(_EVENT_KINDS))}.")
+    if not (description or "").strip():
+        return "Error: description requise."
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Événement impossible : {e}."
+
+    desc = description if not civ_name else f"{description} ({civ_name})"
+    conn.execute(
+        "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+        "VALUES (?, ?, ?, ?, ?)", (map_id, q, r, desc, k))
+    conn.commit()
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row[1] else {}
+    return (f"✓ Événement [{k}] sur {map_name} : {desc}\n"
+            f"Province : {_describe_province(row[0], meta)}")
+
+
+def annotate(conn: sqlite3.Connection, map_name: str, at,
+             label: str | None = None, note: str | None = None) -> str:
+    """Set a GM label and/or attach a note to a province (semantic anchor)."""
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name
+                else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+    if not (label or note):
+        return "Error: fournis un label et/ou une note."
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Annotation impossible : {e}."
+
+    if label:
+        conn.execute("UPDATE map_cells SET label = ? WHERE map_id = ? AND q = ? AND r = ?",
+                     (label, map_id, q, r))
+    if note:
+        conn.execute(
+            "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+            "VALUES (?, ?, ?, ?, 'note')", (map_id, q, r, note))
+    conn.commit()
+    done = ", ".join(p for p in (f"label « {label} »" if label else "",
+                                 "note ajoutée" if note else "") if p)
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row[1] else {}
+    return f"✓ Province annotée ({done}) : {_describe_province(row[0], meta)}"
+
+
+# --------------------------------------------------------------------------- #
+# Tools: expandTerritory / moveEntity — richer narrative writes
+# --------------------------------------------------------------------------- #
+
+_CARDINALS = {"n": (0, -1), "s": (0, 1), "e": (1, 0), "o": (-1, 0), "w": (-1, 0),
+              "ne": (1, -1), "no": (-1, -1), "nw": (-1, -1), "se": (1, 1),
+              "so": (-1, 1), "sw": (-1, 1)}
+
+
+def _neighbours8(q: int, r: int):
+    for dr in (-1, 0, 1):
+        for dq in (-1, 0, 1):
+            if dq or dr:
+                yield q + dq, r + dr
+
+
+def _direction_vector(conn: sqlite3.Connection, map_id: int, map_name: str,
+                      toward: str, owned: set) -> tuple[float, float] | None:
+    """A bias direction for expansion: a cardinal, or toward a civ/feature's cell."""
+    s = (toward or "").strip().lower()
+    if s in _CARDINALS:
+        return _CARDINALS[s]
+    # else: a civ or a named anchor → vector from the owned centroid to its cell.
+    target = None
+    resolved = resolve_civ_name(conn, toward)
+    if "error" not in resolved:
+        target = _civ_seat(conn, map_id, resolved["civ"]["id"])
+    if target is None:
+        try:
+            target = _resolve_anchor(conn, map_id, map_name, toward)
+        except ValueError:
+            return None
+    cq = sum(q for q, _ in owned) / len(owned)
+    cr = sum(r for _, r in owned) / len(owned)
+    return (target[0] - cq, target[1] - cr)
+
+
+def _aligned(step: tuple[int, int], dvec: tuple[float, float] | None) -> float:
+    """Dot product of a claim step with the bias direction (0 if no bias)."""
+    if dvec is None:
+        return 0.0
+    import math
+    sn = math.hypot(*step) or 1.0
+    dn = math.hypot(*dvec) or 1.0
+    return (step[0] * dvec[0] + step[1] * dvec[1]) / (sn * dn)
+
+
+def expand_territory(conn: sqlite3.Connection, civ_id: int, civ_name: str,
+                     map_name: str, toward: str, amount: int = 1) -> str:
+    """Claim `amount` unclaimed LAND provinces on the civ's frontier, biased `toward`.
+
+    Greedy frontier growth: each round claims the adjacent unclaimed land province best
+    aligned with the direction. Never claims ocean or another civ's land. Logs a
+    `migration` event per claim, echoes what was taken.
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+
+    owned = {(q, r) for q, r in conn.execute(
+        "SELECT q, r FROM map_cells WHERE map_id = ? AND controlling_civ_id = ?",
+        (map_id, civ_id)).fetchall()}
+    if not owned:
+        return f"{civ_name} n'a pas de territoire sur {map_name} — fonde une cité d'abord."
+
+    dvec = _direction_vector(conn, map_id, map_name, toward, owned)
+    claimed: list[tuple[int, int, str]] = []
+    for _ in range(max(1, amount)):
+        best = None
+        for oq, orr in owned:
+            for nq, nr in _neighbours8(oq, orr):
+                if (nq, nr) in owned:
+                    continue
+                cell = conn.execute(
+                    "SELECT terrain_type, controlling_civ_id, metadata FROM map_cells "
+                    "WHERE map_id = ? AND q = ? AND r = ?", (map_id, nq, nr)).fetchone()
+                if not cell or cell[1] is not None:
+                    continue  # off-map or already owned by someone
+                meta = json.loads(cell[2]) if cell[2] else {}
+                if cell[0] == "ocean" or meta.get("water", {}).get("is_ocean"):
+                    continue
+                score = _aligned((nq - oq, nr - orr), dvec)
+                if best is None or score > best[0]:
+                    best = (score, nq, nr, oq, orr, cell[0])
+        if best is None:
+            break
+        _, cq, cr, oq, orr, terrain = best
+        conn.execute("UPDATE map_cells SET controlling_civ_id = ? "
+                     "WHERE map_id = ? AND q = ? AND r = ?", (civ_id, map_id, cq, cr))
+        conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+                     "VALUES (?, ?, ?, ?, 'migration')",
+                     (map_id, cq, cr, f"{civ_name} étend son territoire ({terrain})."))
+        owned.add((cq, cr))
+        claimed.append((oq, orr, terrain, cq, cr))
+    conn.commit()
+
+    if not claimed:
+        return f"{civ_name} ne peut pas s'étendre (frontière bloquée par la mer ou d'autres civs)."
+    lines = [f"✓ {civ_name} annexe {len(claimed)} province(s) sur {map_name}"
+             + (f" vers {toward}" if toward else "") + " :"]
+    for oq, orr, terrain, cq, cr in claimed:
+        lines.append(f"- {_direction(oq, orr, cq, cr)} : {terrain}")
+    lines.append(f"Territoire total : {len(owned)} provinces.")
+    return "\n".join(lines)
+
+
+def move_entity(conn: sqlite3.Connection, map_name: str, entity_name: str, to) -> str:
+    """Move an entity's pawn to a province (one pawn per entity per map)."""
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+
+    erow = conn.execute(
+        "SELECT DISTINCT e.id, e.canonical_name FROM entity_entities e "
+        "LEFT JOIN entity_aliases ea ON ea.entity_id = e.id "
+        "WHERE e.canonical_name = ? OR e.canonical_name LIKE ? OR ea.alias LIKE ? LIMIT 1",
+        (entity_name, f"%{entity_name}%", f"%{entity_name}%")).fetchone()
+    if not erow:
+        return f"Entité « {entity_name} » introuvable."
+    entity_id, ename = erow
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, to)
+    except ValueError as e:
+        return f"Déplacement impossible : {e}."
+
+    conn.execute(
+        "INSERT INTO map_entity_pawns (map_id, entity_id, q, r) VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(map_id, entity_id) DO UPDATE SET q = excluded.q, r = excluded.r",
+        (map_id, entity_id, q, r))
+    conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+                 "VALUES (?, ?, ?, ?, 'migration')", (map_id, q, r, f"{ename} se déplace ici."))
+    conn.commit()
+    row = conn.execute(
+        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    meta = json.loads(row[1]) if row and row[1] else {}
+    return f"✓ {ename} déplacé sur {map_name} : {_describe_province(row[0], meta) if row else '?'}"
 
 
 def _clean_input(tool_input: dict) -> dict:
@@ -3455,6 +3953,115 @@ def dispatch_tool(
         raw_radius = tool_input.get("radius")
         radius = 2 if raw_radius is None else max(0, int(raw_radius))
         return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius)
+
+    if tool_name == "proposeSpawnPositions":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        picks = propose_spawn_positions(
+            conn, map_name, n=int(tool_input.get("n") or 5),
+            min_spacing=int(tool_input.get("minSpacing") or 0))
+        if not picks:
+            return f"Aucune province habitable proposable sur {map_name}."
+        # Render ranks (NOT coordinates): the agent founds via `at="spawn N"`.
+        lines = [f"# Positions de spawn proposées — {map_name}", ""]
+        for i, p in enumerate(picks, 1):
+            biome = f" ({p['biome']})" if p.get("biome") else ""
+            lines.append(f"{i}. **{p['terrain']}**{biome} — score {p['score']} — "
+                         f"{', '.join(p['why'])}")
+        lines.append("")
+        lines.append('Pour fonder : `foundSettlement(civName, at="spawn N")`.')
+        return "\n".join(lines)
+
+    if tool_name == "foundSettlement":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        return found_settlement(conn, civ["id"], civ["name"],
+                                tool_input.get("mapName", ""), at,
+                                settlement_name=tool_input.get("name"))
+
+    if tool_name == "findNearest":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        frm, what = tool_input.get("from", ""), tool_input.get("what", "")
+        if not frm or not what:
+            return "Error: 'from' (civ/feature) et 'what' (ressource/biome/terrain/eau) requis."
+        origin, label = _origin_from(conn, map_id, map_name, frm)
+        if origin is None:
+            return f"Point de départ « {frm} » introuvable (civ placée, feature ou entité)."
+        return find_nearest(conn, map_id, map_name, origin, label, what,
+                            n=int(tool_input.get("n") or 3))
+
+    if tool_name == "whatIsBetween":
+        resolved = _sole_map(conn, tool_input.get("mapName", ""))
+        if not resolved:
+            return ("Précise mapName." if not tool_input.get("mapName")
+                    else f"Carte « {tool_input['mapName']} » introuvable.")
+        map_id, map_name = resolved
+        ra = resolve_civ_name(conn, tool_input.get("civA", ""))
+        rb = resolve_civ_name(conn, tool_input.get("civB", ""))
+        if "error" in ra:
+            return ra["error"]
+        if "error" in rb:
+            return rb["error"]
+        sa = _civ_seat(conn, map_id, ra["civ"]["id"])
+        sb = _civ_seat(conn, map_id, rb["civ"]["id"])
+        if not sa:
+            return f"{ra['civ']['name']} n'est pas placée sur {map_name}."
+        if not sb:
+            return f"{rb['civ']['name']} n'est pas placée sur {map_name}."
+        return what_is_between(conn, map_id, sa, sb, ra["civ"]["name"], rb["civ"]["name"])
+
+    if tool_name == "recordEvent":
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        civ_name = None
+        if tool_input.get("civName"):
+            cr = resolve_civ_name(conn, tool_input["civName"])
+            civ_name = cr["civ"]["name"] if "error" not in cr else tool_input["civName"]
+        return record_event(conn, tool_input.get("mapName", ""),
+                            tool_input.get("kind", ""), at,
+                            tool_input.get("description", ""), civ_name=civ_name)
+
+    if tool_name == "annotate":
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        return annotate(conn, tool_input.get("mapName", ""), at,
+                        label=tool_input.get("label"), note=tool_input.get("note"))
+
+    if tool_name == "expandTerritory":
+        civ_name_str = tool_input.get("civName", "")
+        if not civ_name_str:
+            return "Error: civName is required."
+        resolved = resolve_civ_name(conn, civ_name_str)
+        if "error" in resolved:
+            return resolved["error"]
+        civ = resolved["civ"]
+        return expand_territory(conn, civ["id"], civ["name"],
+                                tool_input.get("mapName", ""), tool_input.get("toward", ""),
+                                amount=int(tool_input.get("amount") or 1))
+
+    if tool_name == "moveEntity":
+        entity_name = tool_input.get("entityName", "")
+        to = tool_input.get("to")
+        if not entity_name or to is None or str(to).strip() == "":
+            return "Error: 'entityName' et 'to' (cible sémantique) requis."
+        return move_entity(conn, tool_input.get("mapName", ""), entity_name, to)
 
     if tool_name == "discoverMemory":
         civ_id = None

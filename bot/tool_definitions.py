@@ -424,6 +424,150 @@ TOOL_DEFINITIONS = [
         },
     },
     {
+        "name": "proposeSpawnPositions",
+        "description": (
+            "Propose des provinces de spawn (positions de départ) classées par habitabilité "
+            "sur une carte. Read-only. Chaque proposition est numérotée : pour fonder ensuite, "
+            "appelle foundSettlement(civName, at='spawn N'). Ne donne JAMAIS de coordonnée à fournir."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "n": {"type": "integer", "description": "Nb de propositions (défaut: 5)."},
+                "minSpacing": {"type": "integer", "description": "Écart min entre propositions (provinces)."},
+            },
+            "required": [],
+        },
+    },
+    {
+        "name": "foundSettlement",
+        "description": (
+            "Fonde la cité/capitale d'une civ sur une province (ÉCRITURE : pose le contrôle + "
+            "un événement 'settlement' dans l'historique). La cible 'at' est SÉMANTIQUE — "
+            "jamais de (q,r) : soit une proposition de spawn (« spawn 1 »), soit une feature/"
+            "entité nommée (« Glacial Cirque »). Valide (pas de cité en mer) et renvoie le "
+            "terrain local résultant."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Civ qui fonde (fuzzy match)."},
+                "at": {"type": "string", "description": "Cible sémantique : « spawn N » ou nom de feature/entité."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "name": {"type": "string", "description": "Nom de la cité (optionnel)."},
+            },
+            "required": ["civName", "at"],
+        },
+    },
+    {
+        "name": "findNearest",
+        "description": (
+            "Trouve la/les province(s) la/les plus proche(s) correspondant à « what » "
+            "(ressource, biome, terrain, ou eau : river/lake/ocean) depuis un point de départ "
+            "sémantique « from » (une civ placée ou une feature nommée). Rend direction + distance "
+            "en provinces, jamais de (q,r). Ex : « les Confluents ont-ils du fer proche ? »"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "from": {"type": "string", "description": "Départ : nom de civ placée ou de feature/entité."},
+                "what": {"type": "string", "description": "Ce qu'on cherche : ressource (iron/coal…), biome, terrain, ou river/lake/ocean."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "n": {"type": "integer", "description": "Nb de résultats (défaut: 3)."},
+            },
+            "required": ["from", "what"],
+        },
+    },
+    {
+        "name": "whatIsBetween",
+        "description": (
+            "Décrit le terrain et les barrières (montagnes, océan) entre les sièges de deux civs : "
+            "distance en provinces + la séquence de provinces sur le chemin. Ex : « y a-t-il une "
+            "chaîne de montagnes entre les Confluents et les Cheveux de Sang ? »"
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civA": {"type": "string", "description": "Première civ (fuzzy match)."},
+                "civB": {"type": "string", "description": "Seconde civ (fuzzy match)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["civA", "civB"],
+        },
+    },
+    {
+        "name": "recordEvent",
+        "description": (
+            "Inscrit un événement narratif sur une province (ÉCRITURE dans la chronique de la "
+            "carte) : kind = settlement|battle|discovery|diplomatic|migration|disaster|note. "
+            "La cible 'at' est SÉMANTIQUE (feature/entité nommée ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "description": "settlement|battle|discovery|diplomatic|migration|disaster|note"},
+                "at": {"type": "string", "description": "Cible sémantique : feature/entité nommée, ou « spawn N »."},
+                "description": {"type": "string", "description": "Ce qui s'est passé."},
+                "civName": {"type": "string", "description": "Civ concernée (optionnel)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["kind", "at", "description"],
+        },
+    },
+    {
+        "name": "annotate",
+        "description": (
+            "Pose un label MJ et/ou une note sur une province (ÉCRITURE). Cible 'at' SÉMANTIQUE "
+            "(feature/entité nommée ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "at": {"type": "string", "description": "Cible sémantique."},
+                "label": {"type": "string", "description": "Nom/label de la province (optionnel)."},
+                "note": {"type": "string", "description": "Note MJ (optionnel)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["at"],
+        },
+    },
+    {
+        "name": "expandTerritory",
+        "description": (
+            "Étend le territoire d'une civ en annexant des provinces terrestres libres sur sa "
+            "frontière, biaisé « toward » (une direction cardinale N/S/E/O/NE…, ou une civ/feature "
+            "nommée). Ne prend jamais l'océan ni le territoire d'une autre civ. Écriture : logge "
+            "des événements 'migration'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "civName": {"type": "string", "description": "Civ qui s'étend (fuzzy match)."},
+                "toward": {"type": "string", "description": "Direction (N/S/E/O/NE…) ou civ/feature nommée."},
+                "amount": {"type": "integer", "description": "Nb de provinces à annexer (défaut: 1)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["civName"],
+        },
+    },
+    {
+        "name": "moveEntity",
+        "description": (
+            "Déplace le pion d'une entité vers une province (ÉCRITURE, un pion par entité par carte). "
+            "Cible 'to' SÉMANTIQUE (civ/feature/entité nommée, ou « spawn N »), jamais de (q,r)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "entityName": {"type": "string", "description": "Entité à déplacer (fuzzy + alias)."},
+                "to": {"type": "string", "description": "Cible sémantique : civ/feature/entité, ou « spawn N »."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["entityName", "to"],
+        },
+    },
+    {
         "name": "deepExplore",
         "description": (
             "Analyse approfondie : lance un sous-agent qui enchaîne automatiquement searchLore, "

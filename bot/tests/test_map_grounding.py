@@ -70,6 +70,9 @@ def test_grounding_describes_seat_and_ring(db, tmp_path):
 
     assert "Terrain local" in out
     assert "(siège)" in out                      # the seat province is marked
+    # Neighbours are given by RELATIVE direction + distance, never raw (q,r).
+    assert "O à 1 province" in out and "E à 1 province" in out
+    assert "(2,0)" not in out and "(0,0)" not in out
     # Seat (1,0): coast + river + coal deposit + coal>iron potential.
     assert "coast" in out and "temperate_forest" in out
     assert "fleuve" in out and "800 000 km²" in out

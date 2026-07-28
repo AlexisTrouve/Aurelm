@@ -145,6 +145,18 @@ def test_existing_read_tool_still_works_on_ingested_map(db, tmp_path):
     assert "mountain" in out and "coast" in out   # terrains render in the overview table
 
 
+def test_overview_is_a_semantic_summary_not_a_cell_dump(db, tmp_path):
+    """The refactored overview AGGREGATES (a real world is thousands of provinces)."""
+    res = ingest_world(db, _world(tmp_path), "Terre du Milieu")
+    out = get_map_overview(db, res["map_id"], "Terre du Milieu")
+    assert "6 provinces" in out and "km/province" in out
+    assert "## Biomes" in out and "temperate_forest" in out and "alpine" in out
+    assert "## Ressources" in out and "coal" in out and "iron" in out
+    assert "## Features" in out and "Glacial Cirque" in out
+    # No raw cell table / coordinates.
+    assert "| q | r |" not in out
+
+
 def test_reingest_is_idempotent(db, tmp_path):
     w = _world(tmp_path)
     r1 = ingest_world(db, w, "Terre du Milieu")
@@ -154,6 +166,41 @@ def test_reingest_is_idempotent(db, tmp_path):
     assert n == 6                                  # replaced, not doubled
     nmaps = db.execute("SELECT COUNT(*) FROM map_maps WHERE name = 'Terre du Milieu'").fetchone()[0]
     assert nmaps == 1
+
+
+_CLI_SCHEMA = """
+CREATE TABLE map_maps (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE,
+  image_path TEXT, grid_type TEXT DEFAULT 'hex', grid_cols INTEGER, grid_rows INTEGER,
+  parent_map_id INTEGER, parent_cell_q INTEGER, parent_cell_r INTEGER, metadata TEXT,
+  created_at TEXT);
+CREATE TABLE map_cells (map_id INTEGER, q INTEGER, r INTEGER, terrain_type TEXT DEFAULT 'plain',
+  controlling_civ_id INTEGER, entity_id INTEGER, label TEXT, child_map_id INTEGER, metadata TEXT,
+  PRIMARY KEY (map_id, q, r));
+"""
+
+
+def test_cli_ingests_a_window_into_a_db_file(tmp_path):
+    import sqlite3
+    from bot.map_ingestion import main
+    dbf = tmp_path / "game.db"
+    c = sqlite3.connect(dbf)
+    c.executescript(_CLI_SCHEMA)
+    c.close()
+
+    rc = main(["--db", str(dbf), "--world", str(_world(tmp_path)),
+               "--map-name", "CLI", "--window", "1,0,2,2"])
+    assert rc == 0
+    c = sqlite3.connect(dbf)
+    n = c.execute("SELECT COUNT(*) FROM map_cells").fetchone()[0]
+    c.close()
+    assert n == 4                                    # the 2x2 window
+
+
+def test_cli_errors_helpfully_without_a_schema(tmp_path):
+    from bot.map_ingestion import main
+    rc = main(["--db", str(tmp_path / "empty.db"), "--world", str(_world(tmp_path)),
+               "--map-name", "X"])
+    assert rc == 1                                   # no map schema → clear error, not a crash
 
 
 def test_window_crop_only_ingests_the_window(db, tmp_path):
