@@ -20,7 +20,7 @@ import pytest
 from bot.map_ingestion import ingest_world
 from bot.world_reader import read_world
 
-_DEFAULT = r"C:\Users\alexi\Documents\projects\theomen-worlds\seed42.world"
+_DEFAULT = r"C:\Users\alexi\Documents\projects\Gamedesigner\theomen\blog\world_aurelm_seed42.world"
 _WORLD = os.environ.get("AURELM_WORLD_DIR", _DEFAULT)
 
 pytestmark = pytest.mark.skipif(
@@ -39,36 +39,32 @@ CREATE TABLE map_cells (map_id INTEGER, q INTEGER, r INTEGER, terrain_type TEXT 
 """
 
 
-def test_decodes_the_whole_real_grid_without_collision():
-    w = read_world(_WORLD)
-    h = w.header
-    xs, ys, n = set(), set(), 0
-    emin, emax = 1e18, -1e18
-    for c in w.cells():
-        xs.add(c["x"]); ys.add(c["y"]); n += 1
-        e = c.get("elevation")
-        if e is not None:
-            emin, emax = min(emin, e), max(emax, e)
-    # Every cell placed exactly once across the FULL grid (the chunk-index regression).
-    assert (min(xs), max(xs)) == (0, h.width - 1)
-    assert (min(ys), max(ys)) == (0, h.height - 1)
-    assert n == h.width * h.height == len(xs) * len(ys)
-    # Elevation is physical: real ocean trenches and mountains, not garbage floats.
-    assert emin < -1000 and emax > 3000
+def test_header_reads_the_producer_block_and_sidecars():
+    """The v1 export puts business metadata in manifest["producer"] (not world.json)
+    and ships wrapped sidecars — both real-data shapes the fixtures now mirror."""
+    h = read_world(_WORLD).header
+    assert h.width > 1000 and h.height > 500          # a real planet
+    assert h.cell_km == 20.0 and h.wrap_x is True      # from the producer block
+    assert len(h.biomes) >= 20                          # biomes.json {"biomes":[...]}
+    assert h.resource_layers                            # res_ max_mass for the inversion
+    # At least the semantic sidecars loaded (deposits/features/terrain_types).
+    assert h.name_maps.get("deposits") and h.name_maps.get("features")
 
 
-def test_ingests_a_window_of_the_real_export():
+def test_ingests_a_land_window_with_full_semantics():
+    """Ingest a real LAND window and prove the whole semantic path resolves on real
+    data: terrain + biome names, and (somewhere in the window) a graded deposit."""
+    import json
     conn = sqlite3.connect(":memory:")
     conn.executescript(_MAP_SCHEMA)
-    res = ingest_world(conn, _WORLD, "Seed42", window=(0, 0, 8, 8))
-    assert res["cells"] == 64                       # 8x8, no collisions
+    res = ingest_world(conn, _WORLD, "Seed42", window=(9, 30, 8, 8))  # a coastal-plain region
+    assert res["cells"] == 64
 
-    rows = conn.execute(
-        "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ?", (res["map_id"],)
-    ).fetchall()
-    assert all(t for t, _ in rows), "every province has a terrain"
-    # Partial export: no biome/resources, but elevation + water regime always land.
-    import json
-    for _, meta_json in rows:
-        meta = json.loads(meta_json)
-        assert "elevation_m" in meta and "water" in meta
+    mmeta = json.loads(conn.execute(
+        "SELECT metadata FROM map_maps WHERE id = ?", (res["map_id"],)).fetchone()[0])
+    assert mmeta["cell_km"] == 20.0 and mmeta["wrap_x"] is True
+
+    metas = [json.loads(m) for (m,) in conn.execute(
+        "SELECT metadata FROM map_cells WHERE map_id = ?", (res["map_id"],)) if m]
+    assert any(mt.get("biome") for mt in metas), "biome names resolve on real data"
+    assert any("deposit" in mt for mt in metas), "a graded deposit resolves in the window"

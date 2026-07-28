@@ -69,8 +69,13 @@ class World:
     # -- header assembly -----------------------------------------------------
 
     def _build_header(self) -> WorldHeader:
-        wj_path = self.dir / "world.json"
-        wj = json.loads(wj_path.read_text("utf-8")) if wj_path.exists() else {}
+        # Business metadata (cell_km, wrap_x, thresholds, resource max_mass…): the real
+        # export embeds it as manifest["producer"]; older exports/fixtures used a
+        # separate world.json. Prefer producer, fall back to world.json.
+        wj = self._manifest.get("producer")
+        if not wj:
+            wj_path = self.dir / "world.json"
+            wj = json.loads(wj_path.read_text("utf-8")) if wj_path.exists() else {}
         coord = self._manifest["coordinate"]
         bounds = coord["bounds"]
         # bounds.max is INCLUSIVE (SPEC §2): width = max.x - min.x + 1.

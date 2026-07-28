@@ -66,7 +66,20 @@ def build_world(
     n_fields = len(fields)
     mask_bytes = (n_fields + 7) // 8
 
-    # --- manifest.json (GroveEngine schema; bounds.max INCLUSIVE) ---
+    # Business metadata — real Theomen embeds it as manifest["producer"] (no separate
+    # world.json), so mirror that.
+    producer = world_json or {
+        "contract_version": "theomen.world.v1", "generator": "theomen", "seed": 42,
+        "grid": {"width": width, "height": height, "downsample": 1, "cell_km": 20.0},
+        "topology": {"wrap_x": True, "clamp_y": True},
+        "elevation": {"datum": "relative_to_sea_level", "sea_level_value": 0.0, "unit": "m"},
+        "thresholds": {"river_min_catchment_cells": 1500.0, "lake_min_depth_m": 15.0,
+                       "cell_area_km2": 400.0},
+        "resources": {"encoding": "log10_per_type", "log_decades": 8.0,
+                      "floor01": 1.0 / 255.0, "absence_value": 0, "layers": []},
+    }
+
+    # --- manifest.json (GroveEngine schema + producer block; bounds.max INCLUSIVE) ---
     manifest = {
         "formatVersion": 1,
         "coordinate": {
@@ -77,6 +90,7 @@ def build_world(
         },
         "fields": fields,
         "chunks": "chunks",
+        "producer": producer,
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
@@ -130,40 +144,17 @@ def build_world(
 
             (out / "chunks" / f"c_{x0}_{y0}_0.gmvc").write_bytes(bytes(blob))
 
-    # --- sidecars ---
-    wj = world_json or {
-        "contract_version": "theomen.world.v1",
-        "generator": "theomen",
-        "seed": 42,
-        "grid": {"width": width, "height": height, "downsample": 1, "cell_km": 20.0},
-        "topology": {"wrap_x": True, "clamp_y": True},
-        "elevation": {"datum": "relative_to_sea_level", "sea_level_value": 0.0, "unit": "m"},
-        "thresholds": {
-            "river_min_catchment_cells": 1500.0,
-            "lake_min_depth_m": 15.0,
-            "cell_area_km2": 400.0,
-        },
-        "resources": {
-            "encoding": "log10_per_type",
-            "log_decades": 8.0,
-            "floor01": 1.0 / 255.0,
-            "absence_value": 0,
-            "layers": [],
-        },
-        "sidecars": ["biomes.json"],
-    }
-    (out / "world.json").write_text(json.dumps(wj, indent=2), encoding="utf-8")
-
+    # --- sidecars (all WRAPPED under their plural key, as real Theomen ships them) ---
     bj = biomes if biomes is not None else [
         {"id": 0, "name": "ocean", "color": "#1a3d6b"},
         {"id": 1, "name": "temperate_forest", "color": "#3f8f43"},
         {"id": 2, "name": "alpine", "color": "#c9d6e0"},
     ]
-    # Real Theomen ships biomes.json WRAPPED as {"biomes": [...]}, not a bare list
-    # (verified on a real export). Mirror that shape so tests exercise the real form.
     (out / "biomes.json").write_text(json.dumps({"biomes": bj}, indent=2), encoding="utf-8")
 
-    # Extra name sidecars (terrain_types.json / deposits.json / features.json).
+    # Extra name sidecars (terrain_types.json / deposits.json / features.json), wrapped
+    # under their filename stem to mirror the real export.
     for fname, entries in (sidecars or {}).items():
-        (out / fname).write_text(json.dumps(entries, indent=2), encoding="utf-8")
+        key = fname.rsplit(".", 1)[0]
+        (out / fname).write_text(json.dumps({key: entries}, indent=2), encoding="utf-8")
     return out
