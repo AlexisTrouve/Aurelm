@@ -3,11 +3,12 @@
 Paste-ready briefing. Everything is on `main` (`beaff9e`), pushed to GitHub + Gitea.
 Bot suite: **231 passed / 4 skipped**. GUI: 61 unit + E2E green on `-d windows`.
 
-## Headline: the MAP system is DONE and proven end-to-end
+## Headline: the MAP system is DONE, validated on real data, and HAS A FIRST CONSUMER
 
 The chain is **Theomen (generates a world) → Aurelm (canon store + LLM tools) →
-Demiurgos (grounds its GM)**. Aurelm's whole side is built, tested, and **validated on
-the real complete Theomen v1 export**.
+Demiurgos (grounds its GM)**. Aurelm's whole side is built, tested, **validated on the
+real complete Theomen v1 export**, and **consumed successfully by Demiurgos** — its 14
+Aurelm-integration tests are green on the real world (seed → ingest → place → ground).
 
 ### 1. Ingestion (Theomen `.world` → `map_maps`/`map_cells`)
 - `bot/world_reader.py` — pure-stdlib GMVC decoder (no numpy: the bot ships 5 deps).
@@ -56,6 +57,22 @@ Demiurgos consumes Aurelm **in-process Python** (imports `bot.tools`, calls
 - Grounding is **facts + labels**, never Theomen's finished prose (the GM owns the voice).
 - **Surface**: in-process Python, so no mcp-server TS port needed for Demiurgos.
 
+**FIRST CONSUMER VALIDATED (2026-07-28).** Demiurgos's own integration is wired and
+green on the real world: `Demiurgos/seed_game.py::_seed_world` ingests the real
+`theomen-worlds/world_v1_seed42.world` via Aurelm's `ingest_world`, places civs
+(proposeSpawnPositions → place_civ), and `groundCivTerrain` returns real terrain that
+reaches the GM prompt (`server/agents/gm.py::_format_map_for_gm`, with fallback/error
+handling). Ran its tests against MY current Aurelm code (via sys.path): 14 green (3
+`test_seed_world` on the real world + 11 dispatch/write/grounding). So the real-format
+fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
+- **One gap on Demiurgos's side (message sent, not blocking)**: its
+  `server/integrations/aurelm.py::aurelm_dispatch` opens a FRESH connection per call
+  (thread-safe for reads, since tools run in `asyncio.to_thread` workers). That is fine
+  for the GM READING the map, but BREAKS turn-atomic WRITES — begin/commit/abort_turn +
+  the write tools need ONE turn connection routed through the turn's thread. Demiurgos
+  wires that when its GM starts writing (founding/expanding mid-turn). The Aurelm side
+  is ready; the fix is entirely on the consumer.
+
 ### Proof (three levels)
 - unit: 231 bot tests (`test_world_reader`, `test_map_ingestion`, `test_map_seeding`,
   `test_map_grounding`, `test_map_queries`, `test_map_writes`, `test_map_events`,
@@ -64,11 +81,14 @@ Demiurgos consumes Aurelm **in-process Python** (imports `bot.tools`, calls
   (`theomen/blog/world_aurelm_seed42.world`) decodes + ingests with full semantics.
 - live LLM: `bot/tests/live_map_probe.py` — a real model drives grounding + writes on a rich
   world (chose the right tools, GM-quality answers, wove in agent memory).
+- cross-repo: **Demiurgos's 14 Aurelm-integration tests green on the real v1 world** — the
+  first-consumer proof (run: `cd ../Demiurgos && py -3.12 -m pytest tests/test_seed_world.py
+  tests/test_aurelm_*.py tests/test_map_grounding_reaches_gm.py`).
 
 ## Open items
-- **Demiurgos wiring** — its side: route its `aurelm_dispatch` through one turn connection.
-  It will test against real grounding when a world is ingested — **ping it when there's a world
-  to ground**.
+- **Demiurgos turn-connection wiring for WRITES** — its side. Its `aurelm_dispatch` is
+  fresh-conn-per-call (reads OK, breaks turn-atomic writes). It wires the turn connection
+  when its GM starts writing to the map. Message relayed; Aurelm side is ready.
 - **Theomen SPEC doc is wrong** (code works on the real file, only the doc lies): tell Theomen
   its `SPEC_WORLD_FORMAT.md`/`CONTRAT_EXPORT_AURELM.md` should say metadata is in
   `manifest["producer"]` (not `world.json`) and sidecars are wrapped.
