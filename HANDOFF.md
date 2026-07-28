@@ -92,7 +92,19 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
 - **Theomen SPEC doc is wrong** (code works on the real file, only the doc lies): tell Theomen
   its `SPEC_WORLD_FORMAT.md`/`CONTRAT_EXPORT_AURELM.md` should say metadata is in
   `manifest["producer"]` (not `world.json`) and sidecars are wrapped.
-- **"feature discover" debt** — tech-gated content knowledge (parked, needs a model).
+- **Theomen v2 BREAKING format incoming** (heads-up 2026-07-28, NOT stable, no date, nothing to
+  code now). Point-budget generation: a cell carries a **variable-size SET of elements** summing to
+  `budget_score`, not one feature + one deposit. `feature`/`deposit` layers merge; `features.json`+
+  `deposits.json` → `elements.json`; new per-element `visible`/`hidden_level`. Binary stays
+  fixed-width (`element_count` uint8 + N layers `element_0..N-1`, N in the `producer` header) — the
+  parser principle is unchanged. **We're NOT cornered**: `map_cells.metadata` is free-form JSON →
+  **zero DB migration**. The v1 assumption lives only in the metadata convention + reader. When it
+  lands: (1) reader reads element_count + element_N layers; (2) `cell_to_record` writes
+  `meta["elements"]` list instead of single `meta["feature"]`/`meta["deposit"]` (`map_ingestion.py`
+  :129-135); (3) grounding composes the set. **`hidden_level` per element is what makes the
+  "feature discover" debt below implementable.** Do NOT freeze "one feature per cell" structurally.
+- **"feature discover" debt** — tech-gated content knowledge (parked, needs a model; Theomen v2's
+  per-element `hidden_level` is the hook that unlocks it).
 - **Minor map gaps** (low priority): `cedeTerritory` not built; `findNearest`/`whatIsBetween`
   are omniscient (not fog-aware); the agent occasionally leaks tool-call syntax to the user
   (a prompt-hygiene fix).
