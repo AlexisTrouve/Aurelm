@@ -422,6 +422,7 @@ TOOL_DEFINITIONS = [
                 "radius": {"type": "integer", "description": "Rayon en provinces (défaut: 2)."},
                 "fog": {"type": "boolean", "description": "Défaut true : ne révèle que les provinces DÉCOUVERTES par la civ (fog of war) ET gate le contenu par prospection. false = omniscience MJ (toutes provinces, tout contenu)."},
                 "maxHiddenLevel": {"type": "integer", "description": "Profondeur de prospection de la civ (défaut 0 = surface). Les éléments de hidden_level supérieur sont comptés « à prospecter », jamais nommés. Passe le niveau que débloque la techno de la civ. Ignoré si fog=false."},
+                "eventsPerCell": {"type": "integer", "description": "Nb de derniers événements de chronique (fondations, batailles, notes…) à remonter par province (défaut 2 ; 0 = aucun). Referme la boucle : ce qui a été écrit ressort dans le grounding."},
             },
             "required": ["civName"],
         },

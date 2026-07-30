@@ -102,3 +102,34 @@ def test_grounding_needs_a_placed_civ(db, tmp_path):
     # A civ with no seat gets a clear pointer, not a crash.
     out = dispatch_tool(db, "groundCivTerrain", {"civName": "Cheveux de Sang"})
     assert "pas de position" in out
+
+
+def test_grounding_reads_back_the_chronicle(db, tmp_path):
+    """A chronicle event written on the seat resurfaces in the grounding (the
+    write→read loop, Demiurgos Scribe Increment 2). This also exercises the new
+    anchor: recordEvent at='Confluence' targets the CIV's seat, not "spawn 1"."""
+    _placed(db, tmp_path)   # Confluence seat = (1,0)
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "battle", "at": "Confluence",
+                   "description": "Grande bataille du fleuve", "mapName": "Terre"})
+
+    # The event landed on the seat cell — the civ-name anchor resolved to (1,0).
+    ev = db.execute(
+        "SELECT q, r FROM map_cell_events mce JOIN map_maps m ON m.id = mce.map_id "
+        "WHERE m.name = 'Terre' AND mce.event_type = 'battle'").fetchone()
+    assert ev == (1, 0)
+
+    out = dispatch_tool(db, "groundCivTerrain", {"civName": "Confluence", "radius": 1})
+    assert "chronique" in out
+    assert "[battle]" in out and "Grande bataille du fleuve" in out
+
+
+def test_events_per_cell_zero_silences_the_chronicle(db, tmp_path):
+    """eventsPerCell=0 → the grounding carries terrain only, no chronicle."""
+    _placed(db, tmp_path)
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "note", "at": "Confluence", "description": "un secret",
+                   "mapName": "Terre"})
+    out = dispatch_tool(db, "groundCivTerrain",
+                        {"civName": "Confluence", "radius": 1, "eventsPerCell": 0})
+    assert "chronique" not in out and "un secret" not in out

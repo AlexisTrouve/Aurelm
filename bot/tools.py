@@ -3030,9 +3030,26 @@ def _describe_province(terrain: str, meta: dict, max_hidden: int | None = None) 
     return " ; ".join(seg)
 
 
+def _recent_events(conn: sqlite3.Connection, map_id: int, q: int, r: int,
+                   limit: int) -> list[tuple[str, str]]:
+    """The last `limit` chronicle events on a province, oldest-of-the-recent first.
+
+    WHY: writes (foundSettlement/recordEvent/annotate) log to map_cell_events; without
+    reading them back into the grounding, what the GM wrote never resurfaces in its own
+    prompt — the write→read loop stays open. Returns [(event_type, description), …].
+    """
+    if limit <= 0:
+        return []
+    rows = conn.execute(
+        "SELECT event_type, description FROM map_cell_events "
+        "WHERE map_id = ? AND q = ? AND r = ? ORDER BY id DESC LIMIT ?",
+        (map_id, q, r, limit)).fetchall()
+    return list(reversed(rows))  # chronological within the recent window
+
+
 def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
                        radius: int = 2, fog: bool = True,
-                       max_hidden_level: int = 0) -> str:
+                       max_hidden_level: int = 0, events_per_cell: int = 2) -> str:
     """Structured local terrain around a civ's seat(s) — the Demiurgos GM grounding.
 
     Finds where the civ is placed (controlling_civ_id), then walks the ring of
@@ -3086,7 +3103,14 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
             else:
                 prov = "province" if dist == 1 else "provinces"  # never (q,r) (§design)
                 head = f"{_direction(sq, sr, q, r)} à {dist} {prov}"
-            lines.append(f"- {head} : {_describe_province(terrain, meta, max_hidden=describe_max)}")
+            line = f"- {head} : {_describe_province(terrain, meta, max_hidden=describe_max)}"
+            # Read-back the chronicle: the events the GM wrote here resurface in its
+            # prompt, closing the write→read loop (Demiurgos Scribe, Increment 2).
+            evs = _recent_events(conn, map_id, q, r, events_per_cell)
+            if evs:
+                chron = " · ".join(f"[{t}] {(d or '')[:120]}" for t, d in evs)
+                line += f" ; chronique : {chron}"
+            lines.append(line)
         if unknown:
             prov = "province" if unknown == 1 else "provinces"
             lines.append(f"- _{unknown} {prov} voisine(s) encore inexplorée(s)._")
@@ -3212,7 +3236,10 @@ def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) ->
     """Resolve a SEMANTIC target to a cell — never a raw (q,r) from the LLM.
 
     Accepts: a spawn rank ("spawn 1" / "#2" / "3") → the Nth proposeSpawnPositions
-    candidate; or a name → a province carrying that feature / label / mapped entity.
+    candidate; a name → a province carrying that label / element / mapped entity; or a
+    CIV name → that civ's seat (its controlling_civ_id cell). The civ-seat form lets a
+    consumer (the Demiurgos Scribe) target "the seat of civ X" robustly instead of the
+    fragile "spawn 1" proxy, which drifts once civs found or name places.
     Raises ValueError with an actionable message if it can't be resolved.
     """
     s = str(at).strip()
@@ -3235,6 +3262,16 @@ def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) ->
         for e in (meta.get("elements") or []):  # any element on the cell can anchor it
             if low in (str(e.get("name", "")).lower(), str(e.get("display_name", "")).lower()):
                 return q, r
+
+    # A CIV name → its seat. Tried after exact place names (a deliberately labelled
+    # province wins) but before the fuzzy entity match, so "Confluence" targets the
+    # Confluence civ's seat rather than a loosely-matching entity.
+    civ = resolve_civ_name(conn, s)
+    if "error" not in civ:
+        seat = _civ_seat(conn, map_id, civ["civ"]["id"])
+        if seat:
+            return seat
+
     erow = conn.execute(
         "SELECT mc.q, mc.r FROM map_cells mc JOIN entity_entities e ON e.id = mc.entity_id "
         "WHERE mc.map_id = ? AND (e.canonical_name = ? OR e.canonical_name LIKE ?) LIMIT 1",
@@ -3244,7 +3281,7 @@ def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) ->
         return erow[0], erow[1]
     raise ValueError(
         f"ancrage « {at} » introuvable sur {map_name} — nomme une feature/entité, "
-        "ou une proposition de spawn (« spawn 1 »)"
+        "une civ (→ son siège), ou une proposition de spawn (« spawn 1 »)"
     )
 
 
@@ -4182,8 +4219,10 @@ def dispatch_tool(
         fog = True if fog is None else bool(fog)
         raw_mh = tool_input.get("maxHiddenLevel")
         max_hidden = 0 if raw_mh is None else max(0, int(raw_mh))
+        raw_ev = tool_input.get("eventsPerCell")
+        events_per_cell = 2 if raw_ev is None else max(0, int(raw_ev))
         return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius, fog=fog,
-                                  max_hidden_level=max_hidden)
+                                  max_hidden_level=max_hidden, events_per_cell=events_per_cell)
 
     if tool_name == "discoverAround":
         civ_name_str = tool_input.get("civName", "")
