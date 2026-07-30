@@ -1,8 +1,8 @@
 # Handoff — Aurelm (map system: ingestion + LLM tools + Demiurgos integration)
 
-Paste-ready briefing. Everything is on `main` (`32c53ef`), pushed to GitHub + Gitea.
-Bot suite: **231 passed / 4 skipped** (incl. the migrated v2 map suite). GUI: 61 unit + E2E
-green on `-d windows`.
+Paste-ready briefing. Everything is on `main` (`6c017fd`), pushed to GitHub + Gitea.
+Bot suite: **253 passed / 4 skipped** (v2 map migration + fog-aware queries, feature-discover,
+cedeTerritory, tool-syntax stripper). GUI: 61 unit + E2E green on `-d windows`.
 
 ## Headline: the MAP system is DONE, validated on real data, and HAS A FIRST CONSUMER
 
@@ -33,16 +33,20 @@ Principle (prior art: MapAgent/Spatial-Agent/grid-world/Voyager): **the LLM neve
 (q,r)** — it targets by name / relative direction / proposal id; a Python layer owns all
 geometry. The map is a **chronicle**: writes are narrative acts logged to `map_cell_events`,
 validated, with echoed local-state feedback.
-- **Reads**: `groundCivTerrain` (fog-aware, relative directions), `findNearest`,
-  `whatIsBetween`, `proposeSpawnPositions`, `getMapOverview` (a semantic SUMMARY, not a cell
-  dump), + the pre-existing `getMaps`/`getTerritory`/`findEntityOnMap`/`getCell`/`getCellHistory`.
-- **Writes**: `foundSettlement` (the socle), `expandTerritory`, `moveEntity`, `recordEvent`,
-  `annotate`, `discoverAround`. All in `dispatch_tool`; all defer commit inside a turn.
+- **Reads**: `groundCivTerrain` (fog-aware + `maxHiddenLevel` content gating), `findNearest`
+  & `whatIsBetween` (both fog-aware, default true), `proposeSpawnPositions`, `getMapOverview`
+  (a semantic SUMMARY, not a cell dump), + the pre-existing
+  `getMaps`/`getTerritory`/`findEntityOnMap`/`getCell`/`getCellHistory`.
+- **Writes**: `foundSettlement` (the socle), `expandTerritory`, `cedeTerritory` (transfer),
+  `moveEntity`, `recordEvent`, `annotate`, `discoverAround`. All in `dispatch_tool`; all defer
+  commit inside a turn.
 - **Seeding**: `bot/map_seeding.py` — `propose_spawn_positions`, `place_civ`, discovery helpers.
 
-### 3. Fog of war (V2, spatial)
+### 3. Fog of war (V2, spatial + content)
 `map_cell_discovery` per-civ; founding/expansion seed discovery, `discoverAround` explores,
 `groundCivTerrain(fog=true)` reveals only discovered provinces (`fog=false`=GM omniscience).
+Now also **content-gated**: `maxHiddenLevel` hides elements above the civ's prospecting depth
+(counted "à prospecter"), and findNearest/whatIsBetween are fog-aware too.
 **DEBT "feature discover"**: tech-gated knowledge of a province's CONTENTS (no coal in the
 neolithic) is a smarter, unresolved mechanic — parked (`map-tools-design.md §6bis`).
 
@@ -111,12 +115,14 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
   - **Cross-repo (relay to Demiurgos)**: its `seed_game.py` default world `theomen-worlds/
     world_v1_seed42.world` is MISSING (disk-full cleanup) → its real-world tests skip. Re-point it
     at the v2 export; a v1 world through the v2 code yields no elements (must use the v2 file).
-- **"feature discover" debt** — tech-gated content knowledge (parked; Theomen v2's per-element
-  `hidden_level` is now CARRIED in metadata — the hook that unblocks it; the filtering vs
-  tech-level is what's left to build).
-- **Minor map gaps** (low priority): `cedeTerritory` not built; `findNearest`/`whatIsBetween`
-  are omniscient (not fog-aware); the agent occasionally leaks tool-call syntax to the user
-  (a prompt-hygiene fix).
+- **Map gaps — CLOSED (2026-07-30, `5729fe0`+`6c017fd`).** The four map cleanups are done +
+  tested (253 bot tests): (1) **fog-aware** findNearest/whatIsBetween — a civ no longer finds
+  resources / reports barriers in land it never scouted (fog param, default true; fog=false =
+  omniscience). (2) **feature-discover** — `groundCivTerrain(maxHiddenLevel=N)` gates element
+  content by prospecting depth; deeper elements counted "à prospecter", never named. Aurelm
+  models no tech-level — Demiurgos passes the depth. (3) **cedeTerritory** — a civ transfers
+  provinces to another (diplomatic event, recipient discovers, ownership-validated). (4) the
+  agent no longer **leaks tool-call syntax** — deterministic stripper + prompt directive.
 - **Parked dogfood** (from before the map cap-change): branch `fix/dev-launcher-cwd` (the
   first-run launcher fix, tested, `4c26ae8`) is **still unmerged**; and the wizard
   activation-resumability bug (interrupted setup burns the single-use code → user locked out)

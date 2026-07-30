@@ -142,16 +142,15 @@ Les 5 points remontés par Demiurgos, résolus :
   provinces voisines non explorées sont comptées, pas décrites ; `fog=false` =
   omniscience MJ). ✅
 
-> **DETTE — « feature discover » (connaissance tech-gatée du CONTENU).** Le fog ci-dessus
-> est **spatial** (voir une province). Savoir ce qu'une province **contient** — p. ex.
-> qu'il y a du charbon — dépend du **tech-level** : une civ néolithique ne « découvre »
-> pas le charbon. Il faut une mécanique plus fine (révéler les ressources/features d'une
-> province selon la techno de la civ) — **non résolue, parkée**. Aujourd'hui, une province
-> découverte montre tout son contenu.
-> **DÉBLOCAGE V2 (2026-07-30)** : chaque élément porte désormais un `hidden_level` (0=visible,
-> >0=à prospecter), déjà stocké dans `meta["elements"]`. C'est le crochet manquant pour
-> implémenter cette dette (filtrer le grounding par `hidden_level` vs tech-level) — la donnée
-> existe, le filtrage n'est pas encore branché.
+> **« feature discover » (connaissance tech-gatée du CONTENU) — RÉSOLU (2026-07-30).** Le fog
+> spatial dit *quelles* provinces une civ voit ; ce mécanisme dit *ce qu'elle sait* du contenu
+> d'une province vue. Chaque élément porte un `hidden_level` (0=surface, >0=à prospecter).
+> `groundCivTerrain(maxHiddenLevel=N)` ne nomme que les éléments de `hidden_level ≤ N` ; les
+> plus profonds sont **comptés** (« N éléments à prospecter »), jamais nommés — la civ sent
+> qu'il y a quelque chose sans savoir quoi. `fog` est le maître d'omniscience (`fog=false` =
+> tout le contenu). **Aurelm ne modélise aucun tech-level** : Demiurgos (le moteur GM) passe la
+> profondeur que débloque la techno de la civ. Défaut `maxHiddenLevel=0` (surface). Tests :
+> `bot/tests/test_map_feature_discover.py`.
 
 ## 7. Décisions ouvertes
 - **Résolution des ancres relatives** (« vers la frontière », « au nord-est ») : jusqu'où
