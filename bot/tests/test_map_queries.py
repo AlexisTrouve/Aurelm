@@ -52,10 +52,12 @@ def _seed(db, tmp_path):
     return mid
 
 
+# The geometry tests use fog=false (GM omniscience): they assert ranking/direction,
+# orthogonal to fog. The fog behaviour has its own tests below.
 def test_find_nearest_resource_from_a_civ(db, tmp_path):
     _seed(db, tmp_path)
     out = dispatch_tool(db, "findNearest",
-                        {"from": "Confluence", "what": "iron", "mapName": "Terre"})
+                        {"from": "Confluence", "what": "iron", "mapName": "Terre", "fog": False})
     assert "Rich Iron Ore" in out                # matched by element category "iron"
     assert "E à 2 provinces" in out              # direction + distance, no (q,r)
 
@@ -63,24 +65,54 @@ def test_find_nearest_resource_from_a_civ(db, tmp_path):
 def test_find_nearest_terrain(db, tmp_path):
     _seed(db, tmp_path)
     out = dispatch_tool(db, "findNearest",
-                        {"from": "Confluence", "what": "mountain", "mapName": "Terre"})
+                        {"from": "Confluence", "what": "mountain", "mapName": "Terre", "fog": False})
     assert "E à 1 province" in out               # the mountain at (1,0)
 
 
 def test_find_nearest_none(db, tmp_path):
     _seed(db, tmp_path)
     out = dispatch_tool(db, "findNearest",
-                        {"from": "Confluence", "what": "gold", "mapName": "Terre"})
+                        {"from": "Confluence", "what": "gold", "mapName": "Terre", "fog": False})
     assert "Rien correspondant" in out
+
+
+def test_find_nearest_fog_hides_the_undiscovered(db, tmp_path):
+    """A civ can't 'find the nearest iron' in land it has never scouted (fog on = default)."""
+    _seed(db, tmp_path)                          # placed via UPDATE → nothing discovered
+    out = dispatch_tool(db, "findNearest",
+                        {"from": "Confluence", "what": "iron", "mapName": "Terre"})
+    assert "Rien correspondant" in out and "territoire exploré" in out
+
+
+def test_find_nearest_fog_lifts_after_exploration(db, tmp_path):
+    """Once the civ explores as far as the iron, fog-on findNearest sees it."""
+    _seed(db, tmp_path)
+    dispatch_tool(db, "discoverAround",
+                  {"civName": "Confluence", "radius": 2, "mapName": "Terre"})  # reaches (2,0)
+    out = dispatch_tool(db, "findNearest",
+                        {"from": "Confluence", "what": "iron", "mapName": "Terre"})  # fog on
+    assert "Rich Iron Ore" in out and "E à 2 provinces" in out
 
 
 def test_what_is_between_reports_the_mountain_barrier(db, tmp_path):
     _seed(db, tmp_path)
     out = dispatch_tool(db, "whatIsBetween",
-                        {"civA": "Confluence", "civB": "Cheveux de Sang", "mapName": "Terre"})
+                        {"civA": "Confluence", "civB": "Cheveux de Sang", "mapName": "Terre",
+                         "fog": False})
     assert "Distance : 4 provinces" in out
     assert "mountain" in out
     assert "Barrière" in out                     # the two mountains between them
+
+
+def test_what_is_between_fog_marks_unexplored(db, tmp_path):
+    """With fog on and neither civ having scouted the gap, the path reads as unexplored —
+    no phantom barrier from ground nobody has seen."""
+    _seed(db, tmp_path)
+    out = dispatch_tool(db, "whatIsBetween",
+                        {"civA": "Confluence", "civB": "Cheveux de Sang", "mapName": "Terre"})
+    assert "Distance : 4 provinces" in out       # the distance is still known
+    assert "inexplorée" in out
+    assert "Barrière" not in out                 # can't report a range nobody scouted
 
 
 def test_what_is_between_needs_both_placed(db, tmp_path):

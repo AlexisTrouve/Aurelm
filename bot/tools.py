@@ -2964,13 +2964,20 @@ def find_entity_on_map(conn: sqlite3.Connection, entity_name: str) -> str:
 # Tool: groundCivTerrain — structured local terrain around a civ (grounding)
 # --------------------------------------------------------------------------- #
 
-def _describe_province(terrain: str, meta: dict) -> str:
+def _describe_province(terrain: str, meta: dict, max_hidden: int | None = None) -> str:
     """One readable line per province, from the ingested Theomen metadata.
 
     This is the GM-facing grounding: terrain + biome + elevation, water regime, the
     point-budget element SET (deposits/landmarks/constraints with signed points),
     dominant resource potential, and whether the province is a notable place. Only
     what's present is shown.
+
+    max_hidden (feature-discover gating): elements carry a `hidden_level` (0=surface,
+    >0=must prospect). None = show every element (omniscient callers: find_nearest,
+    events…). An int = show only elements at or below that prospecting depth; deeper
+    ones are counted as "à prospecter", never named — the civ knows something is there,
+    not what. Aurelm doesn't model tech-level; the consumer (Demiurgos) passes the
+    civ's current prospecting depth per its tech.
     """
     parts: list[str] = [terrain]
     if meta.get("biome"):
@@ -2996,13 +3003,23 @@ def _describe_province(terrain: str, meta: dict) -> str:
         # old single deposit + single feature). Facts + labels only, never prose
         # (Theomen ships none); the signed points show boon vs hazard so the GM reads
         # "Uranium (+5), Contamination (−2), Steep Slopes (−2)" and writes the scene.
-        # NOTE: hidden_level is carried in the metadata but NOT filtered here — surfacing
-        # only what a civ has prospected is the (now-unblocked) "feature discover" debt.
+        # Feature-discover gating: split visible (hidden_level<=max_hidden) from the
+        # deeper elements that require prospecting (only counted, never named).
+        if max_hidden is None:
+            shown, hidden_count = els, 0
+        else:
+            shown = [e for e in els if (e.get("hidden_level") or 0) <= max_hidden]
+            hidden_count = len(els) - len(shown)
+
         def _tag(e: dict) -> str:
             nm = e.get("display_name") or e.get("name", "?")
             p = e.get("points")
             return f"{nm} ({p:+d})" if isinstance(p, int) and p else nm
-        seg.append("éléments : " + ", ".join(_tag(e) for e in els))
+        if shown:
+            seg.append("éléments : " + ", ".join(_tag(e) for e in shown))
+        if hidden_count:
+            n = "1 élément à prospecter" if hidden_count == 1 else f"{hidden_count} éléments à prospecter"
+            seg.append(n)
     pot = meta.get("resource_potential")
     if pot:
         seg.append(f"potentiel {', '.join(pot)}")
@@ -3014,7 +3031,8 @@ def _describe_province(terrain: str, meta: dict) -> str:
 
 
 def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
-                       radius: int = 2, fog: bool = True) -> str:
+                       radius: int = 2, fog: bool = True,
+                       max_hidden_level: int = 0) -> str:
     """Structured local terrain around a civ's seat(s) — the Demiurgos GM grounding.
 
     Finds where the civ is placed (controlling_civ_id), then walks the ring of
@@ -3022,11 +3040,16 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
     one 20 km province, so this is empire/region-scale geography, never local terrain.
     Crops have hard edges: neighbours outside the ingested window simply don't appear.
 
-    fog (default True): reveal only provinces the civ has DISCOVERED — a neolithic civ
-    at turn 0 knows its cradle, not a 40 km neighbourhood. The seat is always shown.
-    Undiscovered in-radius provinces are counted, not described. fog=False = GM
-    omniscience. (Spatial fog only; tech-gated knowledge of a province's CONTENTS is a
-    separate, parked mechanic — see the "feature discover" debt.)
+    fog (default True): the master omniscience switch. True = reveal only provinces the
+    civ has DISCOVERED (spatial fog — a neolithic civ at turn 0 knows its cradle) AND
+    gate each shown province's CONTENTS by prospecting depth (feature-discover). The
+    seat is always shown; undiscovered in-radius provinces are counted, not described.
+    fog=False = GM omniscience (all provinces, all contents).
+
+    max_hidden_level (default 0 = surface only, used only when fog=True): the civ's
+    prospecting depth. Elements with a higher hidden_level are counted as "à prospecter"
+    but never named — the civ senses something without knowing what. Aurelm has no
+    tech model; Demiurgos passes the depth its tech unlocks.
     """
     seats = conn.execute(
         "SELECT m.id, m.name, mc.q, mc.r FROM map_cells mc "
@@ -3038,6 +3061,8 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
         return (f"**{civ_name}** n'a pas de position sur une carte. "
                 "Place-la d'abord (proposeSpawnPositions / foundSettlement).")
 
+    # fog is the omniscience master: off → see every province AND every element.
+    describe_max = None if not fog else max_hidden_level
     lines = [f"# Terrain local — {civ_name}", ""]
     for map_id, map_name, sq, sr in seats:
         known = discovered_set(conn, map_id, civ_id) if fog else None
@@ -3061,7 +3086,7 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
             else:
                 prov = "province" if dist == 1 else "provinces"  # never (q,r) (§design)
                 head = f"{_direction(sq, sr, q, r)} à {dist} {prov}"
-            lines.append(f"- {head} : {_describe_province(terrain, meta)}")
+            lines.append(f"- {head} : {_describe_province(terrain, meta, max_hidden=describe_max)}")
         if unknown:
             prov = "province" if unknown == 1 else "provinces"
             lines.append(f"- _{unknown} {prov} voisine(s) encore inexplorée(s)._")
@@ -3300,16 +3325,21 @@ def _civ_seat(conn: sqlite3.Connection, map_id: int, civ_id: int) -> tuple[int, 
 
 
 def _origin_from(conn: sqlite3.Connection, map_id: int, map_name: str, frm: str):
-    """Resolve a semantic origin (a placed civ, or a named feature/entity) to a cell."""
+    """Resolve a semantic origin to (cell, label, civ_id).
+
+    civ_id is the resolved civ when the origin IS a placed civ (so the caller can fog
+    the search to that civ's discovered provinces), else None (a bare feature/entity
+    origin has no fog perspective → the caller searches omnisciently).
+    """
     resolved = resolve_civ_name(conn, frm)
     if "error" not in resolved:
         seat = _civ_seat(conn, map_id, resolved["civ"]["id"])
         if seat:
-            return seat, resolved["civ"]["name"]
+            return seat, resolved["civ"]["name"], resolved["civ"]["id"]
     try:
-        return _resolve_anchor(conn, map_id, map_name, frm), frm
+        return _resolve_anchor(conn, map_id, map_name, frm), frm, None
     except ValueError:
-        return None, frm
+        return None, frm, None
 
 
 def _cell_matches(terrain: str, meta: dict, what: str) -> bool:
@@ -3331,9 +3361,14 @@ def _cell_matches(terrain: str, meta: dict, what: str) -> bool:
 
 
 def find_nearest(conn: sqlite3.Connection, map_id: int, map_name: str,
-                 origin: tuple[int, int], origin_label: str, what: str, n: int = 3) -> str:
+                 origin: tuple[int, int], origin_label: str, what: str, n: int = 3,
+                 discovered: set | None = None) -> str:
     """Nearest provinces matching `what`, from a semantic origin — direction + distance,
-    never (q,r). The geometry (Chebyshev distance, ranking) stays here."""
+    never (q,r). The geometry (Chebyshev distance, ranking) stays here.
+
+    discovered (fog): when a set is passed, only provinces the origin civ has DISCOVERED
+    are searchable — a civ can't "find the nearest iron" in land it has never scouted.
+    None = omniscient (a bare feature origin, or fog explicitly off)."""
     oq, orr = origin
     wl = what.strip().lower()
     matches = []
@@ -3342,11 +3377,14 @@ def find_nearest(conn: sqlite3.Connection, map_id: int, map_name: str,
     ).fetchall():
         if q == oq and r == orr:
             continue
+        if discovered is not None and (q, r) not in discovered:
+            continue  # fog: undiscovered province is not searchable
         meta = json.loads(meta_json) if meta_json else {}
         if _cell_matches(terrain, meta, wl):
             matches.append((max(abs(q - oq), abs(r - orr)), q, r, terrain, meta))
     if not matches:
-        return f"Rien correspondant à « {what} » sur {map_name} près de {origin_label}."
+        scope = "" if discovered is None else " (dans le territoire exploré)"
+        return f"Rien correspondant à « {what} » sur {map_name} près de {origin_label}{scope}."
     matches.sort(key=lambda m: (m[0], m[1], m[2]))
     lines = [f"# « {what} » le plus proche — depuis {origin_label}", ""]
     for dist, q, r, terrain, meta in matches[:n]:
@@ -3377,8 +3415,13 @@ def _line(a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
 
 
 def what_is_between(conn: sqlite3.Connection, map_id: int, a: tuple[int, int],
-                    b: tuple[int, int], a_label: str, b_label: str) -> str:
-    """The provinces (and barriers) on the line between two civs' seats."""
+                    b: tuple[int, int], a_label: str, b_label: str,
+                    known: set | None = None) -> str:
+    """The provinces (and barriers) on the line between two civs' seats.
+
+    known (fog): when a set is passed, only provinces EITHER civ has discovered are
+    described; the rest are marked unexplored (and never count as barriers — you can't
+    report a mountain range nobody has scouted). None = omniscient (fog off)."""
     pts = _line(a, b)
     between = pts[1:-1]
     if not between:
@@ -3386,17 +3429,24 @@ def what_is_between(conn: sqlite3.Connection, map_id: int, a: tuple[int, int],
     lines = [f"# Entre {a_label} et {b_label}",
              f"Distance : {len(pts) - 1} provinces.", ""]
     barriers = []
+    unknown = 0
     for q, r in between:
         row = conn.execute(
             "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
             (map_id, q, r)).fetchone()
         if not row:
             continue
+        if known is not None and (q, r) not in known:
+            unknown += 1
+            continue  # fog: don't describe or barrier-check unscouted ground
         terrain, meta_json = row
         meta = json.loads(meta_json) if meta_json else {}
         lines.append(f"- {_describe_province(terrain, meta)}")
         if terrain in ("mountain", "ocean") or meta.get("water", {}).get("is_ocean"):
             barriers.append(terrain)
+    if unknown:
+        prov = "province" if unknown == 1 else "provinces"
+        lines.append(f"- _{unknown} {prov} inexplorée(s) sur le chemin._")
     if barriers:
         lines += ["", f"⚠️ Barrière(s) sur le chemin : {', '.join(sorted(set(barriers)))}."]
     return "\n".join(lines)
@@ -3620,6 +3670,64 @@ def move_entity(conn: sqlite3.Connection, map_name: str, entity_name: str, to) -
         (map_id, q, r)).fetchone()
     meta = json.loads(row[1]) if row and row[1] else {}
     return f"✓ {ename} déplacé sur {map_name} : {_describe_province(row[0], meta) if row else '?'}"
+
+
+def cede_territory(conn: sqlite3.Connection, from_civ_id: int, from_name: str,
+                   to_civ_id: int, to_name: str, map_name: str, at, amount: int = 1) -> str:
+    """One civ cedes provinces to another (diplomacy / conquest settlement).
+
+    Mirror of expandTerritory, but a TRANSFER not a claim. `at` is a semantic anchor to
+    a province the CEDING civ controls; amount>1 extends the cession over adjacent
+    ceding-owned provinces (a contiguous parcel). Validates ownership, flips control,
+    logs a `diplomatic` event per province, and the RECIPIENT discovers what it gained.
+    A WRITE (turn-atomic). Semantic anchor only — never (q,r).
+    """
+    resolved = _sole_map(conn, map_name)
+    if not resolved:
+        return ("Précise mapName." if not map_name else f"Carte « {map_name} » introuvable.")
+    map_id, map_name = resolved
+    if from_civ_id == to_civ_id:
+        return "Une civ ne peut pas se céder du territoire à elle-même."
+    try:
+        q, r = _resolve_anchor(conn, map_id, map_name, at)
+    except ValueError as e:
+        return f"Cession impossible : {e}."
+
+    owner = conn.execute(
+        "SELECT controlling_civ_id FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
+        (map_id, q, r)).fetchone()
+    if not owner or owner[0] != from_civ_id:
+        return (f"{from_name} ne contrôle pas la province « {at} » — "
+                "on ne peut céder que son propre territoire.")
+
+    # BFS over the ceding civ's own provinces from the anchor → a contiguous parcel.
+    from_owned = {(cq, cr) for cq, cr in conn.execute(
+        "SELECT q, r FROM map_cells WHERE map_id = ? AND controlling_civ_id = ?",
+        (map_id, from_civ_id)).fetchall()}
+    ceded: list[tuple[int, int]] = []
+    frontier, seen = [(q, r)], {(q, r)}
+    while frontier and len(ceded) < max(1, amount):
+        cq, cr = frontier.pop(0)
+        if (cq, cr) not in from_owned:
+            continue
+        ceded.append((cq, cr))
+        for nq, nr in _neighbours8(cq, cr):
+            if (nq, nr) in from_owned and (nq, nr) not in seen:
+                seen.add((nq, nr))
+                frontier.append((nq, nr))
+
+    for cq, cr in ceded:
+        conn.execute("UPDATE map_cells SET controlling_civ_id = ? "
+                     "WHERE map_id = ? AND q = ? AND r = ?", (to_civ_id, map_id, cq, cr))
+        conn.execute("INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
+                     "VALUES (?, ?, ?, ?, 'diplomatic')",
+                     (map_id, cq, cr, f"{from_name} cède cette province à {to_name}."))
+        discover(conn, map_id, to_civ_id, [(cq, cr), *_neighbours8(cq, cr)])  # the recipient sees it
+    _maybe_commit(conn)
+
+    remaining = len(from_owned) - len(ceded)
+    return (f"✓ {from_name} cède {len(ceded)} province(s) à {to_name} sur {map_name}.\n"
+            f"{from_name} : {remaining} province(s) restante(s).")
 
 
 def _clean_input(tool_input: dict) -> dict:
@@ -4072,7 +4180,10 @@ def dispatch_tool(
         radius = 2 if raw_radius is None else max(0, int(raw_radius))
         fog = tool_input.get("fog")
         fog = True if fog is None else bool(fog)
-        return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius, fog=fog)
+        raw_mh = tool_input.get("maxHiddenLevel")
+        max_hidden = 0 if raw_mh is None else max(0, int(raw_mh))
+        return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius, fog=fog,
+                                  max_hidden_level=max_hidden)
 
     if tool_name == "discoverAround":
         civ_name_str = tool_input.get("civName", "")
@@ -4131,11 +4242,16 @@ def dispatch_tool(
         frm, what = tool_input.get("from", ""), tool_input.get("what", "")
         if not frm or not what:
             return "Error: 'from' (civ/feature) et 'what' (ressource/biome/terrain/eau) requis."
-        origin, label = _origin_from(conn, map_id, map_name, frm)
+        origin, label, civ_id = _origin_from(conn, map_id, map_name, frm)
         if origin is None:
             return f"Point de départ « {frm} » introuvable (civ placée, feature ou entité)."
+        # Fog (default true) applies only when the origin is a civ (it has a discovery
+        # perspective); a bare feature origin searches omnisciently.
+        fog = tool_input.get("fog")
+        fog = True if fog is None else bool(fog)
+        discovered = discovered_set(conn, map_id, civ_id) if (fog and civ_id) else None
         return find_nearest(conn, map_id, map_name, origin, label, what,
-                            n=int(tool_input.get("n") or 3))
+                            n=int(tool_input.get("n") or 3), discovered=discovered)
 
     if tool_name == "whatIsBetween":
         resolved = _sole_map(conn, tool_input.get("mapName", ""))
@@ -4155,7 +4271,15 @@ def dispatch_tool(
             return f"{ra['civ']['name']} n'est pas placée sur {map_name}."
         if not sb:
             return f"{rb['civ']['name']} n'est pas placée sur {map_name}."
-        return what_is_between(conn, map_id, sa, sb, ra["civ"]["name"], rb["civ"]["name"])
+        # Fog (default true): a province on the path is known if EITHER civ scouted it.
+        fog = tool_input.get("fog")
+        fog = True if fog is None else bool(fog)
+        known = None
+        if fog:
+            known = (discovered_set(conn, map_id, ra["civ"]["id"])
+                     | discovered_set(conn, map_id, rb["civ"]["id"]))
+        return what_is_between(conn, map_id, sa, sb, ra["civ"]["name"], rb["civ"]["name"],
+                               known=known)
 
     if tool_name == "recordEvent":
         at = tool_input.get("at")
@@ -4194,6 +4318,25 @@ def dispatch_tool(
         if not entity_name or to is None or str(to).strip() == "":
             return "Error: 'entityName' et 'to' (cible sémantique) requis."
         return move_entity(conn, tool_input.get("mapName", ""), entity_name, to)
+
+    if tool_name == "cedeTerritory":
+        from_name_str = tool_input.get("fromCiv", "")
+        to_name_str = tool_input.get("toCiv", "")
+        if not from_name_str or not to_name_str:
+            return "Error: 'fromCiv' et 'toCiv' requis."
+        rf = resolve_civ_name(conn, from_name_str)
+        if "error" in rf:
+            return rf["error"]
+        rt = resolve_civ_name(conn, to_name_str)
+        if "error" in rt:
+            return rt["error"]
+        at = tool_input.get("at")
+        if at is None or str(at).strip() == "":
+            return "Error: 'at' is required (province cédée : feature/label/entité nommée)."
+        return cede_territory(conn, rf["civ"]["id"], rf["civ"]["name"],
+                              rt["civ"]["id"], rt["civ"]["name"],
+                              tool_input.get("mapName", ""), at,
+                              amount=int(tool_input.get("amount") or 1))
 
     # Turn transactionality — orchestration only (NOT LLM-facing, absent from
     # tool_definitions): Demiurgos's turn runner brackets a turn so map writes are

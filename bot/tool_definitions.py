@@ -420,7 +420,8 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "civName": {"type": "string", "description": "Nom de la civ (fuzzy match)."},
                 "radius": {"type": "integer", "description": "Rayon en provinces (défaut: 2)."},
-                "fog": {"type": "boolean", "description": "Défaut true : ne révèle que les provinces DÉCOUVERTES par la civ (fog of war). false = omniscience MJ."},
+                "fog": {"type": "boolean", "description": "Défaut true : ne révèle que les provinces DÉCOUVERTES par la civ (fog of war) ET gate le contenu par prospection. false = omniscience MJ (toutes provinces, tout contenu)."},
+                "maxHiddenLevel": {"type": "integer", "description": "Profondeur de prospection de la civ (défaut 0 = surface). Les éléments de hidden_level supérieur sont comptés « à prospecter », jamais nommés. Passe le niveau que débloque la techno de la civ. Ignoré si fog=false."},
             },
             "required": ["civName"],
         },
@@ -496,6 +497,7 @@ TOOL_DEFINITIONS = [
                 "what": {"type": "string", "description": "Ce qu'on cherche : ressource (iron/coal…), biome, terrain, ou river/lake/ocean."},
                 "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
                 "n": {"type": "integer", "description": "Nb de résultats (défaut: 3)."},
+                "fog": {"type": "boolean", "description": "Défaut true : si le départ est une civ, ne cherche que dans ses provinces DÉCOUVERTES. false = omniscience MJ."},
             },
             "required": ["from", "what"],
         },
@@ -513,6 +515,7 @@ TOOL_DEFINITIONS = [
                 "civA": {"type": "string", "description": "Première civ (fuzzy match)."},
                 "civB": {"type": "string", "description": "Seconde civ (fuzzy match)."},
                 "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+                "fog": {"type": "boolean", "description": "Défaut true : ne décrit que les provinces découvertes par l'une OU l'autre civ (les autres = inexplorées). false = omniscience MJ."},
             },
             "required": ["civA", "civB"],
         },
@@ -586,6 +589,27 @@ TOOL_DEFINITIONS = [
                 "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
             },
             "required": ["entityName", "to"],
+        },
+    },
+    {
+        "name": "cedeTerritory",
+        "description": (
+            "Une civ CÈDE des provinces à une autre (diplomatie/conquête) — ÉCRITURE : transfère "
+            "le contrôle + logge des événements 'diplomatic'. La cible 'at' est SÉMANTIQUE : une "
+            "province que la civ cédante contrôle (feature/label/entité nommée), jamais de (q,r). "
+            "amount>1 étend la cession aux provinces contiguës de la civ cédante. Le bénéficiaire "
+            "découvre le territoire gagné."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "fromCiv": {"type": "string", "description": "Civ qui cède (fuzzy match)."},
+                "toCiv": {"type": "string", "description": "Civ bénéficiaire (fuzzy match)."},
+                "at": {"type": "string", "description": "Province cédée : feature/label/entité nommée que la civ cédante contrôle."},
+                "amount": {"type": "integer", "description": "Nb de provinces contiguës à céder (défaut: 1)."},
+                "mapName": {"type": "string", "description": "Carte (optionnel si une seule)."},
+            },
+            "required": ["fromCiv", "toCiv", "at"],
         },
     },
     {
