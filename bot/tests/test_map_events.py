@@ -13,16 +13,19 @@ FIELDS = [
     {"name": "elevation", "encoding": "float32"},
     {"name": "biome", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "feature", "encoding": "uint", "bits": 8},
+    # v2 point-budget element set: a count + uint16 id slots (registry > 255 entries).
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
 ]
 CELLS = {
-    (0, 0): {"elevation": 100.0, "biome": 1, "terrain_type": 4, "feature": 1},
-    (1, 0): {"elevation": 30.0, "biome": 1, "terrain_type": 1, "feature": 0},
+    (0, 0): {"elevation": 100.0, "biome": 1, "terrain_type": 4, "element_count": 1, "element_0": 1},
+    (1, 0): {"elevation": 30.0, "biome": 1, "terrain_type": 1, "element_count": 0, "element_0": 0},
 }
 SIDECARS = {
     "terrain_types.json": [{"id": 1, "name": "coast"}, {"id": 4, "name": "plain"}],
-    "features.json": [{"id": 1, "name": "old_oak", "display_name": "Vieux Chêne",
-                       "category": "forest_features", "description": "Un chêne millénaire."}],
+    "elements.json": [{"id": 1, "name": "old_oak", "display_name": "Vieux Chêne",
+                       "family": "landmark", "category": "forest_features",
+                       "points": 1, "hidden_level": 0}],
 }
 WORLD_JSON = {
     "contract_version": "theomen.world.v1", "seed": 9,

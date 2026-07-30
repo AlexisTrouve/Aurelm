@@ -13,14 +13,16 @@ from bot.map_ingestion import ingest_world
 from bot.tests.fixtures.world_fixture import build_world
 from bot.tools import get_map_overview
 
-# Full contract shape — every field Theomen will ship, byte-aligned.
+# Full contract shape — every field Theomen ships, byte-aligned. v2: deposit+feature
+# merged into a point-budget element set (element_count + uint16 element_<k> slots).
 FIELDS = [
     {"name": "elevation", "encoding": "float32"},
     {"name": "biome", "encoding": "float32"},
     {"name": "temperature", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "deposit", "encoding": "uint", "bits": 8},
-    {"name": "feature", "encoding": "uint", "bits": 8},
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
+    {"name": "element_1", "encoding": "uint", "bits": 16},
     {"name": "flow_accum", "encoding": "float32"},
     {"name": "lake_depth", "encoding": "float32"},
     {"name": "budget", "encoding": "int", "bits": 8},
@@ -30,17 +32,19 @@ FIELDS = [
 
 # (x,y) -> raw per-field values (indices/raws exactly as the decoder reads them).
 _P = {"elevation": 100.0, "biome": 1, "temperature": 15.0, "terrain_type": 2,
-      "deposit": 0, "feature": 0, "flow_accum": 0.0, "lake_depth": 0.0,
-      "budget": 0, "res_iron": 0, "res_coal": 0}
+      "element_count": 0, "element_0": 0, "element_1": 0, "flow_accum": 0.0,
+      "lake_depth": 0.0, "budget": 0, "res_iron": 0, "res_coal": 0}
 CELLS = {
     (0, 0): {"elevation": -1840.0, "biome": 0, "temperature": 18.4, "terrain_type": 0,
-             "deposit": 0, "feature": 0, "flow_accum": 0.0, "lake_depth": 0.0,
-             "budget": 0, "res_iron": 0, "res_coal": 0},
+             "element_count": 0, "element_0": 0, "element_1": 0, "flow_accum": 0.0,
+             "lake_depth": 0.0, "budget": 0, "res_iron": 0, "res_coal": 0},
     (1, 0): {"elevation": 48.0, "biome": 1, "temperature": 21.7, "terrain_type": 1,
-             "deposit": 1, "feature": 0, "flow_accum": 2000.0, "lake_depth": 0.0,
+             "element_count": 1, "element_0": 1, "element_1": 0,  # coal deposit (+3)
+             "flow_accum": 2000.0, "lake_depth": 0.0,
              "budget": 3, "res_iron": 50, "res_coal": 255},
     (2, 0): {"elevation": 2610.0, "biome": 2, "temperature": -4.2, "terrain_type": 3,
-             "deposit": 2, "feature": 1, "flow_accum": 1200.0, "lake_depth": 20.0,
+             "element_count": 2, "element_0": 2, "element_1": 3,  # iron (+5) + cirque (+1)
+             "flow_accum": 1200.0, "lake_depth": 20.0,
              "budget": 6, "res_iron": 250, "res_coal": 0},
     (0, 1): dict(_P), (1, 1): dict(_P), (2, 1): dict(_P),
 }
@@ -50,16 +54,17 @@ SIDECARS = {
         {"id": 0, "name": "ocean"}, {"id": 1, "name": "coast"},
         {"id": 2, "name": "forest"}, {"id": 3, "name": "mountain"},
     ],
-    "deposits.json": [
-        {"id": 1, "name": "coal_outcrop", "display_name": "Coal Outcrop", "catalog": "coal",
-         "tier": "standard", "formation_type": "exposed_carboniferous_forest"},
-        {"id": 2, "name": "rich_iron_ore", "display_name": "Rich Iron Ore", "catalog": "iron",
-         "tier": "premium", "formation_type": "banded_iron_formation"},
-    ],
-    "features.json": [
-        {"id": 1, "name": "glacial_cirque", "display_name": "Glacial Cirque",
-         "category": "geological_formations",
-         "description": "A bowl-shaped valley carved by a glacier."},
+    # v2 point-budget registry: deposits + landmarks + constraints in one file, each
+    # with a family, signed points, and hidden_level. Fixture points sum to budget.
+    "elements.json": [
+        {"id": 1, "name": "coal_outcrop", "display_name": "Coal Outcrop", "family": "deposit",
+         "category": "coal", "formation_type": "exposed_carboniferous_forest",
+         "points": 3, "hidden_level": 0},
+        {"id": 2, "name": "rich_iron_ore", "display_name": "Rich Iron Ore", "family": "deposit",
+         "category": "iron", "formation_type": "banded_iron_formation",
+         "points": 5, "hidden_level": 0},
+        {"id": 3, "name": "glacial_cirque", "display_name": "Glacial Cirque", "family": "landmark",
+         "category": "geological_formations", "points": 1, "hidden_level": 0},
     ],
 }
 
@@ -77,7 +82,7 @@ WORLD_JSON = {
             {"field": "res_coal", "type": "coal", "max_mass": 9.02e15},
         ],
     },
-    "sidecars": ["biomes.json", "terrain_types.json", "deposits.json", "features.json"],
+    "sidecars": ["biomes.json", "terrain_types.json", "elements.json"],
 }
 
 
@@ -110,30 +115,33 @@ def test_ingest_populates_map_and_metadata(db, tmp_path):
 
     cells = _cells_by_qr(db, res["map_id"])
 
-    # Ocean cell: terrain from elevation, no biome, no deposit, no resources.
+    # Ocean cell: terrain from elevation, no biome, no elements, no resources.
     terr, meta = cells[(0, 0)]
     assert terr == "ocean"
     assert meta["water"]["is_ocean"] is True
-    assert "biome" not in meta and "deposit" not in meta and "resource_potential" not in meta
+    assert "biome" not in meta and "elements" not in meta and "resource_potential" not in meta
 
-    # River + coal deposit + iron/coal potential (coal ranks first — unambiguous raws).
+    # River + coal deposit element + iron/coal potential (coal ranks first).
     terr, meta = cells[(1, 0)]
     assert terr == "coast" and meta["biome"] == "temperate_forest"
     assert meta["water"]["is_river"] is True
     assert meta["water"]["river_catchment_km2"] == 800000   # 2000 * 400
-    assert meta["deposit"]["name"] == "coal_outcrop" and meta["deposit"]["tier"] == "standard"
-    assert meta["deposit"]["formation_type"] == "exposed_carboniferous_forest"
+    assert [e["name"] for e in meta["elements"]] == ["coal_outcrop"]
+    assert meta["elements"][0]["family"] == "deposit" and meta["elements"][0]["points"] == 3
+    assert meta["elements"][0]["formation_type"] == "exposed_carboniferous_forest"
     assert meta["resource_potential"] == ["coal", "iron"]
     assert meta["budget_score"] == 3 and meta["temperature_c"] == 21.7
 
-    # Mountain + lake + premium iron + a feature carrying GM prose.
+    # Mountain + lake + premium iron deposit + a landmark, ordered by points desc.
     terr, meta = cells[(2, 0)]
     assert terr == "mountain" and meta["biome"] == "alpine"
     assert meta["water"]["is_lake"] is True and meta["water"]["lake_depth_m"] == 20.0
     assert meta["water"]["is_river"] is False                # 1200 < 1500 threshold
-    assert meta["deposit"]["name"] == "rich_iron_ore"
-    assert meta["feature"]["name"] == "glacial_cirque"
-    assert "glacier" in meta["feature"]["description"]
+    # Sorted by points desc: iron (+5) then glacial cirque (+1).
+    assert [e["name"] for e in meta["elements"]] == ["rich_iron_ore", "glacial_cirque"]
+    assert meta["elements"][1]["family"] == "landmark"
+    # The v2 point-budget invariant holds on the ingested record: points sum to budget.
+    assert sum(e["points"] for e in meta["elements"]) == meta["budget_score"]
     assert meta["resource_potential"] == ["iron"]            # coal absent (raw 0)
     assert meta["budget_score"] == 6
 
@@ -151,8 +159,9 @@ def test_overview_is_a_semantic_summary_not_a_cell_dump(db, tmp_path):
     out = get_map_overview(db, res["map_id"], "Terre du Milieu")
     assert "6 provinces" in out and "km/province" in out
     assert "## Biomes" in out and "temperate_forest" in out and "alpine" in out
-    assert "## Ressources" in out and "coal" in out and "iron" in out
-    assert "## Features" in out and "Glacial Cirque" in out
+    # v2: elements aggregate by family and by notable display name.
+    assert "## Éléments (par famille)" in out and "deposit" in out
+    assert "## Éléments notables" in out and "Glacial Cirque" in out and "Coal Outcrop" in out
     # No raw cell table / coordinates.
     assert "| q | r |" not in out
 

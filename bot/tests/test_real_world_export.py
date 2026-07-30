@@ -40,20 +40,22 @@ CREATE TABLE map_cells (map_id INTEGER, q INTEGER, r INTEGER, terrain_type TEXT 
 
 
 def test_header_reads_the_producer_block_and_sidecars():
-    """The v1 export puts business metadata in manifest["producer"] (not world.json)
-    and ships wrapped sidecars — both real-data shapes the fixtures now mirror."""
+    """The v2 export puts business metadata in manifest["producer"] (not world.json)
+    and ships wrapped sidecars — both real-data shapes the fixtures mirror. v2 merged
+    features+deposits into a single elements.json point-budget registry."""
     h = read_world(_WORLD).header
     assert h.width > 1000 and h.height > 500          # a real planet
     assert h.cell_km == 20.0 and h.wrap_x is True      # from the producer block
     assert len(h.biomes) >= 20                          # biomes.json {"biomes":[...]}
     assert h.resource_layers                            # res_ max_mass for the inversion
-    # At least the semantic sidecars loaded (deposits/features/terrain_types).
-    assert h.name_maps.get("deposits") and h.name_maps.get("features")
+    # v2: the single elements.json registry (deposits + landmarks + constraints).
+    assert len(h.name_maps.get("elements", {})) >= 100
 
 
 def test_ingests_a_land_window_with_full_semantics():
-    """Ingest a real LAND window and prove the whole semantic path resolves on real
-    data: terrain + biome names, and (somewhere in the window) a graded deposit."""
+    """Ingest a real LAND window and prove the whole v2 semantic path resolves on real
+    data: terrain + biome names, and a point-budget element SET whose signed points sum
+    to budget_score (Theomen's core v2 contract)."""
     import json
     conn = sqlite3.connect(":memory:")
     conn.executescript(_MAP_SCHEMA)
@@ -67,4 +69,15 @@ def test_ingests_a_land_window_with_full_semantics():
     metas = [json.loads(m) for (m,) in conn.execute(
         "SELECT metadata FROM map_cells WHERE map_id = ?", (res["map_id"],)) if m]
     assert any(mt.get("biome") for mt in metas), "biome names resolve on real data"
-    assert any("deposit" in mt for mt in metas), "a graded deposit resolves in the window"
+
+    with_elements = [mt for mt in metas if mt.get("elements")]
+    assert with_elements, "a point-budget element set resolves in the window"
+    # Every resolved element carries the v2 facts (family in the known trichotomy,
+    # signed points, hidden_level), and — the invariant — the points sum to the budget.
+    for mt in with_elements:
+        els = mt["elements"]
+        assert all(e.get("family") in ("deposit", "landmark", "constraint") for e in els)
+        assert all(isinstance(e.get("points"), int) for e in els)
+        if isinstance(mt.get("budget_score"), int):
+            assert sum(e["points"] for e in els) == mt["budget_score"], \
+                "element points must sum to budget_score (v2 point-budget contract)"

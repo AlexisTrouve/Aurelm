@@ -16,23 +16,26 @@ FIELDS = [
     {"name": "biome", "encoding": "float32"},
     {"name": "temperature", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "deposit", "encoding": "uint", "bits": 8},
-    {"name": "feature", "encoding": "uint", "bits": 8},
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
     {"name": "flow_accum", "encoding": "float32"},
 ]
-# 4x1: ocean | coast+river (best) | plain | mountain+feature
+# 4x1: ocean | coast+river+coal (best) | plain | mountain+landmark
 CELLS = {
-    (0, 0): {"elevation": -1000.0, "biome": 0, "temperature": 16.0, "terrain_type": 0, "deposit": 0, "feature": 0, "flow_accum": 0.0},
-    (1, 0): {"elevation": 40.0, "biome": 1, "temperature": 16.0, "terrain_type": 1, "deposit": 1, "feature": 0, "flow_accum": 2000.0},
-    (2, 0): {"elevation": 150.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "deposit": 0, "feature": 0, "flow_accum": 0.0},
-    (3, 0): {"elevation": 2600.0, "biome": 2, "temperature": -5.0, "terrain_type": 2, "deposit": 0, "feature": 1, "flow_accum": 0.0},
+    (0, 0): {"elevation": -1000.0, "biome": 0, "temperature": 16.0, "terrain_type": 0, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
+    (1, 0): {"elevation": 40.0, "biome": 1, "temperature": 16.0, "terrain_type": 1, "element_count": 1, "element_0": 1, "flow_accum": 2000.0},
+    (2, 0): {"elevation": 150.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
+    (3, 0): {"elevation": 2600.0, "biome": 2, "temperature": -5.0, "terrain_type": 2, "element_count": 1, "element_0": 2, "flow_accum": 0.0},
 }
 SIDECARS = {
     "terrain_types.json": [{"id": 0, "name": "ocean"}, {"id": 1, "name": "coast"},
                            {"id": 2, "name": "mountain"}, {"id": 4, "name": "plain"}],
-    "deposits.json": [{"id": 1, "name": "coal_outcrop", "catalog": "coal", "tier": "standard"}],
-    "features.json": [{"id": 1, "name": "glacial_cirque", "display_name": "Glacial Cirque",
-                       "category": "geological_formations", "description": "A cirque carved by ice."}],
+    "elements.json": [
+        {"id": 1, "name": "coal_outcrop", "display_name": "Coal Outcrop", "family": "deposit",
+         "category": "coal", "points": 1, "hidden_level": 0},
+        {"id": 2, "name": "glacial_cirque", "display_name": "Glacial Cirque", "family": "landmark",
+         "category": "geological_formations", "points": 1, "hidden_level": 0},
+    ],
 }
 WORLD_JSON = {
     "contract_version": "theomen.world.v1", "seed": 3,

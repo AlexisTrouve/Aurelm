@@ -411,8 +411,9 @@ TOOL_DEFINITIONS = [
         "description": (
             "Terrain local structuré autour d'une civ (grounding géographique) : sa province "
             "d'origine + l'anneau de provinces voisines, avec biome, relief, régime d'eau "
-            "(fleuve/bassin versant, lac, océan), gisements gradués, potentiel minéral et features "
-            "notables. 1 cellule = 1 province de 20 km (échelle empire/région, pas locale)."
+            "(fleuve/bassin versant, lac, océan), l'ensemble d'éléments à budget de points "
+            "(gisements, landmarks, contraintes — avec leurs points signés) et le potentiel "
+            "minéral. 1 cellule = 1 province de 20 km (échelle empire/région, pas locale)."
         ),
         "input_schema": {
             "type": "object",

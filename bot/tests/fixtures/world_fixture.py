@@ -33,9 +33,11 @@ def _pack_field(f: dict, values: list[float]) -> bytes:
         return struct.pack("<%dB" % n, *[int(v) & 0xFF for v in values])
     if enc in ("uint", "int"):
         bits = int(f.get("bits", 8))
-        if bits != 8:
-            raise ValueError("fixture only emits uint/int at bits=8")
-        code = "B" if enc == "uint" else "b"
+        # v2 element_<k> slots are uint16 (registry > 255 entries); keep 8-bit too.
+        code = {(8, "uint"): "B", (8, "int"): "b",
+                (16, "uint"): "H", (16, "int"): "h"}.get((bits, enc))
+        if code is None:
+            raise ValueError("fixture only emits uint/int at bits=8 or 16")
         return struct.pack("<%d%s" % (n, code), *[int(v) for v in values])
     raise ValueError(f"fixture: unsupported encoding {enc!r}")
 

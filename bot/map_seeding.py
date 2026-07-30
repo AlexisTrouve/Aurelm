@@ -87,17 +87,22 @@ def _habitability(terrain: str, meta: dict) -> tuple[float, list[str]]:
         why.append("couvert forestier")
 
     # Resources are a bonus, not a requirement (a start doesn't NEED a deposit).
-    if meta.get("deposit"):
+    # Theomen v2: a deposit is now an element of family "deposit" in the cell's set;
+    # its category is the material (copper/iron/oil…).
+    deposits = [e for e in (meta.get("elements") or []) if e.get("family") == "deposit"]
+    if deposits:
         score += 1.5
-        why.append(f"gisement {meta['deposit'].get('catalog', '?')}")
+        why.append(f"gisement {deposits[0].get('category', '?')}")
     pot = meta.get("resource_potential")
     if pot:
         score += 0.5
         why.append(f"potentiel {', '.join(pot[:2])}")
 
+    # budget_score is the SIGNED sum of the element set — hazard-heavy provinces
+    # (negative constraints) are naturally penalised, notable ones rewarded.
     b = meta.get("budget_score")
     if isinstance(b, int):
-        score += b * 0.3  # unique places (rare high budget) are more interesting
+        score += b * 0.3
 
     return score, why
 

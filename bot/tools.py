@@ -2775,32 +2775,34 @@ def get_map_overview(
         "GROUP BY terrain_type ORDER BY c DESC", (map_id,)).fetchall()
     lines += ["", "## Terrains"] + [f"- {t} : {c}" for t, c in terr[:12]]
 
-    # Aggregate the semantic metadata (biomes / deposits / features) in one pass.
+    # Aggregate the semantic metadata (biomes + the point-budget element set) in one
+    # pass: elements by family (deposit/landmark/constraint) for the big picture, and
+    # by display_name for the notable ones present.
     biomes: dict = {}
-    catalogs: dict = {}
-    feats: dict = {}
+    elem_family: dict = {}
+    elem_name: dict = {}
     for (mj,) in conn.execute(
         "SELECT metadata FROM map_cells WHERE map_id = ? AND metadata IS NOT NULL", (map_id,)):
         m = json.loads(mj)
         if m.get("biome"):
             biomes[m["biome"]] = biomes.get(m["biome"], 0) + 1
-        dep = m.get("deposit") or {}
-        if dep.get("catalog"):
-            catalogs[dep["catalog"]] = catalogs.get(dep["catalog"], 0) + 1
-        f = m.get("feature") or {}
-        fn = f.get("display_name") or f.get("name")
-        if fn:
-            feats[fn] = feats.get(fn, 0) + 1
+        for e in (m.get("elements") or []):
+            fam = e.get("family")
+            if fam:
+                elem_family[fam] = elem_family.get(fam, 0) + 1
+            nm = e.get("display_name") or e.get("name")
+            if nm:
+                elem_name[nm] = elem_name.get(nm, 0) + 1
 
     def _top(d, n):
         return sorted(d.items(), key=lambda kv: -kv[1])[:n]
 
     if biomes:
         lines += ["", "## Biomes"] + [f"- {b} : {c}" for b, c in _top(biomes, 12)]
-    if catalogs:
-        lines += ["", "## Ressources (gisements)"] + [f"- {k} : {v}" for k, v in _top(catalogs, 20)]
-    if feats:
-        lines += ["", "## Features notables"] + [f"- {k} ({v})" for k, v in _top(feats, 15)]
+    if elem_family:
+        lines += ["", "## Éléments (par famille)"] + [f"- {k} : {v}" for k, v in _top(elem_family, 10)]
+    if elem_name:
+        lines += ["", "## Éléments notables"] + [f"- {k} ({v})" for k, v in _top(elem_name, 20)]
 
     civs = conn.execute(
         "SELECT c.name, COUNT(*) n FROM map_cells mc "
@@ -2965,10 +2967,10 @@ def find_entity_on_map(conn: sqlite3.Connection, entity_name: str) -> str:
 def _describe_province(terrain: str, meta: dict) -> str:
     """One readable line per province, from the ingested Theomen metadata.
 
-    This is the GM-facing grounding: terrain + biome + elevation, water regime,
-    named/graded deposit (with its free geological storytelling), dominant resource
-    potential, a landmark feature (Theomen ships prose descriptions), and whether the
-    province is a notable/unique place. Only what's present is shown.
+    This is the GM-facing grounding: terrain + biome + elevation, water regime, the
+    point-budget element SET (deposits/landmarks/constraints with signed points),
+    dominant resource potential, and whether the province is a notable place. Only
+    what's present is shown.
     """
     parts: list[str] = [terrain]
     if meta.get("biome"):
@@ -2988,23 +2990,22 @@ def _describe_province(terrain: str, meta: dict) -> str:
     if w.get("is_ocean"):
         seg.append("océan")
 
-    dep = meta.get("deposit")
-    if dep:
-        d = f"gisement {dep.get('name', '?')} ({dep.get('tier', '?')}"
-        if dep.get("formation_type"):
-            d += f", {dep['formation_type']}"
-        seg.append(d + ")")
+    els = meta.get("elements") or []
+    if els:
+        # The point-budget SET that composes this province (Theomen v2 — replaces the
+        # old single deposit + single feature). Facts + labels only, never prose
+        # (Theomen ships none); the signed points show boon vs hazard so the GM reads
+        # "Uranium (+5), Contamination (−2), Steep Slopes (−2)" and writes the scene.
+        # NOTE: hidden_level is carried in the metadata but NOT filtered here — surfacing
+        # only what a civ has prospected is the (now-unblocked) "feature discover" debt.
+        def _tag(e: dict) -> str:
+            nm = e.get("display_name") or e.get("name", "?")
+            p = e.get("points")
+            return f"{nm} ({p:+d})" if isinstance(p, int) and p else nm
+        seg.append("éléments : " + ", ".join(_tag(e) for e in els))
     pot = meta.get("resource_potential")
     if pot:
         seg.append(f"potentiel {', '.join(pot)}")
-
-    feat = meta.get("feature")
-    if feat:
-        # Facts + evocative LABEL only — never Theomen's finished sentence. The GM
-        # (Demiurgos) writes the prose in its own voice; parroting ours breaks it.
-        f = feat.get("display_name") or feat.get("name", "")
-        cat = feat.get("category")
-        seg.append(f"feature : {f}" + (f" ({cat})" if cat else ""))
 
     b = meta.get("budget_score")
     if isinstance(b, int) and b >= 5:
@@ -3206,9 +3207,9 @@ def _resolve_anchor(conn: sqlite3.Connection, map_id: int, map_name: str, at) ->
         if label and label.lower() == low:
             return q, r
         meta = json.loads(meta_json) if meta_json else {}
-        feat = meta.get("feature") or {}
-        if low in (str(feat.get("name", "")).lower(), str(feat.get("display_name", "")).lower()):
-            return q, r
+        for e in (meta.get("elements") or []):  # any element on the cell can anchor it
+            if low in (str(e.get("name", "")).lower(), str(e.get("display_name", "")).lower()):
+                return q, r
     erow = conn.execute(
         "SELECT mc.q, mc.r FROM map_cells mc JOIN entity_entities e ON e.id = mc.entity_id "
         "WHERE mc.map_id = ? AND (e.canonical_name = ? OR e.canonical_name LIKE ?) LIMIT 1",
@@ -3322,9 +3323,10 @@ def _cell_matches(terrain: str, meta: dict, what: str) -> bool:
         return True
     if what in ("ocean", "mer", "océan") and w.get("is_ocean"):
         return True
-    dep = meta.get("deposit") or {}
-    if what in (str(dep.get("catalog", "")).lower(), str(dep.get("name", "")).lower()):
-        return True
+    for e in (meta.get("elements") or []):  # match an element by name/category/family
+        if what in (str(e.get("name", "")).lower(), str(e.get("display_name", "")).lower(),
+                    str(e.get("category", "")).lower(), str(e.get("family", "")).lower()):
+            return True
     return what in [str(p).lower() for p in (meta.get("resource_potential") or [])]
 
 

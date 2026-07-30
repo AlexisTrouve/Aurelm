@@ -13,17 +13,19 @@ FIELDS = [
     {"name": "elevation", "encoding": "float32"},
     {"name": "biome", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "feature", "encoding": "uint", "bits": 8},
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
 ]
-# 3x1: plain (seat) | plain+feature | ocean (a hard frontier)
+# 3x1: plain (seat) | plain+landmark | ocean (a hard frontier)
 CELLS = {
-    (0, 0): {"elevation": 100.0, "biome": 1, "terrain_type": 4, "feature": 0},
-    (1, 0): {"elevation": 90.0, "biome": 1, "terrain_type": 4, "feature": 1},
-    (2, 0): {"elevation": -500.0, "biome": 0, "terrain_type": 0, "feature": 0},
+    (0, 0): {"elevation": 100.0, "biome": 1, "terrain_type": 4, "element_count": 0, "element_0": 0},
+    (1, 0): {"elevation": 90.0, "biome": 1, "terrain_type": 4, "element_count": 1, "element_0": 1},
+    (2, 0): {"elevation": -500.0, "biome": 0, "terrain_type": 0, "element_count": 0, "element_0": 0},
 }
 SIDECARS = {
     "terrain_types.json": [{"id": 0, "name": "ocean"}, {"id": 4, "name": "plain"}],
-    "features.json": [{"id": 1, "name": "gue", "display_name": "Gué", "category": "water_features"}],
+    "elements.json": [{"id": 1, "name": "gue", "display_name": "Gué", "family": "landmark",
+                       "category": "water_features", "points": 1, "hidden_level": 0}],
 }
 WORLD_JSON = {
     "contract_version": "theomen.world.v1", "seed": 11,

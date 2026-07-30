@@ -15,20 +15,22 @@ FIELDS = [
     {"name": "biome", "encoding": "float32"},
     {"name": "temperature", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "deposit", "encoding": "uint", "bits": 8},
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
     {"name": "flow_accum", "encoding": "float32"},
 ]
 # 5x1: A@plain | mountain | coast+iron | mountain | B@plain
 CELLS = {
-    (0, 0): {"elevation": 100.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "deposit": 0, "flow_accum": 0.0},
-    (1, 0): {"elevation": 2600.0, "biome": 2, "temperature": 0.0, "terrain_type": 2, "deposit": 0, "flow_accum": 0.0},
-    (2, 0): {"elevation": 50.0, "biome": 1, "temperature": 16.0, "terrain_type": 1, "deposit": 1, "flow_accum": 0.0},
-    (3, 0): {"elevation": 2500.0, "biome": 2, "temperature": 0.0, "terrain_type": 2, "deposit": 0, "flow_accum": 0.0},
-    (4, 0): {"elevation": 120.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "deposit": 0, "flow_accum": 0.0},
+    (0, 0): {"elevation": 100.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
+    (1, 0): {"elevation": 2600.0, "biome": 2, "temperature": 0.0, "terrain_type": 2, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
+    (2, 0): {"elevation": 50.0, "biome": 1, "temperature": 16.0, "terrain_type": 1, "element_count": 1, "element_0": 1, "flow_accum": 0.0},
+    (3, 0): {"elevation": 2500.0, "biome": 2, "temperature": 0.0, "terrain_type": 2, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
+    (4, 0): {"elevation": 120.0, "biome": 1, "temperature": 15.0, "terrain_type": 4, "element_count": 0, "element_0": 0, "flow_accum": 0.0},
 }
 SIDECARS = {
     "terrain_types.json": [{"id": 1, "name": "coast"}, {"id": 2, "name": "mountain"}, {"id": 4, "name": "plain"}],
-    "deposits.json": [{"id": 1, "name": "rich_iron_ore", "catalog": "iron", "tier": "premium"}],
+    "elements.json": [{"id": 1, "name": "rich_iron_ore", "display_name": "Rich Iron Ore",
+                       "family": "deposit", "category": "iron", "points": 2, "hidden_level": 0}],
 }
 WORLD_JSON = {
     "contract_version": "theomen.world.v1", "seed": 5,
@@ -54,7 +56,7 @@ def test_find_nearest_resource_from_a_civ(db, tmp_path):
     _seed(db, tmp_path)
     out = dispatch_tool(db, "findNearest",
                         {"from": "Confluence", "what": "iron", "mapName": "Terre"})
-    assert "rich_iron_ore" in out
+    assert "Rich Iron Ore" in out                # matched by element category "iron"
     assert "E à 2 provinces" in out              # direction + distance, no (q,r)
 
 

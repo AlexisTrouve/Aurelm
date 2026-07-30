@@ -1,7 +1,7 @@
 """Drive a REAL LLM through the map tools, end-to-end, on a semantically rich world.
 
 Not a pytest test — a probe (costs real LLM turns). It builds a full-contract
-`theomen.world.v1` stub world (biome + graded deposits + features + a river + a
+`theomen.world.v1` stub world (biome + a point-budget element set + a river + a
 mountain barrier), ingests it via the real pipeline, founds two civs, boots
 `python -m bot`, and POSTs GM questions to /chat. It prints which map tools the agent
 actually chose and its answers — the only way to see whether the tools are usable by a
@@ -42,8 +42,10 @@ FIELDS = [
     {"name": "biome", "encoding": "float32"},
     {"name": "temperature", "encoding": "float32"},
     {"name": "terrain_type", "encoding": "uint", "bits": 8},
-    {"name": "deposit", "encoding": "uint", "bits": 8},
-    {"name": "feature", "encoding": "uint", "bits": 8},
+    # v2 point-budget element set (count + uint16 id slots), replacing deposit+feature.
+    {"name": "element_count", "encoding": "uint", "bits": 8},
+    {"name": "element_0", "encoding": "uint", "bits": 16},
+    {"name": "element_1", "encoding": "uint", "bits": 16},
     {"name": "flow_accum", "encoding": "float32"},
     {"name": "res_iron", "encoding": "unorm8"},
     {"name": "res_coal", "encoding": "unorm8"},
@@ -57,19 +59,22 @@ BIOMES = [
 ]
 SIDECARS = {
     "terrain_types.json": [{"id": i, "name": n} for i, n in TERRAINS.items()],
-    "deposits.json": [
-        {"id": 1, "name": "coal_outcrop", "display_name": "Coal Outcrop", "catalog": "coal",
-         "tier": "standard", "formation_type": "exposed_carboniferous_forest"},
-        {"id": 2, "name": "rich_iron_ore", "display_name": "Rich Iron Ore", "catalog": "iron",
-         "tier": "premium", "formation_type": "banded_iron_formation"},
-    ],
-    "features.json": [
-        {"id": 1, "name": "glacial_cirque", "display_name": "Cirque Glaciaire",
-         "category": "geological_formations", "description": "x"},
-        {"id": 2, "name": "ancient_grove", "display_name": "Bosquet Ancien",
-         "category": "forest_features", "description": "x"},
-        {"id": 3, "name": "great_oak", "display_name": "Grand Chêne",
-         "category": "natural_landmarks", "description": "x"},
+    # v2: deposits + landmarks + constraints in one point-budget registry.
+    "elements.json": [
+        {"id": 1, "name": "coal_outcrop", "display_name": "Coal Outcrop", "family": "deposit",
+         "category": "coal", "formation_type": "exposed_carboniferous_forest",
+         "points": 2, "hidden_level": 0},
+        {"id": 2, "name": "rich_iron_ore", "display_name": "Rich Iron Ore", "family": "deposit",
+         "category": "iron", "formation_type": "banded_iron_formation",
+         "points": 3, "hidden_level": 0},
+        {"id": 3, "name": "glacial_cirque", "display_name": "Cirque Glaciaire", "family": "landmark",
+         "category": "geological_formations", "points": 1, "hidden_level": 0},
+        {"id": 4, "name": "ancient_grove", "display_name": "Bosquet Ancien", "family": "landmark",
+         "category": "forest_features", "points": 2, "hidden_level": 0},
+        {"id": 5, "name": "great_oak", "display_name": "Grand Chêne", "family": "landmark",
+         "category": "natural_landmarks", "points": 1, "hidden_level": 0},
+        {"id": 6, "name": "steep_slopes", "display_name": "Pentes Abruptes", "family": "constraint",
+         "category": "geological_constraints", "points": -1, "hidden_level": 0},
     ],
 }
 WORLD_JSON = {
@@ -84,17 +89,20 @@ WORLD_JSON = {
 }
 # defaults, then per-cell overrides (q, r) -> field patches
 _DEF = {"elevation": 150.0, "biome": 3, "temperature": 15.0, "terrain_type": 3,
-        "deposit": 0, "feature": 0, "flow_accum": 0.0, "res_iron": 0, "res_coal": 0}
+        "element_count": 0, "element_0": 0, "element_1": 0,
+        "flow_accum": 0.0, "res_iron": 0, "res_coal": 0}
 _OVR = {
-    (3, 0): {"elevation": 2900.0, "biome": 2, "temperature": -4.0, "terrain_type": 2, "feature": 1},
+    (3, 0): {"elevation": 2900.0, "biome": 2, "temperature": -4.0, "terrain_type": 2,
+             "element_count": 1, "element_0": 3},                               # glacial cirque
     (3, 1): {"elevation": 2800.0, "biome": 2, "temperature": -3.0, "terrain_type": 2},
     (3, 2): {"elevation": 2700.0, "biome": 2, "temperature": -3.0, "terrain_type": 2},
     (1, 1): {"elevation": 45.0, "biome": 1, "temperature": 16.0, "terrain_type": 1,
              "flow_accum": 2200.0, "res_coal": 150},   # Confluence cradle: coast + river
-    (0, 1): {"terrain_type": 3, "deposit": 1, "res_coal": 240},                 # coal west
-    (1, 0): {"biome": 1, "terrain_type": 4, "feature": 2},                      # ancient grove
-    (5, 1): {"terrain_type": 6, "feature": 3},                                  # Cheveux cradle: great oak
-    (6, 1): {"terrain_type": 3, "deposit": 2, "res_iron": 220},                 # iron east
+    # coal west, as a MIXED point-budget set: a coal deposit (+2) with steep slopes (−1).
+    (0, 1): {"terrain_type": 3, "element_count": 2, "element_0": 1, "element_1": 6, "res_coal": 240},
+    (1, 0): {"biome": 1, "terrain_type": 4, "element_count": 1, "element_0": 4},  # ancient grove
+    (5, 1): {"terrain_type": 6, "element_count": 1, "element_0": 5},              # Cheveux cradle: great oak
+    (6, 1): {"terrain_type": 3, "element_count": 1, "element_0": 2, "res_iron": 220},  # iron east
 }
 
 

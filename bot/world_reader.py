@@ -107,7 +107,8 @@ class World:
         name_maps: dict[str, dict] = {}
         for key, fname in (("features", "features.json"),
                            ("deposits", "deposits.json"),
-                           ("terrain_types", "terrain_types.json")):
+                           ("terrain_types", "terrain_types.json"),
+                           ("elements", "elements.json")):  # Theomen v2 point-budget registry
             entries = _entries(self.dir / fname, key)
             if entries:
                 name_maps[key] = entries

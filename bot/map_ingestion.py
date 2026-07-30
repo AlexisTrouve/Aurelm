@@ -45,6 +45,55 @@ def _pick(d: dict, keys: list[str]) -> dict:
     return {k: d[k] for k in keys if k in d and d[k] is not None}
 
 
+# The element fields kept on each resolved element (Theomen v2 registry keys, minus
+# `id` which is an internal index). `points` (signed, boon vs hazard) and
+# `hidden_level` (0=visible, >0=must prospect) are the two v2 additions we surface.
+_ELEMENT_KEYS = ["name", "display_name", "category", "family",
+                 "formation_type", "points", "hidden_level"]
+
+
+def _resolve_elements(cell: dict, h: WorldHeader) -> list[dict]:
+    """Resolve a cell's point-budget element SET (Theomen v2 — replaces feature+deposit).
+
+    WHY: v2 dropped "one feature + one deposit per cell". A province now carries
+    `element_count` elements whose signed point values sum to `budget_score`
+    (e.g. copper +1, caves +1, ruins +1 → a "complexe minier ancien" of budget 3;
+    uranium +5 with contamination −2 → a dangerous deposit). This composition is
+    what makes a 400 km² province legible.
+
+    COMMENT:
+    1. The registry (elements.json) maps id → element facts. No registry ⇒ nothing.
+    2. Each `element_<k>` slot holds an element ID; `element_count` is how many slots
+       are active — padding slots hold id 0 (absent from the registry). We honour the
+       count AND skip id 0 (belt and suspenders).
+    3. Keep facts+labels only (`_ELEMENT_KEYS`) — Theomen ships no prose; the GM owns
+       the voice. Order by points desc so the most significant element reads first.
+    """
+    registry = h.name_maps.get("elements")
+    if not registry:
+        return []
+    count = cell.get("element_count")
+    if count is None:
+        return []
+    # Gather the contiguous element_<k> slots the reader decoded for this cell.
+    ids: list = []
+    k = 0
+    while f"element_{k}" in cell:
+        ids.append(cell[f"element_{k}"])
+        k += 1
+    n = int(round(count))
+    out: list[dict] = []
+    for eid in ids[:n] if n else ids:  # active slots only
+        e = int(round(eid))
+        if e == 0:
+            continue  # padding, not an element
+        entry = registry.get(e)
+        if entry:
+            out.append(_pick(entry, _ELEMENT_KEYS))
+    out.sort(key=lambda el: el.get("points", 0), reverse=True)
+    return out
+
+
 def _resource_potential(cell: dict, h: WorldHeader, top: int = 3) -> list[str]:
     """Top-K material types by ABSOLUTE mass at this cell (SPEC §5).
 
@@ -126,13 +175,9 @@ def cell_to_record(cell: dict, h: WorldHeader) -> tuple[str, dict]:
         water["river_catchment_km2"] = round(fa * thr.get("cell_area_km2", 400.0))
     meta["water"] = water
 
-    dep = _resolve_idx(cell.get("deposit"), h.name_maps.get("deposits"))
-    if dep:
-        meta["deposit"] = _pick(dep, ["name", "display_name", "catalog", "tier",
-                                     "yield", "extraction_difficulty", "formation_type"])
-    feat = _resolve_idx(cell.get("feature"), h.name_maps.get("features"))
-    if feat:
-        meta["feature"] = _pick(feat, ["name", "display_name", "category", "description"])
+    elements = _resolve_elements(cell, h)
+    if elements:
+        meta["elements"] = elements
 
     pot = _resource_potential(cell, h)
     if pot:
