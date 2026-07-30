@@ -123,10 +123,14 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
   models no tech-level — Demiurgos passes the depth. (3) **cedeTerritory** — a civ transfers
   provinces to another (diplomatic event, recipient discovers, ownership-validated). (4) the
   agent no longer **leaks tool-call syntax** — deterministic stripper + prompt directive.
-- **Parked dogfood** (from before the map cap-change): branch `fix/dev-launcher-cwd` (the
-  first-run launcher fix, tested, `4c26ae8`) is **still unmerged**; and the wizard
-  activation-resumability bug (interrupted setup burns the single-use code → user locked out)
-  is unfixed. The dogfood is the real-signal item whenever it resumes.
+- **Dogfood blockers — CLEARED (2026-07-30, `b200bac`+`3e2d9f3`).** Both first-run bugs are
+  fixed + on main: (1) the **launcher cwd** crash (dev `py -m bot` → "No module named bot" when
+  the DB is outside the repo) — resolve the repo root from the EXE, not the DB dir (6 launcher
+  tests). (2) the **wizard lock-out** — an interrupted setup burned the single-use activation
+  code; now the wizard resumes past activation when a key is already sealed (2 widget tests,
+  RED without the fix). Nothing on the Aurelm side blocks the dogfood now — the remaining work
+  is Arthur/Alexi actually RUNNING the first-run (real code, Discord app, Ollama). The stale
+  local branch `fix/dev-launcher-cwd` is now redundant (cherry-picked to main) — safe to delete.
 - **Disk-full** (2026-07-28): C: hit 100% (a system issue, not this work — another session is
   clearing it). All map validation this session was in-memory. Watch for disk errors.
 
