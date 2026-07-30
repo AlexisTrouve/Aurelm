@@ -1,9 +1,35 @@
 # Plan — Ingestion carte (source Theomen) + grounding pour Demiurgos
 
 > Réponse d'Aurelm au brief `Demiurgos/AURELM-BRIEF-map-ingestion.md`.
-> **Statut : ✅ IMPLÉMENTÉ + VALIDÉ SUR LE VRAI EXPORT V1 (2026-07-28).** Le plan ci-dessous
-> a été construit ; la partie tools/agent est dans `map-tools-design.md`. Voir « État final »
-> juste en dessous pour ce qui a divergé du plan à la mesure du réel.
+> **Statut : ✅ IMPLÉMENTÉ + MIGRÉ EN V2 + VALIDÉ SUR LE VRAI EXPORT V2 (2026-07-30).** Le plan
+> ci-dessous a été construit ; la partie tools/agent est dans `map-tools-design.md`. Voir
+> « État final » juste en dessous pour ce qui a divergé du plan à la mesure du réel.
+
+---
+
+## ⚠️ MISE À JOUR V2 — modèle à budget de points (2026-07-30, cassant)
+
+Theomen a shippé le **format v2** (`export_version: 4`, contrat toujours `theomen.world.v1`).
+Tout le corps du plan ci-dessous décrit le modèle **v1** (une `feature` + un `deposit` par
+cellule) — **c'est périmé**. Ce que le code fait réellement aujourd'hui :
+
+- Une province ne porte plus 1 feature + 1 gisement, mais un **ENSEMBLE d'éléments** de taille
+  variable dont les points signés **somment à `budget_score`** (invariant vérifié sur le réel :
+  `Natural Harbor +3, River Delta +2, Flood Plain −1` → budget 4).
+- `features.json` + `deposits.json` → **un seul `elements.json`** (registre de 268 entrées,
+  familles `deposit`/`landmark`/`constraint`). Les chunks portent `element_count` (uint8) +
+  `element_0..7` (**uint16**, ids dans le registre).
+- Chaque élément : `{name, display_name, category, family, formation_type, points, hidden_level}`
+  — **pas de prose** (`description` supprimé). `hidden_level` (0=visible, >0=à prospecter)
+  débloque la dette « feature discover » (porté en metadata, filtrage pas encore construit).
+- Ingestion : `map_ingestion._resolve_elements` construit **`meta["elements"]`** (liste triée
+  par points desc). **Zéro migration DB** (`map_cells.metadata` = blob JSON libre). Le grounding,
+  `get_map_overview`, l'ancrage et `find_nearest` lisent tous la liste.
+- Validé sur le vrai export v2 `theomen/blog/world_aurelm_seed42.world` (planète 1625×812,
+  registre 268, invariant Σpoints==budget). 231 tests bot verts.
+
+Le reste du document (modèle v1) est conservé pour l'historique de conception, mais **la source
+de vérité est le code**, pas ce texte.
 
 ---
 

@@ -1,11 +1,17 @@
 # Design — les tools carte pour un LLM (read + write)
 
-> **Statut : IMPLÉMENTÉ (branche `feat/map-tools`, TDD).** Les 10 tools + le CLI sont
-> livrés et testés (bot suite 221 passed / 4 skipped) ; build order §6 tout coché.
+> **Statut : IMPLÉMENTÉ (branche `feat/map-tools`, TDD) + MIGRÉ V2 (2026-07-30).** Les 10 tools
+> + le CLI sont livrés et testés (bot suite 231 passed / 4 skipped) ; build order §6 tout coché.
 > Compagnon de
 > [`map-ingestion-plan.md`](map-ingestion-plan.md) : celui-là décrit comment un monde
 > Theomen entre dans la base ; **celui-ci décrit l'interface agent/LLM** au-dessus —
 > comment le MJ (et le Context Agent de Demiurgos) *perçoit* et *modifie* la carte.
+>
+> **V2 (modèle à budget de points)** : là où ce doc dit « feature » / « gisement », le format
+> réel porte maintenant un **ensemble d'éléments** par province (familles
+> `deposit`/`landmark`/`constraint`, points signés qui somment à `budget_score`). L'ancrage par
+> nom (« Glacial Cirque ») marche toujours — il résout le `display_name` d'un élément. Détail :
+> le bandeau V2 en tête de `map-ingestion-plan.md`.
 
 ---
 
@@ -127,8 +133,9 @@ Les 5 points remontés par Demiurgos, résolus :
   encadrent un tour ; les writes carte s'accumulent sans commit, `abortTurn` les jette
   → zéro canon orphelin si le tour rollback. Orchestration-only (absent de
   tool_definitions). ✅
-- **Prose** : le grounding rend **faits + labels** (nom + catégorie de feature), jamais
-  la prose finie de Theomen — la plume reste au GM. ✅
+- **Prose** : le grounding rend **faits + labels** — en v2, l'ensemble d'éléments avec leurs
+  points signés (`Uranium (+5), Contamination (−2)`), jamais de prose (v2 n'en ship aucune ;
+  `description` supprimé du registre) — la plume reste au GM. ✅
 - **Fog of war (V2, SPATIAL)** : `map_cell_discovery` par-civ ; la fondation/expansion
   sème la découverte du siège + voisinage, `discoverAround(civName, around, radius)`
   fait explorer, `groundCivTerrain(..., fog=true)` ne révèle que le découvert (les
@@ -141,6 +148,10 @@ Les 5 points remontés par Demiurgos, résolus :
 > pas le charbon. Il faut une mécanique plus fine (révéler les ressources/features d'une
 > province selon la techno de la civ) — **non résolue, parkée**. Aujourd'hui, une province
 > découverte montre tout son contenu.
+> **DÉBLOCAGE V2 (2026-07-30)** : chaque élément porte désormais un `hidden_level` (0=visible,
+> >0=à prospecter), déjà stocké dans `meta["elements"]`. C'est le crochet manquant pour
+> implémenter cette dette (filtrer le grounding par `hidden_level` vs tech-level) — la donnée
+> existe, le filtrage n'est pas encore branché.
 
 ## 7. Décisions ouvertes
 - **Résolution des ancres relatives** (« vers la frontière », « au nord-est ») : jusqu'où
