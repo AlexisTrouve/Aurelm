@@ -91,6 +91,46 @@ def _result_summary(result_text: str) -> str:
     return result_text[:100]
 
 
+# Tool-call syntax some models leak into TEXT instead of the tool_calls channel:
+# vendor special tokens (<|python_tag|>, <|tool_calls_begin|>), function/tool_call
+# wrappers, [TOOL_CALLS] markers. No legitimate French GM answer contains any of
+# these, so stripping them is safe. Paired wrappers take the inner payload with them.
+_TOOL_BLOCK_RE = re.compile(
+    r"<function(?:_call)?\b[^>]*>.*?</function(?:_call)?\s*>"
+    r"|<tool_call\b[^>]*>.*?</tool_call\s*>"
+    r"|\[TOOL_CALLS?\].*?\[/TOOL_CALLS?\]",
+    re.IGNORECASE | re.DOTALL,
+)
+_TOOL_TOKEN_RE = re.compile(
+    r"<\|[^|>]*\|>"                        # vendor special tokens
+    r"|</?function(?:_call)?\b[^>]*>"      # stray/unpaired function tags
+    r"|</?tool_call\b[^>]*>"               # stray tool_call tags
+    r"|\[/?TOOL_(?:CALLS?|REQUEST)\]",     # stray markers
+    re.IGNORECASE,
+)
+
+
+def _strip_tool_call_syntax(text: str) -> str:
+    """Remove tool-call wrapper syntax a model leaked into its prose.
+
+    WHY: the model must call tools via the tool_calls channel; some models (esp. via an
+    OpenAI-compat proxy) instead emit the wrapper syntax as CONTENT, which then reaches
+    the user verbatim. A system-prompt instruction asks them not to, but can't GUARANTEE
+    it — this deterministic pass is the enforceable backstop (low-trust doctrine).
+
+    COMMENT: only unambiguous vendor markers are stripped (never legitimate GM text);
+    paired wrappers remove their inner payload too; leftover whitespace is collapsed.
+    Returns the cleaned text (may be empty if the message was ALL leak).
+    """
+    if not text or ("<" not in text and "[" not in text):
+        return text  # fast path: no marker character present at all
+    cleaned = _TOOL_BLOCK_RE.sub("", text)
+    cleaned = _TOOL_TOKEN_RE.sub("", cleaned)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 def _estimate_tokens(messages: list[dict]) -> int:
     """Rough token estimate: total chars across message content, divided by 4."""
     total = 0
@@ -218,7 +258,18 @@ def _load_system_prompt(db_path: str | None = None, include_notes: bool = True) 
         except Exception:
             pass  # notes table may not exist on older DBs
 
-    if not parts:
+    # Tool-hygiene directive: always appended. Some models leak tool-call wrapper
+    # syntax into their prose; instruct against it (a deterministic stripper in the
+    # streaming loop is the enforceable backstop, since a prompt can't guarantee it).
+    parts.append(
+        "## Appels d'outils\n"
+        "Pour utiliser un outil, passe TOUJOURS par le canal d'appel d'outil prévu — "
+        "n'écris JAMAIS la syntaxe d'un appel d'outil (balises de fonction, tokens "
+        "spéciaux, JSON d'appel) dans ta réponse visible. L'utilisateur ne doit voir "
+        "que ta réponse en français, jamais la mécanique des outils."
+    )
+
+    if len(parts) == 1:  # only the hygiene directive → no persona/domain loaded
         return "Tu es Aurelm, archiviste expert du monde de jeu. Reponds en francais."
     return "\n\n---\n\n".join(parts)
 
@@ -599,7 +650,9 @@ class Agent:
                 # Assistant turn that requested tools → execute → feed results → loop.
                 messages.append({
                     "role": "assistant",
-                    "content": "".join(content_parts) or None,
+                    # Strip any leaked tool-call syntax before it re-enters history
+                    # (else the model sees its own leak next turn and reinforces it).
+                    "content": _strip_tool_call_syntax("".join(content_parts)) or None,
                     "tool_calls": [
                         {"id": s["id"], "type": "function",
                          "function": {"name": s["name"], "arguments": s["args"] or "{}"}}
@@ -627,8 +680,10 @@ class Agent:
                     yield ("tool_result", tc_info)
                 continue
 
-            # No tools requested → final answer.
-            text = "".join(content_parts) or "(Pas de reponse.)"
+            # No tools requested → final answer. Strip any leaked tool-call syntax so
+            # the settled bubble + persisted message are clean (the live deltas may have
+            # flashed it, but this is what the user keeps).
+            text = _strip_tool_call_syntax("".join(content_parts)) or "(Pas de reponse.)"
             yield ("text", {"content": text, "tool_calls": collected_tool_calls})
             return
 
