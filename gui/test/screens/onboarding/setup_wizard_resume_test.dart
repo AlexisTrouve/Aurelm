@@ -48,4 +48,56 @@ void main() {
       expect(find.byKey(const Key('db_submit')), findsNothing);
     });
   });
+
+  group('SetupWizard DB step — the user can choose the DB location + name', () {
+    // The wizard is tall and its Column is not scrollable, so a default 800x600 test
+    // surface pushes the picker button off-screen and taps miss it. setSurfaceSize
+    // actually resizes the render surface (tester.view.physicalSize does not move the
+    // layout for hit-testing here).
+    Future<void> _tallSurface(WidgetTester tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+    }
+
+    testWidgets('the picker button sets the chosen path (folder + filename)',
+        (tester) async {
+      await _tallSurface(tester);
+      final original = dbLocationPicker;
+      addTearDown(() => dbLocationPicker = original); // don't leak into other tests
+      const picked = 'D:/Jeux/Aurelm/campagne_arthur.db';
+      var called = false;
+      dbLocationPicker = ({required suggestedName, required initialDirectory}) async {
+        called = true;
+        return picked;
+      };
+
+      await tester.pumpWidget(_wizard(true)); // sealed key → resumes at the DB step
+      await tester.pump(); // past the resolving spinner
+
+      expect(find.byKey(const Key('db_pick_location')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('db_pick_location')));
+      await tester.pumpAndSettle();
+
+      expect(called, isTrue, reason: 'the button must invoke the native picker');
+      // The chosen custom path is now what the step shows (and what prepare will use).
+      expect(find.text(picked), findsOneWidget);
+    });
+
+    testWidgets('cancelling the picker leaves the path unchanged', (tester) async {
+      await _tallSurface(tester);
+      final original = dbLocationPicker;
+      addTearDown(() => dbLocationPicker = original);
+      dbLocationPicker =
+          ({required suggestedName, required initialDirectory}) async => null; // cancel
+
+      await tester.pumpWidget(_wizard(true));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const Key('db_pick_location')));
+      await tester.pumpAndSettle();
+
+      // No custom path picked → no phantom path shown.
+      expect(find.text('D:/Jeux/Aurelm/campagne_arthur.db'), findsNothing);
+    });
+  });
 }

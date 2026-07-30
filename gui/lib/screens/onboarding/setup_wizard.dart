@@ -1,14 +1,41 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import '../../models/ollama_models.dart';
 import '../../providers/discord_provider.dart';
 import '../../providers/enrollment_provider.dart';
 import '../../providers/pipeline_setup_provider.dart';
 import '../../services/discord_service.dart';
+
+/// Opens a native "Save As" dialog for the database file, returning the chosen full
+/// path (folder + filename) or null if cancelled.
+///
+/// WHY a seam (a top-level function var, not an inline call): the picker is a native
+/// OS dialog that `flutter_test` cannot drive, so tests swap in a fake that returns a
+/// fixed path. Reset it in tearDown. `saveFile` (not `pickFiles`) is deliberate — the
+/// DB does not exist yet, so we let the user name a NEW file, not open an existing one.
+typedef DbLocationPicker = Future<String?> Function({
+  required String suggestedName,
+  required String initialDirectory,
+});
+
+Future<String?> _nativeDbLocationPicker({
+  required String suggestedName,
+  required String initialDirectory,
+}) =>
+    FilePicker.platform.saveFile(
+      dialogTitle: 'Emplacement de la base Aurelm',
+      fileName: suggestedName,
+      initialDirectory: initialDirectory.isEmpty ? null : initialDirectory,
+    );
+
+/// Overridable in tests; the native dialog in production.
+DbLocationPicker dbLocationPicker = _nativeDbLocationPicker;
 
 /// First-run wizard — the only moment Aurelm needs the network to set itself up.
 ///
@@ -212,6 +239,25 @@ class _DatabaseStepState extends ConsumerState<_DatabaseStep> {
     if (ok && mounted) widget.onDone();
   }
 
+  /// Let the user pick the DB folder AND filename via the native file explorer.
+  /// Seeds the dialog with the current choice when there is one; otherwise a bare
+  /// default name and no forced directory (the OS opens somewhere sensible). A cancel
+  /// leaves the current choice untouched.
+  ///
+  /// WHY not seed from defaultDbPath(): resolving the documents dir is a platform call
+  /// we don't want to block the picker on — the suggested filename is enough, and the
+  /// real default is still applied at prepare() time when the user picks nothing.
+  Future<void> _pickLocation() async {
+    final base = _chosenPath;
+    final chosen = await dbLocationPicker(
+      suggestedName: base != null ? p.basename(base) : 'aurelm.db',
+      initialDirectory: base != null ? p.dirname(base) : '',
+    );
+    if (chosen != null && chosen.trim().isNotEmpty && mounted) {
+      setState(() => _chosenPath = chosen);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dbSetupProvider);
@@ -249,7 +295,17 @@ class _DatabaseStepState extends ConsumerState<_DatabaseStep> {
             );
           },
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            key: const Key('db_pick_location'),
+            icon: const Icon(Icons.folder_open, size: 16),
+            label: const Text("Changer l'emplacement / le nom…"),
+            onPressed: state.isPreparing ? null : _pickLocation,
+          ),
+        ),
+        const SizedBox(height: 12),
         FilledButton(
           key: const Key('db_submit'),
           onPressed: state.isPreparing ? null : _submit,
