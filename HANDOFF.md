@@ -1,13 +1,15 @@
 # Handoff — Aurelm (map system: ingestion + LLM tools + Demiurgos integration)
 
-Paste-ready briefing. Everything is on `main` (`beaff9e`), pushed to GitHub + Gitea.
-Bot suite: **231 passed / 4 skipped**. GUI: 61 unit + E2E green on `-d windows`.
+Paste-ready briefing. Everything is on `main` (`32c53ef`), pushed to GitHub + Gitea.
+Bot suite: **231 passed / 4 skipped** (incl. the migrated v2 map suite). GUI: 61 unit + E2E
+green on `-d windows`.
 
 ## Headline: the MAP system is DONE, validated on real data, and HAS A FIRST CONSUMER
 
 The chain is **Theomen (generates a world) → Aurelm (canon store + LLM tools) →
-Demiurgos (grounds its GM)**. Aurelm's whole side is built, tested, **validated on the
-real complete Theomen v1 export**, and **consumed successfully by Demiurgos** — its 14
+Demiurgos (grounds its GM)**. Aurelm's whole side is built, tested, **migrated to and
+validated on the real complete Theomen v2 point-budget export** (see the v2 open item
+below — v1 feature+deposit is gone), and **consumed successfully by Demiurgos** — its 14
 Aurelm-integration tests are green on the real world (seed → ingest → place → ground).
 
 ### 1. Ingestion (Theomen `.world` → `map_maps`/`map_cells`)
@@ -77,13 +79,17 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
 - unit: 231 bot tests (`test_world_reader`, `test_map_ingestion`, `test_map_seeding`,
   `test_map_grounding`, `test_map_queries`, `test_map_writes`, `test_map_events`,
   `test_map_expand`, `test_map_fog`, `test_map_turn`).
-- real bytes: `bot/tests/test_real_world_export.py` (opt-in) — the complete v1 export
-  (`theomen/blog/world_aurelm_seed42.world`) decodes + ingests with full semantics.
+- real bytes: `bot/tests/test_real_world_export.py` (opt-in) — the complete **v2** export
+  (`theomen/blog/world_aurelm_seed42.world`) decodes + ingests with full semantics, and the
+  point-budget invariant `sum(element points)==budget_score` holds on the ingested records.
 - live LLM: `bot/tests/live_map_probe.py` — a real model drives grounding + writes on a rich
   world (chose the right tools, GM-quality answers, wove in agent memory).
-- cross-repo: **Demiurgos's 14 Aurelm-integration tests green on the real v1 world** — the
-  first-consumer proof (run: `cd ../Demiurgos && py -3.12 -m pytest tests/test_seed_world.py
-  tests/test_aurelm_*.py tests/test_map_grounding_reaches_gm.py`).
+- cross-repo: Demiurgos's 14 Aurelm-integration tests were green on the real world as of
+  2026-07-28 (v1). **STALE since the v2 migration**: its default world file
+  `theomen-worlds/world_v1_seed42.world` is now missing (disk-full cleanup) so those real-world
+  tests skip; re-point Demiurgos at the v2 export and re-run to re-confirm the first-consumer
+  proof (`cd ../Demiurgos && py -3.12 -m pytest tests/test_seed_world.py tests/test_aurelm_*.py
+  tests/test_map_grounding_reaches_gm.py`).
 
 ## Open items
 - **Demiurgos turn-connection wiring for WRITES** — its side. Its `aurelm_dispatch` is
@@ -92,19 +98,22 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
 - **Theomen SPEC doc is wrong** (code works on the real file, only the doc lies): tell Theomen
   its `SPEC_WORLD_FORMAT.md`/`CONTRAT_EXPORT_AURELM.md` should say metadata is in
   `manifest["producer"]` (not `world.json`) and sidecars are wrapped.
-- **Theomen v2 BREAKING format incoming** (heads-up 2026-07-28, NOT stable, no date, nothing to
-  code now). Point-budget generation: a cell carries a **variable-size SET of elements** summing to
-  `budget_score`, not one feature + one deposit. `feature`/`deposit` layers merge; `features.json`+
-  `deposits.json` → `elements.json`; new per-element `visible`/`hidden_level`. Binary stays
-  fixed-width (`element_count` uint8 + N layers `element_0..N-1`, N in the `producer` header) — the
-  parser principle is unchanged. **We're NOT cornered**: `map_cells.metadata` is free-form JSON →
-  **zero DB migration**. The v1 assumption lives only in the metadata convention + reader. When it
-  lands: (1) reader reads element_count + element_N layers; (2) `cell_to_record` writes
-  `meta["elements"]` list instead of single `meta["feature"]`/`meta["deposit"]` (`map_ingestion.py`
-  :129-135); (3) grounding composes the set. **`hidden_level` per element is what makes the
-  "feature discover" debt below implementable.** Do NOT freeze "one feature per cell" structurally.
-- **"feature discover" debt** — tech-gated content knowledge (parked, needs a model; Theomen v2's
-  per-element `hidden_level` is the hook that unlocks it).
+- **Theomen v2 point-budget format — DONE (migrated + validated 2026-07-30, `4696161`+`32c53ef`).**
+  Theomen shipped v2 (`export_version 4`, still `theomen.world.v1`) at `theomen/blog/
+  world_aurelm_seed42.world`. A cell now carries a **variable-size SET of elements** whose signed
+  points sum to `budget_score` (invariant verified on real data). `features.json`+`deposits.json` →
+  single `elements.json` (268-entry registry, families deposit/landmark/constraint); chunks carry
+  `element_count` (uint8) + `element_0..7` (uint16 ids). **Zero DB migration** (metadata = JSON
+  blob). Code: `world_reader` loads elements.json; `map_ingestion._resolve_elements` → `meta[
+  "elements"]`; grounding/overview/anchor/find_nearest read the set; `map_seeding` uses family +
+  signed budget. All map fixtures migrated v1→v2; 231 bot tests pass; real-v2 test asserts
+  sum(points)==budget. `hidden_level` per element is now carried in metadata.
+  - **Cross-repo (relay to Demiurgos)**: its `seed_game.py` default world `theomen-worlds/
+    world_v1_seed42.world` is MISSING (disk-full cleanup) → its real-world tests skip. Re-point it
+    at the v2 export; a v1 world through the v2 code yields no elements (must use the v2 file).
+- **"feature discover" debt** — tech-gated content knowledge (parked; Theomen v2's per-element
+  `hidden_level` is now CARRIED in metadata — the hook that unblocks it; the filtering vs
+  tech-level is what's left to build).
 - **Minor map gaps** (low priority): `cedeTerritory` not built; `findNearest`/`whatIsBetween`
   are omniscient (not fog-aware); the agent occasionally leaks tool-call syntax to the user
   (a prompt-hygiene fix).
