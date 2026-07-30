@@ -35,6 +35,30 @@ class SetupWizard extends ConsumerStatefulWidget {
 class _SetupWizardState extends ConsumerState<SetupWizard> {
   int _step = 0;
 
+  /// True until we've resolved which step to START on. WHY: the activation code is
+  /// single-use and consumed the instant the key is sealed. If setup is interrupted
+  /// AFTER activation but before the wizard finishes (setup_complete never flips),
+  /// a naive restart would show the activation step again and ask for a code that is
+  /// already burned — locking the user out. So on mount we skip activation when a key
+  /// is already sealed. The later steps (DB migrate, Discord, pipeline) are idempotent
+  /// and safe to re-run, so we only ever skip the one irreversible step.
+  bool _resolvingStart = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveStartStep();
+  }
+
+  Future<void> _resolveStartStep() async {
+    final hasKey = await ref.read(keyStoreProvider).hasKey();
+    if (!mounted) return;
+    setState(() {
+      _step = hasKey ? 1 : 0; // key already sealed → resume past activation
+      _resolvingStart = false;
+    });
+  }
+
   Future<void> _finish() async {
     await ref.read(keyStoreProvider).markSetupComplete();
     // Re-read the flag; the app swaps the wizard for the real UI when it flips.
@@ -43,6 +67,12 @@ class _SetupWizardState extends ConsumerState<SetupWizard> {
 
   @override
   Widget build(BuildContext context) {
+    // Hold a spinner until the start step is known, so a returning user doesn't see
+    // the activation step flash before we skip it.
+    if (_resolvingStart) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final steps = <({String title, Widget body})>[
       (title: 'Activation', body: _ActivationStep(onDone: () => setState(() => _step = 1))),
       (title: 'Base', body: _DatabaseStep(onDone: () => setState(() => _step = 2))),
