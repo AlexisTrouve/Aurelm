@@ -3031,25 +3031,39 @@ def _describe_province(terrain: str, meta: dict, max_hidden: int | None = None) 
 
 
 def _recent_events(conn: sqlite3.Connection, map_id: int, q: int, r: int,
-                   limit: int) -> list[tuple[str, str]]:
+                   limit: int, since_game_time: int | None = None) -> list[tuple[str, str]]:
     """The last `limit` chronicle events on a province, oldest-of-the-recent first.
 
     WHY: writes (foundSettlement/recordEvent/annotate) log to map_cell_events; without
     reading them back into the grounding, what the GM wrote never resurfaces in its own
     prompt — the write→read loop stays open. Returns [(event_type, description), …].
+
+    since_game_time (aging cutoff, computed by Demiurgos from its clock — Aurelm holds NO
+    aging policy): when given, drop events older than the cutoff (`game_time < cutoff`).
+    Unstamped events (game_time IS NULL) are NOT time-filtered — you can't compare NULL to
+    a cutoff, and Demiurgos owns unknown-time handling. The LIMIT applies AFTER the cutoff,
+    so it composes with eventsPerCell (the N most-recent events that survive the cutoff).
     """
     if limit <= 0:
         return []
-    rows = conn.execute(
-        "SELECT event_type, description FROM map_cell_events "
-        "WHERE map_id = ? AND q = ? AND r = ? ORDER BY id DESC LIMIT ?",
-        (map_id, q, r, limit)).fetchall()
+    if since_game_time is None:
+        rows = conn.execute(
+            "SELECT event_type, description FROM map_cell_events "
+            "WHERE map_id = ? AND q = ? AND r = ? ORDER BY id DESC LIMIT ?",
+            (map_id, q, r, limit)).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT event_type, description FROM map_cell_events "
+            "WHERE map_id = ? AND q = ? AND r = ? "
+            "AND (game_time IS NULL OR game_time >= ?) ORDER BY id DESC LIMIT ?",
+            (map_id, q, r, since_game_time, limit)).fetchall()
     return list(reversed(rows))  # chronological within the recent window
 
 
 def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
                        radius: int = 2, fog: bool = True,
-                       max_hidden_level: int = 0, events_per_cell: int = 2) -> str:
+                       max_hidden_level: int = 0, events_per_cell: int = 2,
+                       since_game_time: int | None = None) -> str:
     """Structured local terrain around a civ's seat(s) — the Demiurgos GM grounding.
 
     Finds where the civ is placed (controlling_civ_id), then walks the ring of
@@ -3106,7 +3120,7 @@ def ground_civ_terrain(conn: sqlite3.Connection, civ_id: int, civ_name: str,
             line = f"- {head} : {_describe_province(terrain, meta, max_hidden=describe_max)}"
             # Read-back the chronicle: the events the GM wrote here resurface in its
             # prompt, closing the write→read loop (Demiurgos Scribe, Increment 2).
-            evs = _recent_events(conn, map_id, q, r, events_per_cell)
+            evs = _recent_events(conn, map_id, q, r, events_per_cell, since_game_time)
             if evs:
                 chron = " · ".join(f"[{t}] {(d or '')[:120]}" for t, d in evs)
                 line += f" ; chronique : {chron}"
@@ -3499,7 +3513,8 @@ _EVENT_KINDS = {"settlement", "battle", "discovery", "diplomatic",
 
 
 def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
-                 description: str, civ_name: str | None = None) -> str:
+                 description: str, civ_name: str | None = None,
+                 game_time: int | None = None) -> str:
     """Log a narrative event on a province — the generic write (battle, discovery…).
 
     Same discipline as foundSettlement: semantic anchor → validate the event kind →
@@ -3522,9 +3537,11 @@ def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
         return f"Événement impossible : {e}."
 
     desc = description if not civ_name else f"{description} ({civ_name})"
+    # game_time = in-game year (Demiurgos's clock), stored verbatim for aging. NULL when
+    # unstamped — Aurelm never invents it.
     conn.execute(
-        "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
-        "VALUES (?, ?, ?, ?, ?)", (map_id, q, r, desc, k))
+        "INSERT INTO map_cell_events (map_id, q, r, description, event_type, game_time) "
+        "VALUES (?, ?, ?, ?, ?, ?)", (map_id, q, r, desc, k, game_time))
     _maybe_commit(conn)
     row = conn.execute(
         "SELECT terrain_type, metadata FROM map_cells WHERE map_id = ? AND q = ? AND r = ?",
@@ -3535,7 +3552,8 @@ def record_event(conn: sqlite3.Connection, map_name: str, kind: str, at,
 
 
 def annotate(conn: sqlite3.Connection, map_name: str, at,
-             label: str | None = None, note: str | None = None) -> str:
+             label: str | None = None, note: str | None = None,
+             game_time: int | None = None) -> str:
     """Set a GM label and/or attach a note to a province (semantic anchor)."""
     resolved = _sole_map(conn, map_name)
     if not resolved:
@@ -3554,8 +3572,8 @@ def annotate(conn: sqlite3.Connection, map_name: str, at,
                      (label, map_id, q, r))
     if note:
         conn.execute(
-            "INSERT INTO map_cell_events (map_id, q, r, description, event_type) "
-            "VALUES (?, ?, ?, ?, 'note')", (map_id, q, r, note))
+            "INSERT INTO map_cell_events (map_id, q, r, description, event_type, game_time) "
+            "VALUES (?, ?, ?, ?, 'note', ?)", (map_id, q, r, note, game_time))
     _maybe_commit(conn)
     done = ", ".join(p for p in (f"label « {label} »" if label else "",
                                  "note ajoutée" if note else "") if p)
@@ -4221,8 +4239,11 @@ def dispatch_tool(
         max_hidden = 0 if raw_mh is None else max(0, int(raw_mh))
         raw_ev = tool_input.get("eventsPerCell")
         events_per_cell = 2 if raw_ev is None else max(0, int(raw_ev))
+        raw_since = tool_input.get("sinceGameTime")
+        since_game_time = None if raw_since is None else int(raw_since)
         return ground_civ_terrain(conn, civ["id"], civ["name"], radius=radius, fog=fog,
-                                  max_hidden_level=max_hidden, events_per_cell=events_per_cell)
+                                  max_hidden_level=max_hidden, events_per_cell=events_per_cell,
+                                  since_game_time=since_game_time)
 
     if tool_name == "discoverAround":
         civ_name_str = tool_input.get("civName", "")
@@ -4328,16 +4349,22 @@ def dispatch_tool(
         if tool_input.get("civName"):
             cr = resolve_civ_name(conn, tool_input["civName"])
             civ_name = cr["civ"]["name"] if "error" not in cr else tool_input["civName"]
+        raw_gt = tool_input.get("gameTime")
+        game_time = None if raw_gt is None else int(raw_gt)
         return record_event(conn, tool_input.get("mapName", ""),
                             tool_input.get("kind", ""), at,
-                            tool_input.get("description", ""), civ_name=civ_name)
+                            tool_input.get("description", ""), civ_name=civ_name,
+                            game_time=game_time)
 
     if tool_name == "annotate":
         at = tool_input.get("at")
         if at is None or str(at).strip() == "":
             return "Error: 'at' is required (feature/entité nommée, ou « spawn N »)."
+        raw_gt = tool_input.get("gameTime")
+        game_time = None if raw_gt is None else int(raw_gt)
         return annotate(conn, tool_input.get("mapName", ""), at,
-                        label=tool_input.get("label"), note=tool_input.get("note"))
+                        label=tool_input.get("label"), note=tool_input.get("note"),
+                        game_time=game_time)
 
     if tool_name == "expandTerritory":
         civ_name_str = tool_input.get("civName", "")

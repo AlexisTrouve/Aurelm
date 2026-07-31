@@ -194,6 +194,7 @@ CREATE TABLE map_cell_events (
     turn_id     INTEGER REFERENCES turn_turns(id),
     description TEXT    NOT NULL,
     event_type  TEXT    NOT NULL DEFAULT 'note',
+    game_time   INTEGER,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

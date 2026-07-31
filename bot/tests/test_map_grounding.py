@@ -133,3 +133,41 @@ def test_events_per_cell_zero_silences_the_chronicle(db, tmp_path):
     out = dispatch_tool(db, "groundCivTerrain",
                         {"civName": "Confluence", "radius": 1, "eventsPerCell": 0})
     assert "chronique" not in out and "un secret" not in out
+
+
+def test_game_time_is_stored_and_ages_the_read_back(db, tmp_path):
+    """Demiurgos stamps events with an in-game year (gameTime) and passes a cutoff
+    (sinceGameTime); Aurelm stores the stamp and filters mechanically — no aging policy
+    of its own. An old event drops out of the grounding, a recent one stays."""
+    _placed(db, tmp_path)
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "discovery", "at": "Confluence", "gameTime": 5,
+                   "description": "un homme taille le silex", "mapName": "Terre"})
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "battle", "at": "Confluence", "gameTime": 200,
+                   "description": "la guerre des fonderies", "mapName": "Terre"})
+
+    # The stamp is stored verbatim on the row.
+    stamps = {d: gt for d, gt in db.execute(
+        "SELECT description, game_time FROM map_cell_events "
+        "WHERE description LIKE '%silex%' OR description LIKE '%fonderies%'")}
+    assert stamps["un homme taille le silex"] == 5
+    assert stamps["la guerre des fonderies"] == 200
+
+    # Cutoff at year 100: the neolithic discovery ages out, the recent war stays.
+    out = dispatch_tool(db, "groundCivTerrain",
+                        {"civName": "Confluence", "radius": 0, "sinceGameTime": 100})
+    assert "guerre des fonderies" in out
+    assert "silex" not in out
+
+
+def test_unstamped_events_are_never_time_filtered(db, tmp_path):
+    """An event with no gameTime (NULL) can't be compared to a cutoff — Aurelm lets it
+    through and leaves unknown-time handling to Demiurgos."""
+    _placed(db, tmp_path)
+    dispatch_tool(db, "recordEvent",
+                  {"kind": "note", "at": "Confluence",
+                   "description": "événement sans date", "mapName": "Terre"})  # no gameTime
+    out = dispatch_tool(db, "groundCivTerrain",
+                        {"civName": "Confluence", "radius": 0, "sinceGameTime": 100})
+    assert "événement sans date" in out
