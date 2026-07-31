@@ -20,7 +20,9 @@ Aurelm-integration tests are green on the real world (seed → ingest → place 
   log10-per-type resource densities + rank top-K, build the semantic per-cell record into
   `map_cells.metadata`, **crop-on-ingest** (decode the planet, write only the game's window),
   idempotent. CLI: `python -m bot.map_ingestion --db … --world … --map-name … [--window x,y,w,h]`.
-- Migrations: 035 (`map_maps.metadata`), 036 (`map_cell_discovery`, fog).
+- Migrations: 041 (`map_maps.metadata`), 042 (`map_cell_discovery`, fog) — renumbered from
+  035/036 to resolve a duplicate-number collision (the runner keyed by number and silently
+  skipped the 2nd of a pair; now a SET-based apply + a loud duplicate-number guard).
 - **Real-format truths the frozen SPEC got wrong** (caught by the real file, fixed):
   metadata is in `manifest["producer"]` NOT `world.json`; sidecars are **wrapped**
   (`{"biomes":[...]}`, `{"deposits":[...]}`…) not bare lists; a chunk's `coord.x/y` is a
@@ -145,7 +147,7 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
 
 ## Key files
 - `bot/world_reader.py`, `bot/map_ingestion.py`, `bot/map_seeding.py`, the map tools in
-  `bot/tools.py` (+ `tool_definitions.py`), migrations 035/036.
+  `bot/tools.py` (+ `tool_definitions.py`), migrations 041/042.
 - `docs/map-tools-design.md` (the tools design + fog + turn transactionality),
   `docs/map-ingestion-plan.md` (ingestion + the real-format corrections).
 - Contract (Theomen repo): `Gamedesigner/theomen/docs/{SPEC_WORLD_FORMAT,CONTRAT_EXPORT_AURELM}.md`.

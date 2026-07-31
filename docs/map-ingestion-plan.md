@@ -37,7 +37,8 @@ de vérité est le code**, pas ce texte.
 
 - **Ingestion** : `bot/world_reader.py` (décodeur GMVC stdlib) + `bot/map_ingestion.py`
   (résolution des noms via sidecars, inversion log10 des ressources, record sémantique
-  → `map_cells.metadata`, **crop-on-ingest**, idempotent) + migration 035 (`map_maps.metadata`).
+  → `map_cells.metadata`, **crop-on-ingest**, idempotent) + migration 041 (`map_maps.metadata`,
+  renumbered from 035 to resolve a number collision — see the migration-runner note below).
   CLI : `python -m bot.map_ingestion`.
 - **Deux corrections de FORMAT** que le contrat gelé n'avait pas cernées, attrapées par le
   **vrai export** (`theomen/blog/world_aurelm_seed42.world`, planète 1625×812) — le SPEC

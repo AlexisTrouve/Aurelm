@@ -62,3 +62,52 @@ def test_missing_migrations_dir_raises_not_skips(tmp_path, monkeypatch):
     )
     with pytest.raises(FileNotFoundError, match="database/migrations"):
         apply_migrations(str(tmp_path / "x.db"))
+
+
+def _versions(db) -> list[int]:
+    return [r[0] for r in sqlite3.connect(db).execute(
+        "SELECT version FROM _schema_version ORDER BY version")]
+
+
+def test_fresh_db_records_each_version_once(tmp_path):
+    """The collision bug (two 035_/036_ files) double-recorded versions AND, on an
+    incremental upgrade, silently dropped the 2nd of a pair. A fresh DB must now record
+    every migration exactly once — no duplicate version rows."""
+    db = tmp_path / "fresh.db"
+    apply_migrations(str(db))
+    vers = _versions(db)
+    assert len(vers) == len(set(vers)), f"duplicate version rows: {vers}"
+
+
+def test_fresh_db_has_the_previously_colliding_map_migrations(tmp_path):
+    """The two migrations that shared numbers with pipeline/civ ones must both land:
+    map_maps.metadata (was 035) and the map_cell_discovery table (was 036). Before the
+    renumber, a DB at the colliding number never got the second one."""
+    db = tmp_path / "fresh.db"
+    apply_migrations(str(db))
+    conn = sqlite3.connect(db)
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    assert "map_cell_discovery" in tables            # was 036_map_cell_discovery
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(map_maps)")}
+    assert "metadata" in cols                        # was 035_map_maps_metadata
+
+
+def test_reapplying_migrations_is_idempotent(tmp_path):
+    """Running the migrator twice is a no-op: no crash, no new rows."""
+    db = tmp_path / "fresh.db"
+    apply_migrations(str(db))
+    before = _versions(db)
+    apply_migrations(str(db))                        # second run
+    assert _versions(db) == before
+
+
+def test_duplicate_migration_number_fails_loudly(tmp_path, monkeypatch):
+    """Two files sharing a number must raise (the SET-based apply would otherwise skip
+    the second silently) — the guard that stops this class of bug recurring."""
+    migs = tmp_path / "migs"
+    migs.mkdir()
+    (migs / "001_alpha.sql").write_text("CREATE TABLE alpha (x INTEGER);", encoding="utf-8")
+    (migs / "001_beta.sql").write_text("CREATE TABLE beta (x INTEGER);", encoding="utf-8")
+    monkeypatch.setattr("bot.migrations._find_migrations_dir", lambda _db: migs)
+    with pytest.raises(ValueError, match="duplicate migration number 1"):
+        apply_migrations(str(tmp_path / "dup.db"))

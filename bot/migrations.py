@@ -108,35 +108,51 @@ def apply_migrations(db_path: str) -> None:
     )
     conn.commit()
 
-    # Get current schema version
-    cursor = conn.execute("SELECT COALESCE(MAX(version), 0) FROM _schema_version")
-    current_version = cursor.fetchone()[0]
-
-    # Find all migrations
-    migration_files = sorted(migrations_dir.glob("*.sql"))
-
-    for mig_file in migration_files:
-        # Extract version from filename (NNN_name.sql)
+    # Parse each migration's version from its NNN_ prefix (in filename order).
+    parsed: list[tuple[int, Path]] = []
+    for mig_file in sorted(migrations_dir.glob("*.sql")):
         try:
             version = int(mig_file.stem.split("_")[0])
         except (ValueError, IndexError):
             log.warning(f"Skipping invalid migration file: {mig_file.name}")
             continue
+        parsed.append((version, mig_file))
 
-        # Apply if not yet applied
-        if version > current_version:
-            log.info(f"Applying migration {version}: {mig_file.name}")
-            try:
-                with open(mig_file, "r", encoding="utf-8") as f:
-                    sql = f.read()
-                _execute_migration_sql(conn, sql, migrations_dir)
-                conn.execute("INSERT INTO _schema_version (version) VALUES (?)", (version,))
-                conn.commit()
-                log.info(f"Migration {version} applied successfully")
-            except Exception as e:
-                log.error(f"Failed to apply migration {version}: {e}")
-                conn.rollback()
-                raise
+    # Guard: two files sharing a number is a bug — the apply step keys by number, so
+    # the second would be silently skipped. This shipped once (035/036 map vs
+    # pipeline/civ collisions left map_cell_discovery uncreated on some DBs), so we
+    # now fail loudly at dev time instead of losing a table in prod.
+    seen: dict[int, str] = {}
+    for version, mig_file in parsed:
+        if version in seen:
+            raise ValueError(
+                f"duplicate migration number {version}: {seen[version]} and "
+                f"{mig_file.name} — renumber one (each NNN_ prefix must be unique)."
+            )
+        seen[version] = mig_file.name
+
+    # Apply every migration whose number is NOT already recorded — a SET membership
+    # check, not "> MAX(version)". WHY: the old max-based check silently skipped any
+    # migration added with a number <= the DB's current max (a late file, or the 2nd
+    # of a duplicate pair). A set applies each unique-numbered migration exactly once,
+    # regardless of insertion order; unique numbers are guaranteed by the guard above.
+    applied = {row[0] for row in conn.execute("SELECT version FROM _schema_version")}
+    for version, mig_file in parsed:
+        if version in applied:
+            continue
+        log.info(f"Applying migration {version}: {mig_file.name}")
+        try:
+            with open(mig_file, "r", encoding="utf-8") as f:
+                sql = f.read()
+            _execute_migration_sql(conn, sql, migrations_dir)
+            conn.execute("INSERT INTO _schema_version (version) VALUES (?)", (version,))
+            conn.commit()
+            applied.add(version)
+            log.info(f"Migration {version} applied successfully")
+        except Exception as e:
+            log.error(f"Failed to apply migration {version}: {e}")
+            conn.rollback()
+            raise
 
     conn.close()
-    log.info(f"Database schema up to date (version {current_version})")
+    log.info(f"Database schema up to date ({len(applied)} migrations applied)")
