@@ -214,3 +214,58 @@ final ollamaPullProvider =
     StateNotifierProvider<OllamaPullNotifier, PullState>((ref) {
   return OllamaPullNotifier(ref);
 });
+
+/// Drives the ONE-CLICK Ollama runtime install (download + silent install), then
+/// chains straight into pulling the recommended model — so a fresh machine (Arthur's)
+/// goes from "no Ollama" to "engine ready" without a manual step. State is null until
+/// an install starts.
+class OllamaInstallNotifier extends StateNotifier<InstallProgress?> {
+  final Ref _ref;
+  StreamSubscription<InstallProgress>? _sub;
+
+  OllamaInstallNotifier(this._ref) : super(null);
+
+  /// True while a download/install is in flight (not yet done or errored).
+  bool get running =>
+      state != null &&
+      state!.phase != InstallPhase.done &&
+      state!.phase != InstallPhase.error;
+
+  void install() {
+    if (running) return;
+    state = const InstallProgress(InstallPhase.downloading, fraction: 0);
+    _sub?.cancel();
+    _sub = _ref.read(ollamaServiceProvider).installOllama().listen((p) {
+      state = p;
+      if (p.phase == InstallPhase.done) {
+        _sub?.cancel();
+        // Ollama is up — refresh the status probe and pull the recommended model
+        // straight away, so "installer Ollama + le modèle" is a single action.
+        _ref.invalidate(ollamaStatusProvider);
+        _ref
+            .read(ollamaPullProvider.notifier)
+            .download(_ref.read(pipelineSetupProvider).ollamaModel);
+      } else if (p.phase == InstallPhase.error) {
+        _sub?.cancel();
+      }
+    }, onError: (Object e) {
+      state = InstallProgress(InstallPhase.error, error: '$e');
+    });
+  }
+
+  void reset() {
+    _sub?.cancel();
+    state = null;
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+}
+
+final ollamaInstallProvider =
+    StateNotifierProvider<OllamaInstallNotifier, InstallProgress?>((ref) {
+  return OllamaInstallNotifier(ref);
+});

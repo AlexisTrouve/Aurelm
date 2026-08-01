@@ -11,6 +11,7 @@ import '../../providers/discord_provider.dart';
 import '../../providers/enrollment_provider.dart';
 import '../../providers/pipeline_setup_provider.dart';
 import '../../services/discord_service.dart';
+import '../../services/ollama_service.dart';
 
 /// Opens a native "Save As" dialog for the database file, returning the chosen full
 /// path (folder + filename) or null if cancelled.
@@ -756,16 +757,43 @@ class _OllamaPanel extends ConsumerWidget {
           const _StatusLine(ok: false, text: 'Impossible de détecter Ollama.'),
       data: (s) {
         if (!s.reachable) {
+          // Ollama absent → offer a one-click automatic install (download + silent
+          // install + recommended model). The manual path stays as a fallback.
+          final inst = ref.watch(ollamaInstallProvider);
+          if (inst != null && inst.phase != InstallPhase.error) {
+            return _OllamaInstallProgress(inst);
+          }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _StatusLine(
-                ok: false,
-                text: 'Ollama n\'est pas détecté. Installe-le puis récupère le modèle :',
+              const _StatusLine(ok: false, text: 'Ollama n\'est pas détecté.'),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                key: const Key('ollama_auto_install'),
+                icon: const Icon(Icons.download, size: 18),
+                label: const Text('Installer Ollama + le modèle (automatique)'),
+                onPressed: () => ref.read(ollamaInstallProvider.notifier).install(),
               ),
-              const SizedBox(height: 8),
-              const _CopyCommand('ollama pull $kDefaultOllamaModel'),
               const SizedBox(height: 4),
+              Text(
+                'Télécharge et installe Ollama depuis internet, puis récupère le '
+                'modèle conseillé — aucune étape manuelle. Gros téléchargement '
+                '(plusieurs Go) ; tu peux aussi cliquer « Terminer » et le lancer plus tard.',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+              if (inst?.phase == InstallPhase.error) ...[
+                const SizedBox(height: 8),
+                Text(inst!.error ?? 'Échec de l\'installation.',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    textAlign: TextAlign.center),
+              ],
+              const SizedBox(height: 12),
+              // Manual fallback, for a locked-down machine or an offline install.
+              Text('Ou installe-le manuellement :',
+                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              const _CopyCommand('ollama pull $kDefaultOllamaModel'),
               TextButton(
                 onPressed: () => ref.invalidate(ollamaStatusProvider),
                 child: const Text('Revérifier'),
@@ -801,6 +829,39 @@ class _OllamaPanel extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// Live progress of the automatic Ollama runtime install (download → install →
+/// start). The model pull that follows is shown by the reachable branch once the
+/// status probe flips.
+class _OllamaInstallProgress extends StatelessWidget {
+  final InstallProgress inst;
+  const _OllamaInstallProgress(this.inst);
+
+  @override
+  Widget build(BuildContext context) {
+    final (String label, double? frac) = switch (inst.phase) {
+      InstallPhase.downloading => (
+          inst.fraction != null
+              ? 'Téléchargement d\'Ollama — ${(inst.fraction! * 100).toStringAsFixed(0)} %'
+              : 'Téléchargement d\'Ollama…',
+          inst.fraction),
+      InstallPhase.installing => ('Installation d\'Ollama…', null),
+      InstallPhase.starting => ('Démarrage d\'Ollama…', null),
+      InstallPhase.done => ('Ollama prêt — récupération du modèle…', 1.0),
+      InstallPhase.error => (inst.error ?? 'Échec de l\'installation.', null),
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LinearProgressIndicator(value: frac),
+        const SizedBox(height: 6),
+        Text(label,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center),
+      ],
     );
   }
 }
