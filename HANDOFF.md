@@ -1,16 +1,19 @@
 # Handoff — Aurelm (map system: ingestion + LLM tools + Demiurgos integration)
 
-Paste-ready briefing. Everything is on `main` (`6c017fd`), pushed to GitHub + Gitea.
-Bot suite: **253 passed / 4 skipped** (v2 map migration + fog-aware queries, feature-discover,
-cedeTerritory, tool-syntax stripper). GUI: 61 unit + E2E green on `-d windows`.
+Paste-ready briefing. Everything is on `main` (`44371d2`), pushed to GitHub + Gitea.
+Bot suite: **261 passed / 4 skipped** (v2 map migration, fog-aware queries, feature-discover,
+cedeTerritory, tool-syntax stripper, chronicle read-back + civ-seat anchor, event aging,
+migration-runner hardening). GUI: 66 unit + E2E green on `-d windows`.
 
-## Headline: the MAP system is DONE, validated on real data, and HAS A FIRST CONSUMER
+## Headline: the MAP system is DONE, validated on real data, and CONSUMED IN PROD
 
 The chain is **Theomen (generates a world) → Aurelm (canon store + LLM tools) →
 Demiurgos (grounds its GM)**. Aurelm's whole side is built, tested, **migrated to and
-validated on the real complete Theomen v2 point-budget export** (see the v2 open item
-below — v1 feature+deposit is gone), and **consumed successfully by Demiurgos** — its 14
-Aurelm-integration tests are green on the real world (seed → ingest → place → ground).
+validated on the real complete Theomen v2 point-budget export** (v1 feature+deposit is
+gone), and **consumed by Demiurgos in prod** — its Scribe writes the chronicle on a turn
+connection (commit persists / abort discards, E2E-verified) and reads it back into the GM
+prompt. Three consumer-driven requests shipped TDD this session: chronicle read-back,
+civ-seat anchor, and in-game-time event aging.
 
 ### 1. Ingestion (Theomen `.world` → `map_maps`/`map_cells`)
 - `bot/world_reader.py` — pure-stdlib GMVC decoder (no numpy: the bot ships 5 deps).
@@ -35,10 +38,18 @@ Principle (prior art: MapAgent/Spatial-Agent/grid-world/Voyager): **the LLM neve
 (q,r)** — it targets by name / relative direction / proposal id; a Python layer owns all
 geometry. The map is a **chronicle**: writes are narrative acts logged to `map_cell_events`,
 validated, with echoed local-state feedback.
-- **Reads**: `groundCivTerrain` (fog-aware + `maxHiddenLevel` content gating), `findNearest`
-  & `whatIsBetween` (both fog-aware, default true), `proposeSpawnPositions`, `getMapOverview`
-  (a semantic SUMMARY, not a cell dump), + the pre-existing
+- **Reads**: `groundCivTerrain` (fog-aware + `maxHiddenLevel` content gating + chronicle
+  read-back `eventsPerCell` + age cutoff `sinceGameTime` — the last N events per province
+  resurface in the prompt, closing the write→read loop), `findNearest` & `whatIsBetween`
+  (both fog-aware, default true), `proposeSpawnPositions`, `getMapOverview` (a semantic
+  SUMMARY, not a cell dump), + the pre-existing
   `getMaps`/`getTerritory`/`findEntityOnMap`/`getCell`/`getCellHistory`.
+- **Anchors** (`_resolve_anchor`): spawn rank / exact place name (label/element) / **civ
+  name → its seat** / entity. Never `(q,r)`.
+- **Event aging**: `recordEvent`/`annotate` take an optional `gameTime` (Demiurgos's
+  in-game year, migration 043); `groundCivTerrain(sinceGameTime)` drops older events.
+  Aurelm stores + filters mechanically — **no aging policy of its own** (Demiurgos owns
+  the clock, the decay window, and lore sedimentation).
 - **Writes**: `foundSettlement` (the socle), `expandTerritory`, `cedeTerritory` (transfer),
   `moveEntity`, `recordEvent`, `annotate`, `discoverAround`. All in `dispatch_tool`; all defer
   commit inside a turn.

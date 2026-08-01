@@ -11,9 +11,10 @@ Flutter Desktop GUI (Dashboard)
         │
         ├── Discord Sync (read-only bot + HTTP API)
         ├── ML Pipeline (LLM-based via Ollama — qwen3:8b dev / qwen3:14b prod)
+        ├── Map system (ingest a Theomen world → LLM map tools + fog of war)
         ├── Wiki Generator (MkDocs Material)
-        ├── SQLite Database (28 migrations)
-        └── Claude Agent (Claude API primary, claude -p CLI fallback)
+        ├── SQLite Database (43 migrations)
+        └── Claude Agent (via the etheryale proxy — one OpenAI-compatible backend)
               └── MCP Server (TypeScript, connected to wiki/DB)
 ```
 
@@ -26,9 +27,9 @@ Flutter Desktop GUI (Dashboard)
 | Local LLM | qwen3:8b (dev, 5.2GB VRAM) / qwen3:14b (prod, 12GB VRAM) |
 | Cloud LLM | OpenRouter (dev inference, no proxy needed) |
 | Wiki | MkDocs Material (auto-generated markdown) |
-| Database | SQLite (single file, 28 migrations) |
+| Database | SQLite (single file, 43 migrations) |
 | MCP Server | TypeScript (strict, ES2022) |
-| Agent | Claude API (primary) + `claude -p` CLI fallback |
+| Agent | Etheryale proxy (`ai.etheryale.com/v1`, OpenAI-compatible, all Claude + GPT models) via the OpenAI SDK |
 | Discord | discord.py (read-only) + aiohttp HTTP API |
 
 ## Project Structure
@@ -52,9 +53,11 @@ Aurelm/
 - **Civ relations** — LLM-extracted inter-civ relations (diplomacy, trade, conflicts) stored in DB, exposed in Flutter + bot tool `getCivRelations`
 - **Favorites** — star entities, subjects, turns; filterable in all browsers; exposed to agent via `getFavorites`
 - **Flutter dashboard** — entity browser with tag/favorites filters, turn timeline with Ctrl+F search + fuzzy highlight, entity→turn fast travel, subjects screen, civ relations view, civ alias resolver
-- **Chat system** — NDJSON streaming, thinking blocks display, tool use cards, persistent sessions, lore hyperlinks (entities/civs/turns/subjects), quote stealth display, graceful `claude -p` fallback on API error
+- **Map system** — ingest a [Theomen](../Gamedesigner/theomen)-generated world (binary GMVC `.world`, point-budget element sets) into a canon store, then serve it to an LLM through map tools that never touch `(q,r)`: `groundCivTerrain` (fog-aware, chronicle read-back, content gating), `findNearest`/`whatIsBetween` (fog-aware), spawn proposals, and narrative writes (`foundSettlement`/`expandTerritory`/`cedeTerritory`/`moveEntity`/`recordEvent`/`annotate`). Spatial fog of war + tech-gated content discovery + in-game-time event aging. **First consumer: the Demiurgos GM engine, in-process** — see `docs/map-tools-design.md`.
+- **Chat system** — NDJSON streaming, thinking blocks display, tool use cards, persistent sessions, lore hyperlinks (entities/civs/turns/subjects), quote stealth display, per-request model picker + reasoning-effort knob (all via the etheryale proxy), leaked tool-call syntax stripped from answers
 - **Notes** — CRUD notes attached to entities/subjects/turns, side rail UI with draggable floating windows, pinned notes always shown to agent
-- **Discord bot** — syncs channel history, runs pipeline, 16 tools, answers GM queries via Claude agent
+- **Agent memory** — the agent keeps its own memory, written from GM feedback and relevance-recalled per request (`editMemory`); reviewable in Settings
+- **Discord bot** — syncs channel history, runs pipeline, answers GM queries via the Claude agent over **36 tools** (lore recall + map read/write)
 
 ## Quick Start
 
@@ -103,8 +106,11 @@ Start-Process gui\build\windows\x64\runner\Debug\aurelm_gui.exe
 
 ### Configuration
 
-1. Set `DISCORD_BOT_TOKEN` and `ANTHROPIC_API_KEY` environment variables
-2. Create `aurelm_config.json` next to your DB with channel IDs
+On first launch the app runs a **4-step setup wizard** — no manual env vars or config
+files needed: (1) an activation code redeemed with the etheryale proxy for an API key,
+(2) create + migrate the local DB (folder and filename are yours to pick), (3) your own
+Discord bot token + channel↔civ mapping, (4) the ingestion engine (Ollama or OpenRouter).
+Every secret is DPAPI-sealed and injected into the bot subprocess. See `docs/deployment.md`.
 
 ## Design Principles
 

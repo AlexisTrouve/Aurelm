@@ -71,7 +71,7 @@ surface que Demiurgos utilise (à câbler séparément).
 
 | Tool | Statut | Entrée sémantique | Rend |
 |---|---|---|---|
-| `groundCivTerrain` | ✅ existe | civName, radius | province d'origine + anneau de provinces (**le grounding cœur**). 🔧 à enrichir : **directions relatives + noms** (« fer 2 provinces NE ») au lieu de `(q,r)` |
+| `groundCivTerrain` | ✅ **le grounding cœur** | civName, radius, fog?, maxHiddenLevel?, eventsPerCell?, sinceGameTime? | province d'origine + anneau, en **directions relatives + noms** (jamais `(q,r)`). Fog spatial + **gating de contenu** (`maxHiddenLevel`) + **read-back de la chronique** (N derniers events, avec cutoff d'âge `sinceGameTime`) |
 | `getTerritory` | ✅ existe | civName | toutes les provinces contrôlées par une civ |
 | `findEntityOnMap` | ✅ existe | entityName | où se trouve une entité (fuzzy + alias) |
 | `findNearest` | ✨ new | from (civ/feature), what (ressource/biome/eau/relief) | « le fer le plus proche des Confluents » — **le** tool MJ (« ont-ils accès au bronze ? ») |
@@ -94,7 +94,9 @@ appliquer l'état → logguer l'événement → renvoyer le nouvel état local.
 | `recordEvent` | ✨ new | kind, at (nommé / civ / relatif), description, civName? | bataille / découverte / diplomatie / catastrophe → historique (`kind`). Le **write narratif générique** |
 | `moveEntity` | ✨ new | entityName, to (civ / feature / nommé) | déplace un pion (`map_entity_pawns`) → `migration` |
 | `annotate` | ✨ new | at (nommé / relatif), label? / note? | label / note MJ sur une province → `note` |
-| `cedeTerritory` | ✨ optionnel | fromCiv, toCiv, at | transfert de contrôle → `diplomatic` |
+| `cedeTerritory` | ✅ livré | fromCiv, toCiv, at, amount? | transfert de contrôle (parcelle contiguë) → `diplomatic` ; le bénéficiaire découvre le gain |
+| `discoverAround` | ✅ livré | civName, around, radius | une civ explore → lève le fog spatial sur un disque de provinces |
+| `recordEvent`/`annotate` | ✅ livrés | … + `gameTime`? | l'estampille `gameTime` (année de jeu, écrite par Demiurgos) permet le vieillissement |
 
 > **Départ assumé du design read-only.** L'agent Aurelm était read-only (22 lectures +
 > `editMemory`). Ces writes lui donnent le pouvoir de **muter le canon** — c'est voulu
