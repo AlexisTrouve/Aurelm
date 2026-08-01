@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'Aurelm';
-  static const String appVersion = '0.1.1';
+  static const String appVersion = '0.2.0';
 
   static const List<String> entityTypes = [
     'person',
