@@ -1,9 +1,12 @@
 # Handoff — Aurelm (map system: ingestion + LLM tools + Demiurgos integration)
 
-Paste-ready briefing. Everything is on `main` (`44371d2`), pushed to GitHub + Gitea.
+Paste-ready briefing. Everything is on `main` (`195c22c`), pushed to GitHub + Gitea.
 Bot suite: **261 passed / 4 skipped** (v2 map migration, fog-aware queries, feature-discover,
 cedeTerritory, tool-syntax stripper, chronicle read-back + civ-seat anchor, event aging,
-migration-runner hardening). GUI: 66 unit + E2E green on `-d windows`.
+migration-runner hardening). GUI: **76 passed** (+ the full wizard walkthrough, Ollama
+auto-install/start, DB picker, resumability). **Delivered as `Aurelm-Setup-0.2.1.exe`,
+installed on the dev machine.** See the Dogfood section under Open items for where the
+first-run stands.
 
 ## Headline: the MAP system is DONE, validated on real data, and CONSUMED IN PROD
 
@@ -136,14 +139,34 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
   models no tech-level — Demiurgos passes the depth. (3) **cedeTerritory** — a civ transfers
   provinces to another (diplomatic event, recipient discovers, ownership-validated). (4) the
   agent no longer **leaks tool-call syntax** — deterministic stripper + prompt directive.
-- **Dogfood blockers — CLEARED (2026-07-30, `b200bac`+`3e2d9f3`).** Both first-run bugs are
-  fixed + on main: (1) the **launcher cwd** crash (dev `py -m bot` → "No module named bot" when
-  the DB is outside the repo) — resolve the repo root from the EXE, not the DB dir (6 launcher
-  tests). (2) the **wizard lock-out** — an interrupted setup burned the single-use activation
-  code; now the wizard resumes past activation when a key is already sealed (2 widget tests,
-  RED without the fix). Nothing on the Aurelm side blocks the dogfood now — the remaining work
-  is Arthur/Alexi actually RUNNING the first-run (real code, Discord app, Ollama). The stale
-  local branch `fix/dev-launcher-cwd` is now redundant (cherry-picked to main) — safe to delete.
+- **Dogfood / first-run wizard — hardened this session, first-run NOT yet completed once.**
+  Built + shipped `Aurelm-Setup-0.2.1.exe` and installed it on the dev machine. Wizard fixes,
+  all TDD:
+  - **Launcher cwd** (`b200bac`): dev `py -m bot` → "No module named bot" when the DB is outside
+    the repo — resolve the repo root from the EXE, not the DB dir.
+  - **Resumability** (`3e2d9f3`): an interrupted setup burned the single-use activation code;
+    the wizard now resumes past activation when a key is already sealed.
+  - **DB location picker** (`388c0f7`): native "Save As" to choose folder + filename.
+  - **Ollama one-click install** (`8eda69d`): absent → download `OllamaSetup.exe` + silent
+    install + pull the recommended model. **⚠️ the `/VERYSILENT` flag is UNVERIFIED** (Ollama is
+    already installed on the dev machine) — isolated in `OllamaService.installerArgs`, needs a
+    clean-machine run.
+  - **Ollama auto-start** (`7461090`): installed-but-stopped (after a reboot) → START it, never
+    prompt to reinstall.
+  - **Full wizard walkthrough E2E** (`195c22c`): clicks Activation→Base→Discord→Analyse→complete
+    with the services faked. This is the automated proof that replaces manual dogfood.
+  - **State of the actual first-run**: NOT completed once yet (no secure-storage artifact
+    persisted — verified). The wizard is one-time and persists (DPAPI per-user) once finished;
+    the repeated re-dos were interrupted attempts + my repeated reinstalls. Everything is teed
+    up (Ollama running, Discord bot `CIVJDR-ContextManager` token in `aurelm_config.json`):
+    ~3 clicks (Ollama Revérifier → pick model → Terminer) to finish. **Alexi flagged "y'a
+    toujours un pb" and deferred — investigate that before/at the next first-run.**
+  - **Open (offered, not built)**: a **dev-seed bypass** — pre-fill/skip the wizard from the
+    vault + `aurelm_config.json` so a dev/tester never sets up by hand. (A clean feature, not a
+    fragile external DPAPI write — which was investigated and rejected.)
+  - **Known bug (not fixed)**: `discord_service.dart` `verify()`'s blanket `catch (_)` masks the
+    real error as "impossible de joindre Discord" (a 401 reads as network). Map 401→invalid,
+    5xx→server, only SocketException→network.
 - **Disk-full** (2026-07-28): C: hit 100% (a system issue, not this work — another session is
   clearing it). All map validation this session was in-memory. Watch for disk errors.
 
