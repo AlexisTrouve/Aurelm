@@ -781,14 +781,14 @@ class _OllamaPanel extends ConsumerWidget {
               FilledButton.icon(
                 key: const Key('ollama_auto_install'),
                 icon: const Icon(Icons.download, size: 18),
-                label: const Text('Installer Ollama + le modèle (automatique)'),
+                label: const Text('Installer Ollama (automatique)'),
                 onPressed: () => ref.read(ollamaInstallProvider.notifier).install(),
               ),
               const SizedBox(height: 4),
               Text(
-                'Télécharge et installe Ollama depuis internet, puis récupère le '
-                'modèle conseillé — aucune étape manuelle. Gros téléchargement '
-                '(plusieurs Go) ; tu peux aussi cliquer « Terminer » et le lancer plus tard.',
+                'Télécharge et installe Ollama depuis internet. Une fois prêt, tu '
+                'choisis et télécharges un modèle ci-dessous. Tu peux aussi cliquer '
+                '« Terminer » et le faire plus tard.',
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -860,7 +860,7 @@ class _OllamaInstallProgress extends StatelessWidget {
           inst.fraction),
       InstallPhase.installing => ('Installation d\'Ollama…', null),
       InstallPhase.starting => ('Démarrage d\'Ollama…', null),
-      InstallPhase.done => ('Ollama prêt — récupération du modèle…', 1.0),
+      InstallPhase.done => ('Ollama prêt — choisis un modèle ci-dessous.', 1.0),
       InstallPhase.error => (inst.error ?? 'Échec de l\'installation.', null),
     };
     return Column(

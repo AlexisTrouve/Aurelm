@@ -231,10 +231,12 @@ class OllamaInstallNotifier extends StateNotifier<InstallProgress?> {
       state!.phase != InstallPhase.done &&
       state!.phase != InstallPhase.error;
 
-  /// Make Ollama ready, doing the RIGHT thing without asking the user to think:
-  /// installed-but-stopped → just start it (instant); absent → download + install;
-  /// then pull the recommended model. Never tells a user with Ollama already on disk
-  /// to reinstall it.
+  /// Make the Ollama RUNTIME ready, doing the right thing without asking the user to
+  /// think: installed-but-stopped → just start it (instant); absent → download +
+  /// install. Never tells a user with Ollama already on disk to reinstall it. Does NOT
+  /// auto-pull a model — a multi-GB model download is an explicit choice, so once
+  /// Ollama answers the status probe refreshes and the panel offers the model list
+  /// with a Download button (detection → download-on-button, never full-auto).
   void install() {
     if (running) return;
     final svc = _ref.read(ollamaServiceProvider);
@@ -248,12 +250,9 @@ class OllamaInstallNotifier extends StateNotifier<InstallProgress?> {
       state = p;
       if (p.phase == InstallPhase.done) {
         _sub?.cancel();
-        // Ollama is up — refresh the status probe and pull the recommended model
-        // straight away, so the whole engine setup is a single action.
+        // Ollama is up — refresh the status probe so the panel flips to the model
+        // list. The user picks + downloads a model from there (a deliberate click).
         _ref.invalidate(ollamaStatusProvider);
-        _ref
-            .read(ollamaPullProvider.notifier)
-            .download(_ref.read(pipelineSetupProvider).ollamaModel);
       } else if (p.phase == InstallPhase.error) {
         _sub?.cancel();
       }
