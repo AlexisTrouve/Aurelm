@@ -1,12 +1,14 @@
 # Handoff — Aurelm (map system: ingestion + LLM tools + Demiurgos integration)
 
-Paste-ready briefing. Everything is on `main` (`195c22c`), pushed to GitHub + Gitea.
+Paste-ready briefing. Everything is on `main` (`6322c0c`), pushed to GitHub + Gitea.
 Bot suite: **261 passed / 4 skipped** (v2 map migration, fog-aware queries, feature-discover,
 cedeTerritory, tool-syntax stripper, chronicle read-back + civ-seat anchor, event aging,
 migration-runner hardening). GUI: **76 passed** (+ the full wizard walkthrough, Ollama
-auto-install/start, DB picker, resumability). **Delivered as `Aurelm-Setup-0.2.1.exe`,
-installed on the dev machine.** See the Dogfood section under Open items for where the
-first-run stands.
+auto-install/start, DB picker, resumability). **Shipped `Aurelm-Setup-0.2.2.exe`, installed on
+the dev machine, first-run COMPLETED.** The live open item is a VRAM-vs-model mismatch (the
+recommended qwen3:14b outruns the dev GPU's 8 GB) — see the Dogfood section under Open items.
+NOTE: the model-download-on-button fix (`6322c0c`) landed AFTER the 0.2.2 build → a 0.2.3
+rebuild is needed to ship it.
 
 ## Headline: the MAP system is DONE, validated on real data, and CONSUMED IN PROD
 
@@ -139,36 +141,42 @@ fixes are validated by an EXTERNAL consumer, not just Aurelm's own suite.
   models no tech-level — Demiurgos passes the depth. (3) **cedeTerritory** — a civ transfers
   provinces to another (diplomatic event, recipient discovers, ownership-validated). (4) the
   agent no longer **leaks tool-call syntax** — deterministic stripper + prompt directive.
-- **Dogfood / first-run wizard — hardened this session, first-run NOT yet completed once.**
-  Built + shipped `Aurelm-Setup-0.2.1.exe` and installed it on the dev machine. Wizard fixes,
-  all TDD:
-  - **Launcher cwd** (`b200bac`): dev `py -m bot` → "No module named bot" when the DB is outside
-    the repo — resolve the repo root from the EXE, not the DB dir.
-  - **Resumability** (`3e2d9f3`): an interrupted setup burned the single-use activation code;
-    the wizard now resumes past activation when a key is already sealed.
-  - **DB location picker** (`388c0f7`): native "Save As" to choose folder + filename.
-  - **Ollama one-click install** (`8eda69d`): absent → download `OllamaSetup.exe` + silent
-    install + pull the recommended model. **⚠️ the `/VERYSILENT` flag is UNVERIFIED** (Ollama is
-    already installed on the dev machine) — isolated in `OllamaService.installerArgs`, needs a
-    clean-machine run.
-  - **Ollama auto-start** (`7461090`): installed-but-stopped (after a reboot) → START it, never
-    prompt to reinstall.
+- **Dogfood / first-run wizard — COMPLETED once, `Aurelm-Setup-0.2.2.exe` shipped + installed.**
+  The first-run finally went all the way through (setup_complete persisted, bot started). Wizard
+  hardening this session, all TDD:
+  - **Launcher cwd** (`b200bac`), **resumability** (`3e2d9f3`), **DB location picker** (`388c0f7`).
+  - **Ollama one-click install** (`8eda69d`): absent → download `OllamaSetup.exe` + `/VERYSILENT`.
+    **⚠️ `/VERYSILENT` STILL UNVERIFIED** — the auto-start path (below) fires first on this
+    machine (Ollama installed), so the download+install branch never ran. Needs a truly
+    Ollama-*absent* machine. Flag lives in `OllamaService.installerArgs`.
+  - **Ollama auto-start** (`7461090`): installed-but-stopped → START it, never prompt to reinstall.
+    **VALIDATED LIVE**: killed Ollama, launched 0.2.2 → the wizard restarted it on its own.
+  - **Model download is a button, not auto-chained** (`6322c0c`): a multi-GB model pull is now an
+    explicit click, not triggered automatically once Ollama is up (that surprised the user with a
+    9 GB auto-download). **NOT in the installed 0.2.2** (came after that build) — needs a 0.2.3
+    rebuild to ship.
   - **Full wizard walkthrough E2E** (`195c22c`): clicks Activation→Base→Discord→Analyse→complete
-    with the services faked. This is the automated proof that replaces manual dogfood.
-  - **State of the actual first-run**: NOT completed once yet (no secure-storage artifact
-    persisted — verified). The wizard is one-time and persists (DPAPI per-user) once finished;
-    the repeated re-dos were interrupted attempts + my repeated reinstalls. Everything is teed
-    up (Ollama running, Discord bot `CIVJDR-ContextManager` token in `aurelm_config.json`):
-    ~3 clicks (Ollama Revérifier → pick model → Terminer) to finish. **Alexi flagged "y'a
-    toujours un pb" and deferred — investigate that before/at the next first-run.**
-  - **Open (offered, not built)**: a **dev-seed bypass** — pre-fill/skip the wizard from the
-    vault + `aurelm_config.json` so a dev/tester never sets up by hand. (A clean feature, not a
-    fragile external DPAPI write — which was investigated and rejected.)
-  - **Known bug (not fixed)**: `discord_service.dart` `verify()`'s blanket `catch (_)` masks the
-    real error as "impossible de joindre Discord" (a 401 reads as network). Map 401→invalid,
-    5xx→server, only SocketException→network.
-- **Disk-full** (2026-07-28): C: hit 100% (a system issue, not this work — another session is
-  clearing it). All map validation this session was in-memory. Watch for disk errors.
+    with services faked. The automated proof that replaces manual dogfood. 76 GUI tests.
+- **⚠️ NEW — the "recommended" Ollama model outruns the dev machine's VRAM (product bug).** The
+  wizard hardcodes **qwen3:14b** (~10 GB) as the recommended default (sized for Arthur's 16 GB).
+  Alexi's dev machine is an **RTX 4060 Laptop, 8 GB VRAM** → 14b spills to CPU (`ollama ps` showed
+  `42% CPU / 58% GPU`) → the ingestion pipeline crawls. **Fix (offered, NOT built): make the
+  wizard recommendation VRAM-aware** — read `nvidia-smi`, recommend 8b under ~12 GB, 14b above.
+  Immediate workaround for Alexi (offered, not applied — he asked for the handoff instead):
+  switch his config (`Documents\Aurelm\aurelm_config.json`, `ollama_model`) to `qwen3:8b` + pull
+  it. The bot process + the loaded 14b were killed at end of session (grinding stopped).
+  - Installed instance: DB at `Documents\Aurelm\aurelm.db` (4 civs, 1 turn, 0 entities — ingest
+    barely started, was crawling on the CPU-offloaded 14b). Config `llm_provider=ollama`,
+    `ollama_model=qwen3:14b`.
+- **Wizard UX**: Alexi is "pas giga satisfait" with the flow (repeated friction: token vs ID
+  confusion, Ollama detection, the auto-download). The E2E test + the auto-start/button fixes
+  address the worst of it; a UX pass is still warranted.
+- **Open (offered, not built)**: a **dev-seed bypass** — pre-fill/skip the wizard from the vault
+  + `aurelm_config.json` so a dev/tester never sets up by hand (clean feature; external DPAPI
+  writes were investigated and rejected as fragile).
+- **Known bug (not fixed)**: `discord_service.dart` `verify()`'s blanket `catch (_)` masks the
+  real error as "impossible de joindre Discord" (a 401 reads as network). Map 401→invalid,
+  5xx→server, only SocketException→network.
 
 ## Doctrine that held (keep it)
 - **Verify every "done" on the wire.** The real Theomen exports caught 3 real bugs the
