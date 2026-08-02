@@ -231,16 +231,25 @@ class OllamaInstallNotifier extends StateNotifier<InstallProgress?> {
       state!.phase != InstallPhase.done &&
       state!.phase != InstallPhase.error;
 
+  /// Make Ollama ready, doing the RIGHT thing without asking the user to think:
+  /// installed-but-stopped → just start it (instant); absent → download + install;
+  /// then pull the recommended model. Never tells a user with Ollama already on disk
+  /// to reinstall it.
   void install() {
     if (running) return;
-    state = const InstallProgress(InstallPhase.downloading, fraction: 0);
+    final svc = _ref.read(ollamaServiceProvider);
+    final installed = svc.isInstalled;
+    final stream = installed ? svc.startLocal() : svc.installOllama();
+    state = InstallProgress(
+        installed ? InstallPhase.starting : InstallPhase.downloading,
+        fraction: installed ? null : 0);
     _sub?.cancel();
-    _sub = _ref.read(ollamaServiceProvider).installOllama().listen((p) {
+    _sub = stream.listen((p) {
       state = p;
       if (p.phase == InstallPhase.done) {
         _sub?.cancel();
         // Ollama is up — refresh the status probe and pull the recommended model
-        // straight away, so "installer Ollama + le modèle" is a single action.
+        // straight away, so the whole engine setup is a single action.
         _ref.invalidate(ollamaStatusProvider);
         _ref
             .read(ollamaPullProvider.notifier)

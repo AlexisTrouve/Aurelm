@@ -75,19 +75,32 @@ class OllamaService {
   final Future<int> Function(String exePath, List<String> args) _runProcess;
   final Future<bool> Function() _probeReachable;
   final Directory Function() _downloadDir;
+  final Future<void> Function(String exePath) _startProcess;
+  final String? Function() _localAppData;
 
   OllamaService({
     http.Client Function()? clientFactory,
     Future<int> Function(String, List<String>)? runProcess,
     Future<bool> Function()? probeReachable,
     Directory Function()? downloadDir,
+    Future<void> Function(String)? startProcess,
+    String? Function()? localAppData,
   })  : _clientFactory = clientFactory ?? http.Client.new,
         _runProcess = runProcess ?? _defaultRunProcess,
         _probeReachable = probeReachable ?? _defaultProbe,
-        _downloadDir = downloadDir ?? (() => Directory.systemTemp);
+        _downloadDir = downloadDir ?? (() => Directory.systemTemp),
+        _startProcess = startProcess ?? _defaultStartProcess,
+        _localAppData = localAppData ??
+            (() => Platform.environment['LOCALAPPDATA']);
 
   static Future<int> _defaultRunProcess(String exe, List<String> args) async =>
       (await Process.run(exe, args)).exitCode;
+
+  /// Launch DETACHED (not awaited): the Ollama tray app keeps running after we return.
+  static Future<void> _defaultStartProcess(String exe) async {
+    await Process.start(exe, const <String>[],
+        mode: ProcessStartMode.detached);
+  }
 
   static Future<bool> _defaultProbe() async {
     try {
@@ -97,6 +110,50 @@ class OllamaService {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Path to the installed Ollama tray app (Windows, per-user default), or null when
+  /// Ollama is not installed. This is what distinguishes "installed but stopped" (just
+  /// start it) from "absent" (download + install) — the wizard must not confuse them.
+  String? installedExePath() {
+    final base = _localAppData();
+    if (base == null) return null;
+    final exe = p.join(base, 'Programs', 'Ollama', 'ollama app.exe');
+    return File(exe).existsSync() ? exe : null;
+  }
+
+  bool get isInstalled => installedExePath() != null;
+
+  /// Start the ALREADY-INSTALLED Ollama and wait until it answers. Use when the binary
+  /// is present but not running (e.g. after a reboot) — starting it is instant and
+  /// beats telling the user to reinstall. Yields the same phases as install so the UI
+  /// is uniform. Errors if Ollama isn't actually installed.
+  Stream<InstallProgress> startLocal({
+    int pollAttempts = 20,
+    Duration pollInterval = const Duration(seconds: 1),
+  }) async* {
+    final exe = installedExePath();
+    if (exe == null) {
+      yield const InstallProgress(InstallPhase.error,
+          error: 'Ollama n\'est pas installé.');
+      return;
+    }
+    yield const InstallProgress(InstallPhase.starting);
+    try {
+      await _startProcess(exe);
+    } catch (e) {
+      yield InstallProgress(InstallPhase.error, error: 'Démarrage d\'Ollama: $e');
+      return;
+    }
+    for (var i = 0; i < pollAttempts; i++) {
+      if (await _probeReachable()) {
+        yield const InstallProgress(InstallPhase.done);
+        return;
+      }
+      await Future.delayed(pollInterval);
+    }
+    yield const InstallProgress(InstallPhase.error,
+        error: 'Ollama démarré mais ne répond pas (localhost:11434).');
   }
 
   /// Download + silently install the Ollama runtime, then wait for it to answer.

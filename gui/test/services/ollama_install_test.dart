@@ -4,6 +4,7 @@ import 'package:aurelm_gui/services/ollama_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:path/path.dart' as p;
 
 /// The automatic Ollama runtime install (download → silent install → start) is the
 /// piece a fresh machine (Arthur's) needs. The real download/installer can't run in a
@@ -88,6 +89,61 @@ void main() {
 
   test('installed but never answering → error after the poll budget', () async {
     final steps = await runInstall(mkSvc(probe: () async => false));
+    expect(steps.last.phase, InstallPhase.error);
+    expect(steps.last.error, contains('ne répond pas'));
+  });
+
+  // --- Installed-but-stopped: START it, never re-download. ---------------------
+
+  // Lays down (or not) the Ollama tray app under a fake LOCALAPPDATA, and builds a
+  // service whose local-start seam records the exe it was asked to launch.
+  ({OllamaService svc, List<String> started}) mkStartSvc({
+    required bool installed,
+    Future<bool> Function()? probe,
+  }) {
+    final started = <String>[];
+    if (installed) {
+      final ollamaDir = Directory(p.join(tmp.path, 'Programs', 'Ollama'))
+        ..createSync(recursive: true);
+      File(p.join(ollamaDir.path, 'ollama app.exe')).writeAsStringSync('x');
+    }
+    final svc = OllamaService(
+      clientFactory: mkClient(200),
+      startProcess: (exe) async => started.add(exe),
+      probeReachable: probe ?? () async => true,
+      localAppData: () => tmp.path,
+    );
+    return (svc: svc, started: started);
+  }
+
+  Future<List<InstallProgress>> runStart(OllamaService svc) => svc
+      .startLocal(pollAttempts: 3, pollInterval: const Duration(milliseconds: 1))
+      .toList();
+
+  test('isInstalled reflects the presence of the Ollama tray app', () {
+    expect(mkStartSvc(installed: false).svc.isInstalled, isFalse);
+    expect(mkStartSvc(installed: true).svc.isInstalled, isTrue);
+  });
+
+  test('startLocal launches the installed app (no download) and reports done', () async {
+    final t = mkStartSvc(installed: true);
+    final steps = await runStart(t.svc);
+
+    expect(steps.map((s) => s.phase),
+        containsAllInOrder([InstallPhase.starting, InstallPhase.done]));
+    // It never entered a download phase — starting is not re-installing.
+    expect(steps.map((s) => s.phase), isNot(contains(InstallPhase.downloading)));
+    expect(t.started.single, endsWith('ollama app.exe'));
+  });
+
+  test('startLocal on a machine without Ollama errors (does not pretend)', () async {
+    final steps = await runStart(mkStartSvc(installed: false).svc);
+    expect(steps.last.phase, InstallPhase.error);
+    expect(steps.last.error, contains('pas installé'));
+  });
+
+  test('startLocal: started but never answering → error after the budget', () async {
+    final steps = await runStart(mkStartSvc(installed: true, probe: () async => false).svc);
     expect(steps.last.phase, InstallPhase.error);
     expect(steps.last.error, contains('ne répond pas'));
   });

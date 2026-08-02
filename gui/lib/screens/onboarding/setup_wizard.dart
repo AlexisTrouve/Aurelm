@@ -757,16 +757,26 @@ class _OllamaPanel extends ConsumerWidget {
           const _StatusLine(ok: false, text: 'Impossible de détecter Ollama.'),
       data: (s) {
         if (!s.reachable) {
-          // Ollama absent → offer a one-click automatic install (download + silent
-          // install + recommended model). The manual path stays as a fallback.
+          final svc = ref.read(ollamaServiceProvider);
           final inst = ref.watch(ollamaInstallProvider);
+          // A preparation (start or download+install) is in flight → show its progress.
           if (inst != null && inst.phase != InstallPhase.error) {
             return _OllamaInstallProgress(inst);
           }
+          // Installed but not running (e.g. after a reboot) → START it automatically.
+          // No click, and NEVER prompt to reinstall something already on disk.
+          if (svc.isInstalled && inst == null) {
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => ref.read(ollamaInstallProvider.notifier).install());
+            return _OllamaInstallProgress(
+                const InstallProgress(InstallPhase.starting));
+          }
+          // Genuinely absent → offer the automatic download+install (a big download,
+          // so behind a button for consent). The manual path stays as a fallback.
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const _StatusLine(ok: false, text: 'Ollama n\'est pas détecté.'),
+              const _StatusLine(ok: false, text: 'Ollama n\'est pas installé.'),
               const SizedBox(height: 12),
               FilledButton.icon(
                 key: const Key('ollama_auto_install'),
