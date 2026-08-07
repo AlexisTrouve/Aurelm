@@ -151,13 +151,26 @@ class DiscordService {
         hasMessageContent: hasMessageContent,
         guilds: guilds,
       );
-    } on TimeoutException {
-      return DiscordVerifyError(DiscordFailure.network);
-    } catch (_) {
-      return DiscordVerifyError(DiscordFailure.network);
+    } catch (e) {
+      return DiscordVerifyError(classifyException(e));
     } finally {
       client.close();
     }
+  }
+
+  /// Maps a caught exception to a [DiscordFailure] category. Only a genuine
+  /// network-reachability primitive (timeout, socket error) is reported as
+  /// [DiscordFailure.network] — everything else (a malformed response body,
+  /// an unexpected type cast, ...) is [DiscordFailure.server], because it
+  /// means Discord WAS reached and answered oddly. The previous blanket
+  /// `catch (_) => network` collapsed both into “impossible de joindre
+  /// Discord”, which sent the user chasing their internet connection for a
+  /// bug that had nothing to do with connectivity.
+  static DiscordFailure classifyException(Object e) {
+    if (e is TimeoutException || e is SocketException) {
+      return DiscordFailure.network;
+    }
+    return DiscordFailure.server;
   }
 
   /// Text channels (type 0) of a guild, best-effort — a guild we can't read just
