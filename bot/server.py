@@ -140,8 +140,14 @@ class BotServer:
             return web.json_response({"error": "Discord not connected"}, status=503)
 
         channel_id = request.match_info["channel_id"]
-        channel = self._discord_client.get_channel(int(channel_id))
-        if channel is None:
+        # fetch_channel() makes a REST call — works even if not in cache.
+        # get_channel() only hits the local cache and returns None right after
+        # the gateway connects (e.g. straight out of the setup wizard), which
+        # made a fresh install's per-civ sync silently 404 while the global
+        # sync (bot/main.py, already using fetch_channel()) worked fine.
+        try:
+            channel = await self._discord_client.fetch_channel(int(channel_id))
+        except Exception:
             return web.json_response({"error": "Channel not found"}, status=404)
 
         # Find last known message timestamp for this channel
@@ -252,8 +258,11 @@ class BotServer:
         if not self._discord_client or not self._discord_connected:
             return web.json_response({"error": "Discord not connected"}, status=503)
 
-        channel = self._discord_client.get_channel(int(channel_id))
-        if channel is None:
+        # fetch_channel() makes a REST call — works even if not in cache (see
+        # the identical comment in _channel_pending above).
+        try:
+            channel = await self._discord_client.fetch_channel(int(channel_id))
+        except Exception:
             return web.json_response({"error": "Channel not found"}, status=404)
 
         # Validate turn indices before launching background task
