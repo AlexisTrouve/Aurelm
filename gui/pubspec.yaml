@@ -1,6 +1,6 @@
 name: aurelm_gui
 description: Aurelm — Game Master dashboard for civilization RPGs
-version: 0.2.3
+version: 0.2.4
 publish_to: none
 
 environment:
